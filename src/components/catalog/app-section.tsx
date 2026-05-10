@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import type { CatalogApp } from "@/data/apps";
 import { getAppActions } from "@/lib/catalog";
 import { ActionLink } from "@/components/catalog/action-link";
+import { FitnessPreviewBoard } from "@/components/catalog/fitness-preview-board";
 
 type AppSectionProps = {
   app: CatalogApp;
@@ -78,6 +79,8 @@ export function AppSection({ app }: AppSectionProps) {
             </summary>
 
             <div className="catalog-section__panel" id={screenshotsRegionId}>
+              {app.slug === "fitness" ? <FitnessPreviewBoard variant="inline" /> : null}
+
               <div className="catalog-rail">
                 <div className="catalog-rail__track">
                   {app.screenshots.map((shot) => (
