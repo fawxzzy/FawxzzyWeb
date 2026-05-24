@@ -1,0 +1,116 @@
+{
+  "contract_version": "atlas.qa.scenario.v1",
+  "scenario_id": "trove.home-smoke",
+  "title": "Trove homepage smoke",
+  "summary": "Repo-owned ATLAS QA LLEL v1 smoke intent for the Trove storefront homepage.",
+  "repo_id": "trove",
+  "repo_path": "repos/fawxzzy-trove",
+  "adapter_id": "trove.web",
+  "criticality": "medium",
+  "tags": [
+    "trove",
+    "web",
+    "smoke",
+    "catalog"
+  ],
+  "entrypoint": {
+    "path": "/",
+    "ready_path": "/healthz.json"
+  },
+  "proof": {
+    "lens_manifest_ref": "ops/atlas/qa/lenses/atlas-default-web.v1.json",
+    "pr_lenses": [
+      "desktop.chromium.emulated",
+      "android.chrome.emulated",
+      "iphone.webkit.emulated"
+    ],
+    "certify_lenses": [],
+    "real_device_strategy": "manual_only"
+  },
+  "required_artifacts": [
+    {
+      "artifact_key": "screens",
+      "artifact_kind": "screenshot",
+      "step_id": "main",
+      "required_lenses": [
+        "desktop.chromium.emulated",
+        "android.chrome.emulated",
+        "iphone.webkit.emulated"
+      ]
+    },
+    {
+      "artifact_key": "traces",
+      "artifact_kind": "trace",
+      "step_id": "main",
+      "required_lenses": [
+        "desktop.chromium.emulated",
+        "android.chrome.emulated",
+        "iphone.webkit.emulated"
+      ]
+    },
+    {
+      "artifact_key": "console",
+      "artifact_kind": "console_log",
+      "step_id": "main",
+      "required_lenses": [
+        "desktop.chromium.emulated",
+        "android.chrome.emulated",
+        "iphone.webkit.emulated"
+      ]
+    },
+    {
+      "artifact_key": "network",
+      "artifact_kind": "network_log",
+      "step_id": "main",
+      "required_lenses": [
+        "desktop.chromium.emulated",
+        "android.chrome.emulated",
+        "iphone.webkit.emulated"
+      ]
+    },
+    {
+      "artifact_key": "execution",
+      "artifact_kind": "executable_report",
+      "step_id": "main",
+      "required_lenses": [
+        "desktop.chromium.emulated",
+        "android.chrome.emulated",
+        "iphone.webkit.emulated"
+      ]
+    }
+  ],
+  "execution": {
+    "preflight_command_sequence": [
+      "lint"
+    ],
+    "pr_command_sequence": [
+      "qa_visual"
+    ],
+    "certify_command_sequence": []
+  },
+  "test_evidence": [
+    {
+      "evidence_id": "trove.lint",
+      "kind": "command",
+      "runner": "npm",
+      "command_ref": "lint",
+      "required_for": [
+        "promotion"
+      ]
+    }
+  ],
+  "promotion": {
+    "require_executable_truth": true,
+    "require_pr_artifacts": true,
+    "require_real_device_on": "never",
+    "allow_manual_certification": false,
+    "max_flaky_lenses": 0,
+    "blocking_artifact_kinds": [
+      "screenshot",
+      "trace",
+      "console_log",
+      "network_log",
+      "executable_report"
+    ]
+  }
+}

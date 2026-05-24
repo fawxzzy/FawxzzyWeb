@@ -1,0 +1,83 @@
+{
+  "contract_version": "atlas.qa.adapter.v1",
+  "adapter_id": "trove.web",
+  "repo_id": "trove",
+  "repo_path": "repos/fawxzzy-trove",
+  "framework": "nextjs-static-export",
+  "lens_manifest_ref": "ops/atlas/qa/lenses/atlas-default-web.v1.json",
+  "prepare": {
+    "kind": "command",
+    "command": "npm run build"
+  },
+  "start": {
+    "kind": "command",
+    "command": "npm run start",
+    "default_url": "http://127.0.0.1:3000",
+    "ready_path": "/healthz.json"
+  },
+  "commands": {
+    "lint": {
+      "command": "npm run lint"
+    },
+    "build": {
+      "command": "npm run build"
+    },
+    "qa_visual": {
+      "command": "npm run build"
+    }
+  },
+  "capture": {
+    "tool": "playwright",
+    "wait_until": "networkidle",
+    "settle_ms": 500,
+    "full_page": false,
+    "disable_animations": true
+  },
+  "lenses": [
+    {
+      "lens_id": "desktop.chromium.emulated",
+      "profile_id": "desktop.chromium",
+      "proof_kind": "emulated",
+      "evidence_kind": "emulated_browser",
+      "required_for": [
+        "evidence",
+        "promotion"
+      ],
+      "promotion_tier": "emulated_browser",
+      "fallback_behavior": "blocked",
+      "execution_mode": "browser_capture",
+      "command_ref": "qa_visual"
+    },
+    {
+      "lens_id": "android.chrome.emulated",
+      "profile_id": "android.chrome",
+      "proof_kind": "emulated",
+      "evidence_kind": "emulated_browser",
+      "required_for": [
+        "evidence",
+        "promotion"
+      ],
+      "promotion_tier": "emulated_browser",
+      "fallback_behavior": "blocked",
+      "execution_mode": "browser_capture",
+      "command_ref": "qa_visual"
+    },
+    {
+      "lens_id": "iphone.webkit.emulated",
+      "profile_id": "iphone.webkit",
+      "proof_kind": "emulated",
+      "evidence_kind": "emulated_browser",
+      "required_for": [
+        "evidence",
+        "promotion"
+      ],
+      "promotion_tier": "emulated_browser",
+      "fallback_behavior": "blocked",
+      "execution_mode": "browser_capture",
+      "command_ref": "qa_visual"
+    }
+  ],
+  "supported_scenarios": [
+    "trove.home-smoke"
+  ]
+}
