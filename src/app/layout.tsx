@@ -12,7 +12,34 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const TROVE_PREVIEW_IMAGE = "/brand/atlas-sigil-master.png";
+
+function resolveMetadataBase() {
+  const candidates = [
+    process.env.NEXT_PUBLIC_APP_URL,
+    process.env.APP_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null,
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
+    "https://fawxzzy-trove.vercel.app",
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) {
+      continue;
+    }
+
+    try {
+      return new URL(candidate);
+    } catch {
+      continue;
+    }
+  }
+
+  return undefined;
+}
+
 export const metadata: Metadata = {
+  metadataBase: resolveMetadataBase(),
   title: {
     default: "Trove",
     template: "%s | Trove",
@@ -60,12 +87,21 @@ export const metadata: Metadata = {
     description:
       "A one-page storefront for live Fawxzzy apps with grounded launch links and inline screenshots.",
     type: "website",
+    images: [
+      {
+        url: TROVE_PREVIEW_IMAGE,
+        width: 1280,
+        height: 1280,
+        alt: "Trove sigil and barbell brand art",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Trove",
     description:
       "A one-page storefront for live Fawxzzy apps with grounded launch links and inline screenshots.",
+    images: [TROVE_PREVIEW_IMAGE],
   },
 };
 
