@@ -54,9 +54,30 @@ Vercel rollback renames project ID `prj_vhUyajI4AL6BgCF40VnKtdxrBLuV` from `fawx
 `fawxzzy-trove`, verifies the project ID and rollback candidate are unchanged, and preserves the
 legacy alias. It does not deploy, promote, roll back production, or attach a domain.
 
-## Production boundary
+## Production cutover and rollback
 
-No production deployment, promotion, rollback, alias cutover, domain attachment, DNS mutation,
-or local directory move is authorized. The future approval string is exactly:
+The operator supplied the exact production approval on 2026-07-16. The resulting live state is:
 
-`Deploy FawxzzyWeb to Vercel production and connect fawxzzy.com.`
+| Surface | Current production state |
+| --- | --- |
+| Reviewed merge | `bf3986b1b62e0632ae2a76cbea484eba34a7eb8a` |
+| Vercel production | `dpl_D3sfUyaCAmJ32M8dULx465Bty384` on the same project ID |
+| Canonical origin | `https://fawxzzy.com` |
+| Companion domain | `https://www.fawxzzy.com` redirects `308` to the apex |
+| Compatibility alias | `https://fawxzzy-trove.vercel.app` serves the current production deployment |
+| Preserved rollback deployment | `dpl_Esx36xmewDbqKGMSuN3YMrFC6YSG` |
+| Cloudflare DNS | `A @ 76.76.21.21` and `A www 76.76.21.21`, DNS-only, TTL Auto |
+
+Application rollback uses Vercel's rollback operation against
+`dpl_Esx36xmewDbqKGMSuN3YMrFC6YSG` on project
+`prj_vhUyajI4AL6BgCF40VnKtdxrBLuV`, then verifies the production and compatibility aliases,
+all required routes, and runtime logs. It does not create a replacement project or repository.
+
+If the incident is domain-specific rather than application-specific, first capture exact Vercel
+and Cloudflare residual state. Only then remove the two owner-added DNS records and the two custom
+project domains, in that order, while retaining the legacy alias and prior deployment. Do not
+change nameservers, DNSSEC, SSL mode, email routing, Workers, R2, registrar settings, Fitness, or
+Mazer domains during rollback.
+
+No rollback was required during cutover because provider, DNS, TLS, route, mobile, accessibility,
+console, and log proof all passed.
