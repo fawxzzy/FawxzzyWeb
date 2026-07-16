@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { assertSiteSmoke } from "./assert-site-smoke.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
@@ -70,24 +71,8 @@ async function main() {
   });
 
   try {
-    const homeResponse = await waitFor(`${baseUrl}/`);
-    const homeHtml = await homeResponse.text();
-
-    if (!homeHtml.includes("Fawxzzy Trove")) {
-      throw new Error("Home page smoke check did not render the Trove shell.");
-    }
-
-    const healthResponse = await waitFor(`${baseUrl}/healthz.json`);
-    const health = await healthResponse.json();
-
-    if (health.status !== "ok" || health.app !== "trove") {
-      throw new Error("Health payload did not match the expected Trove contract.");
-    }
-
-    const manifestResponse = await waitFor(`${baseUrl}/manifest.webmanifest`);
-    if (!manifestResponse.ok) {
-      throw new Error("Manifest route did not respond successfully.");
-    }
+    await waitFor(`${baseUrl}/`);
+    await assertSiteSmoke(baseUrl);
   } finally {
     await stopServer(server);
   }

@@ -63,7 +63,7 @@ const screenTemplates: FitnessPreviewScreenTemplate[] = [
     assetStem: "today-home",
     baseImageSrc: "/apps/fitness/screenshots/today-dashboard.png",
     baseImageAlt: "Fitness today dashboard base screen",
-    sourceNote: "Existing Trove capture: today dashboard",
+    sourceNote: "Existing catalog capture: today dashboard",
   },
   {
     screenKey: "session",
@@ -80,7 +80,7 @@ const screenTemplates: FitnessPreviewScreenTemplate[] = [
     assetStem: "routines-current",
     baseImageSrc: "/apps/fitness/screenshots/routine-planner.png",
     baseImageAlt: "Fitness routine planner base screen",
-    sourceNote: "Existing Trove capture: routine planner",
+    sourceNote: "Existing catalog capture: routine planner",
   },
   {
     screenKey: "routineList",
@@ -132,7 +132,7 @@ const screenTemplates: FitnessPreviewScreenTemplate[] = [
     assetStem: "history-sessions",
     baseImageSrc: "/apps/fitness/screenshots/session-history.png",
     baseImageAlt: "Fitness session history base screen",
-    sourceNote: "Existing Trove capture: session history",
+    sourceNote: "Existing catalog capture: session history",
   },
   {
     screenKey: "historyDetail",
@@ -149,7 +149,7 @@ const screenTemplates: FitnessPreviewScreenTemplate[] = [
     assetStem: "exercise-history",
     baseImageSrc: "/apps/fitness/screenshots/exercise-history.png",
     baseImageAlt: "Fitness exercise history base screen",
-    sourceNote: "Existing Trove capture: exercise history",
+    sourceNote: "Existing catalog capture: exercise history",
   },
   {
     screenKey: "exerciseDetail",
@@ -214,7 +214,7 @@ function makeBaseLayer(): FitnessPreviewLayer {
     id: "layer-01-base",
     layerNumber: 1,
     title: "Layer 1 — Base screens",
-    description: "Canonical home screens and sub screens. Existing Trove captures fill what is already available; everything else stays as a waiting frame.",
+    description: "Canonical home screens and sub screens. Existing catalog captures fill what is already available; everything else stays as a waiting frame.",
     iterationLabel: "Base",
     slots: screenTemplates.map((screen) =>
       buildSlot(screen, 1, "Layer 1", "Base", "base", screen.baseImageSrc ?? null),

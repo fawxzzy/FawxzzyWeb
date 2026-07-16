@@ -6,11 +6,14 @@ import { FitnessPreviewBoard } from "@/components/catalog/fitness-preview-board"
 export const metadata: Metadata = {
   title: "Fitness Preview Board",
   description: "Layered screenshot slots and reference frames for the Fitness app UI.",
+  alternates: {
+    canonical: "/apps/fitness/preview",
+  },
 };
 
 export default function FitnessPreviewBoardPage() {
   return (
-    <div className="catalog-page app-theme-sage">
+    <main className="catalog-page app-theme-sage" id="main-content">
       <AmbientFitnessBackground
         intensity="high"
         particleCount={18}
@@ -27,7 +30,7 @@ export default function FitnessPreviewBoardPage() {
 
       <div className="shell-container relative z-10 space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-stroke/25 bg-panel/70 p-3 shadow-[0_18px_54px_rgba(0,0,0,0.24)] backdrop-blur">
-          <Link className="catalog-button catalog-button--secondary" href="/#fitness">
+          <Link className="catalog-button catalog-button--secondary" href="/apps#fitness">
             Back to Fitness preview
           </Link>
           <a className="catalog-button catalog-button--primary" href="https://fawxzzy-fitness-local.vercel.app" rel="noreferrer" target="_blank">
@@ -37,6 +40,6 @@ export default function FitnessPreviewBoardPage() {
 
         <FitnessPreviewBoard variant="page" />
       </div>
-    </div>
+    </main>
   );
 }

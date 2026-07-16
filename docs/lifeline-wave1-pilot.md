@@ -49,7 +49,7 @@ No Vercel runtime env is required for the pilot path.
 Run Trove against the pinned Lifeline runtime from the Lifeline repo:
 
 ```bash
-pnpm lifeline up C:\ATLAS\repos\fawxzzy-trove\.lifeline\trove.lifeline.yml
+pnpm lifeline up repos/fawxzzy-trove/.lifeline/trove.lifeline.yml
 pnpm lifeline status trove
 pnpm lifeline logs trove 20
 ```

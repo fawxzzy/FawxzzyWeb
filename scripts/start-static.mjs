@@ -1,11 +1,18 @@
 import http from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import handler from "serve-handler";
+import { ensureRepoDependencies } from "./ensure-repo-deps.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 const publicDir = path.join(repoRoot, "out");
+
+await ensureRepoDependencies({
+  repoRoot,
+  reason: "static server",
+});
+
+const { default: handler } = await import("serve-handler");
 
 function readFlag(flagName) {
   const index = process.argv.indexOf(flagName);
@@ -43,7 +50,7 @@ server.on("error", (error) => {
 });
 
 server.listen(port, host, () => {
-  console.log(`Serving Trove static export at http://${host}:${port}`);
+  console.log(`Serving FawxzzyWeb static export at http://${host}:${port}`);
 });
 
 for (const signal of ["SIGINT", "SIGTERM"]) {

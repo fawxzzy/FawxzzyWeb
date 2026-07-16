@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { productIdentity } from "@/config/product";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,31 +14,31 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(productIdentity.canonicalOrigin),
   title: {
-    default: "Trove",
-    template: "%s | Trove",
+    default: productIdentity.name,
+    template: `%s | ${productIdentity.name}`,
   },
-  description:
-    "Trove is the one-page storefront for live Fawxzzy apps, with grounded launch links, app-owned install flow, and inline screenshot rails.",
-  applicationName: "Trove",
+  description: productIdentity.description,
+  applicationName: productIdentity.name,
   manifest: "/manifest.webmanifest",
   keywords: [
-    "Trove",
+    productIdentity.name,
     "Fawxzzy",
     "ATLAS",
-    "PWA catalog",
-    "app launcher",
+    "apps",
+    "software",
   ],
   appleWebApp: {
     capable: true,
-    title: "Trove",
+    title: productIdentity.name,
     statusBarStyle: "black-translucent",
   },
   other: {
     "mobile-web-app-capable": "yes",
     "apple-mobile-web-app-capable": "yes",
     "apple-mobile-web-app-status-bar-style": "black-translucent",
-    "apple-mobile-web-app-title": "Trove",
+    "apple-mobile-web-app-title": productIdentity.name,
   },
   icons: {
     icon: [
@@ -56,16 +57,16 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: "Trove",
-    description:
-      "A one-page storefront for live Fawxzzy apps with grounded launch links and inline screenshots.",
+    title: productIdentity.name,
+    description: productIdentity.description,
+    siteName: productIdentity.name,
+    url: productIdentity.canonicalOrigin,
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Trove",
-    description:
-      "A one-page storefront for live Fawxzzy apps with grounded launch links and inline screenshots.",
+    title: productIdentity.name,
+    description: productIdentity.description,
   },
 };
 
@@ -74,8 +75,6 @@ export const viewport: Viewport = {
   colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
 };
 
@@ -90,7 +89,10 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full`}
     >
       <body className="min-h-full">
-        <main className="safe-area-main">{children}</main>
+        <a className="skip-link" href="#main-content">
+          Skip to content
+        </a>
+        <div className="safe-area-main">{children}</div>
       </body>
     </html>
   );

@@ -40,7 +40,7 @@ export const apps: CatalogApp[] = [
     installUrl: "https://fawxzzy-fitness-local.vercel.app",
     icon: {
       src: "/apps/fitness/icon-192.png",
-      source: "Vendored copy of fawxzzy-fitness public/app/icon-192.png stored in Trove public assets",
+      source: "Vendored copy of fawxzzy-fitness public/app/icon-192.png stored in FawxzzyWeb catalog assets",
     },
     tags: ["PWA", "Workouts", "History"],
     accent: {
@@ -88,7 +88,7 @@ export const apps: CatalogApp[] = [
     installUrl: "https://fawxzzy-mazer.vercel.app",
     icon: {
       src: "/apps/mazer/icon.svg",
-      source: "Vendored copy of fawxzzy-mazer public/icons/mazer-emblem.svg stored in Trove public assets",
+      source: "Vendored copy of fawxzzy-mazer public/icons/mazer-emblem.svg stored in FawxzzyWeb catalog assets",
     },
     tags: ["Game", "Installable", "Ambient"],
     accent: {
