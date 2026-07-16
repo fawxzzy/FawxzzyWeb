@@ -62,11 +62,20 @@ export const metadata: Metadata = {
     siteName: productIdentity.name,
     url: productIdentity.canonicalOrigin,
     type: "website",
+    images: [
+      {
+        alt: "Fawxzzy — build, train, create",
+        height: 500,
+        url: "/brand/fawxzzy-banner.png",
+        width: 1500,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: productIdentity.name,
     description: productIdentity.description,
+    images: ["/brand/fawxzzy-banner.png"],
   },
 };
 

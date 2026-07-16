@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { StaticLink } from "@/components/site/static-link";
 
 export default function NotFound() {
   return (
@@ -12,9 +12,9 @@ export default function NotFound() {
           The app catalog only renders entries that exist in the typed catalog data.
         </p>
         <div className="mt-6 flex justify-center">
-          <Link className="catalog-button catalog-button--primary" href="/apps">
+          <StaticLink className="catalog-button catalog-button--primary" href="/apps">
             Return to apps
-          </Link>
+          </StaticLink>
         </div>
       </div>
     </main>

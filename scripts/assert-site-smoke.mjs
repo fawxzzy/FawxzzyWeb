@@ -25,12 +25,54 @@ export async function assertSiteSmoke(baseUrl) {
   if (!homeHtml.includes('href="/apps"')) {
     throw new Error("Home route did not link to the canonical app catalog.");
   }
+  if (!homeHtml.includes('/brand/fawxzzy-banner.png')) {
+    throw new Error("Home route did not render the shared Fawxzzy brand artwork.");
+  }
+  if (!homeHtml.includes('href="/discover"')) {
+    throw new Error("Home route did not link to the discovery hub.");
+  }
 
   const appsHtml = await assertRoute(baseUrl, "/apps", "Apps, grounded in their real homes.");
   for (const origin of appOrigins) {
     if (!appsHtml.includes(origin)) {
       throw new Error(`/apps did not include grounded app origin ${origin}.`);
     }
+  }
+  for (const asset of [
+    "/apps/fitness/icon.png",
+    "/apps/fitness/trailer.mp4",
+    "/apps/mazer/icon.png",
+    "/apps/mazer/trailer.mp4",
+  ]) {
+    if (!appsHtml.includes(asset)) {
+      throw new Error(`/apps did not render centralized catalog asset ${asset}.`);
+    }
+  }
+  if (appsHtml.includes("<details")) {
+    throw new Error("The retired catalog preview dropdown is still present.");
+  }
+  if (appsHtml.includes('/brand/trove-foxmark.png')) {
+    throw new Error("The retired Trove hero image is still present on /apps.");
+  }
+
+  const discoverHtml = await assertRoute(
+    baseUrl,
+    "/discover",
+    "Apps, training, and community",
+  );
+  for (const target of [
+    "https://fawxzzy-fitness-local.vercel.app",
+    "https://buy.stripe.com/cNi9AL4a02Qf3T4dA02cg02",
+    "https://discord.gg/tnnV7BNJ7h",
+    "https://www.tiktok.com/@fukitzzzzz",
+    "https://www.youtube.com/@fawxzzy",
+  ]) {
+    if (!discoverHtml.includes(target)) {
+      throw new Error(`/discover did not include grounded destination ${target}.`);
+    }
+  }
+  if (!discoverHtml.includes("FawxzzyWeb stores no intake or payment state")) {
+    throw new Error("The Fitness intake ownership boundary was not rendered.");
   }
 
   const compatibilityHtml = await assertRoute(
