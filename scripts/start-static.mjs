@@ -50,7 +50,7 @@ server.on("error", (error) => {
 });
 
 server.listen(port, host, () => {
-  console.log(`Serving Trove static export at http://${host}:${port}`);
+  console.log(`Serving FawxzzyWeb static export at http://${host}:${port}`);
 });
 
 for (const signal of ["SIGINT", "SIGTERM"]) {

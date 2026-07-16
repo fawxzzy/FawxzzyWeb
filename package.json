@@ -1,5 +1,5 @@
 {
-  "name": "fawxzzy-trove",
+  "name": "fawxzzyweb",
   "version": "0.1.0",
   "private": true,
   "engines": {
@@ -10,9 +10,11 @@
     "build": "node scripts/next-cli.mjs build",
     "start": "node scripts/start-static.mjs",
     "lint": "node scripts/eslint-cli.mjs .",
-    "qa:home-smoke": "node scripts/qa-home-smoke.mjs",
+    "qa:site-smoke": "node scripts/qa-home-smoke.mjs",
+    "qa:home-smoke": "npm run qa:site-smoke",
+    "test:e2e": "playwright test",
     "smoke:lifeline": "node scripts/smoke-lifeline.mjs",
-    "verify": "npm run lint && npm run build && npm run smoke:lifeline"
+    "verify": "npm run lint && npm run build && npm run smoke:lifeline && npm run test:e2e"
   },
   "dependencies": {
     "next": "16.2.4",
@@ -21,6 +23,8 @@
     "serve-handler": "^6.1.6"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

@@ -3,7 +3,8 @@ export const dynamic = "force-static";
 export function GET() {
   return Response.json({
     status: "ok",
-    app: "trove",
+    app: "fawxzzyweb",
+    catalogCapability: "trove",
     runtime: "static-export",
   });
 }

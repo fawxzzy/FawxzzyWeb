@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { setTimeout as delay } from "node:timers/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { assertHomeSmoke } from "./assert-home-smoke.mjs";
+import { assertSiteSmoke } from "./assert-site-smoke.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
@@ -72,7 +72,7 @@ async function main() {
 
   try {
     await waitFor(`${baseUrl}/`);
-    await assertHomeSmoke(baseUrl);
+    await assertSiteSmoke(baseUrl);
   } finally {
     await stopServer(server);
   }
