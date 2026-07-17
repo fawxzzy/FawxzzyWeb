@@ -60,16 +60,16 @@ The operator supplied the exact production approval on 2026-07-16. The resulting
 
 | Surface | Current production state |
 | --- | --- |
-| Reviewed merge | `bf3986b1b62e0632ae2a76cbea484eba34a7eb8a` |
-| Vercel production | `dpl_D3sfUyaCAmJ32M8dULx465Bty384` on the same project ID |
+| Reviewed merge | `16c2730a3137a437a8b191e7f12aba25e6ba6cea` |
+| Vercel production | `dpl_6Z519Rjjo32HSCcZCX92DKQzYeSY` on the same project ID |
 | Canonical origin | `https://fawxzzy.com` |
 | Companion domain | `https://www.fawxzzy.com` redirects `308` to the apex |
 | Compatibility alias | `https://fawxzzy-trove.vercel.app` serves the current production deployment |
-| Preserved rollback deployment | `dpl_Esx36xmewDbqKGMSuN3YMrFC6YSG` |
+| Preserved rollback deployment | `dpl_D3sfUyaCAmJ32M8dULx465Bty384` |
 | Cloudflare DNS | `A @ 76.76.21.21` and `A www 76.76.21.21`, DNS-only, TTL Auto |
 
 Application rollback uses Vercel's rollback operation against
-`dpl_Esx36xmewDbqKGMSuN3YMrFC6YSG` on project
+`dpl_D3sfUyaCAmJ32M8dULx465Bty384` on project
 `prj_vhUyajI4AL6BgCF40VnKtdxrBLuV`, then verifies the production and compatibility aliases,
 all required routes, and runtime logs. It does not create a replacement project or repository.
 
@@ -81,3 +81,7 @@ Mazer domains during rollback.
 
 No rollback was required during cutover because provider, DNS, TLS, route, mobile, accessibility,
 console, and log proof all passed.
+
+The previous production deployment `dpl_D3sfUyaCAmJ32M8dULx465Bty384` remains the immediate
+rollback target for the trailer/discovery refresh. The older opening deployment
+`dpl_Esx36xmewDbqKGMSuN3YMrFC6YSG` remains preserved as historical migration provenance.
