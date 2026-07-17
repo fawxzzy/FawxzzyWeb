@@ -5,19 +5,22 @@ Observed: 2026-07-16
 This is owner-repository evidence for downstream owners. It does not authorize edits outside
 this repository.
 
-Production cutover status: complete and proof-green as of `2026-07-16T20:38:52Z`.
+Production cutover status: trailer/discovery redesign complete and proof-green as of
+`2026-07-17T02:38:07Z`.
 
 Canonical production contracts:
 
 - public origin: `https://fawxzzy.com`;
 - canonical www behavior: `https://www.fawxzzy.com/` permanently redirects with `308` to
   `https://fawxzzy.com/`;
-- GitHub: `fawxzzy/FawxzzyWeb`, merge commit
-  `bf3986b1b62e0632ae2a76cbea484eba34a7eb8a`;
+- GitHub: `fawxzzy/FawxzzyWeb`, current production merge commit
+  `16c2730a3137a437a8b191e7f12aba25e6ba6cea`;
 - Vercel: project `fawxzzyweb`, ID `prj_vhUyajI4AL6BgCF40VnKtdxrBLuV`, production deployment
-  `dpl_D3sfUyaCAmJ32M8dULx465Bty384`;
-- rollback deployment: `dpl_Esx36xmewDbqKGMSuN3YMrFC6YSG`;
+  `dpl_6Z519Rjjo32HSCcZCX92DKQzYeSY`;
+- rollback deployment: `dpl_D3sfUyaCAmJ32M8dULx465Bty384`;
 - compatibility alias: `https://fawxzzy-trove.vercel.app`.
+- discovery route: `https://fawxzzy.com/discover`;
+- Socials OS four-destination removal gate: **OPEN**, with YouTube preserved separately.
 
 | Owner | Exact dependency | Required downstream action | Gate |
 | --- | --- | --- | --- |
@@ -28,7 +31,7 @@ Canonical production contracts:
 | Fitness | Catalog origin `https://fawxzzy-fitness-local.vercel.app` | No production-origin change; verify the catalog link and future domain packet independently | Fitness owner proof |
 | Mazer | Catalog origin `https://fawxzzy-mazer.vercel.app` | No production-origin change; verify the catalog link and future domain packet independently | Mazer owner proof |
 | Playbook | Identity classification, same-object provider rename, exact-commit deploy, external-DNS cutover, and rollback pattern | Capture Rule, Pattern, Failure Mode, and rollback runbook candidates | Proof-backed production owner receipt |
-| Socials OS | Naming decision and distribution roadmap `SOC-024` | Replace planning assumptions with the exact production origin, merge/deployment IDs, compatibility alias, and route proof; do not edit application code | Socials OS owner review |
+| Socials OS | Production `/discover` exposes the verified Fitness app, Custom Workout Setup, Discord, main TikTok, and separate YouTube targets; four-destination removal gate is open | Remove only the four superseded LinkMe cards through the Socials OS owner lane, preserve YouTube separately, and verify the resulting public navigation | Exact FawxzzyWeb production receipt plus Socials OS-owned post-write proof |
 
 ## Reusable discoveries
 
@@ -62,3 +65,14 @@ The owner lane then completed the admitted production cluster without expanding 
    remain preserved.
 
 Exact evidence is in `docs/receipts/2026-07-16-fawxzzyweb-production-cutover.md`.
+
+## Trailer and discovery production refresh
+
+The operator later approved the proof-green trailer/discovery redesign for production. The owner
+lane merged existing PR #7 at `16c2730a3137a437a8b191e7f12aba25e6ba6cea` and deployed that exact
+merge to production deployment `dpl_6Z519Rjjo32HSCcZCX92DKQzYeSY` on the existing project. Public
+route, TLS, canonical, desktop, mobile, WCAG A/AA, icon, trailer, destination, and runtime proof
+passed without rollback.
+
+Exact refresh evidence is in
+`docs/receipts/2026-07-16-fawxzzyweb-trailer-discovery-production.md`.
