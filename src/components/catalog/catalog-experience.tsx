@@ -49,7 +49,7 @@ export function CatalogExperience({ compatibilityIdentity }: CatalogExperiencePr
         <section aria-labelledby="apps-title" className="hero surface-panel">
           <div className="hero__copy">
             <div className="hero__intro">
-              <p className="eyebrow">{productIdentity.name} / Apps</p>
+              <p className="eyebrow">{productIdentity.publicName} / Apps</p>
               <h1 className="hero__title" id="apps-title">
                 Apps, grounded in their real homes.
               </h1>
@@ -75,7 +75,7 @@ export function CatalogExperience({ compatibilityIdentity }: CatalogExperiencePr
                 Browse apps
               </a>
               <StaticLink className="catalog-button catalog-button--secondary" href="/">
-                FawxzzyWeb home
+                {productIdentity.publicName} home
               </StaticLink>
             </div>
           </div>

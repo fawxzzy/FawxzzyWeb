@@ -16,29 +16,25 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(productIdentity.canonicalOrigin),
   title: {
-    default: productIdentity.name,
-    template: `%s | ${productIdentity.name}`,
+    default: productIdentity.publicName,
+    template: `%s | ${productIdentity.publicName}`,
   },
   description: productIdentity.description,
-  applicationName: productIdentity.name,
+  applicationName: productIdentity.publicName,
   manifest: "/manifest.webmanifest",
   keywords: [
-    productIdentity.name,
-    "Fawxzzy",
+    productIdentity.publicName,
     "ATLAS",
     "apps",
     "software",
   ],
   appleWebApp: {
     capable: true,
-    title: productIdentity.name,
+    title: productIdentity.publicName,
     statusBarStyle: "black-translucent",
   },
   other: {
     "mobile-web-app-capable": "yes",
-    "apple-mobile-web-app-capable": "yes",
-    "apple-mobile-web-app-status-bar-style": "black-translucent",
-    "apple-mobile-web-app-title": productIdentity.name,
   },
   icons: {
     icon: [
@@ -57,9 +53,9 @@ export const metadata: Metadata = {
     ],
   },
   openGraph: {
-    title: productIdentity.name,
+    title: productIdentity.publicName,
     description: productIdentity.description,
-    siteName: productIdentity.name,
+    siteName: productIdentity.publicName,
     url: productIdentity.canonicalOrigin,
     type: "website",
     images: [
@@ -73,7 +69,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: productIdentity.name,
+    title: productIdentity.publicName,
     description: productIdentity.description,
     images: ["/brand/fawxzzy-banner.png"],
   },

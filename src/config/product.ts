@@ -1,6 +1,7 @@
 export const productIdentity = {
-  name: "FawxzzyWeb",
-  slug: "fawxzzyweb",
+  publicName: "Fawxzzy",
+  repositoryName: "FawxzzyWeb",
+  providerSlug: "fawxzzyweb",
   description:
     "The public home for Fawxzzy apps, product updates, and grounded links to independently owned experiences.",
   canonicalOrigin: "https://fawxzzy.com",

@@ -16,6 +16,10 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
+    {
+      name: "mobile-webkit",
+      use: { ...devices["iPhone 14"] },
+    },
   ],
   webServer: {
     command: "npm run start -- --host 127.0.0.1 --port 3210",

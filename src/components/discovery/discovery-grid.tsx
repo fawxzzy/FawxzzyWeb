@@ -52,7 +52,7 @@ export function DiscoveryGrid({ destinations }: DiscoveryGridProps) {
           {destination.temporaryBridge ? (
             <p className="discovery-card__bridge">
               <strong>Current bridge:</strong> Fitness owns the future intake replacement;
-              FawxzzyWeb stores no intake or payment state.
+              Fawxzzy stores no intake or payment state.
             </p>
           ) : null}
 

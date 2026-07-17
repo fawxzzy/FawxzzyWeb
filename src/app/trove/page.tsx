@@ -4,7 +4,7 @@ import { productIdentity } from "@/config/product";
 
 export const metadata: Metadata = {
   title: "Apps",
-  description: "Compatibility access to the FawxzzyWeb app catalog.",
+  description: "Compatibility access to the Fawxzzy app catalog.",
   alternates: {
     canonical: productIdentity.appsPath,
   },

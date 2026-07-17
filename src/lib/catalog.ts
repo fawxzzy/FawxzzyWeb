@@ -12,7 +12,7 @@ export function getAppActions(app: CatalogApp) {
   const actions: CatalogAction[] = [
     {
       label: "Open app",
-      href: app.liveUrl,
+      href: app.origin.current,
       kind: "external",
       emphasis: "primary",
       navigation: "new-tab",

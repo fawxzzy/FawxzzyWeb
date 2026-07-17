@@ -11,7 +11,7 @@ async function assertRoute(baseUrl, path, expectedText) {
 
   const html = await response.text();
   if (!html.includes(expectedText)) {
-    throw new Error(`${path} did not include the expected FawxzzyWeb contract text.`);
+    throw new Error(`${path} did not include the expected Fawxzzy public-brand text.`);
   }
 
   return html;
@@ -71,7 +71,7 @@ export async function assertSiteSmoke(baseUrl) {
       throw new Error(`/discover did not include grounded destination ${target}.`);
     }
   }
-  if (!discoverHtml.includes("FawxzzyWeb stores no intake or payment state")) {
+  if (!discoverHtml.includes("Fawxzzy stores no intake or payment state")) {
     throw new Error("The Fitness intake ownership boundary was not rendered.");
   }
 
@@ -106,7 +106,11 @@ export async function assertSiteSmoke(baseUrl) {
   }
 
   const manifest = await manifestResponse.json();
-  if (manifest.name !== "FawxzzyWeb" || manifest.start_url !== "/") {
-    throw new Error("Manifest identity did not match the FawxzzyWeb root contract.");
+  if (
+    manifest.name !== "Fawxzzy" ||
+    manifest.short_name !== "Fawxzzy" ||
+    manifest.start_url !== "/"
+  ) {
+    throw new Error("Manifest identity did not match the Fawxzzy public-brand contract.");
   }
 }

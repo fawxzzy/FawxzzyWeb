@@ -30,7 +30,7 @@ export const discoveryDestinations: DiscoveryDestination[] = [
     description:
       "Plan the work, log every set, and keep the full training history in the real Fitness product.",
     action: "Open Fitness",
-    href: fitness.liveUrl,
+    href: fitness.origin.current,
     icon: fitness.icon,
     owner: "Fitness",
   },
@@ -47,7 +47,7 @@ export const discoveryDestinations: DiscoveryDestination[] = [
     temporaryBridge: {
       futureOwner: "Fitness",
       replacementContract:
-        "Replace this external offer URL with the canonical Fitness-owned public intake route after Fitness ships and verifies it. FawxzzyWeb must not own intake, authentication, training data, or payment state.",
+        "Replace this external offer URL with the canonical Fitness-owned public intake route after Fitness ships and verifies it. Fawxzzy must not own intake, authentication, training data, or payment state.",
     },
   },
   {

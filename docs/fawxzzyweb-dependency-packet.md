@@ -10,6 +10,8 @@ Production cutover status: trailer/discovery redesign complete and proof-green a
 
 Canonical production contracts:
 
+- public display brand: `Fawxzzy`; repository/provider identities remain `FawxzzyWeb` and
+  `fawxzzyweb`;
 - public origin: `https://fawxzzy.com`;
 - canonical www behavior: `https://www.fawxzzy.com/` permanently redirects with `308` to
   `https://fawxzzy.com/`;
@@ -28,8 +30,8 @@ Canonical production contracts:
 | DiscordOS | Human board label `FawxzzyWeb` | Reconcile and rename through the serialized DiscordOS writer; preserve stable card history | Exact live readback before write |
 | Foundation | Existing GitHub/Vercel capabilities, project ID, and Cloudflare-authoritative public origin | Update capability labels and public-origin inventory without copying tokens or changing secret handling | Foundation-owned secret and audit policy |
 | Lifeline / `_stack` | Frozen Trove Wave 1 pins plus the live package/repo/origin identity | Preserve old release IDs and artifacts; add a successor manifest for `fawxzzyweb` only after the ATLAS path cutover | Manifest validation and rollback rehearsal |
-| Fitness | Catalog origin `https://fawxzzy-fitness-local.vercel.app` | No production-origin change; verify the catalog link and future domain packet independently | Fitness owner proof |
-| Mazer | Catalog origin `https://fawxzzy-mazer.vercel.app` | No production-origin change; verify the catalog link and future domain packet independently | Mazer owner proof |
+| Fitness | Current catalog origin `https://fawxzzy-fitness-local.vercel.app`; planned owner-lane canonical origin `https://fitness.fawxzzy.com` | Keep the current origin until Fitness independently captures rollback, proves preview and public cutover, and supplies an exact origin-update packet | Fitness owner proof and separate production/domain authority |
+| Mazer | Current catalog origin `https://fawxzzy-mazer.vercel.app`; planned owner-lane canonical origin `https://mazer.fawxzzy.com` | Keep the current origin until Mazer independently captures rollback, proves preview and public cutover, and supplies an exact origin-update packet | Mazer owner proof and separate production/domain authority |
 | Playbook | Identity classification, same-object provider rename, exact-commit deploy, external-DNS cutover, and rollback pattern | Capture Rule, Pattern, Failure Mode, and rollback runbook candidates | Proof-backed production owner receipt |
 | Socials OS | Production `/discover` exposes the verified Fitness app, Custom Workout Setup, Discord, main TikTok, and separate YouTube targets; four-destination removal gate is open | Remove only the four superseded LinkMe cards through the Socials OS owner lane, preserve YouTube separately, and verify the resulting public navigation | Exact FawxzzyWeb production receipt plus Socials OS-owned post-write proof |
 

@@ -1,18 +1,19 @@
 # FawxzzyWeb
 
-FawxzzyWeb is the public home for Fawxzzy apps, product updates, and grounded links to
-independently owned experiences. It preserves the source history of Trove while moving the
-app catalog to its canonical `/apps` route.
+FawxzzyWeb is the repository identity and codebase for the public `Fawxzzy` home: apps, product
+updates, and grounded links to independently owned experiences. It preserves the source history
+of Trove while moving the app catalog to its canonical `/apps` route. The provider and package
+slug remains `fawxzzyweb`.
 
 ## Route contract
 
-- `/` — canonical FawxzzyWeb root experience
+- `/` — canonical Fawxzzy root experience
 - `/apps` — canonical app catalog, sourced from `src/data/apps.ts`
 - `/discover` — centralized links to Fitness, custom-workout setup, Discord, TikTok, and YouTube
 - `/trove` — reversible, no-index compatibility route for the former Trove identity
 - `/apps/fitness/preview` — preserved deep link for the Fitness reference board
 - `/healthz.json` — static health and compatibility identity
-- `/manifest.webmanifest` — FawxzzyWeb install metadata
+- `/manifest.webmanifest` — Fawxzzy install metadata
 
 Fitness and Mazer remain independently owned and link to their existing production origins.
 The catalog does not synthesize cross-origin install behavior.
@@ -44,11 +45,11 @@ deep links, and compatibility rollback.
 
 ## Catalog contract
 
-Update `src/data/apps.ts` when the catalog changes. Each entry owns its grounded `liveUrl`,
-optional install URL, current app icon, trailer, poster, captions, provenance hashes, copy,
-and tags. Home and Apps both render icons from this one record, so an icon update cannot drift
-between catalog surfaces. The Playwright suite verifies every vendored icon, poster, and trailer
-against its recorded SHA-256 hash.
+Update `src/data/apps.ts` when the catalog changes. Each entry owns its current launch origin,
+planned canonical subdomain, rollback origins, current app icon, trailer, poster, captions,
+provenance hashes, copy, and tags. Home, Apps, and Discover consume this record so an icon or
+origin update cannot drift between surfaces. The Playwright suite verifies every vendored icon,
+poster, and trailer against its recorded SHA-256 hash.
 
 The Apps catalog uses always-visible, user-controlled HTML video with `preload="none"` and a
 caption track. The historical screenshot rail and inline Fitness preview board were replaced by
@@ -61,12 +62,17 @@ Current media sources:
 - Fitness icon: exact public readback of the current production PWA `icon-512.png`.
 - Fitness trailer: approved Socials OS `FITNESS-LAUNCH-TRAILER-V1` master and cover.
 - Mazer icon: exact public readback of the current production `mazer-app-icon.png`.
-- Mazer trailer: FawxzzyWeb-owned montage from the existing owned Mazer catalog captures.
+- Mazer trailer: Fawxzzy-owned montage from the existing owned Mazer catalog captures.
 
 Current grounded origins:
 
 - Fitness: `https://fawxzzy-fitness-local.vercel.app`
 - Mazer: `https://fawxzzy-mazer.vercel.app`
+
+Planned owner-lane canonical origins (not live and not authorized by this repository change):
+
+- Fitness: `https://fitness.fawxzzy.com`
+- Mazer: `https://mazer.fawxzzy.com`
 
 Do not guess app domains. Prefer an attached custom domain proven by provider readback;
 otherwise use the stable project `.vercel.app` production origin. Omit an ungrounded CTA.
@@ -78,8 +84,8 @@ surface renders Fitness, the current Fitness-owned custom-workout offer, Discord
 and canonical YouTube from that single record. YouTube stays a separate destination.
 
 The custom-workout Stripe URL is a temporary external bridge. Fitness owns the future canonical
-intake route; FawxzzyWeb must not duplicate intake, authentication, training data, or payment
-state. The replacement and Socials OS removal gates are documented in
+intake route; the Fawxzzy public hub must not duplicate intake, authentication, training data, or
+payment state. The replacement and Socials OS removal gates are documented in
 `docs/discovery-routing.md`.
 
 ## Static export
@@ -95,6 +101,7 @@ Component route-data requests that a generic static host may not expose.
 ## Identity and rollback
 
 - `docs/fawxzzyweb-identity-classification.md`
+- `docs/brand-and-app-origin-contract.md`
 - `docs/fawxzzyweb-migration-and-rollback.md`
 - `docs/fawxzzyweb-dependency-packet.md`
 
