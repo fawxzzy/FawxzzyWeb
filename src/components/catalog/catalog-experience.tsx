@@ -1,7 +1,7 @@
-import Image from "next/image";
-import Link from "next/link";
 import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
 import { AppSection } from "@/components/catalog/app-section";
+import { SiteNav } from "@/components/site/site-nav";
+import { StaticLink } from "@/components/site/static-link";
 import { productIdentity } from "@/config/product";
 import { apps } from "@/data/apps";
 
@@ -31,22 +31,16 @@ export function CatalogExperience({ compatibilityIdentity }: CatalogExperiencePr
       />
 
       <div className="shell-container">
-        <nav aria-label="Primary" className="site-nav surface-panel">
-          <Link className="site-nav__brand" href="/">
-            {productIdentity.name}
-          </Link>
-          <div className="site-nav__links">
-            <Link href="/">Home</Link>
-            <Link aria-current="page" href={productIdentity.appsPath}>
-              Apps
-            </Link>
-          </div>
-        </nav>
+        <SiteNav current="apps" />
 
         {compatibilityIdentity ? (
           <aside className="compatibility-note" aria-label="Compatibility route notice">
             <p>
-              The Trove catalog now lives at <Link href={productIdentity.appsPath}>/apps</Link>.
+              The Trove catalog now lives at{" "}
+              <StaticLink href={productIdentity.appsPath}>
+                /apps
+              </StaticLink>
+              .
               This route remains available as a reversible compatibility surface.
             </p>
           </aside>
@@ -60,17 +54,19 @@ export function CatalogExperience({ compatibilityIdentity }: CatalogExperiencePr
                 Apps, grounded in their real homes.
               </h1>
               <p className="hero__lede readable-column">
-                Browse the Fawxzzy app catalog. Fitness and Mazer stay independently owned and
-                open on their established production origins.
+                Watch each product first, then open it at its real home. Fitness and Mazer stay
+                independently owned on their established production origins.
               </p>
-              <div className="hero__art hero__art--inline">
-                <Image
-                  alt="Trove catalog fox mark"
-                  height={1280}
-                  src="/brand/trove-foxmark.png"
-                  unoptimized
-                  width={1280}
-                />
+              <div className="catalog-hero__stats" aria-label="Catalog summary">
+                <span>
+                  <strong>{apps.length}</strong> live apps
+                </span>
+                <span>
+                  <strong>{apps.length}</strong> trailers
+                </span>
+                <span>
+                  <strong>1</strong> shared media source
+                </span>
               </div>
             </div>
 
@@ -78,9 +74,9 @@ export function CatalogExperience({ compatibilityIdentity }: CatalogExperiencePr
               <a className="catalog-button catalog-button--primary" href="#catalog">
                 Browse apps
               </a>
-              <Link className="catalog-button catalog-button--secondary" href="/">
+              <StaticLink className="catalog-button catalog-button--secondary" href="/">
                 FawxzzyWeb home
-              </Link>
+              </StaticLink>
             </div>
           </div>
         </section>

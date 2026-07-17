@@ -8,6 +8,7 @@ app catalog to its canonical `/apps` route.
 
 - `/` — canonical FawxzzyWeb root experience
 - `/apps` — canonical app catalog, sourced from `src/data/apps.ts`
+- `/discover` — centralized links to Fitness, custom-workout setup, Discord, TikTok, and YouTube
 - `/trove` — reversible, no-index compatibility route for the former Trove identity
 - `/apps/fitness/preview` — preserved deep link for the Fitness reference board
 - `/healthz.json` — static health and compatibility identity
@@ -38,13 +39,29 @@ npm run verify
 ```
 
 `npm run verify` runs lint, a static export, route/identity smoke checks, and route-aware
-Playwright checks for metadata, catalog truth, accessibility, mobile overflow, deep links,
-and compatibility rollback.
+Playwright checks for metadata, catalog and discovery truth, accessibility, mobile overflow,
+deep links, and compatibility rollback.
 
 ## Catalog contract
 
 Update `src/data/apps.ts` when the catalog changes. Each entry owns its grounded `liveUrl`,
-optional install URL, asset provenance, screenshots, copy, and tags.
+optional install URL, current app icon, trailer, poster, captions, provenance hashes, copy,
+and tags. Home and Apps both render icons from this one record, so an icon update cannot drift
+between catalog surfaces. The Playwright suite verifies every vendored icon, poster, and trailer
+against its recorded SHA-256 hash.
+
+The Apps catalog uses always-visible, user-controlled HTML video with `preload="none"` and a
+caption track. The historical screenshot rail and inline Fitness preview board were replaced by
+these trailer surfaces; `/apps/fitness/preview` remains available as a preserved deep link.
+
+Current media sources:
+
+- Fawxzzy brand artwork: operator-approved Socials OS derivatives from
+  `assets/brand/manifest.json`.
+- Fitness icon: exact public readback of the current production PWA `icon-512.png`.
+- Fitness trailer: approved Socials OS `FITNESS-LAUNCH-TRAILER-V1` master and cover.
+- Mazer icon: exact public readback of the current production `mazer-app-icon.png`.
+- Mazer trailer: FawxzzyWeb-owned montage from the existing owned Mazer catalog captures.
 
 Current grounded origins:
 
@@ -54,11 +71,26 @@ Current grounded origins:
 Do not guess app domains. Prefer an attached custom domain proven by provider readback;
 otherwise use the stable project `.vercel.app` production origin. Omit an ungrounded CTA.
 
+## Discovery contract
+
+Update `src/data/discovery.ts` when a public discovery destination changes. The `/discover`
+surface renders Fitness, the current Fitness-owned custom-workout offer, Discord, main TikTok,
+and canonical YouTube from that single record. YouTube stays a separate destination.
+
+The custom-workout Stripe URL is a temporary external bridge. Fitness owns the future canonical
+intake route; FawxzzyWeb must not duplicate intake, authentication, training data, or payment
+state. The replacement and Socials OS removal gates are documented in
+`docs/discovery-routing.md`.
+
 ## Static export
 
 FawxzzyWeb remains a Next.js static export. Keep routes build-time deterministic, avoid
 server-only runtime behavior, and use real static compatibility pages because Next.js config
 redirects are not supported with `output: "export"`.
+
+Internal route links render through `src/components/site/static-link.tsx`. They deliberately use
+native document navigation so the exported site never depends on speculative React Server
+Component route-data requests that a generic static host may not expose.
 
 ## Identity and rollback
 

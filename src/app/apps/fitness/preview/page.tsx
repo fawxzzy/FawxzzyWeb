@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
 import { FitnessPreviewBoard } from "@/components/catalog/fitness-preview-board";
+import { StaticLink } from "@/components/site/static-link";
 
 export const metadata: Metadata = {
   title: "Fitness Preview Board",
@@ -30,9 +30,12 @@ export default function FitnessPreviewBoardPage() {
 
       <div className="shell-container relative z-10 space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-stroke/25 bg-panel/70 p-3 shadow-[0_18px_54px_rgba(0,0,0,0.24)] backdrop-blur">
-          <Link className="catalog-button catalog-button--secondary" href="/apps#fitness">
-            Back to Fitness preview
-          </Link>
+          <StaticLink
+            className="catalog-button catalog-button--secondary"
+            href="/apps#fitness-trailer"
+          >
+            Back to Fitness trailer
+          </StaticLink>
           <a className="catalog-button catalog-button--primary" href="https://fawxzzy-fitness-local.vercel.app" rel="noreferrer" target="_blank">
             Open Fitness app
           </a>

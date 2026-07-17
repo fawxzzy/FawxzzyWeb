@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Image from "next/image";
 import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
+import { SiteNav } from "@/components/site/site-nav";
+import { StaticLink } from "@/components/site/static-link";
 import { productIdentity } from "@/config/product";
 import { apps } from "@/data/apps";
 
@@ -30,17 +32,7 @@ export default function Home() {
       />
 
       <div className="shell-container home-shell">
-        <nav aria-label="Primary" className="site-nav surface-panel">
-          <Link aria-current="page" className="site-nav__brand" href="/">
-            {productIdentity.name}
-          </Link>
-          <div className="site-nav__links">
-            <Link aria-current="page" href="/">
-              Home
-            </Link>
-            <Link href={productIdentity.appsPath}>Apps</Link>
-          </div>
-        </nav>
+        <SiteNav current="home" />
 
         <section aria-labelledby="home-title" className="home-hero surface-panel">
           <div className="home-hero__copy">
@@ -51,18 +43,30 @@ export default function Home() {
               Each app keeps its own product identity and production origin.
             </p>
             <div className="hero__actions">
-              <Link className="catalog-button catalog-button--primary" href={productIdentity.appsPath}>
+              <StaticLink
+                className="catalog-button catalog-button--primary"
+                href={productIdentity.appsPath}
+              >
                 Explore apps
-              </Link>
-              <a className="catalog-button catalog-button--secondary" href="#featured-apps">
-                See what is here
-              </a>
+              </StaticLink>
+              <StaticLink
+                className="catalog-button catalog-button--secondary"
+                href="/discover"
+              >
+                Start here
+              </StaticLink>
             </div>
           </div>
 
-          <div aria-label="FawxzzyWeb identity" className="home-hero__mark">
-            <span>FW</span>
-            <small>{productIdentity.slug}</small>
+          <div className="home-hero__artwork">
+            <Image
+              alt="Fawxzzy — build, train, create"
+              height={500}
+              priority
+              src="/brand/fawxzzy-banner.png"
+              unoptimized
+              width={1500}
+            />
           </div>
         </section>
 
@@ -76,10 +80,20 @@ export default function Home() {
           <div className="home-app-grid">
             {apps.map((app) => (
               <article className="home-app-card surface-panel" key={app.slug}>
-                <div>
-                  <p className="field-label">{app.tags.join(" / ")}</p>
-                  <h3>{app.name}</h3>
-                  <p>{app.tagline}</p>
+                <div className="home-app-card__identity">
+                  <Image
+                    alt={`${app.name} icon`}
+                    className="home-app-card__icon"
+                    height={96}
+                    src={app.icon.src}
+                    unoptimized
+                    width={96}
+                  />
+                  <div>
+                    <p className="field-label">{app.tags.join(" / ")}</p>
+                    <h3>{app.name}</h3>
+                    <p>{app.tagline}</p>
+                  </div>
                 </div>
                 <div className="home-app-card__actions">
                   <a
@@ -90,16 +104,33 @@ export default function Home() {
                   >
                     Open {app.name}
                   </a>
-                  <Link
+                  <StaticLink
                     className="catalog-button catalog-button--secondary"
-                    href={`${productIdentity.appsPath}#${app.slug}`}
+                    href={`${productIdentity.appsPath}#${app.name.toLowerCase()}-trailer`}
                   >
-                    View in catalog
-                  </Link>
+                    Watch trailer
+                  </StaticLink>
                 </div>
               </article>
             ))}
           </div>
+        </section>
+
+        <section aria-labelledby="discover-title" className="discovery-callout surface-panel">
+          <div>
+            <p className="eyebrow">Everything else, still grounded</p>
+            <h2 id="discover-title">Training help, Discord, TikTok, and YouTube.</h2>
+            <p>
+              One verified map to the current public destinations—without duplicating what those
+              products and communities already own.
+            </p>
+          </div>
+          <StaticLink
+            className="catalog-button catalog-button--primary"
+            href="/discover"
+          >
+            Open discovery hub
+          </StaticLink>
         </section>
       </div>
     </main>

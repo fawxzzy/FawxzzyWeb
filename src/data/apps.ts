@@ -1,15 +1,17 @@
 export type CatalogActionLabel = "Open app";
 
 export type CatalogAsset = {
-  src: string;
+  sha256: string;
   source: string;
+  src: string;
 };
 
-export type CatalogScreenshot = {
-  alt: string;
-  caption: string;
-  src: string;
-  source: string;
+export type CatalogTrailer = {
+  captionsSrc: string;
+  description: string;
+  durationLabel: string;
+  poster: CatalogAsset;
+  video: CatalogAsset;
 };
 
 type Accent = {
@@ -20,15 +22,15 @@ type Accent = {
 };
 
 export type CatalogApp = {
+  accent: Accent;
+  icon: CatalogAsset;
+  installUrl: string | null;
+  liveUrl: string;
   name: string;
   slug: string;
   tagline: string;
-  liveUrl: string;
-  installUrl: string | null;
-  icon: CatalogAsset;
   tags: string[];
-  accent: Accent;
-  screenshots: CatalogScreenshot[];
+  trailer: CatalogTrailer;
 };
 
 export const apps: CatalogApp[] = [
@@ -39,8 +41,10 @@ export const apps: CatalogApp[] = [
     liveUrl: "https://fawxzzy-fitness-local.vercel.app",
     installUrl: "https://fawxzzy-fitness-local.vercel.app",
     icon: {
-      src: "/apps/fitness/icon-192.png",
-      source: "Vendored copy of fawxzzy-fitness public/app/icon-192.png stored in FawxzzyWeb catalog assets",
+      src: "/apps/fitness/icon.png",
+      sha256: "5F1011EF2DB7A4725E991D5FB6347F3E589028669F74BC35F273E6E800F11F03",
+      source:
+        "Exact public readback of the current Fawxzzy Fitness production PWA icon at /app/icon-512.png on July 16, 2026",
     },
     tags: ["PWA", "Workouts", "History"],
     accent: {
@@ -49,46 +53,35 @@ export const apps: CatalogApp[] = [
       panel: "rgba(8, 14, 10, 0.92)",
       to: "#5C725D",
     },
-    screenshots: [
-      {
-        alt: "Fitness today dashboard",
-        caption: "Today dashboard",
-        src: "/apps/fitness/screenshots/today-dashboard.png",
+    trailer: {
+      durationLabel: "0:30",
+      description:
+        "The approved launch trailer pairs real product proof with the Fawxzzy Fitness visual system.",
+      captionsSrc: "/apps/fitness/trailer-captions.vtt",
+      video: {
+        src: "/apps/fitness/trailer.mp4",
+        sha256: "B89E8562D9FEC17A2746963187EB3EAB5B1CFF9D7AF3F3194A24F49007A627B6",
         source:
-          "Authenticated local capture from http://127.0.0.1:3010/today using existing Fitness runtime session data on April 24, 2026",
+          "Socials OS FITNESS-LAUNCH-TRAILER-V1 approved public master, rendered from deterministic synthetic fixtures",
       },
-      {
-        alt: "Fitness session history",
-        caption: "Session history",
-        src: "/apps/fitness/screenshots/session-history.png",
-        source:
-          "Authenticated local capture from http://127.0.0.1:3010/history using existing Fitness runtime session data on April 24, 2026",
+      poster: {
+        src: "/apps/fitness/trailer-poster.png",
+        sha256: "9249FC0D44D1B026E646A8787E05C7E0E9DE581D402C3C4438757576B3F86226",
+        source: "Socials OS FITNESS-LAUNCH-TRAILER-V1 deterministic cover derivative",
       },
-      {
-        alt: "Fitness routine planner",
-        caption: "Routine planner",
-        src: "/apps/fitness/screenshots/routine-planner.png",
-        source:
-          "Authenticated local capture from http://127.0.0.1:3010/routines using existing Fitness runtime session data on April 24, 2026",
-      },
-      {
-        alt: "Fitness exercise history",
-        caption: "Exercise history",
-        src: "/apps/fitness/screenshots/exercise-history.png",
-        source:
-          "Authenticated local capture from http://127.0.0.1:3010/exercises using existing Fitness runtime session data on April 24, 2026",
-      },
-    ],
+    },
   },
   {
     name: "Mazer",
     slug: "mazer",
-    tagline: "An atmospheric maze experience tuned for watch mode, play mode, and installable ambient play.",
+    tagline: "An atmospheric maze experience tuned for watch mode, play mode, and ambient runs.",
     liveUrl: "https://fawxzzy-mazer.vercel.app",
     installUrl: "https://fawxzzy-mazer.vercel.app",
     icon: {
-      src: "/apps/mazer/icon.svg",
-      source: "Vendored copy of fawxzzy-mazer public/icons/mazer-emblem.svg stored in FawxzzyWeb catalog assets",
+      src: "/apps/mazer/icon.png",
+      sha256: "91764E546B8C1488B3D48BAEDA927AE18600B088178E190244FB9D8CE35E2440",
+      source:
+        "Exact public readback of the current Mazer production app icon at /icons/mazer-app-icon.png on July 16, 2026",
     },
     tags: ["Game", "Installable", "Ambient"],
     accent: {
@@ -97,34 +90,24 @@ export const apps: CatalogApp[] = [
       panel: "rgba(8, 14, 10, 0.92)",
       to: "#A4B5A3",
     },
-    screenshots: [
-      {
-        alt: "Mazer core watch mode",
-        caption: "Core watch mode",
-        src: "/apps/mazer/screenshots/core-watch.png",
+    trailer: {
+      durationLabel: "0:23",
+      description:
+        "A FawxzzyWeb-owned montage turns the established Mazer catalog captures into one compact watch, play, and mobile story.",
+      captionsSrc: "/apps/mazer/trailer-captions.vtt",
+      video: {
+        src: "/apps/mazer/trailer.mp4",
+        sha256: "B2852D2E8E755D3B3FC219A906C625B10A1292A6AC42B78B3311E66B7D938AA3",
         source:
-          "Repo-owned Edge live capture from http://127.0.0.1:4173/?content=core-only via the core-only-watch run on April 24, 2026",
+          "FawxzzyWeb catalog montage rendered from the existing owned Mazer watch, play, mobile, and theme captures",
       },
-      {
-        alt: "Mazer mobile watch shell",
-        caption: "Mobile watch shell",
-        src: "/apps/mazer/screenshots/mobile-watch.png",
+      poster: {
+        src: "/apps/mazer/trailer-poster.png",
+        sha256: "3974B6F08A19A380DD9795C7E781FDB80C45D53F60D961465E4473A4EF9B2D54",
         source:
-          "Repo-owned Edge live capture from http://127.0.0.1:4173/?content=core-only via the phone-portrait core-only-watch run on April 24, 2026",
+          "FawxzzyWeb catalog poster rendered from the Mazer montage with the Socials OS Fawxzzy wolf master",
       },
-      {
-        alt: "Mazer Watch Pass preview shell",
-        caption: "Watch Pass preview",
-        src: "/apps/mazer/screenshots/watch-pass-preview.png",
-        source: "Repo-owned Edge live capture from the local watch-pass-preview shell on April 24, 2026",
-      },
-      {
-        alt: "Mazer Watch Pass setup shell",
-        caption: "Watch Pass setup",
-        src: "/apps/mazer/screenshots/watch-pass-setup.png",
-        source: "Repo-owned Edge live capture from the local watch-pass-setup shell on April 24, 2026",
-      },
-    ],
+    },
   },
 ];
 

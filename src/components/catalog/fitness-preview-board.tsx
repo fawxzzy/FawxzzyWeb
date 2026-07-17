@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import { StaticLink } from "@/components/site/static-link";
 import {
   fitnessPreviewLayers,
   getFitnessPreviewStats,
@@ -93,9 +93,12 @@ export function FitnessPreviewBoard({ variant = "page" }: FitnessPreviewBoardPro
 
         {isInline ? (
           <div className="mt-4 flex flex-wrap gap-3">
-            <Link className="catalog-button catalog-button--secondary" href="/apps/fitness/preview">
+            <StaticLink
+              className="catalog-button catalog-button--secondary"
+              href="/apps/fitness/preview"
+            >
               Open full board
-            </Link>
+            </StaticLink>
           </div>
         ) : null}
       </div>
