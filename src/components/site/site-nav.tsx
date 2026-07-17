@@ -1,9 +1,10 @@
 import Image from "next/image";
 import { StaticLink } from "@/components/site/static-link";
+import { accountUrls } from "@/config/account";
 import { productIdentity } from "@/config/product";
 
 type SiteNavProps = {
-  current: "apps" | "discover" | "home";
+  current: "account" | "apps" | "discover" | "home";
 };
 
 export function SiteNav({ current }: SiteNavProps) {
@@ -40,6 +41,12 @@ export function SiteNav({ current }: SiteNavProps) {
           href="/discover"
         >
           Discover
+        </StaticLink>
+        <StaticLink
+          aria-current={current === "account" ? "page" : undefined}
+          href={current === "account" ? "/account" : accountUrls.account}
+        >
+          Account
         </StaticLink>
       </div>
     </nav>

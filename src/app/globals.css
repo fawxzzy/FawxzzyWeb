@@ -540,7 +540,8 @@ img {
   }
 
   .site-nav__links a {
-    padding-inline: 0.68rem;
+    padding-inline: 0.58rem;
+    font-size: 0.78rem;
   }
 
   .home-hero {
@@ -578,6 +579,316 @@ img {
   .discovery-card--custom-workout {
     grid-column: auto;
     min-height: auto;
+  }
+}
+
+.account-page {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  padding: 1rem 0 4.5rem;
+}
+
+.account-shell {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 1.25rem;
+  width: min(840px, calc(100vw - 1.5rem));
+}
+
+.account-hero,
+.account-card {
+  border-radius: 32px;
+  padding: clamp(1.25rem, 5vw, 2.75rem);
+}
+
+.account-hero h1 {
+  max-width: 10ch;
+  margin: 0.45rem 0 0.9rem;
+  font-size: clamp(2.5rem, 9vw, 5rem);
+  font-weight: 680;
+  line-height: 0.95;
+  letter-spacing: -0.06em;
+}
+
+.account-hero > p:last-child,
+.account-card__heading > p:last-child,
+.account-capability p,
+.account-empty-state p {
+  color: rgb(var(--muted));
+  line-height: 1.68;
+}
+
+.account-hero > p:last-child {
+  max-width: 40rem;
+  margin: 0;
+  font-size: clamp(1rem, 2.4vw, 1.15rem);
+}
+
+.account-card {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.account-card__heading {
+  max-width: 38rem;
+}
+
+.account-card__heading h2,
+.account-capability h3 {
+  margin: 0.4rem 0 0.65rem;
+  letter-spacing: -0.045em;
+}
+
+.account-card__heading h2 {
+  font-size: clamp(2rem, 6vw, 3.25rem);
+}
+
+.account-card__heading p,
+.account-capability p {
+  margin: 0;
+}
+
+.account-runtime-note {
+  width: fit-content;
+  margin: 0;
+  border: 1px solid rgb(var(--accent) / 0.2);
+  border-radius: 999px;
+  background: rgb(var(--accent) / 0.08);
+  color: rgb(var(--muted));
+  padding: 0.48rem 0.7rem;
+  font-size: 0.76rem;
+  font-weight: 620;
+}
+
+.account-segmented {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.3rem;
+  border: 1px solid rgb(var(--stroke) / 0.3);
+  border-radius: 18px;
+  background: rgb(var(--canvas) / 0.45);
+  padding: 0.3rem;
+}
+
+.account-segmented button {
+  min-height: 2.9rem;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: rgb(var(--muted));
+  font: inherit;
+  font-weight: 680;
+  cursor: pointer;
+}
+
+.account-segmented button[aria-pressed="true"] {
+  background: rgb(var(--accent) / 0.16);
+  color: rgb(var(--text));
+}
+
+.account-segmented button:focus-visible,
+.account-form input:focus-visible,
+.account-card a:focus-visible,
+.account-card button:focus-visible,
+.account-footer a:focus-visible {
+  outline: 3px solid rgb(var(--accent) / 0.66);
+  outline-offset: 3px;
+}
+
+.account-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.account-form label {
+  display: grid;
+  gap: 0.48rem;
+  min-width: 0;
+  color: rgb(var(--muted));
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+
+.account-form input {
+  width: 100%;
+  min-width: 0;
+  min-height: 3.2rem;
+  border: 1px solid rgb(var(--stroke) / 0.46);
+  border-radius: 16px;
+  background: rgb(var(--canvas) / 0.64);
+  color: rgb(var(--text));
+  padding: 0.8rem 0.9rem;
+  font: inherit;
+  font-size: 1rem;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.account-form input::placeholder {
+  color: rgb(var(--subtle));
+}
+
+.account-form button:disabled,
+.account-segmented button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.account-notice {
+  display: grid;
+  gap: 0.25rem;
+  border: 1px solid rgb(var(--stroke) / 0.28);
+  border-radius: 18px;
+  padding: 0.9rem 1rem;
+  line-height: 1.5;
+}
+
+.account-notice span {
+  color: rgb(var(--muted));
+}
+
+.account-notice--info {
+  background: rgb(var(--accent) / 0.08);
+}
+
+.account-notice--success {
+  border-color: rgb(var(--accent) / 0.38);
+  background: rgb(var(--accent) / 0.13);
+}
+
+.account-notice--error {
+  border-color: rgb(204 128 115 / 0.48);
+  background: rgb(112 48 40 / 0.22);
+}
+
+.account-card__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem 1.2rem;
+  color: rgb(var(--muted));
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+.account-card__links a,
+.account-footer a {
+  text-decoration: underline;
+  text-decoration-color: rgb(var(--accent) / 0.5);
+  text-underline-offset: 0.28em;
+}
+
+.account-settings {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.account-session-row,
+.account-capability,
+.account-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid rgb(var(--stroke) / 0.26);
+  border-radius: 22px;
+  background: rgb(var(--canvas) / 0.34);
+  padding: 1rem;
+}
+
+.account-session-row > div {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.account-session-row strong {
+  overflow-wrap: anywhere;
+}
+
+.account-form--compact {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.account-form--compact .catalog-button {
+  min-height: 3.2rem;
+}
+
+.account-capability {
+  align-items: flex-end;
+  margin-top: 0.4rem;
+}
+
+.account-capability > div {
+  max-width: 34rem;
+}
+
+.account-capability h3 {
+  font-size: clamp(1.35rem, 4vw, 1.8rem);
+}
+
+.account-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: rgb(var(--subtle));
+  padding: 0.5rem 0.35rem;
+  font-size: 0.8rem;
+}
+
+.account-footer p {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .account-page {
+    padding-top: 0.6rem;
+  }
+
+  .account-shell {
+    width: min(840px, calc(100vw - 1rem));
+  }
+
+  .account-hero,
+  .account-card {
+    border-radius: 26px;
+    padding: 1.2rem;
+  }
+
+  .account-hero h1 {
+    font-size: clamp(2.5rem, 13vw, 3.6rem);
+  }
+
+  .account-form--compact,
+  .account-session-row,
+  .account-capability,
+  .account-empty-state,
+  .account-footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .account-form--compact .catalog-button,
+  .account-session-row .catalog-button,
+  .account-capability .catalog-button,
+  .account-empty-state .catalog-button {
+    width: 100%;
+  }
+
+  .site-nav__brand span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
   }
 }
 
