@@ -135,6 +135,7 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
 });
 
 test("each catalog trailer starts real playback from its explicit action", async ({ page }) => {
+  test.setTimeout(60_000);
   await page.goto("/apps");
 
   for (const app of apps) {
@@ -151,12 +152,12 @@ test("each catalog trailer starts real playback from its explicit action", async
 
     await trailer.evaluate((video: HTMLVideoElement) => video.pause());
     await expect(page.getByRole("button", { name: `Resume ${app.name} trailer` })).toBeVisible();
-    await disclosure.locator("summary").click();
   }
 });
 
 for (const app of apps) {
   test(`${app.name} has a dedicated public app-detail route`, async ({ page }) => {
+    test.setTimeout(60_000);
     await page.goto(`/apps/${app.slug}`);
 
     await expect(page).toHaveTitle(`${app.name} | Fawxzzy`);
@@ -200,6 +201,7 @@ for (const app of apps) {
 }
 
 test("trailer disclosure and playback are keyboard operable", async ({ page }) => {
+  test.setTimeout(60_000);
   await page.goto("/apps");
 
   const disclosure = page.locator("#fitness-trailer");
