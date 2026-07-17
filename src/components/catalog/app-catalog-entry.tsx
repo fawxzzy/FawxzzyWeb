@@ -10,7 +10,7 @@ export function AppCatalogEntry({ app }: AppCatalogEntryProps) {
   return (
     <article className="app-catalog-entry" id={app.slug}>
       <AppStoreCard app={app} />
-      <TrailerDisclosure app={app} />
+      <TrailerDisclosure appName={app.name} appSlug={app.slug} trailer={app.trailer} />
     </article>
   );
 }

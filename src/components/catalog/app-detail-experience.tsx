@@ -87,7 +87,7 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
             </ul>
           </section>
 
-          <TrailerDisclosure app={app} />
+          <TrailerDisclosure appName={app.name} appSlug={app.slug} trailer={app.trailer} />
         </div>
 
         <section aria-labelledby="screenshots-title" className="app-screenshots-section">

@@ -1,14 +1,16 @@
 "use client";
 
 import { useRef } from "react";
-import type { CatalogApp } from "@/data/apps";
+import type { CatalogTrailer } from "@/data/apps";
 import { TrailerPlayer } from "@/components/catalog/trailer-player";
 
 type TrailerDisclosureProps = {
-  app: CatalogApp;
+  appName: string;
+  appSlug: string;
+  trailer: CatalogTrailer;
 };
 
-export function TrailerDisclosure({ app }: TrailerDisclosureProps) {
+export function TrailerDisclosure({ appName, appSlug, trailer }: TrailerDisclosureProps) {
   const disclosureRef = useRef<HTMLDetailsElement>(null);
 
   function handleToggle() {
@@ -22,25 +24,25 @@ export function TrailerDisclosure({ app }: TrailerDisclosureProps) {
   return (
     <details
       className="trailer-disclosure"
-      id={`${app.slug}-trailer`}
+      id={`${appSlug}-trailer`}
       onToggle={handleToggle}
       ref={disclosureRef}
     >
       <summary>
         <span>
           <span className="trailer-disclosure__label">Trailer</span>
-          <strong>Watch {app.name} in motion</strong>
+          <strong>Watch {appName} in motion</strong>
         </span>
         <span className="trailer-disclosure__meta">
-          {app.trailer.durationLabel}
+          {trailer.durationLabel}
           <span aria-hidden="true" className="trailer-disclosure__chevron">
             ↓
           </span>
         </span>
       </summary>
       <div className="trailer-disclosure__body">
-        <p>{app.trailer.description}</p>
-        <TrailerPlayer appName={app.name} appSlug={app.slug} trailer={app.trailer} />
+        <p>{trailer.description}</p>
+        <TrailerPlayer appName={appName} appSlug={appSlug} trailer={trailer} />
       </div>
     </details>
   );
