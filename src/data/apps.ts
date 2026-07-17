@@ -14,6 +14,12 @@ export type CatalogTrailer = {
   video: CatalogAsset;
 };
 
+export type CatalogOriginContract = {
+  current: string;
+  plannedCanonical: string;
+  preserveOnCutover: string[];
+};
+
 type Accent = {
   from: string;
   glow: string;
@@ -24,9 +30,8 @@ type Accent = {
 export type CatalogApp = {
   accent: Accent;
   icon: CatalogAsset;
-  installUrl: string | null;
-  liveUrl: string;
   name: string;
+  origin: CatalogOriginContract;
   slug: string;
   tagline: string;
   tags: string[];
@@ -38,8 +43,11 @@ export const apps: CatalogApp[] = [
     name: "Fitness",
     slug: "fitness",
     tagline: "Training plans, workout logging, and session history in one mobile-first shell.",
-    liveUrl: "https://fawxzzy-fitness-local.vercel.app",
-    installUrl: "https://fawxzzy-fitness-local.vercel.app",
+    origin: {
+      current: "https://fawxzzy-fitness-local.vercel.app",
+      plannedCanonical: "https://fitness.fawxzzy.com",
+      preserveOnCutover: ["https://fawxzzy-fitness-local.vercel.app"],
+    },
     icon: {
       src: "/apps/fitness/icon.png",
       sha256: "5F1011EF2DB7A4725E991D5FB6347F3E589028669F74BC35F273E6E800F11F03",
@@ -75,8 +83,11 @@ export const apps: CatalogApp[] = [
     name: "Mazer",
     slug: "mazer",
     tagline: "An atmospheric maze experience tuned for watch mode, play mode, and ambient runs.",
-    liveUrl: "https://fawxzzy-mazer.vercel.app",
-    installUrl: "https://fawxzzy-mazer.vercel.app",
+    origin: {
+      current: "https://fawxzzy-mazer.vercel.app",
+      plannedCanonical: "https://mazer.fawxzzy.com",
+      preserveOnCutover: ["https://fawxzzy-mazer.vercel.app"],
+    },
     icon: {
       src: "/apps/mazer/icon.png",
       sha256: "91764E546B8C1488B3D48BAEDA927AE18600B088178E190244FB9D8CE35E2440",
@@ -93,19 +104,19 @@ export const apps: CatalogApp[] = [
     trailer: {
       durationLabel: "0:23",
       description:
-        "A FawxzzyWeb-owned montage turns the established Mazer catalog captures into one compact watch, play, and mobile story.",
+        "A Fawxzzy-owned montage turns the established Mazer catalog captures into one compact watch, play, and mobile story.",
       captionsSrc: "/apps/mazer/trailer-captions.vtt",
       video: {
         src: "/apps/mazer/trailer.mp4",
         sha256: "B2852D2E8E755D3B3FC219A906C625B10A1292A6AC42B78B3311E66B7D938AA3",
         source:
-          "FawxzzyWeb catalog montage rendered from the existing owned Mazer watch, play, mobile, and theme captures",
+          "Fawxzzy catalog montage rendered from the existing owned Mazer watch, play, mobile, and theme captures",
       },
       poster: {
         src: "/apps/mazer/trailer-poster.png",
         sha256: "3974B6F08A19A380DD9795C7E781FDB80C45D53F60D961465E4473A4EF9B2D54",
         source:
-          "FawxzzyWeb catalog poster rendered from the Mazer montage with the Socials OS Fawxzzy wolf master",
+          "Fawxzzy catalog poster rendered from the Mazer montage with the Socials OS Fawxzzy wolf master",
       },
     },
   },

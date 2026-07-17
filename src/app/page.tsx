@@ -7,7 +7,7 @@ import { productIdentity } from "@/config/product";
 import { apps } from "@/data/apps";
 
 export const metadata: Metadata = {
-  title: "FawxzzyWeb",
+  title: productIdentity.publicName,
   description: productIdentity.description,
   alternates: {
     canonical: "/",
@@ -39,7 +39,7 @@ export default function Home() {
             <p className="eyebrow">Built by Fawxzzy</p>
             <h1 id="home-title">One home for the work, apps, and experiments.</h1>
             <p>
-              {productIdentity.name} is the public starting point for the Fawxzzy ecosystem.
+              {productIdentity.publicName} is the public starting point for the ecosystem.
               Each app keeps its own product identity and production origin.
             </p>
             <div className="hero__actions">
@@ -98,7 +98,7 @@ export default function Home() {
                 <div className="home-app-card__actions">
                   <a
                     className="catalog-button catalog-button--primary"
-                    href={app.liveUrl}
+                    href={app.origin.current}
                     rel="noreferrer"
                     target="_blank"
                   >

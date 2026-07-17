@@ -1,4 +1,5 @@
 import { StaticLink } from "@/components/site/static-link";
+import { productIdentity } from "@/config/product";
 
 export default function NotFound() {
   return (
@@ -6,7 +7,7 @@ export default function NotFound() {
       <div className="surface-panel w-full max-w-xl rounded-[34px] px-6 py-7 text-center">
         <p className="eyebrow">Missing Surface</p>
         <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-text">
-          That surface is not in FawxzzyWeb.
+          That surface is not in {productIdentity.publicName}.
         </h1>
         <p className="mt-4 text-base leading-8 text-muted">
           The app catalog only renders entries that exist in the typed catalog data.

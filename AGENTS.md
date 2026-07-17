@@ -5,6 +5,7 @@ Scope
 
 Purpose
 - FawxzzyWeb is the public root experience for Fawxzzy-owned applications.
+- Public surfaces display `Fawxzzy`; `FawxzzyWeb` and `fawxzzyweb` are repository/provider identities.
 - Trove remains the app-catalog capability at `/apps` and the reversible compatibility route at `/trove`.
 - Fitness, Mazer, and future apps remain independently owned and deployed.
 

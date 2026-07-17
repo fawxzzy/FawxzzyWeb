@@ -12,10 +12,16 @@ async function sha256ForPublicAsset(src: string) {
   return createHash("sha256").update(asset).digest("hex").toUpperCase();
 }
 
-test("root is the canonical FawxzzyWeb experience", async ({ page }) => {
+test("root is the canonical Fawxzzy experience", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page).toHaveTitle("FawxzzyWeb");
+  await expect(page).toHaveTitle("Fawxzzy");
+  await expect(page.getByRole("navigation", { name: "Primary" })).toContainText("Fawxzzy");
+  await expect(page.locator('meta[name="apple-mobile-web-app-title"]')).toHaveAttribute(
+    "content",
+    "Fawxzzy",
+  );
+  await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "One home for the work, apps, and experiments.",
   );
@@ -47,7 +53,8 @@ test("root is the canonical FawxzzyWeb experience", async ({ page }) => {
 test("discover route exposes centralized public destinations", async ({ page }) => {
   await page.goto("/discover");
 
-  await expect(page).toHaveTitle("Discover | FawxzzyWeb");
+  await expect(page).toHaveTitle("Discover | Fawxzzy");
+  await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "Apps, training, and community—one clean jump away.",
   );
@@ -83,7 +90,7 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
       "src",
       app.icon.src,
     );
-    const appLink = page.locator(`a[href="${app.liveUrl}"]`, { hasText: "Open app" });
+    const appLink = page.locator(`a[href="${app.origin.current}"]`, { hasText: "Open app" });
     await expect(appLink).toHaveCount(1);
     await expect(appLink).toHaveAttribute("target", "_blank");
 
@@ -106,6 +113,36 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
     "content",
     `${productIdentity.canonicalOrigin}/brand/fawxzzy-banner.png`,
   );
+  await expect(page).toHaveTitle("Apps | Fawxzzy");
+  await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
+});
+
+test("public branding stays separate from repository and provider identity", async ({ request }) => {
+  expect(productIdentity.publicName).toBe("Fawxzzy");
+  expect(productIdentity.repositoryName).toBe("FawxzzyWeb");
+  expect(productIdentity.providerSlug).toBe("fawxzzyweb");
+
+  const manifestResponse = await request.get("/manifest.webmanifest");
+  expect(manifestResponse.ok()).toBe(true);
+  const manifest = await manifestResponse.json();
+  expect(manifest.name).toBe("Fawxzzy");
+  expect(manifest.short_name).toBe("Fawxzzy");
+});
+
+test("app origins preserve the future owner-lane cutover and rollback contract", () => {
+  const compatibilityOrigins = {
+    fitness: "https://fawxzzy-fitness-local.vercel.app",
+    mazer: "https://fawxzzy-mazer.vercel.app",
+  } as const;
+
+  for (const app of apps) {
+    const compatibilityOrigin =
+      compatibilityOrigins[app.slug as keyof typeof compatibilityOrigins];
+
+    expect(app.origin.plannedCanonical).toBe(`https://${app.slug}.fawxzzy.com`);
+    expect(compatibilityOrigin, `${app.name} needs a known compatibility origin`).toBeDefined();
+    expect(app.origin.preserveOnCutover).toContain(compatibilityOrigin);
+  }
 });
 
 test("vendored media matches its centralized provenance hashes", async () => {
@@ -122,7 +159,10 @@ test("compatibility route is reversible and points search engines to apps", asyn
   await page.goto("/trove");
 
   await expect(page.locator('main[data-compatibility-identity="trove"]')).toBeVisible();
-  await expect(page.getByRole("link", { name: "/apps" })).toHaveAttribute("href", "/apps");
+  await expect(page.getByRole("link", { name: "/apps", exact: true })).toHaveAttribute(
+    "href",
+    "/apps",
+  );
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
     `${productIdentity.canonicalOrigin}/apps`,
@@ -139,6 +179,26 @@ test("deep links remain available under the apps namespace", async ({ page }) =>
     "href",
     "/apps#fitness-trailer",
   );
+});
+
+test("public routes load without browser errors or framework overlays", async ({ context }) => {
+  for (const route of ["/", "/apps", "/discover", "/trove", "/apps/fitness/preview"]) {
+    const page = await context.newPage();
+    const errors: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error") {
+        errors.push(`console: ${message.text()}`);
+      }
+    });
+    page.on("pageerror", (error) => errors.push(`page: ${error.message}`));
+
+    await page.goto(route, { waitUntil: "networkidle" });
+    await expect(
+      page.locator('[data-nextjs-dialog], .vite-error-overlay, #webpack-dev-server-client-overlay'),
+    ).toHaveCount(0);
+    expect(errors, `${route} should load without browser errors`).toEqual([]);
+    await page.close();
+  }
 });
 
 for (const route of ["/", "/apps", "/discover", "/trove", "/apps/fitness/preview"]) {

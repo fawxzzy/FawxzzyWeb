@@ -23,7 +23,7 @@ export function SiteNav({ current }: SiteNavProps) {
           unoptimized
           width={800}
         />
-        <span>{productIdentity.name}</span>
+        <span>{productIdentity.publicName}</span>
       </StaticLink>
       <div className="site-nav__links">
         <StaticLink aria-current={current === "home" ? "page" : undefined} href="/">

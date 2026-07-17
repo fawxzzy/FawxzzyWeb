@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     canonical: "/discover",
   },
   openGraph: {
-    title: `Discover | ${productIdentity.name}`,
+    title: `Discover | ${productIdentity.publicName}`,
     description:
       "The verified starting points for Fawxzzy apps, training, community, TikTok, and YouTube.",
     url: "/discover",
@@ -45,7 +45,8 @@ export default function DiscoverPage() {
           <h1>Apps, training, and community—one clean jump away.</h1>
           <p>
             These are the current public homes. Each destination stays owned by the product or
-            social surface behind it; {productIdentity.name} is the map, not a duplicate system.
+            social surface behind it; {productIdentity.publicName} is the map, not a duplicate
+            system.
           </p>
         </header>
 

@@ -1,8 +1,9 @@
-# FawxzzyWeb discovery-routing contract
+# Fawxzzy discovery-routing contract
 
 ## Purpose
 
-`/discover` is the FawxzzyWeb-owned routing surface for the current Fitness app, the Fitness-owned
+`/discover` is the Fawxzzy public routing surface, implemented by the FawxzzyWeb repository, for
+the current Fitness app, the Fitness-owned
 custom-workout offer, Discord, the main TikTok account, and the canonical YouTube channel. It links
 out to those independently owned surfaces; it does not duplicate their application, account,
 intake, authentication, data, or payment state.
@@ -27,15 +28,16 @@ replacement gate.
 
 The Stripe Custom Workout Setup target is a temporary public bridge. Fitness owns the eventual
 canonical intake feature and route. Once Fitness ships and publicly verifies that route,
-FawxzzyWeb may update this single centralized destination target. FawxzzyWeb must not implement or
-store intake answers, authentication, workout-plan state, customer data, or payment state.
+The FawxzzyWeb owner may update this single centralized destination target. FawxzzyWeb must not
+implement or store intake answers, authentication, workout-plan state, customer data, or payment
+state.
 
 ## Socials OS removal gate
 
 Socials OS must not remove the four superseded LinkMe featured cards until the exact FawxzzyWeb
 change is deployed to production and unauthenticated public readback proves:
 
-1. `/discover` is reachable through the primary FawxzzyWeb navigation on desktop and mobile.
+1. `/discover` is reachable through the primary Fawxzzy navigation on desktop and mobile.
 2. The Fitness app, Custom Workout Setup, Discord, and main TikTok links match the centralized
    targets above and complete successfully.
 3. The page has a canonical URL, passes accessibility and no-horizontal-overflow checks, and has no

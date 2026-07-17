@@ -1,6 +1,7 @@
 # FawxzzyWeb identity classification
 
 Observed: 2026-07-16
+Updated: 2026-07-17
 
 This classification is the precondition for changing any `trove`, `fawxzzy-trove`,
 `fawxzzy-web`, or `Fawxzzy Web` identifier. It separates current identity from required
@@ -8,18 +9,23 @@ compatibility and immutable provenance.
 
 ## Live identity
 
-These surfaces carry current product or provider identity and move to `FawxzzyWeb` or
-`fawxzzyweb`:
+Public brand and technical identity are separate contracts. User-facing surfaces say `Fawxzzy`;
+repository and provider machinery retain `FawxzzyWeb` or `fawxzzyweb`:
 
 | Surface | Current contract |
 | --- | --- |
-| Product and repository documentation | `FawxzzyWeb` |
+| Public navigation, copy, browser title, and app-store breadcrumb | `Fawxzzy` |
+| Root metadata, Open Graph, manifest, and install title | `Fawxzzy` |
+| Repository and technical documentation | `FawxzzyWeb` |
 | Package name and health app id | `fawxzzyweb` |
-| Root metadata, Open Graph, manifest, and install title | `FawxzzyWeb` |
 | Canonical public root | `/` with intended origin `https://fawxzzy.com` |
 | Canonical catalog | `/apps` |
 | GitHub repository target | `fawxzzy/FawxzzyWeb` |
 | Vercel project target | `fawxzzyweb` on existing project ID |
+
+The application origin contract is centralized in `src/data/apps.ts`. Current launch origins
+remain live until each application owner separately proves and cuts over its planned canonical
+subdomain. The original production origins remain explicit rollback and compatibility assets.
 
 ## Compatibility identity
 
