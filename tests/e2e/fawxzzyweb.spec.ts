@@ -130,9 +130,18 @@ test("public branding stays separate from repository and provider identity", asy
 });
 
 test("app origins preserve the future owner-lane cutover and rollback contract", () => {
+  const compatibilityOrigins = {
+    fitness: "https://fawxzzy-fitness-local.vercel.app",
+    mazer: "https://fawxzzy-mazer.vercel.app",
+  } as const;
+
   for (const app of apps) {
+    const compatibilityOrigin =
+      compatibilityOrigins[app.slug as keyof typeof compatibilityOrigins];
+
     expect(app.origin.plannedCanonical).toBe(`https://${app.slug}.fawxzzy.com`);
-    expect(app.origin.preserveOnCutover).toContain(app.origin.current);
+    expect(compatibilityOrigin, `${app.name} needs a known compatibility origin`).toBeDefined();
+    expect(app.origin.preserveOnCutover).toContain(compatibilityOrigin);
   }
 });
 
