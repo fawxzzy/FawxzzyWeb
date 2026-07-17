@@ -276,6 +276,13 @@ test("account routes fit an iPhone-class viewport and expose visible focus state
     await page.goto(route);
     const dimensions = await page.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
+      minimumTargetHeight: Math.min(
+        ...[...document.querySelectorAll<HTMLElement>(
+          ".site-nav a, .account-card button, .account-card input, .account-card a",
+        )]
+          .map((element) => Math.round(element.getBoundingClientRect().height))
+          .filter((height) => height > 0),
+      ),
       offenders: [...document.querySelectorAll<HTMLElement>("body *")]
         .map((element) => {
           const rect = element.getBoundingClientRect();
@@ -293,6 +300,7 @@ test("account routes fit an iPhone-class viewport and expose visible focus state
     expect(dimensions.scrollWidth, `${route}: ${JSON.stringify(dimensions.offenders)}`).toBeLessThanOrEqual(
       dimensions.clientWidth,
     );
+    expect(dimensions.minimumTargetHeight, `${route} touch targets`).toBeGreaterThanOrEqual(44);
     await expect(page.locator("main#main-content")).toBeVisible();
     await page.locator("main a, main button, main input").first().focus();
     await expect(page.locator(":focus")).toBeVisible();

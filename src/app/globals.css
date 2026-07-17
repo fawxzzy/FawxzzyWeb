@@ -154,7 +154,10 @@ img {
 .site-nav__brand {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.65rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
   color: rgb(var(--text));
   font-size: 0.92rem;
   font-weight: 760;
@@ -176,7 +179,12 @@ img {
 }
 
 .site-nav__links a {
+  display: inline-flex;
   border-radius: 999px;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
   color: rgb(var(--muted));
   padding: 0.58rem 0.82rem;
   font-size: 0.84rem;
@@ -774,6 +782,9 @@ img {
 
 .account-card__links a,
 .account-footer a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
   text-decoration: underline;
   text-decoration-color: rgb(var(--accent) / 0.5);
   text-underline-offset: 0.28em;
