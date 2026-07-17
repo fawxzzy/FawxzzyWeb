@@ -28,6 +28,13 @@ export function TrailerPlayer({ appName, appSlug, trailer }: TrailerPlayerProps)
       video.currentTime = 0;
     }
 
+    if (
+      video.networkState === HTMLMediaElement.NETWORK_NO_SOURCE &&
+      video.error === null
+    ) {
+      video.load();
+    }
+
     setPlaybackState("loading");
 
     try {
