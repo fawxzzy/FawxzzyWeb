@@ -53,7 +53,11 @@ export function TrailerPlayer({ appName, appSlug, trailer }: TrailerPlayerProps)
         className="trailer-player__video"
         controls
         onEnded={() => setPlaybackState("ended")}
-        onError={() => setPlaybackState("error")}
+        onError={(event) => {
+          if (event.currentTarget.error) {
+            setPlaybackState("error");
+          }
+        }}
         onPause={() => {
           if (playbackState === "playing") {
             setPlaybackState("paused");
