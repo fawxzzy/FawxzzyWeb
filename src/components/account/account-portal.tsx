@@ -11,7 +11,9 @@ import {
   callbackStateMatches,
   parseCallbackPayload,
   parseConfirmPayload,
+  parseRecoveryPayload,
   sanitizeAuthUrl,
+  sanitizeRecoveryUrl,
 } from "@/lib/auth/callback-contract";
 import { safeAuthError, safeAuthSuccess, type AuthAction } from "@/lib/auth/errors";
 import {
@@ -427,6 +429,56 @@ function AccountPanel({ resolution }: { resolution: AdapterResolution | null }) 
   );
 }
 
+type RecoverySessionState = "error" | "idle" | "pending" | "ready" | "setup-pending";
+
+function useRecoverySession(
+  hydrated: boolean,
+  recovery: boolean,
+  resolution: AdapterResolution | null,
+) {
+  const processed = useRef(false);
+  const [state, setState] = useState<RecoverySessionState>("idle");
+
+  useEffect(() => {
+    if (!hydrated || !recovery || !resolution || processed.current) return;
+    let active = true;
+    const timer = window.setTimeout(() => {
+      if (processed.current) return;
+      processed.current = true;
+      const payload = parseRecoveryPayload(new URL(window.location.href));
+      sanitizeRecoveryUrl();
+
+      if (!payload) {
+        if (active) setState("error");
+        return;
+      }
+      if (resolution.status !== "ready") {
+        if (active) setState("setup-pending");
+        return;
+      }
+
+      setState("pending");
+      const sessionPromise = payload.code
+        ? resolution.adapter.exchangeCode(payload.code)
+        : resolution.adapter.getSession();
+      sessionPromise
+        .then((session) => {
+          if (active) setState(session ? "ready" : "error");
+        })
+        .catch(() => {
+          if (active) setState("error");
+        });
+    }, 0);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [hydrated, recovery, resolution]);
+
+  return state;
+}
+
 function ResetPanel({ resolution }: { resolution: AdapterResolution | null }) {
   const hydrated = useHydrated();
   const recovery = hydrated
@@ -436,10 +488,12 @@ function ResetPanel({ resolution }: { resolution: AdapterResolution | null }) {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [busy, setBusy] = useState(false);
   const cooldown = useCooldown();
+  const recoveryState = useRecoverySession(hydrated, recovery, resolution);
+  const recoveryReady = recovery && recoveryState === "ready";
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!adapter || busy || cooldown.remaining) return;
+    if (!adapter || busy || cooldown.remaining || (recovery && !recoveryReady)) return;
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
     setBusy(true);
@@ -495,8 +549,25 @@ function ResetPanel({ resolution }: { resolution: AdapterResolution | null }) {
         </p>
       </div>
       <SetupState resolution={resolution} />
+      {recovery && !notice ? (
+        <StatusNotice
+          notice={
+            recoveryState === "error"
+              ? { kind: "error", text: safeAuthError("reset-complete") }
+              : recoveryState === "ready"
+                ? {
+                    kind: "success",
+                    text: "Recovery session established. Choose a new password.",
+                  }
+                : recoveryState === "setup-pending"
+                  ? { kind: "info", text: "Recovery is ready, but account setup is pending." }
+                  : { kind: "info", text: "Establishing your recovery session…" }
+          }
+        />
+      ) : null}
       <StatusNotice notice={notice} />
-      <form className="account-form" onSubmit={submit}>
+      {!recovery || recoveryReady ? (
+        <form className="account-form" onSubmit={submit}>
         {recovery ? (
           <>
             <label>
@@ -539,7 +610,8 @@ function ResetPanel({ resolution }: { resolution: AdapterResolution | null }) {
                 ? "Save new password"
                 : "Send recovery link"}
         </button>
-      </form>
+        </form>
+      ) : null}
     </section>
   );
 }

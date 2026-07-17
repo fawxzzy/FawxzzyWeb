@@ -4,6 +4,7 @@ import {
   accountContract,
   accountUrls,
   classifyRuntimeOrigin,
+  isLiveAccountAdapterOrigin,
   sanitizeReturnTarget,
 } from "../../src/config/account";
 import {
@@ -11,7 +12,9 @@ import {
   callbackStateMatches,
   parseCallbackPayload,
   parseConfirmPayload,
+  parseRecoveryPayload,
 } from "../../src/lib/auth/callback-contract";
+import { resolvePortalAuthAdapter } from "../../src/lib/auth/browser-adapter";
 import { safeAuthError, safeAuthSuccess } from "../../src/lib/auth/errors";
 import { validatePassword } from "../../src/lib/auth/password-policy";
 
@@ -37,6 +40,50 @@ test("account origins and exact redirects are centralized", () => {
   expect(classifyRuntimeOrigin("http://127.0.0.1:3210")).toBe("local-test");
   expect(classifyRuntimeOrigin("https://fawxzzyweb-example.vercel.app")).toBe("preview");
   expect(classifyRuntimeOrigin("https://account.fawxzzy.com.evil.test")).toBe("foreign");
+});
+
+test("live account adapters resolve only on the canonical account or bounded local origins", () => {
+  for (const allowed of [
+    "https://account.fawxzzy.com",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3210",
+    "http://127.0.0.1:3210",
+  ]) {
+    expect(isLiveAccountAdapterOrigin(allowed), allowed).toBe(true);
+  }
+
+  for (const denied of [
+    "https://fawxzzy.com",
+    "https://www.fawxzzy.com",
+    "https://fawxzzyweb-example.vercel.app",
+    "https://account.fawxzzy.com.evil.test",
+    "http://localhost:4000",
+    "http://127.0.0.1:4000",
+  ]) {
+    expect(isLiveAccountAdapterOrigin(denied), denied).toBe(false);
+    let configReads = 0;
+    let adapterCreations = 0;
+    const resolution = resolvePortalAuthAdapter(
+      { origin: denied, search: "" },
+      {
+        createLiveAdapter() {
+          adapterCreations += 1;
+          throw new Error("Denied origins must not create an adapter.");
+        },
+        readPublicConfig() {
+          configReads += 1;
+          return {
+            publishableKey: "sb_publishable_test",
+            url: "https://example.supabase.co",
+          };
+        },
+      },
+    );
+    expect(resolution.status, denied).toBe("setup-pending");
+    expect(configReads, denied).toBe(0);
+    expect(adapterCreations, denied).toBe(0);
+  }
 });
 
 test("return targets fail closed unless they exactly match the contract", () => {
@@ -109,6 +156,24 @@ test("confirm and callback parsers accept only the expected one-time material", 
   expect(callbackStateMatches("same", "same")).toBe(true);
   expect(callbackStateMatches("same", "other")).toBe(false);
   expect(callbackReceiptKey("stable-code")).toBe(callbackReceiptKey("stable-code"));
+
+  expect(
+    parseRecoveryPayload(
+      new URL("https://account.fawxzzy.com/reset-password?recovery=1&code=one-time"),
+    ),
+  ).toEqual({ code: "one-time" });
+  expect(
+    parseRecoveryPayload(
+      new URL("https://account.fawxzzy.com/reset-password?recovery=1"),
+    ),
+  ).toEqual({ code: null });
+  expect(
+    parseRecoveryPayload(
+      new URL(
+        "https://account.fawxzzy.com/reset-password?recovery=1&code=one-time#access_token=secret",
+      ),
+    ),
+  ).toBeNull();
 });
 
 test("all account routes carry account canonical metadata and setup-pending state", async ({ page }) => {
@@ -187,19 +252,42 @@ test("account settings stay session-scoped and username remains capability-gated
   await expect(page.getByText("You are not signed in on this origin.")).toBeVisible();
 });
 
-test("recovery stays non-enumerating and accepts a 128-plus character password", async ({ page }) => {
+test("recovery exchanges PKCE before exposing the password form", async ({ page }) => {
   await page.goto("/reset-password?auth_test=error");
   await page.getByLabel("Email").fill("private@example.test");
   await page.getByRole("button", { name: "Send recovery link" }).click();
   await expect(page.getByRole("status")).toHaveText(safeAuthSuccess("reset-request"));
   await expect(page.getByRole("button")).toBeDisabled();
 
+  await page.goto("/reset-password?recovery=1&auth_test=pending&code=pending-code");
+  await expect(page.getByText("Establishing your recovery session…")).toBeVisible();
+  await expect(page.getByLabel("New password", { exact: true })).toHaveCount(0);
+
+  await page.goto("/reset-password?recovery=1&auth_test=error&code=failed-code");
+  await expect(page.locator('.account-notice[role="alert"]')).toHaveText(
+    safeAuthError("reset-complete"),
+  );
+  await expect(page.getByLabel("New password", { exact: true })).toHaveCount(0);
+  await expect(page).toHaveURL(/\/reset-password\?recovery=1$/);
+
   await page.goto("/reset-password?recovery=1&auth_test=success");
+  await expect(page.locator('.account-notice[role="alert"]')).toHaveText(
+    safeAuthError("reset-complete"),
+  );
+  await expect(page.getByLabel("New password", { exact: true })).toHaveCount(0);
+
+  await page.goto("/reset-password?recovery=1&auth_test=success&code=one-time-code");
+  await expect(page.getByRole("status")).toContainText("Recovery session established");
+  await expect(page).toHaveURL(/\/reset-password\?recovery=1$/);
   const password = "x".repeat(129);
   await page.getByLabel("New password", { exact: true }).fill(password);
   await page.getByLabel("Confirm new password").fill(password);
   await page.getByRole("button", { name: "Save new password" }).click();
   await expect(page.getByRole("status")).toContainText("password has been updated");
+
+  await page.goto("/reset-password?recovery=1&auth_test=session");
+  await expect(page.getByRole("status")).toContainText("Recovery session established");
+  await expect(page.getByLabel("New password", { exact: true })).toBeVisible();
 });
 
 test("confirmation is one-time, sanitized, and preserves only an approved return", async ({ page }) => {

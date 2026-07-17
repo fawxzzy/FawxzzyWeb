@@ -109,6 +109,11 @@ export function isLocalAuthTestOrigin(rawOrigin: string) {
   return classifyRuntimeOrigin(rawOrigin) === "local-test";
 }
 
+export function isLiveAccountAdapterOrigin(rawOrigin: string) {
+  const kind = classifyRuntimeOrigin(rawOrigin);
+  return kind === "account" || kind === "local-test";
+}
+
 export function sanitizeReturnTarget(rawTarget: string | null | undefined) {
   if (!rawTarget) return accountContract.accountPath;
   if (rawTarget.startsWith("//") || rawTarget.includes("\\")) {

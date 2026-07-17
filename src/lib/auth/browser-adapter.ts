@@ -1,7 +1,12 @@
 "use client";
 
 import { createClient, type EmailOtpType, type Session } from "@supabase/supabase-js";
-import { accountContract, accountUrls, isLocalAuthTestOrigin } from "@/config/account";
+import {
+  accountContract,
+  accountUrls,
+  isLiveAccountAdapterOrigin,
+  isLocalAuthTestOrigin,
+} from "@/config/account";
 
 export type PortalSession = {
   email: string | null;
@@ -25,6 +30,16 @@ export type PortalAuthAdapter = {
 export type AdapterResolution =
   | { status: "ready"; adapter: PortalAuthAdapter }
   | { status: "setup-pending"; reason: string };
+
+type PublicAuthConfig = {
+  publishableKey: string;
+  url: string;
+};
+
+export type PortalAuthAdapterDependencies = {
+  createLiveAdapter(url: string, publishableKey: string): PortalAuthAdapter;
+  readPublicConfig(): PublicAuthConfig | null;
+};
 
 let supabaseAdapter: PortalAuthAdapter | null = null;
 
@@ -158,6 +173,9 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       return session;
     },
     async exchangeCode() {
+      if (scenario === "pending") {
+        return new Promise<PortalSession | null>(() => undefined);
+      }
       fail();
       session = { email: "callback.user@example.test", userId: "callback-user" };
       publish();
@@ -181,18 +199,34 @@ function readPublicConfig() {
   return { publishableKey, url };
 }
 
-export function resolvePortalAuthAdapter(location: Pick<Location, "origin" | "search">): AdapterResolution {
+const defaultDependencies: PortalAuthAdapterDependencies = {
+  createLiveAdapter: createSupabaseAdapter,
+  readPublicConfig,
+};
+
+export function resolvePortalAuthAdapter(
+  location: Pick<Location, "origin" | "search">,
+  dependencies: PortalAuthAdapterDependencies = defaultDependencies,
+): AdapterResolution {
   const query = new URLSearchParams(location.search);
   const scenario = query.get("auth_test");
   if (
     scenario &&
-    ["success", "error", "session"].includes(scenario) &&
+    ["success", "error", "pending", "session"].includes(scenario) &&
     isLocalAuthTestOrigin(location.origin)
   ) {
     return { status: "ready", adapter: createTestAdapter(scenario) };
   }
 
-  const config = readPublicConfig();
+  if (!isLiveAccountAdapterOrigin(location.origin)) {
+    return {
+      status: "setup-pending",
+      reason:
+        "Live account access is limited to account.fawxzzy.com and approved local development origins.",
+    };
+  }
+
+  const config = dependencies.readPublicConfig();
   if (!config) {
     return {
       status: "setup-pending",
@@ -200,6 +234,13 @@ export function resolvePortalAuthAdapter(location: Pick<Location, "origin" | "se
     };
   }
 
-  supabaseAdapter ??= createSupabaseAdapter(config.url, config.publishableKey);
+  if (dependencies !== defaultDependencies) {
+    return {
+      status: "ready",
+      adapter: dependencies.createLiveAdapter(config.url, config.publishableKey),
+    };
+  }
+
+  supabaseAdapter ??= dependencies.createLiveAdapter(config.url, config.publishableKey);
   return { status: "ready", adapter: supabaseAdapter };
 }

@@ -25,6 +25,10 @@ export type CallbackPayload = {
   returnTo: string;
 };
 
+export type RecoveryPayload = {
+  code: string | null;
+};
+
 export function parseConfirmPayload(url: URL): ConfirmPayload | null {
   const tokenHash = url.searchParams.get("token_hash") ?? "";
   const type = url.searchParams.get("type") ?? "";
@@ -54,6 +58,23 @@ export function parseCallbackPayload(url: URL): CallbackPayload | null {
   };
 }
 
+export function parseRecoveryPayload(url: URL): RecoveryPayload | null {
+  if (
+    url.hash ||
+    url.searchParams.get("recovery") !== "1" ||
+    url.searchParams.getAll("recovery").length !== 1 ||
+    url.searchParams.getAll("code").length > 1 ||
+    ["access_token", "refresh_token", "token", "token_hash", "state"].some((key) =>
+      url.searchParams.has(key),
+    )
+  ) {
+    return null;
+  }
+
+  const code = url.searchParams.get("code")?.trim() || null;
+  return { code };
+}
+
 export function callbackReceiptKey(code: string) {
   let checksum = 0;
   for (const character of code) checksum = (checksum * 31 + character.charCodeAt(0)) >>> 0;
@@ -70,4 +91,9 @@ export function sanitizeAuthUrl() {
   if (containsUrlTokenMaterial(url)) {
     window.history.replaceState({}, "", url.pathname);
   }
+}
+
+export function sanitizeRecoveryUrl() {
+  if (typeof window === "undefined") return;
+  window.history.replaceState({}, "", accountContract.recoveryPath);
 }

@@ -29,9 +29,14 @@ explicitly preserved current compatibility origins. Protocol-relative URLs, user
 subdomains, backslashes, fragments, query strings, and token-bearing targets fail closed to
 `/account`.
 
+Live Supabase adapter creation is limited to the exact canonical account origin and the bounded
+local development origins below. The public apex, `www`, every Vercel Preview, foreign host, and
+unlisted local port remain setup-pending even when public Supabase configuration is present.
+
 Local testing is limited to `localhost` and `127.0.0.1` on ports `3000` and `3210`. A deterministic
-test adapter may be selected there with `auth_test=success`, `auth_test=error`, or
-`auth_test=session`; it is never enabled on a Vercel Preview or canonical public host. Previews
+test adapter may be selected there with `auth_test=success`, `auth_test=error`,
+`auth_test=pending`, or `auth_test=session`; it is never enabled on a Vercel Preview or canonical
+public host. Previews
 therefore prove the honest setup-pending state until public configuration is bound. Preview
 redirects must be admitted individually in a future packet; do not add a broad production
 `*.vercel.app` Auth wildcard.
@@ -53,6 +58,10 @@ redirects must be admitted individually in a future packet; do not add a broad p
 - Signup and reset responses do not disclose whether an email address exists.
 - Callback state must match browser session storage. Authorization codes are exchanged once and
   receive an idempotency receipt; sensitive query material is removed from the visible URL.
+- Signed-out PKCE recovery explicitly exchanges its authorization code for an origin-scoped
+  session, cleans the URL to the exact recovery path, and only then exposes password update. A
+  missing, invalid, or expired code stays fail-closed unless an existing recovery session is
+  already present on the account origin.
 
 ## Future target binding packet
 
