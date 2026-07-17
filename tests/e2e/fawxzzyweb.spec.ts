@@ -155,6 +155,66 @@ test("each catalog trailer starts real playback from its explicit action", async
   }
 });
 
+test("closing a trailer pauses only that disclosure and reopening stays paused", async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.goto("/apps");
+
+  const fitnessDisclosure = page.locator("#fitness-trailer");
+  const mazerDisclosure = page.locator("#mazer-trailer");
+  await fitnessDisclosure.locator("summary").click();
+  await mazerDisclosure.locator("summary").click();
+
+  const fitnessTrailer = page.getByLabel("Fitness trailer");
+  const mazerTrailer = page.getByLabel("Mazer trailer");
+
+  await page.evaluate(() => {
+    for (const slug of ["fitness", "mazer"]) {
+      const video = document.querySelector<HTMLVideoElement>(`#${slug}-trailer video`);
+
+      if (!video) {
+        throw new Error(`${slug} trailer is missing`);
+      }
+
+      const pause = video.pause.bind(video);
+      video.dataset.pauseCalls = "0";
+      video.pause = () => {
+        video.dataset.pauseCalls = String(Number(video.dataset.pauseCalls) + 1);
+        pause();
+      };
+    }
+  });
+
+  await page.getByRole("button", { name: "Play Fitness trailer" }).click();
+  await expect.poll(
+    () => fitnessTrailer.evaluate((video: HTMLVideoElement) => video.currentTime),
+    { message: "Fitness trailer should advance before collapse", timeout: 10_000 },
+  ).toBeGreaterThan(0.1);
+
+  await fitnessDisclosure.locator("summary").click();
+  await expect(fitnessDisclosure).not.toHaveAttribute("open", "");
+  await expect.poll(
+    () => fitnessTrailer.evaluate((video: HTMLVideoElement) => video.paused),
+    { message: "collapsed Fitness trailer should pause" },
+  ).toBe(true);
+  await expect(fitnessTrailer).toHaveAttribute("data-pause-calls", "1");
+  await expect(mazerTrailer).toHaveAttribute("data-pause-calls", "0");
+  await expect(mazerDisclosure).toHaveAttribute("open", "");
+
+  const collapsedTime = await fitnessTrailer.evaluate(
+    (video: HTMLVideoElement) => video.currentTime,
+  );
+  await fitnessDisclosure.locator("summary").click();
+  await expect(fitnessDisclosure).toHaveAttribute("open", "");
+  await expect.poll(
+    () => fitnessTrailer.evaluate((video: HTMLVideoElement) => video.paused),
+    { message: "reopened Fitness trailer should remain paused" },
+  ).toBe(true);
+  await expect(page.getByRole("button", { name: "Resume Fitness trailer" })).toBeVisible();
+  expect(
+    await fitnessTrailer.evaluate((video: HTMLVideoElement) => video.currentTime),
+  ).toBeCloseTo(collapsedTime, 1);
+});
+
 for (const app of apps) {
   test(`${app.name} has a dedicated public app-detail route`, async ({ page }) => {
     test.setTimeout(60_000);
@@ -220,7 +280,21 @@ test("trailer disclosure and playback are keyboard operable", async ({ page }) =
     () => trailer.evaluate((video: HTMLVideoElement) => video.currentTime),
     { message: "keyboard-activated trailer should advance", timeout: 10_000 },
   ).toBeGreaterThan(0.1);
-  await trailer.evaluate((video: HTMLVideoElement) => video.pause());
+
+  await summary.focus();
+  await page.keyboard.press("Enter");
+  await expect(disclosure).not.toHaveAttribute("open", "");
+  await expect.poll(
+    () => trailer.evaluate((video: HTMLVideoElement) => video.paused),
+    { message: "keyboard-collapsed trailer should pause" },
+  ).toBe(true);
+
+  await page.keyboard.press("Enter");
+  await expect(disclosure).toHaveAttribute("open", "");
+  await expect.poll(
+    () => trailer.evaluate((video: HTMLVideoElement) => video.paused),
+    { message: "keyboard-reopened trailer should remain paused" },
+  ).toBe(true);
 });
 
 test("public branding stays separate from repository and provider identity", async ({ request }) => {

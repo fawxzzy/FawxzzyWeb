@@ -1,3 +1,6 @@
+"use client";
+
+import { useRef } from "react";
 import type { CatalogApp } from "@/data/apps";
 import { TrailerPlayer } from "@/components/catalog/trailer-player";
 
@@ -6,8 +9,23 @@ type TrailerDisclosureProps = {
 };
 
 export function TrailerDisclosure({ app }: TrailerDisclosureProps) {
+  const disclosureRef = useRef<HTMLDetailsElement>(null);
+
+  function handleToggle() {
+    const disclosure = disclosureRef.current;
+
+    if (!disclosure?.open) {
+      disclosure?.querySelector("video")?.pause();
+    }
+  }
+
   return (
-    <details className="trailer-disclosure" id={`${app.slug}-trailer`}>
+    <details
+      className="trailer-disclosure"
+      id={`${app.slug}-trailer`}
+      onToggle={handleToggle}
+      ref={disclosureRef}
+    >
       <summary>
         <span>
           <span className="trailer-disclosure__label">Trailer</span>
