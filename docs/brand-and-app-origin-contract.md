@@ -23,6 +23,13 @@ independently deployed applications. Each entry in `src/data/apps.ts` owns one s
 - trailer, poster, captions, and provenance hashes.
 
 Home, Apps, and Discover must read this contract rather than hard-code an app URL or icon.
+Dedicated public detail routes at `/apps/fitness` and `/apps/mazer` read the same contract. Their
+launch actions continue to use the verified current origin; the detail routes do not cut over or
+proxy either owner application.
+
+Future public reviews are governed separately by `docs/public-app-reviews-contract.md`. App-detail
+pages intentionally show no fabricated rating, count, or testimonial while that read model is not
+admitted.
 
 ## Planned owner-lane origins
 

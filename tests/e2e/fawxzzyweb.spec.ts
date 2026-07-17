@@ -85,14 +85,22 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
   );
 
   for (const app of apps) {
-    await expect(page.getByRole("heading", { name: app.name, level: 2 })).toBeVisible();
-    await expect(page.getByRole("img", { name: `${app.name} icon` })).toHaveAttribute(
+    const entry = page.locator(`#${app.slug}`);
+    const appCard = entry.locator(`[data-app-card="${app.slug}"]`);
+    await expect(appCard).toHaveAttribute("href", `/apps/${app.slug}`);
+    await expect(appCard).toHaveAttribute("aria-label", `View ${app.name} details`);
+    await expect(appCard.getByRole("img", { name: `${app.name} icon` })).toHaveAttribute(
       "src",
       app.icon.src,
     );
-    const appLink = page.locator(`a[href="${app.origin.current}"]`, { hasText: "Open app" });
-    await expect(appLink).toHaveCount(1);
-    await expect(appLink).toHaveAttribute("target", "_blank");
+    await expect(appCard).toContainText(app.tagline);
+    await expect(appCard).toContainText(app.status);
+
+    const disclosure = entry.locator("details");
+    await expect(disclosure).not.toHaveAttribute("open", "");
+    await expect(disclosure.getByText(`Watch ${app.name} in motion`)).toBeVisible();
+    await disclosure.locator("summary").click();
+    await expect(disclosure).toHaveAttribute("open", "");
 
     const trailer = page.getByLabel(`${app.name} trailer`);
     await expect(trailer).toBeVisible();
@@ -100,14 +108,23 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
     await expect(trailer).toHaveAttribute("poster", app.trailer.poster.src);
     await expect(trailer.locator("source")).toHaveAttribute("src", app.trailer.video.src);
     await expect(trailer.locator("track")).toHaveAttribute("src", app.trailer.captionsSrc);
+    await expect(page.getByRole("button", { name: `Play ${app.name} trailer` })).toBeVisible();
 
-    for (const asset of [app.icon.src, app.trailer.poster.src, app.trailer.video.src, app.trailer.captionsSrc]) {
+    for (const asset of [
+      app.icon.src,
+      app.trailer.poster.src,
+      app.trailer.video.src,
+      app.trailer.captionsSrc,
+    ]) {
       const response = await request.get(asset);
       expect(response.ok(), `${asset} should be served`).toBe(true);
     }
+
+    await disclosure.locator("summary").click();
   }
 
-  await expect(page.locator("details")).toHaveCount(0);
+  await expect(page.locator("details")).toHaveCount(apps.length);
+  await expect(page.locator(".meta-chip")).toHaveCount(0);
   await expect(page.locator('img[src="/brand/trove-foxmark.png"]')).toHaveCount(0);
   await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
     "content",
@@ -115,6 +132,93 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
   );
   await expect(page).toHaveTitle("Apps | Fawxzzy");
   await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
+});
+
+test("each catalog trailer starts real playback from its explicit action", async ({ page }) => {
+  await page.goto("/apps");
+
+  for (const app of apps) {
+    const disclosure = page.locator(`#${app.slug}-trailer`);
+    await disclosure.locator("summary").click();
+
+    const trailer = page.getByLabel(`${app.name} trailer`);
+    await page.getByRole("button", { name: `Play ${app.name} trailer` }).click();
+    await expect.poll(
+      () => trailer.evaluate((video: HTMLVideoElement) => video.currentTime),
+      { message: `${app.name} trailer should advance`, timeout: 10_000 },
+    ).toBeGreaterThan(0.1);
+    await expect(disclosure.locator('[data-playback-state="playing"]')).toBeVisible();
+
+    await trailer.evaluate((video: HTMLVideoElement) => video.pause());
+    await expect(page.getByRole("button", { name: `Resume ${app.name} trailer` })).toBeVisible();
+    await disclosure.locator("summary").click();
+  }
+});
+
+for (const app of apps) {
+  test(`${app.name} has a dedicated public app-detail route`, async ({ page }) => {
+    await page.goto(`/apps/${app.slug}`);
+
+    await expect(page).toHaveTitle(`${app.name} | Fawxzzy`);
+    await expect(page.getByRole("heading", { level: 1, name: app.name })).toBeVisible();
+    await expect(page.getByRole("img", { name: `${app.name} icon` })).toHaveAttribute(
+      "src",
+      app.icon.src,
+    );
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      "href",
+      `${productIdentity.canonicalOrigin}/apps/${app.slug}`,
+    );
+    await expect(page.getByText(app.description)).toBeVisible();
+    await expect(page.getByRole("listitem")).toHaveCount(app.features.length);
+
+    const openApp = page.getByRole("link", { name: `Open ${app.name}` });
+    await expect(openApp).toHaveAttribute("href", app.origin.current);
+    await expect(openApp).toHaveAttribute("target", "_blank");
+    await expect(openApp).toHaveAttribute("rel", "noreferrer");
+
+    for (const screenshot of app.screenshots) {
+      await expect(page.getByRole("img", { name: screenshot.alt })).toHaveAttribute(
+        "src",
+        screenshot.src,
+      );
+    }
+
+    const disclosure = page.locator(`#${app.slug}-trailer`);
+    await expect(disclosure).not.toHaveAttribute("open", "");
+    await disclosure.locator("summary").click();
+    const trailer = page.getByLabel(`${app.name} trailer`);
+    await page.getByRole("button", { name: `Play ${app.name} trailer` }).click();
+    await expect.poll(
+      () => trailer.evaluate((video: HTMLVideoElement) => video.currentTime),
+      { message: `${app.name} detail trailer should advance`, timeout: 10_000 },
+    ).toBeGreaterThan(0.1);
+    await trailer.evaluate((video: HTMLVideoElement) => video.pause());
+    await expect(page.locator("body")).toContainText("No public review data is shown yet.");
+    await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
+  });
+}
+
+test("trailer disclosure and playback are keyboard operable", async ({ page }) => {
+  await page.goto("/apps");
+
+  const disclosure = page.locator("#fitness-trailer");
+  const summary = disclosure.locator("summary");
+  await summary.focus();
+  await page.keyboard.press("Enter");
+  await expect(disclosure).toHaveAttribute("open", "");
+
+  const playButton = page.getByRole("button", { name: "Play Fitness trailer" });
+  await playButton.focus();
+  await expect(playButton).toBeFocused();
+  await page.keyboard.press("Enter");
+
+  const trailer = page.getByLabel("Fitness trailer");
+  await expect.poll(
+    () => trailer.evaluate((video: HTMLVideoElement) => video.currentTime),
+    { message: "keyboard-activated trailer should advance", timeout: 10_000 },
+  ).toBeGreaterThan(0.1);
+  await trailer.evaluate((video: HTMLVideoElement) => video.pause());
 });
 
 test("public branding stays separate from repository and provider identity", async ({ request }) => {
@@ -177,12 +281,20 @@ test("deep links remain available under the apps namespace", async ({ page }) =>
   await expect(page.getByRole("heading", { name: "Layered screen slots" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Back to Fitness trailer" })).toHaveAttribute(
     "href",
-    "/apps#fitness-trailer",
+    "/apps/fitness#fitness-trailer",
   );
 });
 
 test("public routes load without browser errors or framework overlays", async ({ context }) => {
-  for (const route of ["/", "/apps", "/discover", "/trove", "/apps/fitness/preview"]) {
+  for (const route of [
+    "/",
+    "/apps",
+    "/apps/fitness",
+    "/apps/mazer",
+    "/discover",
+    "/trove",
+    "/apps/fitness/preview",
+  ]) {
     const page = await context.newPage();
     const errors: string[] = [];
     page.on("console", (message) => {
@@ -201,7 +313,15 @@ test("public routes load without browser errors or framework overlays", async ({
   }
 });
 
-for (const route of ["/", "/apps", "/discover", "/trove", "/apps/fitness/preview"]) {
+for (const route of [
+  "/",
+  "/apps",
+  "/apps/fitness",
+  "/apps/mazer",
+  "/discover",
+  "/trove",
+  "/apps/fitness/preview",
+]) {
   test(`${route} has no automated WCAG A/AA violations`, async ({ page }) => {
     await page.goto(route);
     const results = await new AxeBuilder({ page })
@@ -215,7 +335,15 @@ for (const route of ["/", "/apps", "/discover", "/trove", "/apps/fitness/preview
 test("mobile routes fit the viewport and preserve primary navigation", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
 
-  for (const route of ["/", "/apps", "/discover", "/trove", "/apps/fitness/preview"]) {
+  for (const route of [
+    "/",
+    "/apps",
+    "/apps/fitness",
+    "/apps/mazer",
+    "/discover",
+    "/trove",
+    "/apps/fitness/preview",
+  ]) {
     await page.goto(route);
     const dimensions = await page.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
@@ -225,4 +353,15 @@ test("mobile routes fit the viewport and preserve primary navigation", async ({ 
     expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
     await expect(page.locator("main#main-content")).toBeVisible();
   }
+});
+
+test("health and manifest remain available with the public identity", async ({ request }) => {
+  const healthResponse = await request.get("/healthz.json");
+  expect(healthResponse.ok()).toBe(true);
+
+  const manifestResponse = await request.get("/manifest.webmanifest");
+  expect(manifestResponse.ok()).toBe(true);
+  const manifest = await manifestResponse.json();
+  expect(manifest.name).toBe(productIdentity.publicName);
+  expect(manifest.start_url).toBe("/");
 });

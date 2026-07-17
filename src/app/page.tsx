@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
+import { AppStoreCard } from "@/components/catalog/app-store-card";
 import { SiteNav } from "@/components/site/site-nav";
 import { StaticLink } from "@/components/site/static-link";
 import { productIdentity } from "@/config/product";
@@ -79,39 +80,7 @@ export default function Home() {
 
           <div className="home-app-grid">
             {apps.map((app) => (
-              <article className="home-app-card surface-panel" key={app.slug}>
-                <div className="home-app-card__identity">
-                  <Image
-                    alt={`${app.name} icon`}
-                    className="home-app-card__icon"
-                    height={96}
-                    src={app.icon.src}
-                    unoptimized
-                    width={96}
-                  />
-                  <div>
-                    <p className="field-label">{app.tags.join(" / ")}</p>
-                    <h3>{app.name}</h3>
-                    <p>{app.tagline}</p>
-                  </div>
-                </div>
-                <div className="home-app-card__actions">
-                  <a
-                    className="catalog-button catalog-button--primary"
-                    href={app.origin.current}
-                    rel="noreferrer"
-                    target="_blank"
-                  >
-                    Open {app.name}
-                  </a>
-                  <StaticLink
-                    className="catalog-button catalog-button--secondary"
-                    href={`${productIdentity.appsPath}#${app.name.toLowerCase()}-trailer`}
-                  >
-                    Watch trailer
-                  </StaticLink>
-                </div>
-              </article>
+              <AppStoreCard app={app} key={app.slug} />
             ))}
           </div>
         </section>

@@ -1,5 +1,5 @@
 import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
-import { AppSection } from "@/components/catalog/app-section";
+import { AppCatalogEntry } from "@/components/catalog/app-catalog-entry";
 import { SiteNav } from "@/components/site/site-nav";
 import { StaticLink } from "@/components/site/static-link";
 import { productIdentity } from "@/config/product";
@@ -54,8 +54,8 @@ export function CatalogExperience({ compatibilityIdentity }: CatalogExperiencePr
                 Apps, grounded in their real homes.
               </h1>
               <p className="hero__lede readable-column">
-                Watch each product first, then open it at its real home. Fitness and Mazer stay
-                independently owned on their established production origins.
+                Choose an app for the full story, or open its trailer here. Fitness and Mazer
+                remain independently owned at their current production homes.
               </p>
               <div className="catalog-hero__stats" aria-label="Catalog summary">
                 <span>
@@ -83,7 +83,7 @@ export function CatalogExperience({ compatibilityIdentity }: CatalogExperiencePr
 
         <div className="catalog-stack" id="catalog">
           {apps.map((app) => (
-            <AppSection app={app} key={app.slug} />
+            <AppCatalogEntry app={app} key={app.slug} />
           ))}
         </div>
       </div>
