@@ -520,7 +520,6 @@ function ResetPanel({ resolution }: { resolution: AdapterResolution | null }) {
     const form = new FormData(formElement);
     setBusy(true);
     setNotice(null);
-    cooldown.start();
 
     if (recovery) {
       const password = String(form.get("password") ?? "");
@@ -534,6 +533,7 @@ function ResetPanel({ resolution }: { resolution: AdapterResolution | null }) {
         setBusy(false);
         return;
       }
+      cooldown.start();
       try {
         await adapter.updatePassword(password);
         formElement.reset();
@@ -546,6 +546,7 @@ function ResetPanel({ resolution }: { resolution: AdapterResolution | null }) {
       return;
     }
 
+    cooldown.start();
     try {
       await adapter.requestPasswordReset(String(form.get("email") ?? "").trim());
       setNotice({ kind: "success", text: safeAuthSuccess("reset-request") });

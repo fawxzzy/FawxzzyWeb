@@ -334,11 +334,13 @@ test("all account routes carry account canonical metadata and setup-pending stat
   }
 });
 
-test("public navigation hands account traffic to the canonical account origin", async ({ page }) => {
+test("public navigation stays on the live account route until the account host is attached", async ({
+  page,
+}) => {
   await page.goto("/");
   await expect(page.getByRole("link", { name: "Account", exact: true })).toHaveAttribute(
     "href",
-    accountUrls.account,
+    "/account",
   );
 });
 
@@ -480,9 +482,18 @@ test("recovery exchanges PKCE before exposing the password form", async ({ page 
   await expect(page.getByRole("status")).toContainText("Recovery session established");
   await expect(page).toHaveURL(/\/reset-password\?recovery=1$/);
   const password = "x".repeat(129);
+  const submit = page.locator('form button[type="submit"]');
   await page.getByLabel("New password", { exact: true }).fill(password);
+  await page.getByLabel("Confirm new password").fill("y".repeat(129));
+  await submit.click();
+  await expect(page.locator('.account-notice[role="alert"]')).toHaveText(
+    "The passwords do not match.",
+  );
+  await expect(submit).toBeEnabled();
+  await expect(submit).toHaveText("Save new password");
+
   await page.getByLabel("Confirm new password").fill(password);
-  await page.getByRole("button", { name: "Save new password" }).click();
+  await submit.click();
   await expect(page.getByRole("status")).toContainText("password has been updated");
 
   await page.goto("/reset-password?recovery=1&auth_test=session");

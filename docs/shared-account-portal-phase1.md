@@ -15,6 +15,10 @@ database capabilities are not part of this packet.
 The public brand is `Fawxzzy`. `FawxzzyWeb` and `fawxzzyweb` remain technical repository,
 package, and provider identities.
 
+Until the shared account origin is attached and publicly proven, public navigation stays on the
+live in-project `/account` route. Canonical account metadata and future provider redirects continue
+to target `https://account.fawxzzy.com` for the later binding packet.
+
 Exact account destinations:
 
 - confirmation: `https://account.fawxzzy.com/auth/confirm`
