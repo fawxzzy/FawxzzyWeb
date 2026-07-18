@@ -401,21 +401,39 @@ img {
 
 .discover-hero {
   display: grid;
-  gap: 1rem;
+  grid-template-columns: minmax(9rem, 0.34fr) minmax(0, 1fr);
+  gap: clamp(1.2rem, 4vw, 3rem);
+  align-items: center;
   border-radius: 30px;
   padding: clamp(1.4rem, 5vw, 3.5rem);
+  overflow: hidden;
 }
 
-.discover-hero h1 {
+.discover-hero__mark {
+  width: min(100%, 18rem);
+  height: auto;
+  justify-self: center;
+  border: 1px solid rgb(var(--accent) / 0.2);
+  border-radius: 28%;
+  box-shadow:
+    0 24px 70px rgb(0 0 0 / 0.38),
+    0 0 70px rgb(var(--glow) / 0.12);
+}
+
+.discover-hero__copy {
+  min-width: 0;
+}
+
+.discover-hero__copy h1 {
   max-width: 12ch;
-  margin: 0;
+  margin: 0.45rem 0 1rem;
   font-size: clamp(2.55rem, 7vw, 5.2rem);
   font-weight: 680;
   line-height: 0.96;
   letter-spacing: -0.06em;
 }
 
-.discover-hero > p:not(.eyebrow) {
+.discover-hero__copy > p:not(.eyebrow) {
   max-width: 48rem;
   margin: 0;
   color: rgb(var(--muted));
@@ -423,10 +441,48 @@ img {
   line-height: 1.72;
 }
 
+.discover-hero__copy .hero__actions {
+  margin-top: 1.4rem;
+}
+
+.discovery-sections,
+.discovery-section {
+  display: grid;
+  gap: 1rem;
+}
+
+.discovery-sections {
+  gap: clamp(2rem, 5vw, 3.4rem);
+  padding-block: 0.3rem;
+}
+
+.discovery-section {
+  scroll-margin-top: 1rem;
+}
+
+.discovery-section__heading {
+  max-width: 48rem;
+  padding-inline: 0.35rem;
+}
+
+.discovery-section__heading h2 {
+  margin: 0.35rem 0 0;
+  font-size: clamp(1.9rem, 4vw, 3rem);
+  line-height: 1.05;
+  letter-spacing: -0.05em;
+}
+
 .discovery-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 1rem;
+}
+
+.discovery-grid--featured {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.discovery-grid--compact {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .discovery-card {
@@ -456,8 +512,9 @@ img {
 }
 
 .discovery-card--fitness-app,
-.discovery-card--custom-workout {
-  grid-column: span 3;
+.discovery-card--custom-workout,
+.discovery-card--discord {
+  grid-column: span 2;
 }
 
 .discovery-card--custom-workout {
@@ -505,7 +562,7 @@ img {
   z-index: 1;
 }
 
-.discovery-card__copy h2 {
+.discovery-card__copy h3 {
   margin: 0 0 0.7rem;
   font-size: clamp(1.65rem, 4vw, 2.45rem);
   letter-spacing: -0.045em;
@@ -536,6 +593,85 @@ img {
   justify-content: space-between;
   width: 100%;
   margin-top: auto;
+}
+
+.discovery-link {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: center;
+  min-width: 0;
+  min-height: 6.25rem;
+  border-radius: 24px;
+  padding: 1rem;
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease,
+    background 160ms ease;
+}
+
+a.discovery-link:hover {
+  border-color: rgb(var(--accent) / 0.42);
+  background: rgb(var(--panel-strong) / 0.9);
+  transform: translateY(-2px);
+}
+
+.discovery-link:focus-visible {
+  outline: 3px solid rgb(var(--accent) / 0.62);
+  outline-offset: 3px;
+}
+
+.discovery-link .discovery-card__icon {
+  width: 3.1rem;
+  height: 3.1rem;
+  border-radius: 16px;
+}
+
+.discovery-link__copy {
+  display: grid;
+  gap: 0.28rem;
+  min-width: 0;
+}
+
+.discovery-link__title {
+  color: rgb(var(--text));
+  font-size: 1.02rem;
+  font-weight: 720;
+  letter-spacing: -0.02em;
+}
+
+.discovery-link__value {
+  overflow: hidden;
+  color: rgb(var(--muted));
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.discovery-link__arrow {
+  display: grid;
+  place-items: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  border-radius: 999px;
+  background: rgb(var(--accent) / 0.1);
+  color: rgb(var(--text));
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.discovery-link--identity {
+  grid-template-rows: auto auto;
+  cursor: default;
+}
+
+.discovery-link__note {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: rgb(var(--subtle));
+  font-size: 0.78rem;
+  line-height: 1.5;
 }
 
 @media (min-width: 900px) {
@@ -595,6 +731,7 @@ img {
   }
 
   .home-hero__copy .hero__actions,
+  .discover-hero__copy .hero__actions,
   .home-app-card__actions,
   .discovery-callout {
     flex-direction: column;
@@ -606,18 +743,36 @@ img {
   }
 
   .home-hero__copy .catalog-button,
+  .discover-hero__copy .catalog-button,
   .home-app-card__actions .catalog-button,
   .discovery-callout .catalog-button {
     width: 100%;
   }
 
-  .discovery-grid {
+  .discover-hero {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 1.25rem;
+  }
+
+  .discover-hero__mark {
+    width: min(46vw, 10rem);
+    justify-self: start;
+    border-radius: 24%;
+  }
+
+  .discover-hero__copy h1 {
+    font-size: clamp(2.45rem, 12vw, 3.5rem);
+  }
+
+  .discovery-grid--featured,
+  .discovery-grid--compact {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .discovery-card,
   .discovery-card--fitness-app,
-  .discovery-card--custom-workout {
+  .discovery-card--custom-workout,
+  .discovery-card--discord {
     grid-column: auto;
     min-height: auto;
   }

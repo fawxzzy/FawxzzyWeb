@@ -1,21 +1,23 @@
+import Image from "next/image";
 import type { Metadata } from "next";
 import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
 import { DiscoveryGrid } from "@/components/discovery/discovery-grid";
 import { SiteNav } from "@/components/site/site-nav";
+import { StaticLink } from "@/components/site/static-link";
 import { productIdentity } from "@/config/product";
 import { discoveryDestinations } from "@/data/discovery";
 
 export const metadata: Metadata = {
   title: "Discover",
   description:
-    "Open Fawxzzy Fitness, start a custom workout setup, join Discord, or follow Fawxzzy on TikTok and YouTube.",
+    "The canonical Fawxzzy hub for apps, training, community, social profiles, support, and gaming.",
   alternates: {
     canonical: "/discover",
   },
   openGraph: {
     title: `Discover | ${productIdentity.publicName}`,
     description:
-      "The verified starting points for Fawxzzy apps, training, community, TikTok, and YouTube.",
+      "One verified home for Fawxzzy apps, training, community, social profiles, and everything next.",
     url: "/discover",
   },
 };
@@ -40,11 +42,30 @@ export default function DiscoverPage() {
         <SiteNav current="discover" />
 
         <header className="discover-hero surface-panel">
-          <p className="eyebrow">Discover</p>
-          <h1>Find what you need.</h1>
-          <p>
-            Apps, training, community, and socials—all in one simple place.
-          </p>
+          <Image
+            alt="Fawxzzy wolf mark"
+            className="discover-hero__mark"
+            height={800}
+            priority
+            src="/brand/fawxzzy-wolf.png"
+            width={800}
+          />
+          <div className="discover-hero__copy">
+            <p className="eyebrow">The official Fawxzzy hub</p>
+            <h1>Build. Train. Create.</h1>
+            <p>
+              Apps, training, community, and every verified profile—organized in one clean,
+              permanent home.
+            </p>
+            <div className="hero__actions">
+              <StaticLink className="catalog-button catalog-button--primary" href="/apps">
+                Explore the apps
+              </StaticLink>
+              <a className="catalog-button" href="#discovery-social">
+                Find Fawxzzy online
+              </a>
+            </div>
+          </div>
         </header>
 
         <DiscoveryGrid destinations={discoveryDestinations} />
