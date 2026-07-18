@@ -24,6 +24,15 @@ import { resolvePortalAuthAdapter } from "../../src/lib/auth/browser-adapter";
 import { safeAuthError, safeAuthSuccess } from "../../src/lib/auth/errors";
 import { validatePassword } from "../../src/lib/auth/password-policy";
 import { isBrowserSafeSupabasePublicKey } from "../../src/lib/auth/supabase-public-key.mjs";
+import {
+  humanAccountServices,
+  nonHumanAccountSurfaces,
+  normalizeServiceRegistrationReadModel,
+  resolveServiceRegistrationPresentation,
+  serviceRegistrationDispositions,
+  sourceOnlyServiceRegistrationCapability,
+} from "../../src/lib/account/service-registration";
+import { apps } from "../../src/data/apps";
 
 const accountRoutes = [
   ["/login", "Sign in | Fawxzzy"],
@@ -61,6 +70,125 @@ test("account origins and exact redirects are centralized", () => {
   expect(classifyRuntimeOrigin("http://127.0.0.1:3210")).toBe("local-test");
   expect(classifyRuntimeOrigin("https://fawxzzyweb-example.vercel.app")).toBe("preview");
   expect(classifyRuntimeOrigin("https://account.fawxzzy.com.evil.test")).toBe("foreign");
+});
+
+test("shared human services inherit centralized current and canonical origins", () => {
+  const currentOrigin = (slug: "fitness" | "mazer") =>
+    apps.find((app) => app.slug === slug)?.origin.current;
+  expect(humanAccountServices.map((service) => service.id)).toEqual(["fitness", "mazer"]);
+  expect(humanAccountServices).toEqual([
+    expect.objectContaining({
+      canonicalDestination: accountContract.productOrigins.fitness,
+      currentDestination: currentOrigin("fitness"),
+      id: "fitness",
+    }),
+    expect.objectContaining({
+      canonicalDestination: accountContract.productOrigins.mazer,
+      currentDestination: currentOrigin("mazer"),
+      id: "mazer",
+    }),
+  ]);
+  expect(nonHumanAccountSurfaces).toEqual([
+    expect.objectContaining({ id: "discordos" }),
+  ]);
+  expect(humanAccountServices.some((service) => service.id === ("discordos" as never))).toBe(
+    false,
+  );
+});
+
+test("service registration normalization preserves every explicit disposition", () => {
+  for (const disposition of serviceRegistrationDispositions) {
+    const input =
+      disposition === "unavailable"
+        ? { status: "unavailable" }
+        : disposition === "unknown"
+          ? { status: "available", version: 0 }
+          : {
+              services: humanAccountServices.map((service) => ({
+                disposition,
+                serviceId: service.id,
+              })),
+              status: "available",
+              version: 1,
+            };
+    const snapshot = normalizeServiceRegistrationReadModel(input);
+    expect(snapshot.services.map((service) => service.disposition), disposition).toEqual([
+      disposition,
+      disposition,
+    ]);
+  }
+});
+
+test("absent, partial, duplicate, and malformed service readback fails closed as a whole", () => {
+  const absent = normalizeServiceRegistrationReadModel(null);
+  expect(absent.capability).toBe("unavailable");
+  expect(absent.services.every((service) => service.disposition === "unavailable")).toBe(true);
+
+  const partial = normalizeServiceRegistrationReadModel({
+    services: [{ disposition: "active", serviceId: "fitness" }],
+    status: "available",
+    version: 1,
+  });
+  expect(partial.capability).toBe("unknown");
+  expect(partial.services.every((service) => service.disposition === "unknown")).toBe(true);
+
+  for (const malformed of [
+    { services: "active", status: "available", version: 1 },
+    {
+      services: [
+        { disposition: "active", serviceId: "fitness" },
+        { disposition: "not_registered", serviceId: "fitness" },
+      ],
+      status: "available",
+      version: 1,
+    },
+    {
+      services: [
+        { disposition: "active", serviceId: "fitness" },
+        { disposition: "active", serviceId: "mazer" },
+        { disposition: "active", serviceId: "discordos" },
+      ],
+      status: "available",
+      version: 1,
+    },
+    {
+      services: [
+        { disposition: "active", serviceId: "fitness" },
+        { disposition: "active", serviceId: "mazer" },
+        null,
+      ],
+      status: "available",
+      version: 1,
+    },
+  ]) {
+    const snapshot = normalizeServiceRegistrationReadModel(malformed);
+    expect(snapshot.capability, JSON.stringify(malformed)).toBe("unknown");
+    expect(
+      snapshot.services.every((service) => service.disposition === "unknown"),
+      JSON.stringify(malformed),
+    ).toBe(true);
+  }
+});
+
+test("source-only service capability and foreign origins remain fail closed", () => {
+  expect(sourceOnlyServiceRegistrationCapability).toEqual({
+    adapter: null,
+    availability: "unavailable",
+  });
+  for (const origin of [
+    "https://account.fawxzzy.com",
+    "https://fawxzzy.com",
+    "https://fawxzzyweb-example.vercel.app",
+  ]) {
+    const snapshot = resolveServiceRegistrationPresentation({
+      origin,
+      search: "?services_test=active",
+    });
+    expect(snapshot.capability, origin).toBe("unavailable");
+    expect(snapshot.services.every((service) => service.disposition === "unavailable")).toBe(
+      true,
+    );
+  }
 });
 
 test("live account adapters resolve only on the canonical account or bounded local origins", () => {
@@ -492,20 +620,70 @@ test("account settings stay session-scoped and username remains capability-gated
   await page.goto("/account?auth_test=session");
   await expect(page.getByText("preview.user@example.test")).toBeVisible();
   await expect(page.locator('[data-username-capability="gated"] button')).toBeDisabled();
+  await expect(page.locator('[data-user-number-capability="gated"] button')).toBeDisabled();
+  await expect(page.locator('[data-user-number-state="unavailable"]')).toHaveText(
+    "User number unavailable",
+  );
+  await expect(page.locator('input[name="username"], input[name="user_number"]')).toHaveCount(0);
   expect(await context.cookies()).toEqual([]);
 
   const emailForm = page.locator("form").filter({ has: page.getByLabel("Update email") });
+  await expect(emailForm.getByLabel("Current password")).toHaveAttribute("required", "");
   await emailForm.getByLabel("Update email").fill("changed@example.test");
+  await emailForm.getByLabel("Current password").fill("current-account-password");
   await emailForm.getByRole("button", { name: "Save email" }).click();
   await expect(page.getByRole("status")).toContainText("email update was accepted");
 
   const passwordForm = page.locator("form").filter({ has: page.getByLabel("New password") });
+  await expect(passwordForm.getByLabel("Current password")).toHaveAttribute("required", "");
+  await passwordForm.getByLabel("Current password").fill("current-account-password");
   await passwordForm.getByLabel("New password").fill("x".repeat(129));
   await passwordForm.getByRole("button", { name: "Save password" }).click();
   await expect(page.getByRole("status")).toContainText("password has been updated");
 
   await page.getByRole("button", { name: "Sign out here" }).click();
   await expect(page.getByText("You are not signed in on this origin.")).toBeVisible();
+});
+
+test("service cards render every local-only disposition without enabling client activation", async ({
+  context,
+  page,
+}) => {
+  const scenarios = [
+    ["unavailable", "unavailable"],
+    ["not-registered", "not_registered"],
+    ["active", "active"],
+    ["action-required", "action_required"],
+    ["unknown", "unknown"],
+  ] as const;
+
+  for (const [scenario, disposition] of scenarios) {
+    await page.goto(`/account?auth_test=session&services_test=${scenario}`);
+    for (const service of humanAccountServices) {
+      const card = page.locator(`[data-service-id="${service.id}"]`);
+      await expect(card).toHaveAttribute("data-service-disposition", disposition);
+      await expect(card.locator('[data-service-activation="gated"]')).toBeDisabled();
+      await expect(card.locator("a")).toHaveAttribute("href", service.currentDestination);
+      await expect(card.locator("[data-service-canonical]")).toHaveAttribute(
+        "data-service-canonical",
+        service.canonicalDestination,
+      );
+    }
+    await expect(page.getByText("DiscordOS", { exact: true })).toHaveCount(0);
+  }
+
+  expect(await context.cookies()).toEqual([]);
+  expect(new URL(page.url()).searchParams.has("access_token")).toBe(false);
+  expect(new URL(page.url()).searchParams.has("refresh_token")).toBe(false);
+});
+
+test("default account presentation does not claim service registration without readback", async ({
+  page,
+}) => {
+  await page.goto("/account");
+  await expect(page.locator('[data-service-capability="unavailable"]')).toBeVisible();
+  await expect(page.locator('[data-service-disposition="unavailable"]')).toHaveCount(2);
+  await expect(page.locator('[data-service-disposition="active"]')).toHaveCount(0);
 });
 
 test("recovery exchanges PKCE before exposing the password form", async ({ page }) => {
