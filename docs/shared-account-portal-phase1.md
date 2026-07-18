@@ -64,8 +64,12 @@ redirects must be admitted individually in a future packet; do not add a broad p
 - Phase-two SSO is deferred. Its only admissible starting points are PKCE/OIDC or a one-time
   backend exchange; access and refresh tokens never travel in URLs.
 - Email/password is the only initial provider. Email verification is off. Social, phone,
-  anonymous, magic-link-only, enforced MFA, and leaked-password provider enforcement are deferred
-  provider settings.
+  anonymous, magic-link-only, and passwordless sign-in are deferred. TOTP may be offered later but
+  remains optional; SMS MFA and passkeys are deferred. Client-accessible manual identity linking is
+  disabled, and privileged migration linking requires separately verified deterministic evidence.
+- Signed-in email and password changes reauthenticate the same origin-scoped user with the current
+  password immediately before the update. Secure email change remains a provider setting to keep
+  enabled during the later binding packet.
 - Signup, reset, and change-password require at least 10 characters. The application has no
   restrictive maximum and never trims or truncates passwords; 128+ character values remain
   accepted. Login accepts existing shorter passwords for migration compatibility.
@@ -98,12 +102,18 @@ Only a later provider-authorized packet may:
    production redirect destinations above. Local and each approved Preview redirect are explicit;
    no broad production wildcard is allowed.
 3. Keep email verification off for the initial migration, enable email/password, and leave the
-   deferred providers disabled. Leaked-password protection is a target provider setting to turn
-   on when the provider packet is admitted.
-4. Attach `account.fawxzzy.com` to the existing FawxzzyWeb Vercel project, then make the minimum
+   deferred providers disabled. Enable leaked-password protection and managed CAPTCHA for public
+   signup, reset, and abuse-prone anonymous Auth entry only when the secure provider packet is
+   admitted; controlled test and migration flows require an explicit allowlist. Source never
+   claims either control is live before provider readback.
+4. Apply the ratified provider session policy: multiple devices allowed, single-session off,
+   30-day absolute lifetime, 7-day inactivity timeout, refresh-token compromise detection on with
+   a 10-second reuse interval, and the 15-minute AAL1 limit unless application evidence changes it.
+   These are blocked provider settings, not browser-source enforcement.
+5. Attach `account.fawxzzy.com` to the existing FawxzzyWeb Vercel project, then make the minimum
    DNS change through the separately authorized DNS owner. `www` continues redirecting to the
    apex hub.
-5. Configure sender metadata only after mail ownership is proven: display name `Fawxzzy`;
+6. Configure sender metadata only after mail ownership is proven: display name `Fawxzzy`;
    Google/Gmail-backed sender identity per operator policy; exact sender address remains `UNKNOWN`
    until verified. No credential or key belongs in source.
 

@@ -32,6 +32,7 @@ import {
   serviceRegistrationDispositions,
   sourceOnlyServiceRegistrationCapability,
 } from "../../src/lib/account/service-registration";
+import { apps } from "../../src/data/apps";
 
 const accountRoutes = [
   ["/login", "Sign in | Fawxzzy"],
@@ -72,16 +73,18 @@ test("account origins and exact redirects are centralized", () => {
 });
 
 test("shared human services inherit centralized current and canonical origins", () => {
+  const currentOrigin = (slug: "fitness" | "mazer") =>
+    apps.find((app) => app.slug === slug)?.origin.current;
   expect(humanAccountServices.map((service) => service.id)).toEqual(["fitness", "mazer"]);
   expect(humanAccountServices).toEqual([
     expect.objectContaining({
       canonicalDestination: accountContract.productOrigins.fitness,
-      currentDestination: accountContract.compatibilityOrigins.fitness,
+      currentDestination: currentOrigin("fitness"),
       id: "fitness",
     }),
     expect.objectContaining({
       canonicalDestination: accountContract.productOrigins.mazer,
-      currentDestination: accountContract.compatibilityOrigins.mazer,
+      currentDestination: currentOrigin("mazer"),
       id: "mazer",
     }),
   ]);
@@ -116,7 +119,7 @@ test("service registration normalization preserves every explicit disposition", 
   }
 });
 
-test("absent, partial, duplicate, and malformed service readback never implies active", () => {
+test("absent, partial, duplicate, and malformed service readback fails closed as a whole", () => {
   const absent = normalizeServiceRegistrationReadModel(null);
   expect(absent.capability).toBe("unavailable");
   expect(absent.services.every((service) => service.disposition === "unavailable")).toBe(true);
@@ -126,12 +129,8 @@ test("absent, partial, duplicate, and malformed service readback never implies a
     status: "available",
     version: 1,
   });
-  expect(partial.services.find((service) => service.id === "fitness")?.disposition).toBe(
-    "active",
-  );
-  expect(partial.services.find((service) => service.id === "mazer")?.disposition).toBe(
-    "unknown",
-  );
+  expect(partial.capability).toBe("unknown");
+  expect(partial.services.every((service) => service.disposition === "unknown")).toBe(true);
 
   for (const malformed of [
     { services: "active", status: "available", version: 1 },
@@ -144,16 +143,30 @@ test("absent, partial, duplicate, and malformed service readback never implies a
       version: 1,
     },
     {
-      services: [{ disposition: "active", serviceId: "discordos" }],
+      services: [
+        { disposition: "active", serviceId: "fitness" },
+        { disposition: "active", serviceId: "mazer" },
+        { disposition: "active", serviceId: "discordos" },
+      ],
+      status: "available",
+      version: 1,
+    },
+    {
+      services: [
+        { disposition: "active", serviceId: "fitness" },
+        { disposition: "active", serviceId: "mazer" },
+        null,
+      ],
       status: "available",
       version: 1,
     },
   ]) {
     const snapshot = normalizeServiceRegistrationReadModel(malformed);
+    expect(snapshot.capability, JSON.stringify(malformed)).toBe("unknown");
     expect(
-      snapshot.services.some((service) => service.disposition === "active"),
+      snapshot.services.every((service) => service.disposition === "unknown"),
       JSON.stringify(malformed),
-    ).toBe(false);
+    ).toBe(true);
   }
 });
 
@@ -615,11 +628,15 @@ test("account settings stay session-scoped and username remains capability-gated
   expect(await context.cookies()).toEqual([]);
 
   const emailForm = page.locator("form").filter({ has: page.getByLabel("Update email") });
+  await expect(emailForm.getByLabel("Current password")).toHaveAttribute("required", "");
   await emailForm.getByLabel("Update email").fill("changed@example.test");
+  await emailForm.getByLabel("Current password").fill("current-account-password");
   await emailForm.getByRole("button", { name: "Save email" }).click();
   await expect(page.getByRole("status")).toContainText("email update was accepted");
 
   const passwordForm = page.locator("form").filter({ has: page.getByLabel("New password") });
+  await expect(passwordForm.getByLabel("Current password")).toHaveAttribute("required", "");
+  await passwordForm.getByLabel("Current password").fill("current-account-password");
   await passwordForm.getByLabel("New password").fill("x".repeat(129));
   await passwordForm.getByRole("button", { name: "Save password" }).click();
   await expect(page.getByRole("status")).toContainText("password has been updated");

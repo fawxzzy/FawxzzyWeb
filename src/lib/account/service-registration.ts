@@ -2,6 +2,7 @@ import {
   accountContract,
   isLocalAuthTestOrigin,
 } from "@/config/account";
+import { apps } from "@/data/apps";
 
 export const serviceRegistrationDispositions = [
   "unavailable",
@@ -24,11 +25,17 @@ export type HumanAccountService = {
   summary: string;
 };
 
+function currentAppOrigin(slug: HumanAccountServiceId) {
+  const app = apps.find((candidate) => candidate.slug === slug);
+  if (!app) throw new Error(`Missing ${slug} app origin contract.`);
+  return app.origin.current;
+}
+
 export const humanAccountServices = [
   {
     availability: "available",
     canonicalDestination: accountContract.productOrigins.fitness,
-    currentDestination: accountContract.compatibilityOrigins.fitness,
+    currentDestination: currentAppOrigin("fitness"),
     id: "fitness",
     name: "Fawxzzy Fitness",
     summary: "Training, workouts, and the Fitness-owned account experience.",
@@ -36,7 +43,7 @@ export const humanAccountServices = [
   {
     availability: "available",
     canonicalDestination: accountContract.productOrigins.mazer,
-    currentDestination: accountContract.compatibilityOrigins.mazer,
+    currentDestination: currentAppOrigin("mazer"),
     id: "mazer",
     name: "Mazer",
     summary: "The independently owned Mazer product and its account experience.",
@@ -147,15 +154,27 @@ export function normalizeServiceRegistrationReadModel(
     return unresolvedSnapshot("unknown", "unknown");
   }
   const serviceValues = value.services;
+  const parsedRecords = serviceValues.map(parseReadModelRecord);
+  if (
+    parsedRecords.some((record) => record === null) ||
+    parsedRecords.length !== humanAccountServices.length
+  ) {
+    return unresolvedSnapshot("unknown", "unknown");
+  }
+
+  const records = parsedRecords as ReadModelRecord[];
+  if (
+    humanAccountServices.some(
+      (service) => records.filter((record) => record.serviceId === service.id).length !== 1,
+    )
+  ) {
+    return unresolvedSnapshot("unknown", "unknown");
+  }
 
   return {
     capability: "available",
     services: humanAccountServices.map((service) => {
-      const matchingValues = serviceValues.filter(
-        (candidate) => isRecord(candidate) && candidate.serviceId === service.id,
-      );
-      const parsed = matchingValues.map(parseReadModelRecord);
-      const record = parsed.length === 1 ? parsed[0] : null;
+      const record = records.find((candidate) => candidate.serviceId === service.id);
 
       return {
         ...service,

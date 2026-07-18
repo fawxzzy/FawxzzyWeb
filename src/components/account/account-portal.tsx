@@ -376,11 +376,15 @@ function AccountPanel({ resolution }: { resolution: AdapterResolution | null }) 
 
   async function updateEmail(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!adapter || !session) return;
-    const email = String(new FormData(event.currentTarget).get("email") ?? "").trim();
+    if (!adapter || !session?.email) return;
+    const form = new FormData(event.currentTarget);
+    const email = String(form.get("email") ?? "").trim();
+    const currentPassword = String(form.get("current-password") ?? "");
     setBusyAction("update-email");
     setNotice(null);
     try {
+      const reauthenticated = await adapter.signIn(session.email, currentPassword);
+      if (reauthenticated?.userId !== session.userId) throw new Error("Reauthentication failed.");
       await adapter.updateEmail(email);
       setSession({ ...session, email });
       setNotice({ kind: "success", text: safeAuthSuccess("update-email") });
@@ -393,9 +397,11 @@ function AccountPanel({ resolution }: { resolution: AdapterResolution | null }) 
 
   async function updatePassword(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!adapter || !session) return;
+    if (!adapter || !session?.email) return;
     const formElement = event.currentTarget;
-    const password = String(new FormData(formElement).get("password") ?? "");
+    const form = new FormData(formElement);
+    const currentPassword = String(form.get("current-password") ?? "");
+    const password = String(form.get("password") ?? "");
     const validation = validatePassword(password, "change");
     if (!validation.valid) {
       setNotice({ kind: "error", text: validation.message });
@@ -404,6 +410,8 @@ function AccountPanel({ resolution }: { resolution: AdapterResolution | null }) 
     setBusyAction("update-password");
     setNotice(null);
     try {
+      const reauthenticated = await adapter.signIn(session.email, currentPassword);
+      if (reauthenticated?.userId !== session.userId) throw new Error("Reauthentication failed.");
       await adapter.updatePassword(password);
       formElement.reset();
       setNotice({ kind: "success", text: safeAuthSuccess("update-password") });
@@ -479,6 +487,15 @@ function AccountPanel({ resolution }: { resolution: AdapterResolution | null }) 
                 type="email"
               />
             </label>
+            <label>
+              <span>Current password</span>
+              <input
+                autoComplete="current-password"
+                name="current-password"
+                required
+                type="password"
+              />
+            </label>
             <button
               className="catalog-button catalog-button--secondary"
               disabled={busyAction !== null}
@@ -488,6 +505,15 @@ function AccountPanel({ resolution }: { resolution: AdapterResolution | null }) 
             </button>
           </form>
           <form className="account-form account-form--compact" onSubmit={updatePassword}>
+            <label>
+              <span>Current password</span>
+              <input
+                autoComplete="current-password"
+                name="current-password"
+                required
+                type="password"
+              />
+            </label>
             <label>
               <span>New password</span>
               <input
