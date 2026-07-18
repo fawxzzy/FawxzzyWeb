@@ -31,8 +31,11 @@ export async function assertSiteSmoke(baseUrl) {
   if (!homeHtml.includes('href="/discover"')) {
     throw new Error("Home route did not link to the discovery hub.");
   }
-  if (!homeHtml.includes('href="https://account.fawxzzy.com/account"')) {
-    throw new Error("Home route did not link to the canonical shared-account origin.");
+  if (!homeHtml.includes('href="/account"')) {
+    throw new Error("Home route did not link to the live in-project account surface.");
+  }
+  if (homeHtml.includes('href="https://account.fawxzzy.com/account"')) {
+    throw new Error("Home route published the unattached shared-account origin.");
   }
 
   const appsHtml = await assertRoute(baseUrl, "/apps", "Apps, grounded in their real homes.");
