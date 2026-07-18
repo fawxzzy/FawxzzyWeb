@@ -28,6 +28,12 @@ import {
   type PortalSession,
 } from "@/lib/auth/browser-adapter";
 import { PASSWORD_MINIMUM, validatePassword } from "@/lib/auth/password-policy";
+import {
+  normalizeServiceRegistrationReadModel,
+  resolveServiceRegistrationPresentation,
+  serviceDispositionCopy,
+  serviceDispositionLabel,
+} from "@/lib/account/service-registration";
 
 type PortalMode = "login" | "account" | "confirm" | "callback" | "reset";
 
@@ -60,6 +66,17 @@ function useAdapterResolution() {
     if (!hydrated) return null;
     return resolvePortalAuthAdapter(window.location);
   }, [hydrated]);
+}
+
+function useServiceRegistrationPresentation() {
+  const hydrated = useHydrated();
+  return useMemo(
+    () =>
+      hydrated
+        ? resolveServiceRegistrationPresentation(window.location)
+        : normalizeServiceRegistrationReadModel(null),
+    [hydrated],
+  );
 }
 
 function useCooldown(seconds = 5) {
@@ -294,6 +311,63 @@ function usePortalSession(adapter: PortalAuthAdapter | null) {
   return { error, loaded, session, setSession };
 }
 
+function ServiceRegistrationPanel() {
+  const snapshot = useServiceRegistrationPresentation();
+
+  return (
+    <div
+      aria-labelledby="shared-services-title"
+      className="account-settings"
+      data-service-capability={snapshot.capability}
+    >
+      <div className="account-card__heading">
+        <p className="field-label">Shared identity services</p>
+        <h2 id="shared-services-title">One identity. Explicit service state.</h2>
+        <p>
+          Fitness and Mazer are human-account services. When the authoritative platform
+          capability is enabled, signing into a service can idempotently create or activate its
+          service account. This page never treats local state as proof.
+        </p>
+      </div>
+      {snapshot.services.map((service) => (
+        <div
+          className="account-capability"
+          data-service-disposition={service.disposition}
+          data-service-id={service.id}
+          key={service.id}
+        >
+          <div>
+            <p className="field-label">
+              {service.name} · Service available · Registration {serviceDispositionLabel(service.disposition)}
+            </p>
+            <h3>{serviceDispositionLabel(service.disposition)}</h3>
+            <p>{serviceDispositionCopy(service.disposition)}</p>
+            <p>{service.summary}</p>
+            <div className="account-card__links">
+              <a href={service.currentDestination} rel="noreferrer">
+                Open current {service.name}
+              </a>
+              <span data-service-canonical={service.canonicalDestination}>
+                Canonical home: {new URL(service.canonicalDestination).hostname}
+              </span>
+            </div>
+          </div>
+          <button
+            className="catalog-button catalog-button--disabled"
+            data-service-activation="gated"
+            disabled
+            type="button"
+          >
+            {service.disposition === "active"
+              ? "Active via platform readback"
+              : "Activation not connected"}
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function AccountPanel({ resolution }: { resolution: AdapterResolution | null }) {
   const adapter = adapterFrom(resolution);
   const { error, loaded, session, setSession } = usePortalSession(adapter);
@@ -434,6 +508,7 @@ function AccountPanel({ resolution }: { resolution: AdapterResolution | null }) 
           </form>
         </div>
       ) : null}
+      <ServiceRegistrationPanel />
       <div className="account-capability" data-username-capability="gated">
         <div>
           <p className="field-label">Canonical global username</p>
@@ -445,6 +520,20 @@ function AccountPanel({ resolution }: { resolution: AdapterResolution | null }) 
         </div>
         <button className="catalog-button catalog-button--disabled" disabled type="button">
           Not connected yet
+        </button>
+      </div>
+      <div className="account-capability" data-user-number-capability="gated">
+        <div>
+          <p className="field-label">Immutable global user number</p>
+          <h3>Authoritative readback only.</h3>
+          <p>
+            The central allocator owns unique, never-reused human user numbers. This client does
+            not allocate, infer, or renumber them while the platform capability is unavailable.
+          </p>
+          <span data-user-number-state="unavailable">User number unavailable</span>
+        </div>
+        <button className="catalog-button catalog-button--disabled" disabled type="button">
+          Platform-gated
         </button>
       </div>
     </section>

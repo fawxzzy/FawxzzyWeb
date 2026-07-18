@@ -123,6 +123,48 @@ non-Fitness assignment follows the separately approved deterministic migration o
 service identities are excluded unless explicitly converted. None of those writes are authorized
 by this source packet.
 
+### Shared-service registration presentation
+
+The source-only account surface now carries one transport-neutral, typed presentation contract for
+human-account services. Fitness and Mazer are the only admitted services in version one. DiscordOS
+remains an operational coordination surface and must not be presented as a human account unless a
+separate linkage capability is ratified and proven.
+
+The read model distinguishes `unavailable`, `not_registered`, `active`, `action_required`, and
+`unknown`. Missing capability data is `unavailable`; incomplete, duplicate, unsupported-version, or
+malformed authoritative readback is `unknown`. Neither state can become `active` through local
+storage, URL input, optimistic UI, or inference. Current and planned-canonical destinations come
+from the existing centralized account/app-origin contract.
+
+A transport-neutral adapter type reserves future `read` and idempotent `activate` operations. This
+does not name or call an RPC, endpoint, table, or provider API. Its source-only resolution is
+`unavailable` with no adapter, so activation controls remain disabled. A later platform packet must
+bind an authoritative server capability, define authentication and idempotency evidence, and prove
+read-after-write before the UI may expose activation.
+
+Phase-one intent is explicit: once that capability exists, signing into Fitness or Mazer with the
+shared identity may idempotently create or activate the matching service account. This is service
+registration, not shared browser session state, entitlement, billing, product-data duplication, or
+implicit SSO. Each origin continues to own its own browser session.
+
+The global username and immutable `user_number` remain authoritative-platform fields. Username
+availability/editing and user-number readback/allocation stay disabled until governed server
+contracts exist. The browser must never simulate uniqueness, allocate a number, renumber an
+existing account, or treat a client-side value as authoritative.
+
+### Successor checklist
+
+- LANDED: typed Fitness/Mazer catalog, five-state normalization, fail-closed adapter boundary, and
+  centralized current/canonical destinations.
+- LANDED: account-page service presentation, distinct registration states, disabled activation,
+  and explicit username/user-number capability gates.
+- LANDED: deterministic local-only state fixtures and regression coverage for partial/malformed
+  readback, no false activation, safe origins, session isolation, and token/cookie absence.
+- INTENTIONALLY DEFERRED: authoritative service read/activation transport, username writes,
+  user-number allocation/readback, entitlements, billing, and product-owned data.
+- BLOCKED: target schema/API/provider binding, environment values, account domain attachment, DNS,
+  and production launch; each requires a separate owner packet with exact preimages and rollback.
+
 ## Required post-bind smoke proof
 
 1. Confirm exact Vercel project, Git revision, Preview/production target, custom domain, and prior
