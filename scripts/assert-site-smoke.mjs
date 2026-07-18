@@ -28,7 +28,7 @@ export async function assertSiteSmoke(baseUrl) {
   const homeHtml = await assertRoute(
     baseUrl,
     "/",
-    "One home for the work, apps, and experiments.",
+    "Everything Fawxzzy, in one place.",
   );
   if (!homeHtml.includes('href="/apps"')) {
     throw new Error("Home route did not link to the canonical app catalog.");
