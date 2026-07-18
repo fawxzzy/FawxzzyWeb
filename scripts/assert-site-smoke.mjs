@@ -46,7 +46,7 @@ export async function assertSiteSmoke(baseUrl) {
     throw new Error("Home route published the unattached shared-account origin.");
   }
 
-  const appsHtml = await assertRoute(baseUrl, "/apps", "Apps, grounded in their real homes.");
+  const appsHtml = await assertRoute(baseUrl, "/apps", "Choose an app.");
   for (const app of catalogApps) {
     if (!appsHtml.includes(`href="${app.path}"`)) {
       throw new Error(`/apps did not link ${app.name} to ${app.path}.`);
@@ -81,7 +81,7 @@ export async function assertSiteSmoke(baseUrl) {
   const discoverHtml = await assertRoute(
     baseUrl,
     "/discover",
-    "Apps, training, and community",
+    "Find what you need.",
   );
   for (const target of [
     "https://fawxzzy-fitness-local.vercel.app",
