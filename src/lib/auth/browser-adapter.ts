@@ -126,6 +126,23 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
   const fail = () => {
     if (scenario === "error") throw new Error("Deterministic local test error");
   };
+  const failSignup = () => {
+    switch (scenario) {
+      case "signup-existing":
+        throw Object.assign(new Error("User already registered"), {
+          code: "user_already_exists",
+          status: 422,
+        });
+      case "signup-rate-limit":
+        throw Object.assign(new Error("Too many requests"), { status: 429 });
+      case "signup-network":
+        throw new TypeError("fetch failed at the deterministic provider boundary");
+      case "signup-unknown":
+        throw { detail: "Malformed provider detail must never reach the interface" };
+      default:
+        fail();
+    }
+  };
   const publish = () => listeners.forEach((listener) => listener(session));
 
   return {
@@ -145,7 +162,7 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       return session;
     },
     async signUp(email) {
-      fail();
+      failSignup();
       session = { email, userId: "preview-user" };
       publish();
       return session;
@@ -212,7 +229,16 @@ export function resolvePortalAuthAdapter(
   const scenario = query.get("auth_test");
   if (
     scenario &&
-    ["success", "error", "pending", "session"].includes(scenario) &&
+    [
+      "success",
+      "error",
+      "pending",
+      "session",
+      "signup-existing",
+      "signup-rate-limit",
+      "signup-network",
+      "signup-unknown",
+    ].includes(scenario) &&
     isLocalAuthTestOrigin(location.origin)
   ) {
     return { status: "ready", adapter: createTestAdapter(scenario) };

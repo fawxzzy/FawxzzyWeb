@@ -35,8 +35,9 @@ unlisted local port remain setup-pending even when public Supabase configuration
 
 Local testing is limited to `localhost` and `127.0.0.1` on ports `3000` and `3210`. A deterministic
 test adapter may be selected there with `auth_test=success`, `auth_test=error`,
-`auth_test=pending`, or `auth_test=session`; it is never enabled on a Vercel Preview or canonical
-public host. Previews
+`auth_test=pending`, `auth_test=session`, or the bounded signup-outcome scenarios
+`auth_test=signup-existing`, `auth_test=signup-rate-limit`, `auth_test=signup-network`, and
+`auth_test=signup-unknown`; it is never enabled on a Vercel Preview or canonical public host. Previews
 therefore prove the honest setup-pending state until public configuration is bound. Preview
 redirects must be admitted individually in a future packet; do not add a broad production
 `*.vercel.app` Auth wildcard.
@@ -55,7 +56,10 @@ redirects must be admitted individually in a future packet; do not add a broad p
 - Signup, reset, and change-password require at least 10 characters. The application has no
   restrictive maximum and never trims or truncates passwords; 128+ character values remain
   accepted. Login accepts existing shorter passwords for migration compatibility.
-- Signup and reset responses do not disclose whether an email address exists.
+- Signup preserves local form-validation feedback, then maps every provider resolution or failure
+  to the same fixed status notice and completion state. No raw provider diagnostic, account-existence
+  hint, automatic navigation, or assumed session is exposed. A real returned session remains
+  origin-scoped and provider-owned. Reset responses likewise do not disclose whether an address exists.
 - Callback state must match browser session storage. Authorization codes are exchanged once and
   receive an idempotency receipt; sensitive query material is removed from the visible URL.
 - Signed-out PKCE recovery explicitly exchanges its authorization code for an origin-scoped

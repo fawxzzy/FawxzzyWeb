@@ -126,7 +126,7 @@ test("password policy distinguishes login from account-changing actions without 
 
 test("safe messages are deterministic and non-enumerating", () => {
   expect(safeAuthError("login")).not.toContain("account exists");
-  expect(safeAuthError("signup")).toContain("If this address");
+  expect(safeAuthError("signup")).toBe(safeAuthSuccess("signup"));
   expect(safeAuthSuccess("reset-request")).toContain("If an account can receive");
   expect(safeAuthError("reset-request")).toBe(safeAuthSuccess("reset-request"));
 });
@@ -227,6 +227,66 @@ test("signup enforces ten characters and accepts long passwords", async ({ page 
   await form.getByLabel("Password").fill("x".repeat(129));
   await form.getByRole("button", { name: "Create account" }).click();
   await expect(page.getByRole("status")).toContainText("account request is complete");
+});
+
+test("signup validation stops before the provider call", async ({ page }) => {
+  await page.goto("/login?auth_test=signup-existing");
+  await page.getByRole("button", { name: "Create account" }).click();
+  const form = page.locator("form");
+  const password = form.getByLabel("Password");
+  const submit = form.getByRole("button", { name: "Create account" });
+  await form.getByLabel("Email").fill("existing@example.test");
+  await password.fill("too-short");
+  await submit.click();
+
+  expect(await password.evaluate((input) => input.checkValidity())).toBe(false);
+  await expect(page.locator('.account-notice[role="status"]')).toHaveCount(0);
+  await expect(page.locator('.account-notice[role="alert"]')).toHaveCount(0);
+  await expect(submit).toBeEnabled();
+});
+
+test("every settled provider signup outcome has one non-enumerating result", async ({
+  context,
+  page,
+}) => {
+  test.setTimeout(90_000);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const outcomes = [
+    { scenario: "success", diagnostic: null },
+    { scenario: "signup-existing", diagnostic: "User already registered" },
+    { scenario: "signup-rate-limit", diagnostic: "Too many requests" },
+    {
+      scenario: "signup-network",
+      diagnostic: "fetch failed at the deterministic provider boundary",
+    },
+    {
+      scenario: "signup-unknown",
+      diagnostic: "Malformed provider detail must never reach the interface",
+    },
+  ] as const;
+  const expectedNotice = safeAuthSuccess("signup");
+
+  for (const { scenario, diagnostic } of outcomes) {
+    await page.goto(`/login?auth_test=${scenario}`);
+    await page.getByRole("button", { name: "Create account" }).click();
+    const form = page.locator("form");
+    const submit = form.locator('button[type="submit"]');
+    await form.getByLabel("Email").fill(`${scenario}@example.test`);
+    await form.getByLabel("Password").fill("long-enough-password");
+    await submit.click();
+
+    await expect(submit).toHaveText(/^Working/);
+    await expect(submit).toBeDisabled();
+    const notice = page.locator('.account-notice[role="status"]');
+    await expect(notice).toHaveText(expectedNotice);
+    await expect(notice).toHaveClass(/account-notice--success/);
+    await expect(page.locator('.account-notice[role="alert"]')).toHaveCount(0);
+    await expect(submit).toHaveText(/Try again in [1-5]s/);
+    await expect(submit).toBeDisabled();
+    if (diagnostic) await expect(page.locator("body")).not.toContainText(diagnostic);
+  }
+
+  expect(await context.cookies()).toEqual([]);
 });
 
 test("account settings stay session-scoped and username remains capability-gated", async ({

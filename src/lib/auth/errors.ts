@@ -13,7 +13,7 @@ export type AuthAction =
 const SAFE_MESSAGES: Record<AuthAction, string> = {
   login: "We could not sign you in with those details. Check them and try again.",
   signup:
-    "If this address can create an account, the next step is ready. You can also try signing in.",
+    "Your account request is complete. You can continue to your account when a session is available.",
   "reset-request":
     "If an account can receive recovery mail at that address, the next step is on its way.",
   "reset-complete": "We could not update the password. Request a fresh recovery link.",
@@ -32,7 +32,7 @@ export function safeAuthError(action: AuthAction) {
 export function safeAuthSuccess(action: AuthAction) {
   switch (action) {
     case "signup":
-      return "Your account request is complete. You can continue to your account when a session is available.";
+      return SAFE_MESSAGES.signup;
     case "reset-request":
       return SAFE_MESSAGES["reset-request"];
     case "reset-complete":

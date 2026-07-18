@@ -32,6 +32,18 @@ type Notice = {
 };
 
 const emptySubscribe = () => () => undefined;
+const SIGNUP_SETTLEMENT_MINIMUM_MS = 500;
+
+async function settleSignupAttempt(
+  adapter: PortalAuthAdapter,
+  email: string,
+  password: string,
+) {
+  await Promise.allSettled([
+    adapter.signUp(email, password),
+    new Promise((resolve) => window.setTimeout(resolve, SIGNUP_SETTLEMENT_MINIMUM_MS)),
+  ]);
+}
 
 function useHydrated() {
   return useSyncExternalStore(emptySubscribe, () => true, () => false);
@@ -148,17 +160,20 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
     setNotice(null);
     cooldown.start();
     try {
-      const session =
-        intent === "login"
-          ? await adapter.signIn(email, password)
-          : await adapter.signUp(email, password);
-      setNotice({
-        kind: "success",
-        text:
-          intent === "login" && session
-            ? "Signed in on this account origin."
-            : safeAuthSuccess("signup"),
-      });
+      if (intent === "signup") {
+        // The adapter persists and publishes a real returned session. The notice intentionally
+        // makes no claim about whether the provider created an account or returned a session.
+        await settleSignupAttempt(adapter, email, password);
+        setNotice({ kind: "success", text: safeAuthSuccess("signup") });
+        return;
+      }
+
+      const session = await adapter.signIn(email, password);
+      setNotice(
+        session
+          ? { kind: "success", text: "Signed in on this account origin." }
+          : { kind: "error", text: safeAuthError("login") },
+      );
     } catch {
       setNotice({ kind: "error", text: safeAuthError(intent) });
     } finally {
