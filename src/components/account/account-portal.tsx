@@ -15,6 +15,11 @@ import {
   sanitizeAuthUrl,
   sanitizeRecoveryUrl,
 } from "@/lib/auth/callback-contract";
+import {
+  scheduleCooldownTicks,
+  scheduleDeferredAttempt,
+  type OneShotAttemptState,
+} from "@/lib/auth/client-lifecycle";
 import { safeAuthError, safeAuthSuccess, type AuthAction } from "@/lib/auth/errors";
 import {
   resolvePortalAuthAdapter,
@@ -63,9 +68,11 @@ function useCooldown(seconds = 5) {
   const remaining = Math.max(0, Math.ceil((until - clock) / 1000));
 
   useEffect(() => {
-    if (!until || Date.now() >= until) return;
-    const timer = window.setInterval(() => setClock(Date.now()), 250);
-    return () => window.clearInterval(timer);
+    if (!until) return;
+    return scheduleCooldownTicks(until, (nextClock, expired) => {
+      setClock(nextClock);
+      if (expired) setUntil(0);
+    });
   }, [until]);
 
   return {
@@ -640,7 +647,7 @@ function LinkHandler({
 }) {
   const hydrated = useHydrated();
   const adapter = adapterFrom(resolution);
-  const processed = useRef(false);
+  const processed = useRef<OneShotAttemptState>({ started: false });
   const [notice, setNotice] = useState<Notice>({
     kind: "info",
     text: mode === "confirm" ? "Checking this confirmation link…" : "Checking this sign-in handoff…",
@@ -648,9 +655,8 @@ function LinkHandler({
   const [returnTo, setReturnTo] = useState<string>(accountContract.accountPath);
 
   useEffect(() => {
-    if (!hydrated || processed.current) return;
-    processed.current = true;
-    const timer = window.setTimeout(() => {
+    if (!hydrated) return;
+    return scheduleDeferredAttempt(processed.current, () => {
       const url = new URL(window.location.href);
 
       if (mode === "confirm") {
@@ -701,9 +707,7 @@ function LinkHandler({
           setNotice({ kind: "success", text: "Sign-in handoff complete." });
         })
         .catch(() => setNotice({ kind: "error", text: safeAuthError("callback") }));
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    });
   }, [adapter, hydrated, mode]);
 
   return (

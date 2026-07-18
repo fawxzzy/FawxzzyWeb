@@ -62,6 +62,11 @@ redirects must be admitted individually in a future packet; do not add a broad p
   origin-scoped and provider-owned. Reset responses likewise do not disclose whether an address exists.
 - Callback state must match browser session storage. Authorization codes are exchanged once and
   receive an idempotency receipt; sensitive query material is removed from the visible URL.
+- Confirmation and callback processing is deferred through a one-shot lifecycle boundary. A
+  canceled pre-processing setup remains retryable for React's development setup/cleanup probe,
+  while a launched provider operation cannot be duplicated by a later effect setup.
+- Request cooldown timers clear themselves at expiry and on unmount; no post-expiry interval or
+  render loop remains active.
 - Signed-out PKCE recovery explicitly exchanges its authorization code for an origin-scoped
   session, cleans the URL to the exact recovery path, and only then exposes password update. A
   missing, invalid, or expired code stays fail-closed unless an existing recovery session is

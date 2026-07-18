@@ -14,6 +14,12 @@ import {
   parseConfirmPayload,
   parseRecoveryPayload,
 } from "../../src/lib/auth/callback-contract";
+import {
+  scheduleCooldownTicks,
+  scheduleDeferredAttempt,
+  type CooldownScheduler,
+  type DeferredScheduler,
+} from "../../src/lib/auth/client-lifecycle";
 import { resolvePortalAuthAdapter } from "../../src/lib/auth/browser-adapter";
 import { safeAuthError, safeAuthSuccess } from "../../src/lib/auth/errors";
 import { validatePassword } from "../../src/lib/auth/password-policy";
@@ -129,6 +135,140 @@ test("safe messages are deterministic and non-enumerating", () => {
   expect(safeAuthError("signup")).toBe(safeAuthSuccess("signup"));
   expect(safeAuthSuccess("reset-request")).toContain("If an account can receive");
   expect(safeAuthError("reset-request")).toBe(safeAuthSuccess("reset-request"));
+});
+
+test("Strict Mode probe cleanup reschedules each auth-link operation exactly once", () => {
+  for (const operation of ["confirm", "callback"] as const) {
+    const pending = new Map<number, () => void>();
+    let nextHandle = 0;
+    const scheduler: DeferredScheduler = {
+      clear(handle) {
+        pending.delete(handle as number);
+      },
+      schedule(callback) {
+        const handle = ++nextHandle;
+        pending.set(handle, callback);
+        return handle;
+      },
+    };
+    const state = { started: false };
+    let providerOperations = 0;
+
+    const cleanupProbe = scheduleDeferredAttempt(
+      state,
+      () => {
+        providerOperations += 1;
+      },
+      scheduler,
+    );
+    cleanupProbe();
+    expect(state.started, `${operation} probe must remain retryable`).toBe(false);
+    expect(pending.size, `${operation} probe timer must be canceled`).toBe(0);
+
+    const cleanupEffectiveAttempt = scheduleDeferredAttempt(
+      state,
+      () => {
+        providerOperations += 1;
+      },
+      scheduler,
+    );
+    for (const callback of [...pending.values()]) callback();
+    pending.clear();
+    expect(state.started, `${operation} effective attempt must launch`).toBe(true);
+    expect(providerOperations, `${operation} provider operation count`).toBe(1);
+
+    scheduleDeferredAttempt(
+      state,
+      () => {
+        providerOperations += 1;
+      },
+      scheduler,
+    );
+    for (const callback of [...pending.values()]) callback();
+    cleanupEffectiveAttempt();
+    expect(providerOperations, `${operation} must not duplicate after launch`).toBe(1);
+    expect(pending.size, `${operation} cleanup must leave no timer`).toBe(0);
+  }
+});
+
+test("deferred auth-link cleanup prevents an unmounted attempt from launching", () => {
+  const pending = new Map<number, () => void>();
+  const scheduler: DeferredScheduler = {
+    clear(handle) {
+      pending.delete(handle as number);
+    },
+    schedule(callback) {
+      pending.set(1, callback);
+      return 1;
+    },
+  };
+  const state = { started: false };
+  let providerOperations = 0;
+  const cleanup = scheduleDeferredAttempt(
+    state,
+    () => {
+      providerOperations += 1;
+    },
+    scheduler,
+  );
+
+  cleanup();
+  for (const callback of pending.values()) callback();
+  expect(providerOperations).toBe(0);
+  expect(state.started).toBe(false);
+  expect(pending.size).toBe(0);
+});
+
+test("cooldown ticks terminate at expiry and unmount cleanup cancels pending work", () => {
+  let clock = 1_000;
+  let nextHandle = 0;
+  let clears = 0;
+  const pending = new Map<number, () => void>();
+  const scheduler: CooldownScheduler = {
+    clear(handle) {
+      clears += 1;
+      pending.delete(handle as number);
+    },
+    now() {
+      return clock;
+    },
+    schedule(callback) {
+      const handle = ++nextHandle;
+      pending.set(handle, callback);
+      return handle;
+    },
+  };
+  const ticks: Array<{ clock: number; expired: boolean }> = [];
+  const cleanup = scheduleCooldownTicks(
+    2_000,
+    (nextClock, expired) => ticks.push({ clock: nextClock, expired }),
+    scheduler,
+  );
+
+  clock = 1_250;
+  for (const callback of [...pending.values()]) callback();
+  clock = 2_000;
+  for (const callback of [...pending.values()]) callback();
+  expect(ticks).toEqual([
+    { clock: 1_250, expired: false },
+    { clock: 2_000, expired: true },
+  ]);
+  expect(pending.size).toBe(0);
+  expect(clears).toBe(1);
+
+  clock = 3_000;
+  for (const callback of [...pending.values()]) callback();
+  cleanup();
+  expect(ticks).toHaveLength(2);
+  expect(clears).toBe(1);
+
+  const unmountCleanup = scheduleCooldownTicks(4_000, () => {
+    throw new Error("An unmounted cooldown must not tick.");
+  }, scheduler);
+  expect(pending.size).toBe(1);
+  unmountCleanup();
+  expect(pending.size).toBe(0);
+  expect(clears).toBe(2);
 });
 
 test("confirm and callback parsers accept only the expected one-time material", () => {
