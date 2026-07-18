@@ -1,5 +1,5 @@
 import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
-import { AppSection } from "@/components/catalog/app-section";
+import { AppCatalogEntry } from "@/components/catalog/app-catalog-entry";
 import { SiteNav } from "@/components/site/site-nav";
 import { StaticLink } from "@/components/site/static-link";
 import { productIdentity } from "@/config/product";
@@ -17,9 +17,8 @@ export function CatalogExperience({ compatibilityIdentity }: CatalogExperiencePr
       id="main-content"
     >
       <AmbientFitnessBackground
-        intensity="high"
-        particleCount={18}
-        pulseEnabled
+        intensity="soft"
+        particleCount={10}
         palette={{
           base: "#070C0A",
           glow: "#7F977C",
@@ -51,11 +50,10 @@ export function CatalogExperience({ compatibilityIdentity }: CatalogExperiencePr
             <div className="hero__intro">
               <p className="eyebrow">{productIdentity.publicName} / Apps</p>
               <h1 className="hero__title" id="apps-title">
-                Apps, grounded in their real homes.
+                Choose an app.
               </h1>
               <p className="hero__lede readable-column">
-                Watch each product first, then open it at its real home. Fitness and Mazer stay
-                independently owned on their established production origins.
+                Open a page for the details, or expand a trailer to watch it here.
               </p>
               <div className="catalog-hero__stats" aria-label="Catalog summary">
                 <span>
@@ -64,9 +62,6 @@ export function CatalogExperience({ compatibilityIdentity }: CatalogExperiencePr
                 <span>
                   <strong>{apps.length}</strong> trailers
                 </span>
-                <span>
-                  <strong>1</strong> shared media source
-                </span>
               </div>
             </div>
 
@@ -74,16 +69,13 @@ export function CatalogExperience({ compatibilityIdentity }: CatalogExperiencePr
               <a className="catalog-button catalog-button--primary" href="#catalog">
                 Browse apps
               </a>
-              <StaticLink className="catalog-button catalog-button--secondary" href="/">
-                {productIdentity.publicName} home
-              </StaticLink>
             </div>
           </div>
         </section>
 
         <div className="catalog-stack" id="catalog">
           {apps.map((app) => (
-            <AppSection app={app} key={app.slug} />
+            <AppCatalogEntry app={app} key={app.slug} />
           ))}
         </div>
       </div>

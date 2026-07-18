@@ -1,5 +1,3 @@
-export type CatalogActionLabel = "Open app";
-
 export type CatalogAsset = {
   sha256: string;
   source: string;
@@ -12,6 +10,13 @@ export type CatalogTrailer = {
   durationLabel: string;
   poster: CatalogAsset;
   video: CatalogAsset;
+};
+
+export type CatalogScreenshot = {
+  alt: string;
+  height: number;
+  src: string;
+  width: number;
 };
 
 export type CatalogOriginContract = {
@@ -29,12 +34,16 @@ type Accent = {
 
 export type CatalogApp = {
   accent: Accent;
+  category: string;
+  description: string;
+  features: string[];
   icon: CatalogAsset;
   name: string;
   origin: CatalogOriginContract;
+  screenshots: CatalogScreenshot[];
   slug: string;
+  status: string;
   tagline: string;
-  tags: string[];
   trailer: CatalogTrailer;
 };
 
@@ -42,7 +51,16 @@ export const apps: CatalogApp[] = [
   {
     name: "Fitness",
     slug: "fitness",
+    category: "Health & Fitness",
+    status: "Available now",
     tagline: "Training plans, workout logging, and session history in one mobile-first shell.",
+    description:
+      "Fawxzzy Fitness brings planning, daily training, workout logging, and session history into one focused mobile-first experience. Build a routine, see what is due today, record a session, and return to a clear history of the work.",
+    features: [
+      "Plan repeatable routines around the way you actually train.",
+      "Keep today’s workout and session logging close at hand.",
+      "Review completed sessions and exercise history over time.",
+    ],
     origin: {
       current: "https://fawxzzy-fitness-local.vercel.app",
       plannedCanonical: "https://fitness.fawxzzy.com",
@@ -54,7 +72,26 @@ export const apps: CatalogApp[] = [
       source:
         "Exact public readback of the current Fawxzzy Fitness production PWA icon at /app/icon-512.png on July 16, 2026",
     },
-    tags: ["PWA", "Workouts", "History"],
+    screenshots: [
+      {
+        src: "/apps/fitness/screenshots/today-dashboard.png",
+        alt: "Fawxzzy Fitness today dashboard",
+        width: 430,
+        height: 932,
+      },
+      {
+        src: "/apps/fitness/screenshots/routine-planner.png",
+        alt: "Fawxzzy Fitness routine planner",
+        width: 430,
+        height: 932,
+      },
+      {
+        src: "/apps/fitness/screenshots/session-history.png",
+        alt: "Fawxzzy Fitness session history",
+        width: 430,
+        height: 932,
+      },
+    ],
     accent: {
       from: "#7F977C",
       glow: "rgba(127, 151, 124, 0.2)",
@@ -82,7 +119,16 @@ export const apps: CatalogApp[] = [
   {
     name: "Mazer",
     slug: "mazer",
+    category: "Games",
+    status: "Available now",
     tagline: "An atmospheric maze experience tuned for watch mode, play mode, and ambient runs.",
+    description:
+      "Mazer is an atmospheric maze experience built for active play and ambient watch modes. Enter a run when you want to navigate it yourself, or let the maze unfold as a calm visual experience across desktop and mobile screens.",
+    features: [
+      "Move through atmospheric maze runs in a focused play mode.",
+      "Switch to watch mode for an ambient, hands-off experience.",
+      "Carry the same visual world across desktop and mobile layouts.",
+    ],
     origin: {
       current: "https://fawxzzy-mazer.vercel.app",
       plannedCanonical: "https://mazer.fawxzzy.com",
@@ -94,7 +140,26 @@ export const apps: CatalogApp[] = [
       source:
         "Exact public readback of the current Mazer production app icon at /icons/mazer-app-icon.png on July 16, 2026",
     },
-    tags: ["Game", "Installable", "Ambient"],
+    screenshots: [
+      {
+        src: "/apps/mazer/screenshots/play.png",
+        alt: "Mazer play mode",
+        width: 1440,
+        height: 1024,
+      },
+      {
+        src: "/apps/mazer/screenshots/watch.png",
+        alt: "Mazer watch mode",
+        width: 1440,
+        height: 1024,
+      },
+      {
+        src: "/apps/mazer/screenshots/mobile-watch.png",
+        alt: "Mazer mobile watch mode",
+        width: 390,
+        height: 844,
+      },
+    ],
     accent: {
       from: "#6C836D",
       glow: "rgba(164, 181, 163, 0.18)",
@@ -124,4 +189,8 @@ export const apps: CatalogApp[] = [
 
 export function getAppBySlug(slug: string) {
   return apps.find((app) => app.slug === slug);
+}
+
+export function getAppDetailPath(app: Pick<CatalogApp, "slug">) {
+  return `/apps/${app.slug}`;
 }

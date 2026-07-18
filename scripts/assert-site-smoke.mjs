@@ -1,6 +1,14 @@
-const appOrigins = [
-  "https://fawxzzy-fitness-local.vercel.app",
-  "https://fawxzzy-mazer.vercel.app",
+const catalogApps = [
+  {
+    name: "Fitness",
+    origin: "https://fawxzzy-fitness-local.vercel.app",
+    path: "/apps/fitness",
+  },
+  {
+    name: "Mazer",
+    origin: "https://fawxzzy-mazer.vercel.app",
+    path: "/apps/mazer",
+  },
 ];
 
 async function assertRoute(baseUrl, path, expectedText) {
@@ -20,7 +28,7 @@ export async function assertSiteSmoke(baseUrl) {
   const homeHtml = await assertRoute(
     baseUrl,
     "/",
-    "One home for the work, apps, and experiments.",
+    "Everything Fawxzzy, in one place.",
   );
   if (!homeHtml.includes('href="/apps"')) {
     throw new Error("Home route did not link to the canonical app catalog.");
@@ -38,10 +46,18 @@ export async function assertSiteSmoke(baseUrl) {
     throw new Error("Home route published the unattached shared-account origin.");
   }
 
-  const appsHtml = await assertRoute(baseUrl, "/apps", "Apps, grounded in their real homes.");
-  for (const origin of appOrigins) {
-    if (!appsHtml.includes(origin)) {
-      throw new Error(`/apps did not include grounded app origin ${origin}.`);
+  const appsHtml = await assertRoute(baseUrl, "/apps", "Choose an app.");
+  for (const app of catalogApps) {
+    if (!appsHtml.includes(`href="${app.path}"`)) {
+      throw new Error(`/apps did not link ${app.name} to ${app.path}.`);
+    }
+    if (appsHtml.includes(app.origin)) {
+      throw new Error(`/apps bypassed the ${app.name} detail route with a direct origin link.`);
+    }
+
+    const detailHtml = await assertRoute(baseUrl, app.path, app.name);
+    if (!detailHtml.includes(app.origin)) {
+      throw new Error(`${app.path} did not include grounded app origin ${app.origin}.`);
     }
   }
   for (const asset of [
@@ -54,8 +70,9 @@ export async function assertSiteSmoke(baseUrl) {
       throw new Error(`/apps did not render centralized catalog asset ${asset}.`);
     }
   }
-  if (appsHtml.includes("<details")) {
-    throw new Error("The retired catalog preview dropdown is still present.");
+  const disclosureCount = (appsHtml.match(/<details\b/g) ?? []).length;
+  if (disclosureCount !== catalogApps.length) {
+    throw new Error(`/apps rendered ${disclosureCount} trailer disclosures instead of ${catalogApps.length}.`);
   }
   if (appsHtml.includes('/brand/trove-foxmark.png')) {
     throw new Error("The retired Trove hero image is still present on /apps.");
@@ -64,7 +81,7 @@ export async function assertSiteSmoke(baseUrl) {
   const discoverHtml = await assertRoute(
     baseUrl,
     "/discover",
-    "Apps, training, and community",
+    "Build. Train. Create.",
   );
   for (const target of [
     "https://fawxzzy-fitness-local.vercel.app",
@@ -72,6 +89,11 @@ export async function assertSiteSmoke(baseUrl) {
     "https://discord.gg/tnnV7BNJ7h",
     "https://www.tiktok.com/@fukitzzzzz",
     "https://www.youtube.com/@fawxzzy",
+    "https://x.com/Fawxzzy",
+    "https://www.instagram.com/fawx.zzy/",
+    "https://www.snapchat.com/add/fawx.zzy",
+    "https://www.twitch.tv/fawxzzy",
+    "https://cash.app/$fawxzzy",
   ]) {
     if (!discoverHtml.includes(target)) {
       throw new Error(`/discover did not include grounded destination ${target}.`);
@@ -79,6 +101,12 @@ export async function assertSiteSmoke(baseUrl) {
   }
   if (!discoverHtml.includes("Fawxzzy stores no intake or payment state")) {
     throw new Error("The Fitness intake ownership boundary was not rendered.");
+  }
+  if (!discoverHtml.includes("PSN: fawxzzy")) {
+    throw new Error("The verified PlayStation online ID was not rendered.");
+  }
+  if (discoverHtml.includes("link.me/fawxzzy")) {
+    throw new Error("The retired LinkMe destination remained on /discover.");
   }
 
   const compatibilityHtml = await assertRoute(

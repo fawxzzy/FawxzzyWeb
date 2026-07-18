@@ -32,7 +32,7 @@ export default function FitnessPreviewBoardPage() {
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-stroke/25 bg-panel/70 p-3 shadow-[0_18px_54px_rgba(0,0,0,0.24)] backdrop-blur">
           <StaticLink
             className="catalog-button catalog-button--secondary"
-            href="/apps#fitness-trailer"
+            href="/apps/fitness#fitness-trailer"
           >
             Back to Fitness trailer
           </StaticLink>
