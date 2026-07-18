@@ -17,9 +17,8 @@ export function CatalogExperience({ compatibilityIdentity }: CatalogExperiencePr
       id="main-content"
     >
       <AmbientFitnessBackground
-        intensity="high"
-        particleCount={18}
-        pulseEnabled
+        intensity="soft"
+        particleCount={10}
         palette={{
           base: "#070C0A",
           glow: "#7F977C",
@@ -51,11 +50,10 @@ export function CatalogExperience({ compatibilityIdentity }: CatalogExperiencePr
             <div className="hero__intro">
               <p className="eyebrow">{productIdentity.publicName} / Apps</p>
               <h1 className="hero__title" id="apps-title">
-                Apps, grounded in their real homes.
+                Choose an app.
               </h1>
               <p className="hero__lede readable-column">
-                Choose an app for the full story, or open its trailer here. Fitness and Mazer
-                remain independently owned at their current production homes.
+                Open a page for the details, or expand a trailer to watch it here.
               </p>
               <div className="catalog-hero__stats" aria-label="Catalog summary">
                 <span>
@@ -64,9 +62,6 @@ export function CatalogExperience({ compatibilityIdentity }: CatalogExperiencePr
                 <span>
                   <strong>{apps.length}</strong> trailers
                 </span>
-                <span>
-                  <strong>1</strong> shared media source
-                </span>
               </div>
             </div>
 
@@ -74,9 +69,6 @@ export function CatalogExperience({ compatibilityIdentity }: CatalogExperiencePr
               <a className="catalog-button catalog-button--primary" href="#catalog">
                 Browse apps
               </a>
-              <StaticLink className="catalog-button catalog-button--secondary" href="/">
-                {productIdentity.publicName} home
-              </StaticLink>
             </div>
           </div>
         </section>

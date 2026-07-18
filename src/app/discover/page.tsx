@@ -24,9 +24,8 @@ export default function DiscoverPage() {
   return (
     <main className="discover-page app-theme-sage" id="main-content">
       <AmbientFitnessBackground
-        intensity="medium"
-        particleCount={14}
-        pulseEnabled
+        intensity="soft"
+        particleCount={8}
         palette={{
           base: "#070C0A",
           glow: "#7F977C",
@@ -41,12 +40,10 @@ export default function DiscoverPage() {
         <SiteNav current="discover" />
 
         <header className="discover-hero surface-panel">
-          <p className="eyebrow">Start with what you need</p>
-          <h1>Apps, training, and community—one clean jump away.</h1>
+          <p className="eyebrow">Discover</p>
+          <h1>Find what you need.</h1>
           <p>
-            These are the current public homes. Each destination stays owned by the product or
-            social surface behind it; {productIdentity.publicName} is the map, not a duplicate
-            system.
+            Apps, training, community, and socials—all in one simple place.
           </p>
         </header>
 

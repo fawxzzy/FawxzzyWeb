@@ -13,9 +13,8 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
   return (
     <main className="app-detail-page app-theme-sage" id="main-content">
       <AmbientFitnessBackground
-        intensity="high"
-        particleCount={18}
-        pulseEnabled
+        intensity="soft"
+        particleCount={10}
         palette={{
           base: "#070C0A",
           glow: app.accent.from,
@@ -94,7 +93,7 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
           <div className="section-heading">
             <p className="eyebrow">Inside {app.name}</p>
             <h2 id="screenshots-title">A closer look.</h2>
-            <p>Current product captures, shown without mock ratings or invented claims.</p>
+            <p>See the current app experience.</p>
           </div>
           <div
             aria-label={`${app.name} screenshots`}
@@ -121,11 +120,11 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
         <section aria-labelledby="reviews-title" className="app-reviews-preview surface-panel">
           <div>
             <p className="eyebrow">Reviews</p>
-            <h2 id="reviews-title">Real feedback, when the governed feed is ready.</h2>
+            <h2 id="reviews-title">Real reviews are coming.</h2>
           </div>
           <p>
-            No public review data is shown yet. Future reviews will come from a moderated,
-            privacy-aware platform read model—not a direct public database write.
+            We will show moderated feedback from verified in-app submissions when the shared
+            review system is ready.
           </p>
         </section>
       </div>

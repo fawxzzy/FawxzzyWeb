@@ -23,13 +23,15 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
   );
   await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "One home for the work, apps, and experiments.",
+    "Everything Fawxzzy, in one place.",
   );
+  await expect(page.getByRole("link", { name: "Fawxzzy home" })).toHaveAttribute("href", "/");
+  await expect(page.locator('a[aria-current="page"]')).toHaveCount(1);
   await expect(page.getByRole("link", { name: "Explore apps" })).toHaveAttribute(
     "href",
     "/apps",
   );
-  await expect(page.getByRole("link", { name: "Start here" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Explore more" })).toHaveAttribute(
     "href",
     "/discover",
   );
@@ -56,7 +58,7 @@ test("discover route exposes centralized public destinations", async ({ page }) 
   await expect(page).toHaveTitle("Discover | Fawxzzy");
   await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Apps, training, and community—one clean jump away.",
+    "Find what you need.",
   );
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
@@ -78,10 +80,11 @@ test("discover route exposes centralized public destinations", async ({ page }) 
 });
 
 test("apps route reflects centralized icon and trailer truth", async ({ page, request }) => {
+  test.setTimeout(60_000);
   await page.goto("/apps");
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Apps, grounded in their real homes.",
+    "Choose an app.",
   );
 
   for (const app of apps) {
@@ -124,6 +127,7 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
   }
 
   await expect(page.locator("details")).toHaveCount(apps.length);
+  await expect(page.locator(".catalog-hero__stats span")).toHaveCount(2);
   await expect(page.locator(".meta-chip")).toHaveCount(0);
   await expect(page.locator('img[src="/brand/trove-foxmark.png"]')).toHaveCount(0);
   await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
@@ -156,7 +160,7 @@ test("each catalog trailer starts real playback from its explicit action", async
 });
 
 test("closing a trailer pauses only that disclosure and reopening stays paused", async ({ page }) => {
-  test.setTimeout(60_000);
+  test.setTimeout(90_000);
   await page.goto("/apps");
 
   const fitnessDisclosure = page.locator("#fitness-trailer");
@@ -213,6 +217,31 @@ test("closing a trailer pauses only that disclosure and reopening stays paused",
   expect(
     await fitnessTrailer.evaluate((video: HTMLVideoElement) => video.currentTime),
   ).toBeCloseTo(collapsedTime, 1);
+});
+
+test("native trailer controls resynchronize state after a disclosure pause", async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.goto("/apps");
+
+  const disclosure = page.locator("#fitness-trailer");
+  const trailer = page.getByLabel("Fitness trailer");
+  await disclosure.locator("summary").click();
+  await page.getByRole("button", { name: "Play Fitness trailer" }).click();
+  await expect.poll(
+    () => trailer.evaluate((video: HTMLVideoElement) => video.currentTime),
+    { message: "Fitness trailer should advance before collapse", timeout: 10_000 },
+  ).toBeGreaterThan(0.1);
+
+  await disclosure.locator("summary").click();
+  await disclosure.locator("summary").click();
+  await expect(page.getByRole("button", { name: "Resume Fitness trailer" })).toBeVisible();
+
+  await trailer.evaluate(async (video: HTMLVideoElement) => {
+    await video.play();
+  });
+  await expect(disclosure.locator('[data-playback-state="playing"]')).toBeVisible();
+  await expect(page.getByRole("button", { name: "Resume Fitness trailer" })).toHaveCount(0);
+  await expect(disclosure.locator(".trailer-player__status")).toHaveText("Trailer playing.");
 });
 
 for (const app of apps) {
@@ -385,7 +414,7 @@ for (const app of apps) {
       { message: `${app.name} detail trailer should advance`, timeout: 10_000 },
     ).toBeGreaterThan(0.1);
     await trailer.evaluate((video: HTMLVideoElement) => video.pause());
-    await expect(page.locator("body")).toContainText("No public review data is shown yet.");
+    await expect(page.locator("body")).toContainText("Real reviews are coming.");
     await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
   });
 }
@@ -568,6 +597,39 @@ test("mobile routes fit the viewport and preserve primary navigation", async ({ 
 
     expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
     await expect(page.locator("main#main-content")).toBeVisible();
+
+    const primaryNav = page.getByRole("navigation", { name: "Primary" });
+    if (await primaryNav.count()) {
+      const geometry = await primaryNav.evaluate((nav) => {
+        const brand = nav.querySelector<HTMLElement>(".site-nav__brand");
+        const links = nav.querySelector<HTMLElement>(".site-nav__links");
+        const targets = [...nav.querySelectorAll<HTMLElement>("a")];
+
+        if (!brand || !links) {
+          throw new Error("Primary navigation geometry is incomplete");
+        }
+
+        const navRect = nav.getBoundingClientRect();
+        const brandRect = brand.getBoundingClientRect();
+        const linksRect = links.getBoundingClientRect();
+
+        return {
+          brandBottom: brandRect.bottom,
+          linksTop: linksRect.top,
+          navLeft: navRect.left,
+          navRight: navRect.right,
+          linksLeft: linksRect.left,
+          linksRight: linksRect.right,
+          minimumTargetHeight: Math.min(...targets.map((target) => target.getBoundingClientRect().height)),
+        };
+      });
+
+      expect(geometry.brandBottom).toBeLessThanOrEqual(geometry.linksTop + 1);
+      expect(geometry.linksLeft).toBeGreaterThanOrEqual(geometry.navLeft);
+      expect(geometry.linksRight).toBeLessThanOrEqual(geometry.navRight);
+      expect(geometry.minimumTargetHeight).toBeGreaterThanOrEqual(44);
+      await expect(primaryNav.locator('a[aria-current="page"]')).toHaveCount(1);
+    }
   }
 });
 

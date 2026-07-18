@@ -132,7 +132,8 @@ export const TrailerPlayer = forwardRef<TrailerPlayerHandle, TrailerPlayerProps>
           );
         }}
         onPlaying={(event) => {
-          if (!disclosurePausedRef.current && !event.currentTarget.paused) {
+          if (!event.currentTarget.paused) {
+            disclosurePausedRef.current = false;
             setPlaybackState("playing");
           }
         }}
