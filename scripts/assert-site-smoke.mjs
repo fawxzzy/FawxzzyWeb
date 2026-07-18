@@ -81,7 +81,7 @@ export async function assertSiteSmoke(baseUrl) {
   const discoverHtml = await assertRoute(
     baseUrl,
     "/discover",
-    "Find what you need.",
+    "Build. Train. Create.",
   );
   for (const target of [
     "https://fawxzzy-fitness-local.vercel.app",
@@ -89,6 +89,11 @@ export async function assertSiteSmoke(baseUrl) {
     "https://discord.gg/tnnV7BNJ7h",
     "https://www.tiktok.com/@fukitzzzzz",
     "https://www.youtube.com/@fawxzzy",
+    "https://x.com/Fawxzzy",
+    "https://www.instagram.com/fawx.zzy/",
+    "https://www.snapchat.com/add/fawx.zzy",
+    "https://www.twitch.tv/fawxzzy",
+    "https://cash.app/$fawxzzy",
   ]) {
     if (!discoverHtml.includes(target)) {
       throw new Error(`/discover did not include grounded destination ${target}.`);
@@ -96,6 +101,12 @@ export async function assertSiteSmoke(baseUrl) {
   }
   if (!discoverHtml.includes("Fawxzzy stores no intake or payment state")) {
     throw new Error("The Fitness intake ownership boundary was not rendered.");
+  }
+  if (!discoverHtml.includes("PSN: fawxzzy")) {
+    throw new Error("The verified PlayStation online ID was not rendered.");
+  }
+  if (discoverHtml.includes("link.me/fawxzzy")) {
+    throw new Error("The retired LinkMe destination remained on /discover.");
   }
 
   const compatibilityHtml = await assertRoute(

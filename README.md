@@ -9,7 +9,8 @@ slug remains `fawxzzyweb`.
 
 - `/` — canonical Fawxzzy root experience
 - `/apps` — canonical app catalog, sourced from `src/data/apps.ts`
-- `/discover` — centralized links to Fitness, custom-workout setup, Discord, TikTok, and YouTube
+- `/discover` — canonical public hub for apps, training, community, verified social profiles,
+  support, and gaming identity
 - `/trove` — reversible, no-index compatibility route for the former Trove identity
 - `/apps/fitness/preview` — preserved deep link for the Fitness reference board
 - `/login` — email/password sign-in and account creation
@@ -97,8 +98,10 @@ otherwise use the stable project `.vercel.app` production origin. Omit an ungrou
 ## Discovery contract
 
 Update `src/data/discovery.ts` when a public discovery destination changes. The `/discover`
-surface renders Fitness, the current Fitness-owned custom-workout offer, Discord, main TikTok,
-and canonical YouTube from that single record. YouTube stays a separate destination.
+surface is the canonical replacement for the retired LinkMe hub. It renders Fitness, the current
+Fitness-owned custom-workout offer, Discord, every verified outbound social destination, Cash App,
+and the exact PlayStation online ID from that single record. A display handle is never promoted to
+an outbound URL without public target proof.
 
 The custom-workout Stripe URL is a temporary external bridge. Fitness owns the future canonical
 intake route; the Fawxzzy public hub must not duplicate intake, authentication, training data, or

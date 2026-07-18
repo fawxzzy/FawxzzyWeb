@@ -57,8 +57,9 @@ test("discover route exposes centralized public destinations", async ({ page }) 
 
   await expect(page).toHaveTitle("Discover | Fawxzzy");
   await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
+  await expect(page.locator("body")).not.toContainText("LinkMe");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Find what you need.",
+    "Build. Train. Create.",
   );
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
@@ -67,16 +68,32 @@ test("discover route exposes centralized public destinations", async ({ page }) 
 
   for (const destination of discoveryDestinations) {
     const card = page.locator(`[data-destination-id="${destination.id}"]`);
-    await expect(card.getByRole("heading", { name: destination.title })).toBeVisible();
-    await expect(card.locator("a")).toHaveAttribute("href", destination.href);
-    await expect(card.locator("a")).toHaveAttribute("target", "_blank");
-    await expect(card.locator("a")).toHaveAttribute("rel", "noreferrer");
+    await expect(card).toContainText(destination.title);
+    await expect(card).toContainText(destination.displayValue);
+
+    if (destination.href && destination.action) {
+      const link = destination.category === "featured" ? card.locator("a") : card;
+      await expect(link).toHaveAttribute("href", destination.href);
+      await expect(link).toHaveAttribute("target", "_blank");
+      await expect(link).toHaveAttribute("rel", "noreferrer");
+    } else {
+      await expect(card.locator("a")).toHaveCount(0);
+    }
   }
 
   await expect(page.locator('[data-destination-id="custom-workout"]')).toContainText(
     "Fitness owns the future intake replacement",
   );
   await expect(page.locator('[data-destination-id="youtube"]')).toHaveCount(1);
+  await expect(page.locator('[data-destination-id="playstation"]')).toContainText(
+    "PSN: fawxzzy",
+  );
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Every verified social profile." }),
+  ).toBeVisible();
+  expect(discoveryDestinations.some((destination) => destination.href?.includes("link.me"))).toBe(
+    false,
+  );
 });
 
 test("apps route reflects centralized icon and trailer truth", async ({ page, request }) => {

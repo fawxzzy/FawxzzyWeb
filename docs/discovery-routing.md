@@ -2,47 +2,60 @@
 
 ## Purpose
 
-`/discover` is the Fawxzzy public routing surface, implemented by the FawxzzyWeb repository, for
-the current Fitness app, the Fitness-owned
-custom-workout offer, Discord, the main TikTok account, and the canonical YouTube channel. It links
-out to those independently owned surfaces; it does not duplicate their application, account,
-intake, authentication, data, or payment state.
+`/discover` is the canonical Fawxzzy public routing surface. It replaces the former third-party
+LinkMe hub with an owned, versioned route for apps, training, community, verified social profiles,
+support, and gaming identity. It links to independently owned surfaces; it does not duplicate
+their application, account, intake, authentication, data, payment, or platform state.
+
+The canonical hub URL is `https://fawxzzy.com/discover`. Social profile website fields should
+point there rather than at the retired LinkMe profile.
 
 ## Current destinations
 
-The exact targets were reconciled against the rendered public `https://link.me/fawxzzy` page on
-July 16, 2026:
+The exact targets below were reconciled against the rendered public `https://link.me/fawxzzy`
+profile and its authenticated editor on July 18, 2026. The former self-referential LinkMe icon is
+intentionally omitted.
 
-| Destination | Current target | Owner |
+| Destination | Current target or identity | Owner |
 | --- | --- | --- |
 | FawxzzyFitness App | `https://fawxzzy-fitness-local.vercel.app` | Fitness |
 | Custom Workout Setup | `https://buy.stripe.com/cNi9AL4a02Qf3T4dA02cg02` | Fitness |
 | Join the Discord | `https://discord.gg/tnnV7BNJ7h` | Fawxzzy community |
 | Main TikTok | `https://www.tiktok.com/@fukitzzzzz` | Socials OS |
 | YouTube | `https://www.youtube.com/@fawxzzy` | Socials OS |
+| X | `https://x.com/Fawxzzy` | Socials OS |
+| Instagram | `https://www.instagram.com/fawx.zzy/` | Socials OS |
+| Snapchat | `https://www.snapchat.com/add/fawx.zzy` | Socials OS |
+| Twitch | `https://www.twitch.tv/fawxzzy` | Socials OS |
+| Cash App | `https://cash.app/$fawxzzy` | Socials OS |
+| PlayStation | Exact online ID `fawxzzy`; no verified public profile URL | Socials OS |
 
-YouTube remains a separate destination rather than being folded into the four-card Socials OS
-replacement gate.
+The PlayStation identity remains plain text because the prior hub exposed it as a username button,
+not a public URL, and no current official public profile URL was established. Do not invent or use
+a third-party profile URL.
 
 ## Fitness intake replacement contract
 
 The Stripe Custom Workout Setup target is a temporary public bridge. Fitness owns the eventual
 canonical intake feature and route. Once Fitness ships and publicly verifies that route,
-The FawxzzyWeb owner may update this single centralized destination target. FawxzzyWeb must not
+the FawxzzyWeb owner may update this single centralized destination target. FawxzzyWeb must not
 implement or store intake answers, authentication, workout-plan state, customer data, or payment
 state.
 
-## Socials OS removal gate
+## Link hub retirement gate
 
-Socials OS must not remove the four superseded LinkMe featured cards until the exact FawxzzyWeb
-change is deployed to production and unauthenticated public readback proves:
+LinkMe may be retired from Socials OS only after the exact FawxzzyWeb revision is production-live
+and public readback proves:
 
-1. `/discover` is reachable through the primary Fawxzzy navigation on desktop and mobile.
-2. The Fitness app, Custom Workout Setup, Discord, and main TikTok links match the centralized
-   targets above and complete successfully.
+1. `https://fawxzzy.com/discover` is reachable through the primary Fawxzzy navigation on desktop
+   and mobile.
+2. Every target or identity in the table above matches the centralized contract.
 3. The page has a canonical URL, passes accessibility and no-horizontal-overflow checks, and has no
-   unexpected console or runtime errors.
-4. YouTube remains independently visible and working.
+   unexpected console, request, or runtime errors.
+4. Supported social profile website fields have moved from LinkMe to the canonical hub, with exact
+   account and post-save readback.
+5. Historical LinkMe receipts remain preserved for auditability while LinkMe is removed from active
+   account, collection, planning, and publishing scope.
 
-A preview proves implementation readiness but does not open the removal gate because it is not the
-public `fawxzzy.com` surface.
+A preview proves implementation readiness but does not open the retirement gate because it is not
+the public `fawxzzy.com` surface.
