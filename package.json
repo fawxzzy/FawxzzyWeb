@@ -13,10 +13,12 @@
     "qa:site-smoke": "node scripts/qa-home-smoke.mjs",
     "qa:home-smoke": "npm run qa:site-smoke",
     "test:e2e": "playwright test",
+    "test:auth-key-guard": "node scripts/test-public-auth-key-guard.mjs",
     "smoke:lifeline": "node scripts/smoke-lifeline.mjs",
-    "verify": "npm run lint && npm run build && npm run smoke:lifeline && npm run test:e2e"
+    "verify": "npm run lint && npm run test:auth-key-guard && npm run build && npm run smoke:lifeline && npm run test:e2e"
   },
   "dependencies": {
+    "@supabase/supabase-js": "2.109.0",
     "next": "16.2.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
