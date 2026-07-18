@@ -11,6 +11,7 @@ export function SiteNav({ current }: SiteNavProps) {
     <nav aria-label="Primary" className="site-nav surface-panel">
       <StaticLink
         aria-current={current === "home" ? "page" : undefined}
+        aria-label={`${productIdentity.publicName} home`}
         className="site-nav__brand"
         href="/"
       >
@@ -23,12 +24,9 @@ export function SiteNav({ current }: SiteNavProps) {
           unoptimized
           width={800}
         />
-        <span>{productIdentity.publicName}</span>
+        <span className="site-nav__brand-label">{productIdentity.publicName}</span>
       </StaticLink>
       <div className="site-nav__links">
-        <StaticLink aria-current={current === "home" ? "page" : undefined} href="/">
-          Home
-        </StaticLink>
         <StaticLink
           aria-current={current === "apps" ? "page" : undefined}
           href={productIdentity.appsPath}
