@@ -167,21 +167,20 @@ export const apps: CatalogApp[] = [
       to: "#A4B5A3",
     },
     trailer: {
-      durationLabel: "0:23",
+      durationLabel: "0:35",
       description:
-        "A Fawxzzy-owned montage turns the established Mazer catalog captures into one compact watch, play, and mobile story.",
+        "Live production footage moves from an ambient watch run into active play, pause, and resume.",
       captionsSrc: "/apps/mazer/trailer-captions.vtt",
       video: {
         src: "/apps/mazer/trailer.mp4",
-        sha256: "B2852D2E8E755D3B3FC219A906C625B10A1292A6AC42B78B3311E66B7D938AA3",
+        sha256: "7D88E51802780DBD6AAB97D329E55C9FF0A8FBEBFF6F761EC9C19BB7A9DAD6FB",
         source:
-          "Fawxzzy catalog montage rendered from the existing owned Mazer watch, play, mobile, and theme captures",
+          "Socials OS MAZER-PRODUCTION-WATCH-R2 plus MAZER-PRODUCTION-PLAY-R3 live production capture on July 18, 2026",
       },
       poster: {
         src: "/apps/mazer/trailer-poster.png",
-        sha256: "3974B6F08A19A380DD9795C7E781FDB80C45D53F60D961465E4473A4EF9B2D54",
-        source:
-          "Fawxzzy catalog poster rendered from the Mazer montage with the Socials OS Fawxzzy wolf master",
+        sha256: "753BF581A2A093341745C64A21876F5E2DF6B1405F127A20C0CBE9AA5CA950B5",
+        source: "Poster frame extracted from the live Mazer production trailer at 00:18.200",
       },
     },
   },
