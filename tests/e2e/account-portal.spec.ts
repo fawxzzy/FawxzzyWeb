@@ -23,6 +23,7 @@ import {
 import { resolvePortalAuthAdapter } from "../../src/lib/auth/browser-adapter";
 import { safeAuthError, safeAuthSuccess } from "../../src/lib/auth/errors";
 import { validatePassword } from "../../src/lib/auth/password-policy";
+import { isBrowserSafeSupabasePublicKey } from "../../src/lib/auth/supabase-public-key.mjs";
 
 const accountRoutes = [
   ["/login", "Sign in | Fawxzzy"],
@@ -31,6 +32,20 @@ const accountRoutes = [
   ["/auth/callback", "Account handoff | Fawxzzy"],
   ["/reset-password", "Reset password | Fawxzzy"],
 ] as const;
+
+const syntheticPublishableKey = `sb_publishable_${"a-b_".repeat(5)}ab_${"c-d_".repeat(2)}`;
+
+function encodeSyntheticJwtPart(value: object) {
+  return Buffer.from(JSON.stringify(value), "utf8").toString("base64url");
+}
+
+function syntheticLegacyKey(role: "anon" | "service_role") {
+  return [
+    encodeSyntheticJwtPart({ alg: "HS256", typ: "JWT" }),
+    encodeSyntheticJwtPart({ exp: 4_102_444_800, iss: "supabase", role }),
+    Buffer.from("synthetic-signature", "utf8").toString("base64url"),
+  ].join(".");
+}
 
 test("account origins and exact redirects are centralized", () => {
   expect(accountContract.canonicalOrigin).toBe("https://account.fawxzzy.com");
@@ -89,6 +104,45 @@ test("live account adapters resolve only on the canonical account or bounded loc
     expect(resolution.status, denied).toBe("setup-pending");
     expect(configReads, denied).toBe(0);
     expect(adapterCreations, denied).toBe(0);
+  }
+});
+
+test("public Supabase key admission fails closed before live adapter creation", () => {
+  const legacyAnonymous = syntheticLegacyKey("anon");
+  const rejected = [
+    `sb_secret_${"c".repeat(22)}_${"d".repeat(8)}`,
+    syntheticLegacyKey("service_role"),
+    " ",
+    "unsupported-public-value",
+    "not.a.jwt",
+  ];
+
+  expect(isBrowserSafeSupabasePublicKey(syntheticPublishableKey)).toBe(true);
+  expect(isBrowserSafeSupabasePublicKey(legacyAnonymous)).toBe(true);
+
+  for (const publishableKey of rejected) {
+    let adapterCreations = 0;
+    const resolution = resolvePortalAuthAdapter(
+      { origin: "http://127.0.0.1:3210", search: "" },
+      {
+        createLiveAdapter() {
+          adapterCreations += 1;
+          throw new Error("Rejected public configuration must not create a client.");
+        },
+        readPublicConfig() {
+          return { publishableKey, url: "https://synthetic-project.supabase.co" };
+        },
+      },
+    );
+
+    expect(isBrowserSafeSupabasePublicKey(publishableKey)).toBe(false);
+    expect(resolution.status).toBe("setup-pending");
+    expect(adapterCreations).toBe(0);
+    if (resolution.status === "setup-pending") {
+      expect(resolution.reason).toBe(
+        "Shared account services are not connected on this deployment yet.",
+      );
+    }
   }
 });
 

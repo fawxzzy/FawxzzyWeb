@@ -7,6 +7,7 @@ import {
   isLiveAccountAdapterOrigin,
   isLocalAuthTestOrigin,
 } from "@/config/account";
+import { isBrowserSafeSupabasePublicKey } from "@/lib/auth/supabase-public-key.mjs";
 
 export type PortalSession = {
   email: string | null;
@@ -49,6 +50,10 @@ function toPortalSession(session: Session | null): PortalSession | null {
 }
 
 function createSupabaseAdapter(url: string, publishableKey: string): PortalAuthAdapter {
+  if (!isBrowserSafeSupabasePublicKey(publishableKey)) {
+    throw new Error("Shared account services are not connected on this deployment yet.");
+  }
+
   const client = createClient(url, publishableKey, {
     auth: {
       autoRefreshToken: true,
@@ -253,7 +258,7 @@ export function resolvePortalAuthAdapter(
   }
 
   const config = dependencies.readPublicConfig();
-  if (!config) {
+  if (!config || !isBrowserSafeSupabasePublicKey(config.publishableKey)) {
     return {
       status: "setup-pending",
       reason: "Shared account services are not connected on this deployment yet.",

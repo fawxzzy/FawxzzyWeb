@@ -37,6 +37,15 @@ Live Supabase adapter creation is limited to the exact canonical account origin 
 local development origins below. The public apex, `www`, every Vercel Preview, foreign host, and
 unlisted local port remain setup-pending even when public Supabase configuration is present.
 
+Browser key admission is fail-closed at two boundaries. Before Next.js can inline public
+configuration into a browser bundle, the build accepts only a modern `sb_publishable_...` key in
+the documented format or a well-formed legacy JWT whose decoded role is exactly `anon`. The same
+classifier runs immediately before live client construction. Modern secret keys, legacy
+`service_role` JWTs, malformed or unsupported values, surrounding whitespace, and ambiguous
+configuration stop the build or remain setup-pending with generic copy. Key values and key classes
+are never included in browser errors, logs, test output, or receipts. Missing configuration remains
+an allowed source/Preview state and renders the existing setup-pending interface.
+
 Local testing is limited to `localhost` and `127.0.0.1` on ports `3000` and `3210`. A deterministic
 test adapter may be selected there with `auth_test=success`, `auth_test=error`,
 `auth_test=pending`, `auth_test=session`, or the bounded signup-outcome scenarios

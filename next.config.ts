@@ -1,4 +1,9 @@
 import type { NextConfig } from "next";
+import { assertBrowserSafeSupabasePublicKeyForBuild } from "./src/lib/auth/supabase-public-key.mjs";
+
+assertBrowserSafeSupabasePublicKeyForBuild(
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+);
 
 const nextConfig: NextConfig = {
   output: "export",
