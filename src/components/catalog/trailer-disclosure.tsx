@@ -2,7 +2,10 @@
 
 import { useRef } from "react";
 import type { CatalogTrailer } from "@/data/apps";
-import { TrailerPlayer } from "@/components/catalog/trailer-player";
+import {
+  TrailerPlayer,
+  type TrailerPlayerHandle,
+} from "@/components/catalog/trailer-player";
 
 type TrailerDisclosureProps = {
   appName: string;
@@ -12,12 +15,13 @@ type TrailerDisclosureProps = {
 
 export function TrailerDisclosure({ appName, appSlug, trailer }: TrailerDisclosureProps) {
   const disclosureRef = useRef<HTMLDetailsElement>(null);
+  const playerRef = useRef<TrailerPlayerHandle>(null);
 
   function handleToggle() {
     const disclosure = disclosureRef.current;
 
     if (!disclosure?.open) {
-      disclosure?.querySelector("video")?.pause();
+      playerRef.current?.pauseForDisclosure();
     }
   }
 
@@ -42,7 +46,7 @@ export function TrailerDisclosure({ appName, appSlug, trailer }: TrailerDisclosu
       </summary>
       <div className="trailer-disclosure__body">
         <p>{trailer.description}</p>
-        <TrailerPlayer appName={appName} appSlug={appSlug} trailer={trailer} />
+        <TrailerPlayer appName={appName} appSlug={appSlug} ref={playerRef} trailer={trailer} />
       </div>
     </details>
   );

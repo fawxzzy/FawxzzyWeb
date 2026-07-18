@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { forwardRef, useImperativeHandle, useRef, useState } from "react";
 import type { CatalogTrailer } from "@/data/apps";
 
 type TrailerPlayerProps = {
@@ -9,13 +9,52 @@ type TrailerPlayerProps = {
   trailer: CatalogTrailer;
 };
 
+export type TrailerPlayerHandle = {
+  pauseForDisclosure: () => void;
+};
+
 type PlaybackState = "idle" | "loading" | "playing" | "paused" | "ended" | "error";
 
-export function TrailerPlayer({ appName, appSlug, trailer }: TrailerPlayerProps) {
+function isPlaybackInterruption(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    error.name === "AbortError"
+  );
+}
+
+function interruptedPlaybackState(video: HTMLVideoElement): PlaybackState {
+  return video.currentTime > 0 ? "paused" : "idle";
+}
+
+export const TrailerPlayer = forwardRef<TrailerPlayerHandle, TrailerPlayerProps>(
+  function TrailerPlayer({ appName, appSlug, trailer }, ref) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const disclosurePausedRef = useRef(false);
+  const playAttemptRef = useRef(0);
   const [playbackState, setPlaybackState] = useState<PlaybackState>("idle");
   const descriptionId = `${appSlug}-trailer-description`;
   const statusId = `${appSlug}-trailer-status`;
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      pauseForDisclosure() {
+        const video = videoRef.current;
+
+        disclosurePausedRef.current = true;
+        playAttemptRef.current += 1;
+        video?.pause();
+        setPlaybackState((currentState) =>
+          currentState === "ended" || currentState === "error" || !video
+            ? currentState
+            : interruptedPlaybackState(video),
+        );
+      },
+    }),
+    [],
+  );
 
   async function playTrailer() {
     const video = videoRef.current;
@@ -24,33 +63,46 @@ export function TrailerPlayer({ appName, appSlug, trailer }: TrailerPlayerProps)
       return;
     }
 
+    disclosurePausedRef.current = false;
+
     if (playbackState === "ended") {
       video.currentTime = 0;
     }
 
-    if (
-      video.networkState === HTMLMediaElement.NETWORK_NO_SOURCE &&
-      video.error === null
-    ) {
+    if (video.networkState === HTMLMediaElement.NETWORK_NO_SOURCE || video.error !== null) {
       video.load();
     }
 
+    const playAttempt = playAttemptRef.current + 1;
+    playAttemptRef.current = playAttempt;
     setPlaybackState("loading");
 
     try {
       await video.play();
-    } catch {
-      setPlaybackState("error");
+
+      if (playAttempt === playAttemptRef.current) {
+        setPlaybackState("playing");
+      }
+    } catch (error) {
+      if (playAttempt !== playAttemptRef.current) {
+        return;
+      }
+
+      setPlaybackState(
+        isPlaybackInterruption(error) ? interruptedPlaybackState(video) : "error",
+      );
     }
   }
 
   const actionLabel =
-    playbackState === "paused"
+    playbackState === "error"
+      ? `Retry ${appName} trailer`
+      : playbackState === "paused"
       ? `Resume ${appName} trailer`
       : playbackState === "ended"
         ? `Replay ${appName} trailer`
         : `Play ${appName} trailer`;
-  const showPlayAction = ["idle", "paused", "ended"].includes(playbackState);
+  const showPlayAction = ["idle", "paused", "ended", "error"].includes(playbackState);
 
   return (
     <div className="trailer-player" data-playback-state={playbackState}>
@@ -59,19 +111,38 @@ export function TrailerPlayer({ appName, appSlug, trailer }: TrailerPlayerProps)
         aria-label={`${appName} trailer`}
         className="trailer-player__video"
         controls
-        onEnded={() => setPlaybackState("ended")}
+        onEnded={() => {
+          playAttemptRef.current += 1;
+          setPlaybackState("ended");
+        }}
         onError={(event) => {
           if (event.currentTarget.error) {
+            playAttemptRef.current += 1;
             setPlaybackState("error");
           }
         }}
-        onPause={() => {
-          if (playbackState === "playing") {
-            setPlaybackState("paused");
+        onPause={(event) => {
+          const video = event.currentTarget;
+
+          playAttemptRef.current += 1;
+          setPlaybackState((currentState) =>
+            currentState === "ended" || currentState === "error"
+              ? currentState
+              : interruptedPlaybackState(video),
+          );
+        }}
+        onPlaying={(event) => {
+          if (!disclosurePausedRef.current && !event.currentTarget.paused) {
+            setPlaybackState("playing");
           }
         }}
-        onPlaying={() => setPlaybackState("playing")}
-        onWaiting={() => setPlaybackState("loading")}
+        onWaiting={(event) => {
+          if (!disclosurePausedRef.current && !event.currentTarget.paused) {
+            setPlaybackState((currentState) =>
+              currentState === "error" ? currentState : "loading",
+            );
+          }
+        }}
         playsInline
         poster={trailer.poster.src}
         preload="metadata"
@@ -128,4 +199,4 @@ export function TrailerPlayer({ appName, appSlug, trailer }: TrailerPlayerProps)
       </p>
     </div>
   );
-}
+});

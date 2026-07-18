@@ -216,6 +216,136 @@ test("closing a trailer pauses only that disclosure and reopening stays paused",
 });
 
 for (const app of apps) {
+  test(`${app.name} interrupted trailer attempts stay retryable without hiding genuine errors`, async ({
+    page,
+  }) => {
+    test.setTimeout(60_000);
+    await page.goto("/apps");
+
+    const disclosure = page.locator(`#${app.slug}-trailer`);
+    const trailer = page.getByLabel(`${app.name} trailer`);
+    const retryableAction = page.getByRole("button", {
+      name: new RegExp(`^(Play|Resume) ${app.name} trailer$`),
+    });
+    const setDisclosureOpen = async (open: boolean) => {
+      const isOpen = (await disclosure.getAttribute("open")) !== null;
+
+      if (isOpen !== open) {
+        await disclosure.locator("summary").click({ force: true });
+      }
+
+      if (open) {
+        await expect(disclosure).toHaveAttribute("open", "");
+      } else {
+        await expect(disclosure).not.toHaveAttribute("open", "");
+        await expect(disclosure.locator(".trailer-player")).toHaveAttribute(
+          "data-playback-state",
+          /^(idle|paused|ended|error)$/,
+        );
+      }
+    };
+
+    await setDisclosureOpen(true);
+    await trailer.evaluate((video: HTMLVideoElement) => {
+      type ControlledVideo = HTMLVideoElement & {
+        rejectPendingPlay?: () => void;
+        playbackMode?: "pending" | "abort" | "success" | "error";
+      };
+
+      const controlledVideo = video as ControlledVideo;
+      controlledVideo.playbackMode = "pending";
+      controlledVideo.play = () => {
+        if (controlledVideo.playbackMode === "pending") {
+          return new Promise<void>((_resolve, reject) => {
+            controlledVideo.rejectPendingPlay = () =>
+              reject(new DOMException("Playback was interrupted", "AbortError"));
+          });
+        }
+
+        if (controlledVideo.playbackMode === "error") {
+          return Promise.reject(new DOMException("Media decode failed", "NotSupportedError"));
+        }
+
+        if (controlledVideo.playbackMode === "abort") {
+          return Promise.reject(new DOMException("Playback was interrupted", "AbortError"));
+        }
+
+        return Promise.resolve();
+      };
+    });
+
+    await page.getByRole("button", { name: `Play ${app.name} trailer` }).click({ force: true });
+    await expect(disclosure.locator('[data-playback-state="loading"]')).toBeVisible();
+
+    await setDisclosureOpen(false);
+    await setDisclosureOpen(true);
+    await expect(retryableAction).toBeVisible();
+
+    await trailer.evaluate((video: HTMLVideoElement) => {
+      (video as HTMLVideoElement & { playbackMode?: string }).playbackMode = "success";
+    });
+    await retryableAction.click({ force: true });
+    await expect(disclosure.locator('[data-playback-state="playing"]')).toBeVisible();
+
+    await trailer.evaluate((video: HTMLVideoElement) => {
+      const controlledVideo = video as HTMLVideoElement & { rejectPendingPlay?: () => void };
+      controlledVideo.rejectPendingPlay?.();
+    });
+    await expect(disclosure.locator('[data-playback-state="playing"]')).toBeVisible();
+    await expect(disclosure).not.toContainText("This trailer could not play here.");
+
+    await setDisclosureOpen(false);
+    await setDisclosureOpen(true);
+    await trailer.evaluate((video: HTMLVideoElement) => {
+      (video as HTMLVideoElement & { playbackMode?: string }).playbackMode = "abort";
+    });
+    await retryableAction.click({ force: true });
+    await expect(disclosure.locator(".trailer-player")).toHaveAttribute(
+      "data-playback-state",
+      /^(idle|paused)$/,
+    );
+    await expect(retryableAction).toBeVisible();
+
+    await trailer.evaluate((video: HTMLVideoElement) => {
+      (video as HTMLVideoElement & { playbackMode?: string }).playbackMode = "success";
+    });
+    await retryableAction.click({ force: true });
+    await expect(disclosure.locator('[data-playback-state="playing"]')).toBeVisible();
+
+    for (let cycle = 0; cycle < 2; cycle += 1) {
+      await setDisclosureOpen(false);
+      await setDisclosureOpen(true);
+      await expect(retryableAction).toBeVisible();
+      await retryableAction.click({ force: true });
+      await expect(disclosure.locator('[data-playback-state="playing"]')).toBeVisible();
+    }
+
+    await setDisclosureOpen(false);
+    await setDisclosureOpen(true);
+    await trailer.evaluate((video: HTMLVideoElement) => {
+      (video as HTMLVideoElement & { playbackMode?: string }).playbackMode = "error";
+    });
+    await retryableAction.click({ force: true });
+    await expect(disclosure.locator('[data-playback-state="error"]')).toBeVisible();
+    await expect(disclosure).toContainText("This trailer could not play here.");
+    await expect(page.getByRole("button", { name: `Retry ${app.name} trailer` })).toBeVisible();
+
+    await setDisclosureOpen(false);
+    await setDisclosureOpen(true);
+    await expect(disclosure.locator('[data-playback-state="error"]')).toBeVisible();
+    await expect(page.getByRole("button", { name: `Retry ${app.name} trailer` })).toBeVisible();
+
+    await trailer.evaluate((video: HTMLVideoElement) => {
+      (video as HTMLVideoElement & { playbackMode?: string }).playbackMode = "success";
+    });
+    await page.getByRole("button", { name: `Retry ${app.name} trailer` }).click({ force: true });
+    await expect(disclosure.locator('[data-playback-state="playing"]')).toBeVisible();
+
+    await setDisclosureOpen(false);
+  });
+}
+
+for (const app of apps) {
   test(`${app.name} has a dedicated public app-detail route`, async ({ page }) => {
     test.setTimeout(60_000);
     await page.goto(`/apps/${app.slug}`);
