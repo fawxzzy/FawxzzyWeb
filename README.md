@@ -12,6 +12,11 @@ slug remains `fawxzzyweb`.
 - `/discover` — centralized links to Fitness, custom-workout setup, Discord, TikTok, and YouTube
 - `/trove` — reversible, no-index compatibility route for the former Trove identity
 - `/apps/fitness/preview` — preserved deep link for the Fitness reference board
+- `/login` — email/password sign-in and account creation
+- `/account` — origin-scoped session status and safe account settings
+- `/auth/confirm` — one-time `token_hash` confirmation handler
+- `/auth/callback` — PKCE authorization-code callback scaffold
+- `/reset-password` — recovery request and password completion surface
 - `/healthz.json` — static health and compatibility identity
 - `/manifest.webmanifest` — Fawxzzy install metadata
 
@@ -41,7 +46,19 @@ npm run verify
 
 `npm run verify` runs lint, a static export, route/identity smoke checks, and route-aware
 Playwright checks for metadata, catalog and discovery truth, accessibility, mobile overflow,
-deep links, and compatibility rollback.
+deep links, account safety contracts, and compatibility rollback.
+
+## Shared account portal
+
+Phase one adds a client-only account surface for the future canonical origin
+`https://account.fawxzzy.com`. The static source fails closed with a setup-pending state until
+both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are supplied by a
+separately governed provider-binding packet. No key values belong in this repository.
+
+Sessions remain scoped to the browser origin. FawxzzyWeb does not set parent-domain cookies,
+accept access or refresh tokens in URLs, or claim username/profile capability before the shared
+platform schema is live. Exact redirects, return-target rules, provider settings, rollback, and
+post-bind verification are frozen in `docs/shared-account-portal-phase1.md`.
 
 ## Catalog contract
 

@@ -39,6 +39,12 @@ export async function assertSiteSmoke(baseUrl) {
   if (!homeHtml.includes('href="/discover"')) {
     throw new Error("Home route did not link to the discovery hub.");
   }
+  if (!homeHtml.includes('href="/account"')) {
+    throw new Error("Home route did not link to the live in-project account surface.");
+  }
+  if (homeHtml.includes('href="https://account.fawxzzy.com/account"')) {
+    throw new Error("Home route published the unattached shared-account origin.");
+  }
 
   const appsHtml = await assertRoute(baseUrl, "/apps", "Apps, grounded in their real homes.");
   for (const app of catalogApps) {
@@ -103,6 +109,20 @@ export async function assertSiteSmoke(baseUrl) {
 
   await assertRoute(baseUrl, "/apps/fitness/preview", "Layered screen slots");
 
+  const accountRoutes = [
+    ["/login", "Your account starts here."],
+    ["/account", "One identity. Clear boundaries."],
+    ["/auth/confirm", "Confirm your account."],
+    ["/auth/callback", "Finish signing in."],
+    ["/reset-password", "Recover safely."],
+  ];
+  for (const [path, expectedText] of accountRoutes) {
+    const html = await assertRoute(baseUrl, path, expectedText);
+    if (!html.includes("https://account.fawxzzy.com")) {
+      throw new Error(`${path} did not carry the canonical shared-account origin.`);
+    }
+  }
+
   const healthResponse = await fetch(`${baseUrl}/healthz.json`);
   if (!healthResponse.ok) {
     throw new Error(`Health route returned ${healthResponse.status}.`);
@@ -112,6 +132,7 @@ export async function assertSiteSmoke(baseUrl) {
   if (
     health.status !== "ok" ||
     health.app !== "fawxzzyweb" ||
+    health.accountPortalCapability !== "phase1-source" ||
     health.catalogCapability !== "trove"
   ) {
     throw new Error("Health payload did not match the FawxzzyWeb compatibility contract.");
