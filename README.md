@@ -12,7 +12,7 @@ slug remains `fawxzzyweb`.
 - `/discover` — canonical public hub for apps, training, community, verified social profiles,
   support, and gaming identity
 - `/trove` — reversible, no-index compatibility route for the former Trove identity
-- `/apps/fitness/preview` — preserved deep link for the Fitness reference board
+- `/apps/fitness/preview` — permanent redirect to the Fitness trailer
 - `/login` — email/password sign-in and account creation
 - `/account` — origin-scoped session status and safe account settings
 - `/auth/confirm` — one-time `token_hash` confirmation handler
@@ -71,7 +71,7 @@ poster, and trailer against its recorded SHA-256 hash.
 
 The Apps catalog uses always-visible, user-controlled HTML video with `preload="none"` and a
 caption track. The historical screenshot rail and inline Fitness preview board were replaced by
-these trailer surfaces; `/apps/fitness/preview` remains available as a preserved deep link.
+these trailer surfaces; Vercel redirects `/apps/fitness/preview` to the Fitness trailer.
 
 Current media sources:
 

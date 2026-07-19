@@ -118,8 +118,6 @@ export async function assertSiteSmoke(baseUrl) {
     throw new Error("Trove compatibility identity was not rendered.");
   }
 
-  await assertRoute(baseUrl, "/apps/fitness/preview", "Layered screen slots");
-
   const accountRoutes = [
     ["/login", "Your account starts here."],
     ["/account", "One identity. Clear boundaries."],
