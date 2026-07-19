@@ -11,6 +11,7 @@ slug remains `fawxzzyweb`.
 - `/apps` — canonical app catalog, sourced from `src/data/apps.ts`
 - `/discover` — canonical public hub for apps, training, community, verified social profiles,
   support, and gaming identity
+- `/newsletter` is the owned Building Fawxzzy weekly archive and future opt-in subscription surface
 - `/trove` — reversible, no-index compatibility route for the former Trove identity
 - `/apps/fitness/preview` — permanent redirect to the Fitness trailer
 - `/login` — email/password sign-in and account creation
