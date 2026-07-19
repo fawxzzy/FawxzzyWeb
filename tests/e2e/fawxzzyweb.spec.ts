@@ -23,15 +23,17 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
   );
   await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Everything Fawxzzy, in one place.",
+    "Useful software should stay within reach.",
   );
   await expect(page.getByRole("link", { name: "Fawxzzy home" })).toHaveAttribute("href", "/");
   await expect(page.locator('a[aria-current="page"]')).toHaveCount(1);
+  await expect(page.locator(".site-nav__links a")).toHaveCount(2);
+  await expect(page.getByRole("navigation", { name: "Primary" })).not.toContainText("Account");
   await expect(page.getByRole("link", { name: "Explore apps" })).toHaveAttribute(
     "href",
     "/apps",
   );
-  await expect(page.getByRole("link", { name: "Explore more" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Meet Fawxzzy" })).toHaveAttribute(
     "href",
     "/discover",
   );
@@ -39,17 +41,14 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
     "href",
     productIdentity.canonicalOrigin,
   );
-  await expect(page.locator('img[src="/brand/fawxzzy-banner.png"]')).toHaveAttribute(
+  await expect(page.locator('img[src="/brand/fawxzzy-banner-v2.png"]')).toHaveAttribute(
     "alt",
     /Fawxzzy/,
   );
 
-  for (const app of apps) {
-    await expect(page.getByRole("img", { name: `${app.name} icon` })).toHaveAttribute(
-      "src",
-      app.icon.src,
-    );
-  }
+  await expect(page.getByRole("heading", { name: "Make useful tools more affordable." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Build in public and improve from real use." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /connected home for software/ })).toBeVisible();
 });
 
 test("discover route exposes centralized public destinations", async ({ page }) => {
@@ -101,7 +100,7 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
   await page.goto("/apps");
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Choose an app.",
+    "Software from Fawxzzy.",
   );
 
   for (const app of apps) {
@@ -115,6 +114,12 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
     );
     await expect(appCard).toContainText(app.tagline);
     await expect(appCard).toContainText(app.status);
+    await expect(appCard).not.toContainText(app.category);
+
+    const reviews = entry.locator(`[data-review-placeholder="${app.slug}"]`);
+    await expect(reviews).toContainText(`${app.name} reviews are coming.`);
+    await expect(reviews).toContainText("No ratings yet.");
+    await expect(reviews).toContainText("Planned");
 
     const disclosure = entry.locator("details");
     await expect(disclosure).not.toHaveAttribute("open", "");
@@ -148,12 +153,13 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
   }
 
   await expect(page.locator("details")).toHaveCount(apps.length);
-  await expect(page.locator(".catalog-hero__stats span")).toHaveCount(2);
   await expect(page.locator(".meta-chip")).toHaveCount(0);
+  await expect(page.locator(".app-store-card__category")).toHaveCount(0);
+  await expect(page.locator("[data-review-placeholder]")).toHaveCount(apps.length);
   await expect(page.locator('img[src="/brand/trove-foxmark.png"]')).toHaveCount(0);
   await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
     "content",
-    `${productIdentity.canonicalOrigin}/brand/fawxzzy-banner.png`,
+    `${productIdentity.canonicalOrigin}/brand/fawxzzy-banner-v2.png`,
   );
   await expect(page).toHaveTitle("Apps | Fawxzzy");
   await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
@@ -430,7 +436,8 @@ for (const app of apps) {
       { message: `${app.name} detail trailer should advance`, timeout: 10_000 },
     ).toBeGreaterThan(0.1);
     await trailer.evaluate((video: HTMLVideoElement) => video.pause());
-    await expect(page.locator("body")).toContainText("Real reviews are coming.");
+    await expect(page.locator("body")).toContainText(`${app.name} reviews are coming.`);
+    await expect(page.locator("body")).toContainText("No ratings are published yet.");
     await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
   });
 }
@@ -499,6 +506,10 @@ test("public branding stays separate from repository and provider identity", asy
     { src: "/app/icon-192.png", sizes: "192x192", type: "image/png" },
     { src: "/app/icon-512.png", sizes: "512x512", type: "image/png" },
   ]);
+
+  expect(await sha256ForPublicAsset("/brand/fawxzzy-banner-v2.png")).toBe(
+    "4CB01488B2C3AAFF3E96309B01462E2EF8590AD37489FC95D5E2A4B64AF35594",
+  );
 });
 
 test("app origins preserve the future owner-lane cutover and rollback contract", () => {
@@ -650,11 +661,12 @@ test("mobile routes fit the viewport and preserve primary navigation", async ({ 
           navRight: navRect.right,
           linksLeft: linksRect.left,
           linksRight: linksRect.right,
+          brandRight: brandRect.right,
           minimumTargetHeight: Math.min(...targets.map((target) => target.getBoundingClientRect().height)),
         };
       });
 
-      expect(geometry.brandBottom).toBeLessThanOrEqual(geometry.linksTop + 1);
+      expect(geometry.brandRight).toBeLessThanOrEqual(geometry.linksLeft + 1);
       expect(geometry.linksLeft).toBeGreaterThanOrEqual(geometry.navLeft);
       expect(geometry.linksRight).toBeLessThanOrEqual(geometry.navRight);
       expect(geometry.minimumTargetHeight).toBeGreaterThanOrEqual(44);

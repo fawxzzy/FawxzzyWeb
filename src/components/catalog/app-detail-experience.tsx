@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { CatalogApp } from "@/data/apps";
 import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
+import { ReviewPlaceholder } from "@/components/catalog/review-placeholder";
 import { TrailerDisclosure } from "@/components/catalog/trailer-disclosure";
 import { SiteNav } from "@/components/site/site-nav";
 import { StaticLink } from "@/components/site/static-link";
@@ -81,16 +82,7 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
           <TrailerDisclosure appName={app.name} appSlug={app.slug} trailer={app.trailer} />
         </div>
 
-        <section aria-labelledby="reviews-title" className="app-reviews-preview surface-panel">
-          <div>
-            <p className="eyebrow">Reviews</p>
-            <h2 id="reviews-title">Real reviews are coming.</h2>
-          </div>
-          <p>
-            We will show moderated feedback from verified in-app submissions when the shared
-            review system is ready.
-          </p>
-        </section>
+        <ReviewPlaceholder appName={app.name} appSlug={app.slug} />
       </div>
     </main>
   );

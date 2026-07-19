@@ -15,7 +15,9 @@ preserving repository history, provider linkage, CI, rollback evidence, and down
 
 The July 18, 2026 Fawxzzy visual standard has two roles:
 
-- `public/brand/fawxzzy-banner.png` is the horizontal public banner and social-header source.
+- `public/brand/fawxzzy-banner-v2.png` is the versioned horizontal public banner synchronized
+  from the approved Socials OS `fawxzzy-x-header-1500x500-v2.png` derivative. The versioned URL
+  prevents an older cached banner from surviving a visual-standard update.
 - `public/brand/fawxzzy-wolf.png` is the square fox icon, suitable for avatars, app icon derivatives,
   and compact brand placements.
 
@@ -41,9 +43,9 @@ launch actions continue to use the verified current origin; the detail routes do
 proxy either owner application. Catalog preview material is trailer-only: static screenshot galleries
 and the retired Fitness screenshot board are not part of the public catalog experience.
 
-Future public reviews are governed separately by `docs/public-app-reviews-contract.md`. App-detail
-pages intentionally show no fabricated rating, count, or testimonial while that read model is not
-admitted.
+Future public reviews are governed separately by `docs/public-app-reviews-contract.md`. Catalog and
+app-detail pages intentionally show a setup placeholder with no fabricated rating, count, or
+testimonial while that read model is not admitted.
 
 ## Planned owner-lane origins
 

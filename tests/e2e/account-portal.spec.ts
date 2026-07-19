@@ -509,24 +509,28 @@ test("all account routes carry account canonical metadata and setup-pending stat
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
     await expect(page.locator('[data-auth-state="setup-pending"]')).toBeVisible();
     await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
-    await expect(page.getByRole("link", { name: "Account", exact: true })).toHaveAttribute(
-      "href",
-      "/account",
-    );
+    await expect(page.getByRole("navigation", { name: "Primary" })).not.toContainText("Account");
   }
 });
 
-test("public navigation stays on the live account route until the account host is attached", async ({
+test("public navigation stays focused on apps and discovery", async ({
   page,
 }) => {
   await page.goto("/");
-  await expect(page.getByRole("link", { name: "Account", exact: true })).toHaveAttribute(
+  const navigation = page.getByRole("navigation", { name: "Primary" });
+  await expect(navigation.getByRole("link", { name: "Apps", exact: true })).toHaveAttribute(
     "href",
-    "/account",
+    "/apps",
   );
+  await expect(navigation.getByRole("link", { name: "Discover", exact: true })).toHaveAttribute(
+    "href",
+    "/discover",
+  );
+  await expect(navigation).not.toContainText("Account");
 });
 
-test("login accepts a legacy short password and maps adapter errors safely", async ({ page }) => {
+test("login accepts a legacy short password and maps adapter errors safely", async ({ browserName, page }) => {
+  test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
   await page.goto("/login?auth_test=success");
   const form = page.locator("form");
   await form.getByLabel("Email").fill("legacy@example.test");
@@ -542,7 +546,8 @@ test("login accepts a legacy short password and maps adapter errors safely", asy
   await expect(page.locator('.account-notice[role="alert"]')).toHaveText(safeAuthError("login"));
 });
 
-test("signup enforces ten characters and accepts long passwords", async ({ page }) => {
+test("signup enforces ten characters and accepts long passwords", async ({ browserName, page }) => {
+  test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
   await page.goto("/login?auth_test=success");
   await page.getByRole("button", { name: "Create account" }).click();
   const form = page.locator("form");
@@ -553,7 +558,8 @@ test("signup enforces ten characters and accepts long passwords", async ({ page 
   await expect(page.getByRole("status")).toContainText("account request is complete");
 });
 
-test("signup validation stops before the provider call", async ({ page }) => {
+test("signup validation stops before the provider call", async ({ browserName, page }) => {
+  test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
   await page.goto("/login?auth_test=signup-existing");
   await page.getByRole("button", { name: "Create account" }).click();
   const form = page.locator("form");
@@ -614,9 +620,11 @@ test("every settled provider signup outcome has one non-enumerating result", asy
 });
 
 test("account settings stay session-scoped and username remains capability-gated", async ({
+  browserName,
   context,
   page,
 }) => {
+  test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
   await page.goto("/account?auth_test=session");
   await expect(page.getByText("preview.user@example.test")).toBeVisible();
   await expect(page.locator('[data-username-capability="gated"] button')).toBeDisabled();
@@ -686,7 +694,8 @@ test("default account presentation does not claim service registration without r
   await expect(page.locator('[data-service-disposition="active"]')).toHaveCount(0);
 });
 
-test("recovery exchanges PKCE before exposing the password form", async ({ page }) => {
+test("recovery exchanges PKCE before exposing the password form", async ({ browserName, page }) => {
+  test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
   await page.goto("/reset-password?auth_test=error");
   await page.getByLabel("Email").fill("private@example.test");
   await page.getByRole("button", { name: "Send recovery link" }).click();
