@@ -27,7 +27,7 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
   );
   await expect(page.getByRole("link", { name: "Fawxzzy home" })).toHaveAttribute("href", "/");
   await expect(page.locator('a[aria-current="page"]')).toHaveCount(1);
-  await expect(page.locator(".site-nav__links a")).toHaveCount(2);
+  await expect(page.locator(".site-nav__links a")).toHaveCount(3);
   await expect(page.getByRole("navigation", { name: "Primary" })).not.toContainText("Account");
   await expect(page.getByRole("link", { name: "Explore apps" })).toHaveAttribute(
     "href",
@@ -36,6 +36,10 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Meet Fawxzzy" })).toHaveAttribute(
     "href",
     "/discover",
+  );
+  await expect(page.getByRole("link", { name: "Building Fawxzzy weekly" })).toHaveAttribute(
+    "href",
+    "/newsletter",
   );
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
@@ -92,6 +96,23 @@ test("discover route exposes centralized public destinations", async ({ page }) 
   ).toBeVisible();
   expect(discoveryDestinations.some((destination) => destination.href?.includes("link.me"))).toBe(
     false,
+  );
+  expect(discoveryDestinations.some((destination) => destination.id === "instagram")).toBe(false);
+  await expect(page.getByRole("link", { name: "View the newsletter" })).toHaveAttribute(
+    "href",
+    "/newsletter",
+  );
+});
+
+test("newsletter route provides a truthful owned archive surface", async ({ page }) => {
+  await page.goto("/newsletter");
+
+  await expect(page).toHaveTitle("Building Fawxzzy Weekly | Fawxzzy");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Building Fawxzzy weekly.");
+  await expect(page.getByRole("status")).toContainText("no email address is collected");
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    "href",
+    `${productIdentity.canonicalOrigin}/newsletter`,
   );
 });
 
@@ -571,6 +592,7 @@ test("public routes load without browser errors or framework overlays", async ({
     "/apps/fitness",
     "/apps/mazer",
     "/discover",
+    "/newsletter",
     "/trove",
   ]) {
     const page = await context.newPage();
@@ -607,6 +629,7 @@ for (const route of [
   "/apps/fitness",
   "/apps/mazer",
   "/discover",
+  "/newsletter",
   "/trove",
 ]) {
   test(`${route} has no automated WCAG A/AA violations`, async ({ page }) => {
@@ -628,6 +651,7 @@ test("mobile routes fit the viewport and preserve primary navigation", async ({ 
     "/apps/fitness",
     "/apps/mazer",
     "/discover",
+    "/newsletter",
     "/trove",
   ]) {
     await page.goto(route);

@@ -39,6 +39,9 @@ export async function assertSiteSmoke(baseUrl) {
   if (!homeHtml.includes('href="/discover"')) {
     throw new Error("Home route did not link to the discovery hub.");
   }
+  if (!homeHtml.includes('href="/newsletter"')) {
+    throw new Error("Home route did not link to the owned newsletter archive.");
+  }
   if (homeHtml.includes('>Account</a>')) {
     throw new Error("Primary navigation exposed Account instead of the approved Apps and Discover links.");
   }
@@ -90,7 +93,6 @@ export async function assertSiteSmoke(baseUrl) {
     "https://www.tiktok.com/@fukitzzzzz",
     "https://www.youtube.com/@fawxzzy",
     "https://x.com/Fawxzzy",
-    "https://www.instagram.com/fawx.zzy/",
     "https://www.snapchat.com/add/fawx.zzy",
     "https://www.twitch.tv/fawxzzy",
     "https://cash.app/$fawxzzy",
@@ -107,6 +109,11 @@ export async function assertSiteSmoke(baseUrl) {
   }
   if (discoverHtml.includes("link.me/fawxzzy")) {
     throw new Error("The retired LinkMe destination remained on /discover.");
+  }
+
+  const newsletterHtml = await assertRoute(baseUrl, "/newsletter", "Building Fawxzzy weekly.");
+  if (!newsletterHtml.includes("no email address is collected")) {
+    throw new Error("/newsletter did not truthfully disclose its closed subscription state.");
   }
 
   const compatibilityHtml = await assertRoute(

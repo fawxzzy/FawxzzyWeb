@@ -513,7 +513,7 @@ test("all account routes carry account canonical metadata and setup-pending stat
   }
 });
 
-test("public navigation stays focused on apps and discovery", async ({
+test("public navigation stays focused on apps, discovery, and the owned archive", async ({
   page,
 }) => {
   await page.goto("/");
@@ -525,6 +525,10 @@ test("public navigation stays focused on apps and discovery", async ({
   await expect(navigation.getByRole("link", { name: "Discover", exact: true })).toHaveAttribute(
     "href",
     "/discover",
+  );
+  await expect(navigation.getByRole("link", { name: "Newsletter", exact: true })).toHaveAttribute(
+    "href",
+    "/newsletter",
   );
   await expect(navigation).not.toContainText("Account");
 });

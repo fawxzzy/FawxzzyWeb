@@ -54,6 +54,9 @@ export default function Home() {
               >
                 Meet Fawxzzy
               </StaticLink>
+              <StaticLink className="catalog-button" href="/newsletter">
+                Building Fawxzzy weekly
+              </StaticLink>
             </div>
           </div>
 
@@ -118,6 +121,20 @@ export default function Home() {
             href={productIdentity.appsPath}
           >
             View the apps
+          </StaticLink>
+        </section>
+
+        <section aria-labelledby="newsletter-callout-title" className="discovery-callout surface-panel">
+          <div>
+            <p className="eyebrow">Building Fawxzzy weekly</p>
+            <h2 id="newsletter-callout-title">Follow the work without chasing every feed.</h2>
+            <p>
+              The weekly archive collects the build story, practical lessons, and what happens next.
+              Subscriber delivery is being set up with a privacy-safe email provider before addresses are collected.
+            </p>
+          </div>
+          <StaticLink className="catalog-button catalog-button--primary" href="/newsletter">
+            Open the archive
           </StaticLink>
         </section>
       </div>
