@@ -11,6 +11,19 @@ remain `fawxzzyweb`. Historical receipts keep the names that were true when capt
 This separation prevents an infrastructure label from leaking into the customer-facing brand while
 preserving repository history, provider linkage, CI, rollback evidence, and downstream identifiers.
 
+## Canonical visual assets
+
+The July 18, 2026 Fawxzzy visual standard has two roles:
+
+- `public/brand/fawxzzy-banner.png` is the horizontal public banner and social-header source.
+- `public/brand/fawxzzy-wolf.png` is the square fox icon, suitable for avatars, app icon derivatives,
+  and compact brand placements.
+
+These are synchronized public outputs, not an excuse to create a second canonical icon inside an
+application owner lane. The source record, output hashes, profile-rollout boundary, and trailer
+provenance are documented in the associated refresh receipt. A distinct approved body photograph
+remains a separate, human-led profile-image option; it is not replaced by this icon policy.
+
 ## Catalog boundary
 
 `fawxzzy.com/apps` is the catalog and trailer surface. It does not become the runtime origin for
@@ -25,7 +38,8 @@ independently deployed applications. Each entry in `src/data/apps.ts` owns one s
 Home, Apps, and Discover must read this contract rather than hard-code an app URL or icon.
 Dedicated public detail routes at `/apps/fitness` and `/apps/mazer` read the same contract. Their
 launch actions continue to use the verified current origin; the detail routes do not cut over or
-proxy either owner application.
+proxy either owner application. Catalog preview material is trailer-only: static screenshot galleries
+and the retired Fitness screenshot board are not part of the public catalog experience.
 
 Future public reviews are governed separately by `docs/public-app-reviews-contract.md`. App-detail
 pages intentionally show no fabricated rating, count, or testimonial while that read model is not

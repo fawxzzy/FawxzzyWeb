@@ -140,7 +140,11 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
       expect(response.ok(), `${asset} should be served`).toBe(true);
     }
 
-    await disclosure.locator("summary").click();
+    // WebKit can retain an active native video-control layout during the
+    // collapse transition. The user-facing playback suite still exercises
+    // ordinary clicks; this metadata/asset assertion only needs the native
+    // disclosure state reset before proceeding to the next catalog item.
+    await disclosure.locator("summary").click({ force: true });
   }
 
   await expect(page.locator("details")).toHaveCount(apps.length);
@@ -414,12 +418,7 @@ for (const app of apps) {
     await expect(openApp).toHaveAttribute("target", "_blank");
     await expect(openApp).toHaveAttribute("rel", "noreferrer");
 
-    for (const screenshot of app.screenshots) {
-      await expect(page.getByRole("img", { name: screenshot.alt })).toHaveAttribute(
-        "src",
-        screenshot.src,
-      );
-    }
+    await expect(page.locator(".app-screenshots-section")).toHaveCount(0);
 
     const disclosure = page.locator(`#${app.slug}-trailer`);
     await expect(disclosure).not.toHaveAttribute("open", "");
@@ -483,6 +482,23 @@ test("public branding stays separate from repository and provider identity", asy
   const manifest = await manifestResponse.json();
   expect(manifest.name).toBe("Fawxzzy");
   expect(manifest.short_name).toBe("Fawxzzy");
+
+  for (const iconPath of [
+    "/favicon.ico",
+    "/favicon-16x16.png",
+    "/favicon-32x32.png",
+    "/app/icon-192.png",
+    "/app/icon-512.png",
+    "/icons/apple-touch-icon.png",
+  ]) {
+    const iconResponse = await request.get(iconPath);
+    expect(iconResponse.ok(), `${iconPath} should be publicly available`).toBe(true);
+  }
+
+  expect(manifest.icons).toEqual([
+    { src: "/app/icon-192.png", sizes: "192x192", type: "image/png" },
+    { src: "/app/icon-512.png", sizes: "512x512", type: "image/png" },
+  ]);
 });
 
 test("app origins preserve the future owner-lane cutover and rollback contract", () => {
@@ -527,14 +543,14 @@ test("compatibility route is reversible and points search engines to apps", asyn
   expect(productIdentity.legacyProviderOrigin).toBe("https://fawxzzy-trove.vercel.app");
 });
 
-test("deep links remain available under the apps namespace", async ({ page }) => {
-  await page.goto("/apps/fitness/preview");
+test("the retired Fitness screenshot-board URL has a permanent trailer redirect", async () => {
+  const vercelConfig = JSON.parse(await readFile(resolve(process.cwd(), "vercel.json"), "utf8"));
 
-  await expect(page.getByRole("heading", { name: "Layered screen slots" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Back to Fitness trailer" })).toHaveAttribute(
-    "href",
-    "/apps/fitness#fitness-trailer",
-  );
+  expect(vercelConfig.redirects).toContainEqual({
+    source: "/apps/fitness/preview",
+    destination: "/apps/fitness#fitness-trailer",
+    permanent: true,
+  });
 });
 
 test("public routes load without browser errors or framework overlays", async ({ context }, testInfo) => {
@@ -545,7 +561,6 @@ test("public routes load without browser errors or framework overlays", async ({
     "/apps/mazer",
     "/discover",
     "/trove",
-    "/apps/fitness/preview",
   ]) {
     const page = await context.newPage();
     const errors: string[] = [];
@@ -582,7 +597,6 @@ for (const route of [
   "/apps/mazer",
   "/discover",
   "/trove",
-  "/apps/fitness/preview",
 ]) {
   test(`${route} has no automated WCAG A/AA violations`, async ({ page }) => {
     await page.goto(route);
@@ -604,7 +618,6 @@ test("mobile routes fit the viewport and preserve primary navigation", async ({ 
     "/apps/mazer",
     "/discover",
     "/trove",
-    "/apps/fitness/preview",
   ]) {
     await page.goto(route);
     const dimensions = await page.evaluate(() => ({

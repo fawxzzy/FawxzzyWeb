@@ -63,14 +63,6 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
               Open {app.name}
               <span aria-hidden="true">↗</span>
             </a>
-            {app.slug === "fitness" ? (
-              <StaticLink
-                className="catalog-button catalog-button--secondary"
-                href="/apps/fitness/preview"
-              >
-                View UI preview board
-              </StaticLink>
-            ) : null}
           </div>
         </section>
 
@@ -88,34 +80,6 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
 
           <TrailerDisclosure appName={app.name} appSlug={app.slug} trailer={app.trailer} />
         </div>
-
-        <section aria-labelledby="screenshots-title" className="app-screenshots-section">
-          <div className="section-heading">
-            <p className="eyebrow">Inside {app.name}</p>
-            <h2 id="screenshots-title">A closer look.</h2>
-            <p>See the current app experience.</p>
-          </div>
-          <div
-            aria-label={`${app.name} screenshots`}
-            className="app-screenshot-list"
-            role="region"
-            tabIndex={0}
-          >
-            {app.screenshots.map((screenshot) => (
-              <figure className="app-screenshot surface-panel" key={screenshot.src}>
-                <Image
-                  alt={screenshot.alt}
-                  height={screenshot.height}
-                  sizes="(max-width: 700px) 82vw, 34vw"
-                  src={screenshot.src}
-                  unoptimized
-                  width={screenshot.width}
-                />
-                <figcaption>{screenshot.alt}</figcaption>
-              </figure>
-            ))}
-          </div>
-        </section>
 
         <section aria-labelledby="reviews-title" className="app-reviews-preview surface-panel">
           <div>

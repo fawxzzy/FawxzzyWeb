@@ -12,13 +12,6 @@ export type CatalogTrailer = {
   video: CatalogAsset;
 };
 
-export type CatalogScreenshot = {
-  alt: string;
-  height: number;
-  src: string;
-  width: number;
-};
-
 export type CatalogOriginContract = {
   current: string;
   plannedCanonical: string;
@@ -40,7 +33,6 @@ export type CatalogApp = {
   icon: CatalogAsset;
   name: string;
   origin: CatalogOriginContract;
-  screenshots: CatalogScreenshot[];
   slug: string;
   status: string;
   tagline: string;
@@ -72,26 +64,6 @@ export const apps: CatalogApp[] = [
       source:
         "Exact public readback of the current Fawxzzy Fitness production PWA icon at /app/icon-512.png on July 16, 2026",
     },
-    screenshots: [
-      {
-        src: "/apps/fitness/screenshots/today-dashboard.png",
-        alt: "Fawxzzy Fitness today dashboard",
-        width: 430,
-        height: 932,
-      },
-      {
-        src: "/apps/fitness/screenshots/routine-planner.png",
-        alt: "Fawxzzy Fitness routine planner",
-        width: 430,
-        height: 932,
-      },
-      {
-        src: "/apps/fitness/screenshots/session-history.png",
-        alt: "Fawxzzy Fitness session history",
-        width: 430,
-        height: 932,
-      },
-    ],
     accent: {
       from: "#7F977C",
       glow: "rgba(127, 151, 124, 0.2)",
@@ -99,20 +71,20 @@ export const apps: CatalogApp[] = [
       to: "#5C725D",
     },
     trailer: {
-      durationLabel: "0:30",
+      durationLabel: "0:28",
       description:
-        "The approved launch trailer pairs real product proof with the Fawxzzy Fitness visual system.",
+        "A live production walkthrough of planning, resuming, logging, and reviewing a training session.",
       captionsSrc: "/apps/fitness/trailer-captions.vtt",
       video: {
         src: "/apps/fitness/trailer.mp4",
-        sha256: "B89E8562D9FEC17A2746963187EB3EAB5B1CFF9D7AF3F3194A24F49007A627B6",
+        sha256: "C4FC7C047B3990BA63AB341938F9FD00201758F374AB978A2A27C6ACF03F772A",
         source:
-          "Socials OS FITNESS-LAUNCH-TRAILER-V1 approved public master, rendered from deterministic synthetic fixtures",
+          "July 18, 2026 live production capture using the dedicated sanitized Fitness showcase account",
       },
       poster: {
         src: "/apps/fitness/trailer-poster.png",
-        sha256: "9249FC0D44D1B026E646A8787E05C7E0E9DE581D402C3C4438757576B3F86226",
-        source: "Socials OS FITNESS-LAUNCH-TRAILER-V1 deterministic cover derivative",
+        sha256: "7ED9C54232952F66C0F9376BE707CDC4FED8E6F6EA1D4785E55BB821E4BCF50A",
+        source: "July 18, 2026 live production capture poster derivative",
       },
     },
   },
@@ -140,26 +112,6 @@ export const apps: CatalogApp[] = [
       source:
         "Exact public readback of the current Mazer production app icon at /icons/mazer-app-icon.png on July 16, 2026",
     },
-    screenshots: [
-      {
-        src: "/apps/mazer/screenshots/play.png",
-        alt: "Mazer play mode",
-        width: 1440,
-        height: 1024,
-      },
-      {
-        src: "/apps/mazer/screenshots/watch.png",
-        alt: "Mazer watch mode",
-        width: 1440,
-        height: 1024,
-      },
-      {
-        src: "/apps/mazer/screenshots/mobile-watch.png",
-        alt: "Mazer mobile watch mode",
-        width: 390,
-        height: 844,
-      },
-    ],
     accent: {
       from: "#6C836D",
       glow: "rgba(164, 181, 163, 0.18)",
@@ -167,21 +119,20 @@ export const apps: CatalogApp[] = [
       to: "#A4B5A3",
     },
     trailer: {
-      durationLabel: "0:23",
+      durationLabel: "0:35",
       description:
-        "A Fawxzzy-owned montage turns the established Mazer catalog captures into one compact watch, play, and mobile story.",
+        "Live production footage moves from an ambient watch run into active play, pause, and resume.",
       captionsSrc: "/apps/mazer/trailer-captions.vtt",
       video: {
         src: "/apps/mazer/trailer.mp4",
-        sha256: "B2852D2E8E755D3B3FC219A906C625B10A1292A6AC42B78B3311E66B7D938AA3",
+        sha256: "7D88E51802780DBD6AAB97D329E55C9FF0A8FBEBFF6F761EC9C19BB7A9DAD6FB",
         source:
-          "Fawxzzy catalog montage rendered from the existing owned Mazer watch, play, mobile, and theme captures",
+          "Socials OS MAZER-PRODUCTION-WATCH-R2 plus MAZER-PRODUCTION-PLAY-R3 live production capture on July 18, 2026",
       },
       poster: {
         src: "/apps/mazer/trailer-poster.png",
-        sha256: "3974B6F08A19A380DD9795C7E781FDB80C45D53F60D961465E4473A4EF9B2D54",
-        source:
-          "Fawxzzy catalog poster rendered from the Mazer montage with the Socials OS Fawxzzy wolf master",
+        sha256: "753BF581A2A093341745C64A21876F5E2DF6B1405F127A20C0CBE9AA5CA950B5",
+        source: "Poster frame extracted from the live Mazer production trailer at 00:18.200",
       },
     },
   },
