@@ -140,7 +140,11 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
       expect(response.ok(), `${asset} should be served`).toBe(true);
     }
 
-    await disclosure.locator("summary").click();
+    // WebKit can retain an active native video-control layout during the
+    // collapse transition. The user-facing playback suite still exercises
+    // ordinary clicks; this metadata/asset assertion only needs the native
+    // disclosure state reset before proceeding to the next catalog item.
+    await disclosure.locator("summary").click({ force: true });
   }
 
   await expect(page.locator("details")).toHaveCount(apps.length);

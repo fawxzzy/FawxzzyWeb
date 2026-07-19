@@ -71,20 +71,20 @@ export const apps: CatalogApp[] = [
       to: "#5C725D",
     },
     trailer: {
-      durationLabel: "0:30",
+      durationLabel: "0:28",
       description:
-        "The approved launch trailer pairs real product proof with the Fawxzzy Fitness visual system.",
+        "A live production walkthrough of planning, resuming, logging, and reviewing a training session.",
       captionsSrc: "/apps/fitness/trailer-captions.vtt",
       video: {
         src: "/apps/fitness/trailer.mp4",
-        sha256: "B89E8562D9FEC17A2746963187EB3EAB5B1CFF9D7AF3F3194A24F49007A627B6",
+        sha256: "C4FC7C047B3990BA63AB341938F9FD00201758F374AB978A2A27C6ACF03F772A",
         source:
-          "Socials OS FITNESS-LAUNCH-TRAILER-V1 approved public master, rendered from deterministic synthetic fixtures",
+          "July 18, 2026 live production capture using the dedicated sanitized Fitness showcase account",
       },
       poster: {
         src: "/apps/fitness/trailer-poster.png",
-        sha256: "9249FC0D44D1B026E646A8787E05C7E0E9DE581D402C3C4438757576B3F86226",
-        source: "Socials OS FITNESS-LAUNCH-TRAILER-V1 deterministic cover derivative",
+        sha256: "7ED9C54232952F66C0F9376BE707CDC4FED8E6F6EA1D4785E55BB821E4BCF50A",
+        source: "July 18, 2026 live production capture poster derivative",
       },
     },
   },

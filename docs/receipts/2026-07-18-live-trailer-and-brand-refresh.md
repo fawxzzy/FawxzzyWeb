@@ -33,22 +33,21 @@ same square source. They are product outputs, not a separate brand source.
 
 | App | Duration | Video SHA-256 | Poster SHA-256 | Capture truth |
 | --- | ---: | --- | --- | --- |
+| Fitness | 00:27.6 | `C4FC7C047B3990BA63AB341938F9FD00201758F374AB978A2A27C6ACF03F772A` | `7ED9C54232952F66C0F9376BE707CDC4FED8E6F6EA1D4785E55BB821E4BCF50A` | Live production capture: Today, routine, active session, real QA set logging, and history detail on a dedicated sanitized showcase account. |
 | Mazer | 00:34.8 | `7D88E51802780DBD6AAB97D329E55C9FF0A8FBEBFF6F761EC9C19BB7A9DAD6FB` | `753BF581A2A093341745C64A21876F5E2DF6B1405F127A20C0CBE9AA5CA950B5` | Live Mazer production capture: watch mode, active play, pause, and resume. |
 
-The Mazer master is 1080x1920 H.264/yuv420p MP4 at 30fps with an AAC-LC silent compatibility
-track and an independent WebVTT caption track. It uses live screencast frames and safe-area
-composition; no legacy catalog screenshots are used as trailer footage.
+Both masters are 1080x1920 H.264/yuv420p MP4 at 30fps with independent WebVTT caption tracks.
+They use live screencast frames; no legacy catalog screenshots are used as trailer footage.
 
 ## Boundaries
 
 - The previous masters remain recoverable through the pre-refresh Git revision and the existing
   Vercel deployment rollback path; this change does not delete historical release evidence.
-- The Fitness live-fixture review cut is not published as a catalog master; it remains local-only
-  evidence until a privacy-safe production showcase capture can replace it.
-- A July 18 browser preflight found no reusable Fitness production session in either available
-  browser surface; the public app resolved to its password-gated login route. No credentials were
-  requested, entered, or retained, and no Fitness production capture was taken. This is the release
-  gate for replacing the current Fitness trailer with honest live production footage.
+- Fitness now uses a dedicated `user_kind=automation` showcase account. Its public capture data is
+  sanitized, intentionally representative, and retained only for QA/showcase use; it is not a copy
+  of a personal account. The visible routine is `Performance Builder` and the day is `Upper Strength`.
+  The temporary authenticated browser state and raw screencast frames remain in ignored Atlas runtime
+  and capture directories, never in this repository.
 - Seven unreferenced legacy screenshot candidates remain retained locally until a separate
   retention decision confirms they are no longer needed for rollback or provenance.
 - The public catalog is trailer-only. Static screenshot galleries and the Fitness screenshot-board
