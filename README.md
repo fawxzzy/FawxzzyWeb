@@ -24,6 +24,13 @@ slug remains `fawxzzyweb`.
 Fitness and Mazer remain independently owned and link to their existing production origins.
 The catalog does not synthesize cross-origin install behavior.
 
+## Newsletter contract
+
+`/newsletter` is the owned archive for Building Fawxzzy weekly and is linked from Home, Discover,
+and the primary navigation. It intentionally collects no email address until an approved delivery
+provider, double-opt-in workflow, unsubscribe path, and auditable delivery receipts exist. The
+archive and subscription system are separate from product-account authentication and Supabase.
+
 ## Local development
 
 ```bash
