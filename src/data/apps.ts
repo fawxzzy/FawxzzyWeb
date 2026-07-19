@@ -12,13 +12,6 @@ export type CatalogTrailer = {
   video: CatalogAsset;
 };
 
-export type CatalogScreenshot = {
-  alt: string;
-  height: number;
-  src: string;
-  width: number;
-};
-
 export type CatalogOriginContract = {
   current: string;
   plannedCanonical: string;
@@ -40,7 +33,6 @@ export type CatalogApp = {
   icon: CatalogAsset;
   name: string;
   origin: CatalogOriginContract;
-  screenshots: CatalogScreenshot[];
   slug: string;
   status: string;
   tagline: string;
@@ -72,26 +64,6 @@ export const apps: CatalogApp[] = [
       source:
         "Exact public readback of the current Fawxzzy Fitness production PWA icon at /app/icon-512.png on July 16, 2026",
     },
-    screenshots: [
-      {
-        src: "/apps/fitness/screenshots/today-dashboard.png",
-        alt: "Fawxzzy Fitness today dashboard",
-        width: 430,
-        height: 932,
-      },
-      {
-        src: "/apps/fitness/screenshots/routine-planner.png",
-        alt: "Fawxzzy Fitness routine planner",
-        width: 430,
-        height: 932,
-      },
-      {
-        src: "/apps/fitness/screenshots/session-history.png",
-        alt: "Fawxzzy Fitness session history",
-        width: 430,
-        height: 932,
-      },
-    ],
     accent: {
       from: "#7F977C",
       glow: "rgba(127, 151, 124, 0.2)",
@@ -140,26 +112,6 @@ export const apps: CatalogApp[] = [
       source:
         "Exact public readback of the current Mazer production app icon at /icons/mazer-app-icon.png on July 16, 2026",
     },
-    screenshots: [
-      {
-        src: "/apps/mazer/screenshots/play.png",
-        alt: "Mazer play mode",
-        width: 1440,
-        height: 1024,
-      },
-      {
-        src: "/apps/mazer/screenshots/watch.png",
-        alt: "Mazer watch mode",
-        width: 1440,
-        height: 1024,
-      },
-      {
-        src: "/apps/mazer/screenshots/mobile-watch.png",
-        alt: "Mazer mobile watch mode",
-        width: 390,
-        height: 844,
-      },
-    ],
     accent: {
       from: "#6C836D",
       glow: "rgba(164, 181, 163, 0.18)",

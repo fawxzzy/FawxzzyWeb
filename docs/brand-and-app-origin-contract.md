@@ -38,7 +38,8 @@ independently deployed applications. Each entry in `src/data/apps.ts` owns one s
 Home, Apps, and Discover must read this contract rather than hard-code an app URL or icon.
 Dedicated public detail routes at `/apps/fitness` and `/apps/mazer` read the same contract. Their
 launch actions continue to use the verified current origin; the detail routes do not cut over or
-proxy either owner application.
+proxy either owner application. Catalog preview material is trailer-only: static screenshot galleries
+and the retired Fitness screenshot board are not part of the public catalog experience.
 
 Future public reviews are governed separately by `docs/public-app-reviews-contract.md`. App-detail
 pages intentionally show no fabricated rating, count, or testimonial while that read model is not
