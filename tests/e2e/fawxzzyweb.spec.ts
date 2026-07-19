@@ -642,10 +642,8 @@ for (const route of [
   });
 }
 
-test("mobile routes fit the viewport and preserve primary navigation", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-
-  for (const route of [
+test("primary navigation adapts without clipping from 320px through desktop", async ({ page }) => {
+  const routes = [
     "/",
     "/apps",
     "/apps/fitness",
@@ -653,18 +651,37 @@ test("mobile routes fit the viewport and preserve primary navigation", async ({ 
     "/discover",
     "/newsletter",
     "/trove",
-  ]) {
-    await page.goto(route);
-    const dimensions = await page.evaluate(() => ({
-      clientWidth: document.documentElement.clientWidth,
-      scrollWidth: document.documentElement.scrollWidth,
-    }));
+  ];
+  const destinations = [
+    ["Apps", "/apps"],
+    ["Discover", "/discover"],
+    ["Newsletter", "/newsletter"],
+  ] as const;
 
-    expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
-    await expect(page.locator("main#main-content")).toBeVisible();
+  for (const width of [320, 360]) {
+    await page.setViewportSize({ width, height: 844 });
 
-    const primaryNav = page.getByRole("navigation", { name: "Primary" });
-    if (await primaryNav.count()) {
+    for (const route of routes) {
+      await page.goto(route);
+      const dimensions = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      }));
+
+      expect(dimensions.scrollWidth, `${route} at ${width}px`).toBeLessThanOrEqual(
+        dimensions.clientWidth,
+      );
+      await expect(page.locator("main#main-content")).toBeVisible();
+
+      const primaryNav = page.getByRole("navigation", { name: "Primary" });
+      if (!(await primaryNav.count())) continue;
+
+      for (const [name, href] of destinations) {
+        const link = primaryNav.getByRole("link", { name, exact: true });
+        await expect(link).toBeVisible();
+        await expect(link).toHaveAttribute("href", href);
+      }
+
       const geometry = await primaryNav.evaluate((nav) => {
         const brand = nav.querySelector<HTMLElement>(".site-nav__brand");
         const links = nav.querySelector<HTMLElement>(".site-nav__links");
@@ -677,26 +694,59 @@ test("mobile routes fit the viewport and preserve primary navigation", async ({ 
         const navRect = nav.getBoundingClientRect();
         const brandRect = brand.getBoundingClientRect();
         const linksRect = links.getBoundingClientRect();
+        const targetRects = targets.map((target) => target.getBoundingClientRect());
 
         return {
           brandBottom: brandRect.bottom,
-          linksTop: linksRect.top,
-          navLeft: navRect.left,
-          navRight: navRect.right,
+          linksClientWidth: links.clientWidth,
           linksLeft: linksRect.left,
           linksRight: linksRect.right,
-          brandRight: brandRect.right,
-          minimumTargetHeight: Math.min(...targets.map((target) => target.getBoundingClientRect().height)),
+          linksScrollWidth: links.scrollWidth,
+          linksTop: linksRect.top,
+          minimumTargetHeight: Math.min(...targetRects.map((rect) => rect.height)),
+          navLeft: navRect.left,
+          navRight: navRect.right,
+          targetsInsideNav: targetRects.every(
+            (rect) => rect.left >= navRect.left - 1 && rect.right <= navRect.right + 1,
+          ),
         };
       });
 
-      expect(geometry.brandRight).toBeLessThanOrEqual(geometry.linksLeft + 1);
+      expect(geometry.brandBottom, `${route} at ${width}px`).toBeLessThanOrEqual(
+        geometry.linksTop + 1,
+      );
       expect(geometry.linksLeft).toBeGreaterThanOrEqual(geometry.navLeft);
       expect(geometry.linksRight).toBeLessThanOrEqual(geometry.navRight);
+      expect(geometry.linksScrollWidth).toBeLessThanOrEqual(geometry.linksClientWidth);
+      expect(geometry.targetsInsideNav).toBe(true);
       expect(geometry.minimumTargetHeight).toBeGreaterThanOrEqual(44);
       await expect(primaryNav.locator('a[aria-current="page"]')).toHaveCount(1);
     }
   }
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto("/newsletter");
+  const primaryNav = page.getByRole("navigation", { name: "Primary" });
+  const desktopGeometry = await primaryNav.evaluate((nav) => {
+    const brand = nav.querySelector<HTMLElement>(".site-nav__brand");
+    const links = nav.querySelector<HTMLElement>(".site-nav__links");
+    if (!brand || !links) throw new Error("Primary navigation geometry is incomplete");
+    const brandRect = brand.getBoundingClientRect();
+    const linksRect = links.getBoundingClientRect();
+    return {
+      brandBottom: brandRect.bottom,
+      brandRight: brandRect.right,
+      brandTop: brandRect.top,
+      linksBottom: linksRect.bottom,
+      linksLeft: linksRect.left,
+      linksTop: linksRect.top,
+    };
+  });
+
+  expect(desktopGeometry.brandRight).toBeLessThanOrEqual(desktopGeometry.linksLeft);
+  expect(desktopGeometry.brandTop).toBeLessThan(desktopGeometry.linksBottom);
+  expect(desktopGeometry.linksTop).toBeLessThan(desktopGeometry.brandBottom);
+  await expect(primaryNav.locator('a[aria-current="page"]')).toHaveCount(1);
 });
 
 test("health and manifest remain available with the public identity", async ({ request }) => {
