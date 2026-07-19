@@ -39,12 +39,6 @@ export function SiteNav({ current }: SiteNavProps) {
         >
           Discover
         </StaticLink>
-        <StaticLink
-          aria-current={current === "account" ? "page" : undefined}
-          href="/account"
-        >
-          Account
-        </StaticLink>
       </div>
     </nav>
   );

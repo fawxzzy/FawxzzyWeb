@@ -60,9 +60,9 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        alt: "Fawxzzy — build, train, create",
+        alt: "Fawxzzy — creator, builder, fitness, and gaming",
         height: 500,
-        url: "/brand/fawxzzy-banner.png",
+        url: "/brand/fawxzzy-banner-v2.png",
         width: 1500,
       },
     ],
@@ -71,7 +71,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: productIdentity.publicName,
     description: productIdentity.description,
-    images: ["/brand/fawxzzy-banner.png"],
+    images: ["/brand/fawxzzy-banner-v2.png"],
   },
 };
 

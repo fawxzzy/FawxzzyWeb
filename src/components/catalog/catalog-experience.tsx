@@ -50,25 +50,12 @@ export function CatalogExperience({ compatibilityIdentity }: CatalogExperiencePr
             <div className="hero__intro">
               <p className="eyebrow">{productIdentity.publicName} / Apps</p>
               <h1 className="hero__title" id="apps-title">
-                Choose an app.
+                Software from Fawxzzy.
               </h1>
               <p className="hero__lede readable-column">
-                Open a page for the details, or expand a trailer to watch it here.
+                Focused tools and games with real demos. Watch each product here,
+                then open its page or current live experience.
               </p>
-              <div className="catalog-hero__stats" aria-label="Catalog summary">
-                <span>
-                  <strong>{apps.length}</strong> live apps
-                </span>
-                <span>
-                  <strong>{apps.length}</strong> trailers
-                </span>
-              </div>
-            </div>
-
-            <div className="hero__actions">
-              <a className="catalog-button catalog-button--primary" href="#catalog">
-                Browse apps
-              </a>
             </div>
           </div>
         </section>

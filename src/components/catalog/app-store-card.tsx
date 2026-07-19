@@ -24,7 +24,6 @@ export function AppStoreCard({ app }: AppStoreCardProps) {
         width={80}
       />
       <span className="app-store-card__copy">
-        <span className="app-store-card__category">{app.category}</span>
         <strong>{app.name}</strong>
         <span>{app.tagline}</span>
         <span className="app-store-card__status">{app.status}</span>

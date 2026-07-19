@@ -28,25 +28,22 @@ export async function assertSiteSmoke(baseUrl) {
   const homeHtml = await assertRoute(
     baseUrl,
     "/",
-    "Everything Fawxzzy, in one place.",
+    "Useful software should stay within reach.",
   );
   if (!homeHtml.includes('href="/apps"')) {
     throw new Error("Home route did not link to the canonical app catalog.");
   }
-  if (!homeHtml.includes('/brand/fawxzzy-banner.png')) {
-    throw new Error("Home route did not render the shared Fawxzzy brand artwork.");
+  if (!homeHtml.includes('/brand/fawxzzy-banner-v2.png')) {
+    throw new Error("Home route did not render the approved V2 Fawxzzy banner.");
   }
   if (!homeHtml.includes('href="/discover"')) {
     throw new Error("Home route did not link to the discovery hub.");
   }
-  if (!homeHtml.includes('href="/account"')) {
-    throw new Error("Home route did not link to the live in-project account surface.");
-  }
-  if (homeHtml.includes('href="https://account.fawxzzy.com/account"')) {
-    throw new Error("Home route published the unattached shared-account origin.");
+  if (homeHtml.includes('>Account</a>')) {
+    throw new Error("Primary navigation exposed Account instead of the approved Apps and Discover links.");
   }
 
-  const appsHtml = await assertRoute(baseUrl, "/apps", "Choose an app.");
+  const appsHtml = await assertRoute(baseUrl, "/apps", "Software from Fawxzzy.");
   for (const app of catalogApps) {
     if (!appsHtml.includes(`href="${app.path}"`)) {
       throw new Error(`/apps did not link ${app.name} to ${app.path}.`);
@@ -76,6 +73,9 @@ export async function assertSiteSmoke(baseUrl) {
   }
   if (appsHtml.includes('/brand/trove-foxmark.png')) {
     throw new Error("The retired Trove hero image is still present on /apps.");
+  }
+  if ((appsHtml.match(/data-review-placeholder=/g) ?? []).length !== catalogApps.length) {
+    throw new Error("The app catalog did not render one truthful review placeholder per app.");
   }
 
   const discoverHtml = await assertRoute(

@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
-import { AppStoreCard } from "@/components/catalog/app-store-card";
 import { SiteNav } from "@/components/site/site-nav";
 import { StaticLink } from "@/components/site/static-link";
 import { productIdentity } from "@/config/product";
-import { apps } from "@/data/apps";
 
 export const metadata: Metadata = {
   title: productIdentity.publicName,
@@ -37,9 +35,11 @@ export default function Home() {
         <section aria-labelledby="home-title" className="home-hero surface-panel">
           <div className="home-hero__copy">
             <p className="eyebrow">Fawxzzy</p>
-            <h1 id="home-title">Everything Fawxzzy, in one place.</h1>
+            <h1 id="home-title">Useful software should stay within reach.</h1>
             <p>
-              Find the apps, follow the work, or jump into the community.
+              I&apos;m Fawxzzy—an independent builder creating practical software,
+              games, and the platform that connects them. I share the work as I
+              learn, ship, and make it better.
             </p>
             <div className="hero__actions">
               <StaticLink
@@ -52,48 +52,72 @@ export default function Home() {
                 className="catalog-button catalog-button--secondary"
                 href="/discover"
               >
-                Explore more
+                Meet Fawxzzy
               </StaticLink>
             </div>
           </div>
 
           <div className="home-hero__artwork">
             <Image
-              alt="Fawxzzy — build, train, create"
+              alt="Fawxzzy — creator, builder, fitness, and gaming"
               height={500}
               priority
-              src="/brand/fawxzzy-banner.png"
+              src="/brand/fawxzzy-banner-v2.png"
               unoptimized
               width={1500}
             />
           </div>
         </section>
 
-        <section aria-labelledby="featured-apps-title" className="home-apps" id="featured-apps">
+        <section aria-labelledby="mission-title" className="home-mission">
           <div className="section-heading">
-            <p className="eyebrow">Apps</p>
-            <h2 id="featured-apps-title">Pick an app.</h2>
-            <p>Each app has its own page, trailer, and live destination.</p>
+            <p className="eyebrow">What I&apos;m building</p>
+            <h2 id="mission-title">One platform. Focused products. A human reason behind them.</h2>
+            <p>
+              Fawxzzy brings my software, fitness work, games, and community into one
+              clear home without flattening each product into the same thing.
+            </p>
           </div>
 
-          <div className="home-app-grid">
-            {apps.map((app) => (
-              <AppStoreCard app={app} key={app.slug} />
-            ))}
+          <div className="home-principles">
+            <article className="home-principle surface-panel">
+              <p className="eyebrow">Why</p>
+              <h3>Make useful tools more affordable.</h3>
+              <p>
+                Good software should earn its place by helping people, not by hiding
+                basic value behind clutter, pressure, or confusing pricing.
+              </p>
+            </article>
+            <article className="home-principle surface-panel">
+              <p className="eyebrow">How</p>
+              <h3>Build in public and improve from real use.</h3>
+              <p>
+                I start with a focused problem, keep the product understandable, and
+                use honest feedback to decide what deserves to grow next.
+              </p>
+            </article>
+            <article className="home-principle surface-panel">
+              <p className="eyebrow">Where it goes</p>
+              <h3>A connected home for software, services, and games.</h3>
+              <p>
+                The long-term platform gives people one trustworthy Fawxzzy identity
+                while every app keeps a clear purpose and a reliable home of its own.
+              </p>
+            </article>
           </div>
         </section>
 
-        <section aria-labelledby="discover-title" className="discovery-callout surface-panel">
+        <section aria-labelledby="apps-callout-title" className="discovery-callout surface-panel">
           <div>
-            <p className="eyebrow">More Fawxzzy</p>
-            <h2 id="discover-title">Training, community, and socials.</h2>
-            <p>One place for the links that matter.</p>
+            <p className="eyebrow">Software and games</p>
+            <h2 id="apps-callout-title">See what is live and what I&apos;m building next.</h2>
+            <p>Each product has a real trailer, a focused page, and its current destination.</p>
           </div>
           <StaticLink
             className="catalog-button catalog-button--primary"
-            href="/discover"
+            href={productIdentity.appsPath}
           >
-            Discover more
+            View the apps
           </StaticLink>
         </section>
       </div>
