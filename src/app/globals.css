@@ -2290,13 +2290,6 @@ a.discovery-link:hover {
     border-radius: 23px;
   }
 
-  .app-screenshot-list {
-    grid-auto-columns: minmax(15rem, 82vw);
-  }
-
-  .app-screenshot img {
-    height: min(60vh, 34rem);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
