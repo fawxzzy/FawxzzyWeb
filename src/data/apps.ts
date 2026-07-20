@@ -71,20 +71,20 @@ export const apps: CatalogApp[] = [
       to: "#5C725D",
     },
     trailer: {
-      durationLabel: "0:20",
+      durationLabel: "1:00",
       description:
-        "A branded live production walkthrough: navigate the plan, review history, resume a session, and open the next exercise.",
+        "A 60-second branded live walkthrough: review today's plan, inspect exercise detail, move through routines and history, then return to the next training step.",
       captionsSrc: "/apps/fitness/trailer-captions.vtt",
       video: {
         src: "/apps/fitness/trailer.mp4",
-        sha256: "CB26D96E72C6ABCAB9A57F4C4774291E89D1DDA1C0634902F7C667F5D4EB07E5",
+        sha256: "31747F9B62A7D55E549FE0B15F8AE56840FBE172D0871027366097EED8AF982E",
         source:
-          "July 19, 2026 live production walkthrough using the dedicated sanitized Fitness QA account",
+          "July 20, 2026 60-second live production walkthrough using the dedicated sanitized Fitness QA account",
       },
       poster: {
         src: "/apps/fitness/trailer-poster.png",
-        sha256: "391CC4B80246BA41F12CBA8D3A6FD132D4711BE8AA9F37B56911F1CA62E2E3D0",
-        source: "July 19, 2026 live production walkthrough poster derivative",
+        sha256: "D2228EDB36BBDA1EB1D32EA1EF8D643E1C18CEE5C7600CEC3D9B21E308223FDC",
+        source: "July 20, 2026 60-second live production walkthrough poster derivative",
       },
     },
   },
@@ -119,20 +119,20 @@ export const apps: CatalogApp[] = [
       to: "#A4B5A3",
     },
     trailer: {
-      durationLabel: "0:14",
+      durationLabel: "1:00",
       description:
-        "A branded live production walkthrough: enter the maze, move through a run, pause, and return to play.",
+        "A 60-second branded live walkthrough: enter the maze, make deliberate moves through a run, pause for the player guide, and return to play.",
       captionsSrc: "/apps/mazer/trailer-captions.vtt",
       video: {
         src: "/apps/mazer/trailer.mp4",
-        sha256: "0F04162F9E9C9FA8AD7203245BEAA78B4A3967D23D8E7035AA65F6949008B297",
+        sha256: "711A5ED95B3527648F69BCF0A0E69761B4B84D87CE1C919FF34C88D880E28623",
         source:
-          "July 19, 2026 live production guest walkthrough with visible keyboard and cursor interaction",
+          "July 20, 2026 60-second live production guest walkthrough with visible keyboard and cursor interaction",
       },
       poster: {
         src: "/apps/mazer/trailer-poster.png",
-        sha256: "9999A84AE09894A5900A12581A0FCBD486A852C9EE9F191052CAC09F2F9DD6A0",
-        source: "July 19, 2026 live Mazer production walkthrough poster derivative",
+        sha256: "EB092F948FA617C8906BBF59795CD17FC9839CF873A440B8589E3223CAC8FD5F",
+        source: "July 20, 2026 60-second live Mazer production walkthrough poster derivative",
       },
     },
   },

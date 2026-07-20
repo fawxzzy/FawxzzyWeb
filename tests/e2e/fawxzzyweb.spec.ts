@@ -200,6 +200,14 @@ test("each catalog trailer starts real playback from its explicit action", async
       () => trailer.evaluate((video: HTMLVideoElement) => video.currentTime),
       { message: `${app.name} trailer should advance`, timeout: 10_000 },
     ).toBeGreaterThan(0.1);
+    await expect.poll(
+      () => trailer.evaluate((video: HTMLVideoElement) => video.duration),
+      { message: `${app.name} trailer should remain a one-minute master`, timeout: 10_000 },
+    ).toBeGreaterThanOrEqual(59.9);
+    await expect.poll(
+      () => trailer.evaluate((video: HTMLVideoElement) => video.duration),
+      { message: `${app.name} trailer should not exceed the one-minute master`, timeout: 10_000 },
+    ).toBeLessThanOrEqual(60.1);
     await expect(disclosure.locator('[data-playback-state="playing"]')).toBeVisible();
 
     await trailer.evaluate((video: HTMLVideoElement) => video.pause());
