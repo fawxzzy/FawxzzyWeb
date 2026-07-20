@@ -71,20 +71,20 @@ export const apps: CatalogApp[] = [
       to: "#5C725D",
     },
     trailer: {
-      durationLabel: "0:28",
+      durationLabel: "0:20",
       description:
-        "A live production walkthrough of planning, resuming, logging, and reviewing a training session.",
+        "A branded live production walkthrough: navigate the plan, review history, resume a session, and open the next exercise.",
       captionsSrc: "/apps/fitness/trailer-captions.vtt",
       video: {
         src: "/apps/fitness/trailer.mp4",
-        sha256: "C4FC7C047B3990BA63AB341938F9FD00201758F374AB978A2A27C6ACF03F772A",
+        sha256: "CB26D96E72C6ABCAB9A57F4C4774291E89D1DDA1C0634902F7C667F5D4EB07E5",
         source:
-          "July 18, 2026 live production capture using the dedicated sanitized Fitness showcase account",
+          "July 19, 2026 live production walkthrough using the dedicated sanitized Fitness QA account",
       },
       poster: {
         src: "/apps/fitness/trailer-poster.png",
-        sha256: "7ED9C54232952F66C0F9376BE707CDC4FED8E6F6EA1D4785E55BB821E4BCF50A",
-        source: "July 18, 2026 live production capture poster derivative",
+        sha256: "391CC4B80246BA41F12CBA8D3A6FD132D4711BE8AA9F37B56911F1CA62E2E3D0",
+        source: "July 19, 2026 live production walkthrough poster derivative",
       },
     },
   },
@@ -119,20 +119,20 @@ export const apps: CatalogApp[] = [
       to: "#A4B5A3",
     },
     trailer: {
-      durationLabel: "0:35",
+      durationLabel: "0:14",
       description:
-        "Live production footage moves from an ambient watch run into active play, pause, and resume.",
+        "A branded live production walkthrough: enter the maze, move through a run, pause, and return to play.",
       captionsSrc: "/apps/mazer/trailer-captions.vtt",
       video: {
         src: "/apps/mazer/trailer.mp4",
-        sha256: "7D88E51802780DBD6AAB97D329E55C9FF0A8FBEBFF6F761EC9C19BB7A9DAD6FB",
+        sha256: "0F04162F9E9C9FA8AD7203245BEAA78B4A3967D23D8E7035AA65F6949008B297",
         source:
-          "Socials OS MAZER-PRODUCTION-WATCH-R2 plus MAZER-PRODUCTION-PLAY-R3 live production capture on July 18, 2026",
+          "July 19, 2026 live production guest walkthrough with visible keyboard and cursor interaction",
       },
       poster: {
         src: "/apps/mazer/trailer-poster.png",
-        sha256: "753BF581A2A093341745C64A21876F5E2DF6B1405F127A20C0CBE9AA5CA950B5",
-        source: "Poster frame extracted from the live Mazer production trailer at 00:18.200",
+        sha256: "9999A84AE09894A5900A12581A0FCBD486A852C9EE9F191052CAC09F2F9DD6A0",
+        source: "July 19, 2026 live Mazer production walkthrough poster derivative",
       },
     },
   },
