@@ -43,9 +43,10 @@ launch actions continue to use the verified current origin; the detail routes do
 proxy either owner application. Catalog preview material is trailer-only: static screenshot galleries
 and the retired Fitness screenshot board are not part of the public catalog experience.
 
-Future public reviews are governed separately by `docs/public-app-reviews-contract.md`. Catalog and
-app-detail pages intentionally show a setup placeholder with no fabricated rating, count, or
-testimonial while that read model is not admitted.
+Future public reviews are governed separately by `docs/public-app-reviews-contract.md`. App-detail
+pages retain a restrained setup note with no fabricated rating, count, or testimonial while that
+read model is not admitted. Home and Apps prioritize current product proof rather than empty social
+proof.
 
 ## Planned owner-lane origins
 

@@ -25,11 +25,24 @@ type Accent = {
   to: string;
 };
 
+export type CatalogCapability = {
+  description: string;
+  title: string;
+};
+
+export type CatalogAppDetail = {
+  capabilities: CatalogCapability[];
+  capabilitiesHeading: string;
+  headline: string;
+  proofLabel: string;
+  statusSummary: string;
+};
+
 export type CatalogApp = {
   accent: Accent;
   category: string;
   description: string;
-  features: string[];
+  detail: CatalogAppDetail;
   icon: CatalogAsset;
   latestUpdate: string;
   name: string;
@@ -49,11 +62,27 @@ export const apps: CatalogApp[] = [
     tagline: "Training plans, workout logging, and session history in one mobile-first shell.",
     description:
       "Fawxzzy Fitness brings planning, daily training, workout logging, and session history into one focused mobile-first experience. Build a routine, see what is due today, record a session, and return to a clear history of the work.",
-    features: [
-      "Plan repeatable routines around the way you actually train.",
-      "Keep today’s workout and session logging close at hand.",
-      "Review completed sessions and exercise history over time.",
-    ],
+    detail: {
+      headline: "Plan the work. Log the session. See the progress.",
+      proofLabel: "Built for repeatable training",
+      capabilitiesHeading: "The whole training loop stays close.",
+      capabilities: [
+        {
+          title: "Plan a routine",
+          description: "Shape repeatable training around the way you actually work.",
+        },
+        {
+          title: "Train from today",
+          description: "Keep the next workout and session logging within easy reach.",
+        },
+        {
+          title: "Keep the history",
+          description: "Return to completed sessions and exercise history over time.",
+        },
+      ],
+      statusSummary:
+        "Available now at its current product home. Fawxzzy opens Fitness there without copying training data into this site.",
+    },
     origin: {
       current: "https://fawxzzy-fitness-local.vercel.app",
       plannedCanonical: "https://fitness.fawxzzy.com",
@@ -67,10 +96,10 @@ export const apps: CatalogApp[] = [
     },
     latestUpdate: "New 60-second live product walkthrough",
     accent: {
-      from: "#7F977C",
-      glow: "rgba(127, 151, 124, 0.2)",
-      panel: "rgba(8, 14, 10, 0.92)",
-      to: "#5C725D",
+      from: "#9BAF61",
+      glow: "rgba(155, 175, 97, 0.2)",
+      panel: "rgba(12, 16, 8, 0.92)",
+      to: "#C4D37A",
     },
     trailer: {
       durationLabel: "1:00",
@@ -98,11 +127,27 @@ export const apps: CatalogApp[] = [
     tagline: "An atmospheric maze experience tuned for watch mode, play mode, and ambient runs.",
     description:
       "Mazer is an atmospheric maze experience built for active play and ambient watch modes. Enter a run when you want to navigate it yourself, or let the maze unfold as a calm visual experience across desktop and mobile screens.",
-    features: [
-      "Move through atmospheric maze runs in a focused play mode.",
-      "Switch to watch mode for an ambient, hands-off experience.",
-      "Carry the same visual world across desktop and mobile layouts.",
-    ],
+    detail: {
+      headline: "Play the maze—or let it run.",
+      proofLabel: "Built for active and ambient runs",
+      capabilitiesHeading: "Move, watch, and return to the atmosphere.",
+      capabilities: [
+        {
+          title: "Enter the run",
+          description: "Move through atmospheric mazes in a focused play mode.",
+        },
+        {
+          title: "Switch to watch",
+          description: "Let the maze unfold as a calm, hands-off visual experience.",
+        },
+        {
+          title: "Carry the world",
+          description: "Keep the same visual language across desktop and mobile layouts.",
+        },
+      ],
+      statusSummary:
+        "Available now at its current product home. Fawxzzy opens Mazer there without copying game state into this site.",
+    },
     origin: {
       current: "https://fawxzzy-mazer.vercel.app",
       plannedCanonical: "https://mazer.fawxzzy.com",
@@ -116,10 +161,10 @@ export const apps: CatalogApp[] = [
     },
     latestUpdate: "New 60-second live product walkthrough",
     accent: {
-      from: "#6C836D",
-      glow: "rgba(164, 181, 163, 0.18)",
-      panel: "rgba(8, 14, 10, 0.92)",
-      to: "#A4B5A3",
+      from: "#4A99A8",
+      glow: "rgba(74, 153, 168, 0.2)",
+      panel: "rgba(6, 15, 18, 0.92)",
+      to: "#82D5DC",
     },
     trailer: {
       durationLabel: "1:00",
