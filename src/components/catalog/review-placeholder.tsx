@@ -18,15 +18,15 @@ export function ReviewPlaceholder({
       data-review-placeholder={appSlug}
     >
       <div>
-        <p className="eyebrow">Reviews</p>
-        <h2 id={titleId}>{appName} reviews are coming.</h2>
+        <p className="eyebrow">Future review signal</p>
+        <h2 id={titleId}>Verified {appName} feedback, when it is ready.</h2>
       </div>
       <p>
         {compact
-          ? "Verified in-app reviews will appear here after moderation. No ratings yet."
-          : "Future reviews will come from verified in-app feedback, pass through moderation, and appear here without exposing private account data. No ratings are published yet."}
+          ? "Moderated, privacy-safe feedback stays off this page until the governed public read model is ready. No rating or count is implied today."
+          : "Future reviews will come from verified in-app feedback, pass through moderation, and appear here without exposing private account data. No rating or count is implied today."}
       </p>
-      <span className="review-placeholder__status">Planned</span>
+      <span className="review-placeholder__status">Not published</span>
     </section>
   );
 }

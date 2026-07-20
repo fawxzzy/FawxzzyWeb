@@ -499,17 +499,32 @@ for (const app of apps) {
     await page.goto(`/apps/${app.slug}`);
 
     await expect(page).toHaveTitle(`${app.name} | Fawxzzy`);
+    await expect(page.locator(`[data-app-detail="${app.slug}"]`)).toBeVisible();
     await expect(page.getByRole("heading", { level: 1, name: app.name })).toBeVisible();
     await expect(page.getByRole("img", { name: `${app.name} icon` })).toHaveAttribute(
       "src",
       app.icon.src,
     );
+    await expect(
+      page.getByRole("img", { name: `${app.name} interaction walkthrough poster` }),
+    ).toHaveAttribute("src", app.trailer.poster.src);
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       "href",
       `${productIdentity.canonicalOrigin}/apps/${app.slug}`,
     );
     await expect(page.getByText(app.description)).toBeVisible();
-    await expect(page.getByRole("listitem")).toHaveCount(app.features.length);
+    await expect(
+      page.getByRole("heading", { level: 2, name: app.detail.headline }),
+    ).toBeVisible();
+    await expect(page.getByRole("listitem")).toHaveCount(app.detail.capabilities.length);
+
+    for (const capability of app.detail.capabilities) {
+      await expect(page.getByRole("heading", { level: 3, name: capability.title })).toBeVisible();
+      await expect(page.getByText(capability.description)).toBeVisible();
+    }
+
+    await expect(page.getByRole("heading", { name: app.latestUpdate })).toBeVisible();
+    await expect(page.getByText(app.detail.statusSummary)).toBeVisible();
 
     const openApp = page.getByRole("link", { name: `Open ${app.name}` });
     await expect(openApp).toHaveAttribute("href", app.origin.current);
@@ -517,6 +532,39 @@ for (const app of apps) {
     await expect(openApp).toHaveAttribute("rel", "noreferrer");
 
     await expect(page.locator(".app-screenshots-section")).toHaveCount(0);
+
+    const launchApp = page.getByRole("link", { name: `Launch ${app.name}` });
+    await expect(launchApp).toHaveAttribute("href", app.origin.current);
+    await expect(page.locator(".app-detail-cta").getByRole("link", { name: "All apps" })).toHaveAttribute(
+      "href",
+      "/apps",
+    );
+
+    const accent = await page.locator(`[data-app-detail="${app.slug}"]`).evaluate((element) =>
+      getComputedStyle(element).getPropertyValue("--product-from").trim(),
+    );
+    expect(accent).toBe(app.accent.from);
+
+    const [copyBox, mediaBox] = await Promise.all([
+      page.locator(".app-detail-hero__copy").boundingBox(),
+      page.locator(".app-detail-hero__media").boundingBox(),
+    ]);
+    expect(copyBox).not.toBeNull();
+    expect(mediaBox).not.toBeNull();
+
+    if (copyBox && mediaBox) {
+      if ((page.viewportSize()?.width ?? 0) > 880) {
+        expect(mediaBox.x).toBeGreaterThan(copyBox.x + copyBox.width);
+      } else {
+        expect(mediaBox.y).toBeGreaterThan(copyBox.y + copyBox.height);
+      }
+    }
+
+    const geometry = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }));
+    expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth);
 
     const disclosure = page.locator(`#${app.slug}-trailer`);
     await expect(disclosure).not.toHaveAttribute("open", "");
@@ -528,8 +576,11 @@ for (const app of apps) {
       { message: `${app.name} detail trailer should advance`, timeout: 10_000 },
     ).toBeGreaterThan(0.1);
     await trailer.evaluate((video: HTMLVideoElement) => video.pause());
-    await expect(page.locator("body")).toContainText(`${app.name} reviews are coming.`);
-    await expect(page.locator("body")).toContainText("No ratings are published yet.");
+    await expect(page.locator("body")).toContainText(
+      `Verified ${app.name} feedback, when it is ready.`,
+    );
+    await expect(page.locator("body")).toContainText("No rating or count is implied today.");
+    await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
     await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
   });
 }

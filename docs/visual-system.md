@@ -18,8 +18,9 @@ page families:
 4. Editorial and directory: Discover, the build log, and Newsletter.
 5. Utility: Login, confirmation, callback, reset, and Account.
 
-Wave 1 implements the first two families. Later waves should migrate the other
-families without duplicating the Home or catalog composition.
+Wave 1 implements the first two families. Wave 2A implements the product-detail
+family. Later waves should migrate editorial and utility routes without
+duplicating the Home, catalog, or product-detail composition.
 
 ## Surface hierarchy
 
@@ -52,6 +53,28 @@ initial-page requirement.
 Product accents occupy a small part of the composition and remain subordinate
 to the shared black-green canvas. Fitness and Mazer continue to own their
 origins and their canonical branding assets.
+
+## Product-detail template
+
+Product pages are proof-led rather than card-led. The shared template uses:
+
+- an editorial split hero with the current app icon, a large walkthrough poster,
+  one launch action, and one in-page walkthrough action;
+- a compact native trailer disclosure whose open state reveals the real player,
+  captions, loading/error handling, and the current verified media;
+- three numbered capability statements sourced from `src/data/apps.ts`;
+- a truthful current-build panel, a restrained future-reviews contract, and a
+  final action section;
+- a product accent constrained to borders, status text, media glow, and small
+  section details rather than a separate visual theme.
+
+Fitness uses a training-derived yellow-green accent. Mazer uses a restrained
+teal/cyan accent derived from its current icon. Both keep the shared black-green
+canvas, global typography, navigation, footer, and interaction rules.
+
+Product-detail copy must describe current product behavior. It must not invent
+roadmap dates, usage metrics, ratings, testimonials, or canonical-origin
+cutovers. Launch links continue to use the centralized current-origin contract.
 
 ## Navigation and footer
 
