@@ -820,6 +820,83 @@ test("primary navigation adapts without clipping from 320px through desktop", as
   await expect(primaryNav.locator('a[aria-current="page"]')).toHaveCount(1);
 });
 
+test("primary navigation stays viewport-sticky while the document owns scrolling", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 520 });
+
+  for (const route of [
+    "/",
+    "/apps",
+    "/apps/fitness",
+    "/apps/mazer",
+    "/discover",
+    "/newsletter",
+    "/account",
+  ]) {
+    await page.goto(route);
+
+    const primaryNav = page.getByRole("navigation", { name: "Primary" });
+    const initial = await primaryNav.evaluate((nav) => {
+      const style = getComputedStyle(nav);
+      const main = nav.closest<HTMLElement>("main#main-content");
+
+      if (!main) throw new Error("Primary navigation page shell is missing");
+
+      return {
+        documentScrollHeight: document.documentElement.scrollHeight,
+        mainScrollTop: main.scrollTop,
+        position: style.position,
+        stickyTop: Number.parseFloat(style.top),
+        viewportHeight: window.innerHeight,
+      };
+    });
+
+    expect(initial.position, `${route} position`).toBe("sticky");
+    expect(initial.stickyTop, `${route} sticky top`).toBeGreaterThanOrEqual(0);
+    expect(initial.mainScrollTop, `${route} initial main scroll`).toBe(0);
+    expect(initial.documentScrollHeight, `${route} document-owned page height`).toBeGreaterThan(
+      initial.viewportHeight,
+    );
+
+    await page.evaluate(() => {
+      window.scrollTo({ top: Math.min(480, document.documentElement.scrollHeight), behavior: "instant" });
+    });
+
+    await expect
+      .poll(() => page.evaluate(() => window.scrollY), {
+        message: `${route} should scroll the document`,
+      })
+      .toBeGreaterThan(0);
+    await expect
+      .poll(
+        () =>
+          primaryNav.evaluate((nav) => {
+            const stickyTop = Number.parseFloat(getComputedStyle(nav).top);
+            return Math.abs(nav.getBoundingClientRect().top - stickyTop);
+          }),
+        { message: `${route} navigation should remain at its sticky viewport offset` },
+      )
+      .toBeLessThanOrEqual(2);
+
+    const settled = await page.evaluate(() => {
+      const main = document.querySelector<HTMLElement>("main#main-content");
+      if (!main) throw new Error("Primary navigation page shell is missing");
+
+      return {
+        clientWidth: document.documentElement.clientWidth,
+        mainScrollTop: main.scrollTop,
+        scrollWidth: document.documentElement.scrollWidth,
+      };
+    });
+
+    expect(settled.mainScrollTop, `${route} must not gain nested scrolling`).toBe(0);
+    expect(settled.scrollWidth, `${route} horizontal overflow`).toBeLessThanOrEqual(
+      settled.clientWidth,
+    );
+  }
+});
+
 test("health and manifest remain available with the public identity", async ({ request }) => {
   const healthResponse = await request.get("/healthz.json");
   expect(healthResponse.ok()).toBe(true);

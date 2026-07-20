@@ -1199,7 +1199,7 @@ a.discovery-link:hover {
 
 .app-theme-sage {
   min-height: 100vh;
-  overflow: hidden;
+  overflow: clip;
   background: linear-gradient(180deg, rgb(var(--canvas)) 0%, rgb(var(--canvas-deep)) 54%, rgb(3 5 3) 100%);
 }
 
