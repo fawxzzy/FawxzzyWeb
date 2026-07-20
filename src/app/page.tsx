@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
+import { ProductShowcase } from "@/components/catalog/product-showcase";
+import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
 import { StaticLink } from "@/components/site/static-link";
 import { productIdentity } from "@/config/product";
+import { apps } from "@/data/apps";
 
 export const metadata: Metadata = {
   title: productIdentity.publicName,
@@ -32,14 +35,14 @@ export default function Home() {
       <div className="shell-container home-shell">
         <SiteNav current="home" />
 
-        <section aria-labelledby="home-title" className="home-hero surface-panel">
+        <section aria-labelledby="home-title" className="home-hero">
           <div className="home-hero__copy">
-            <p className="eyebrow">Fawxzzy</p>
-            <h1 id="home-title">Useful software should stay within reach.</h1>
+            <p className="eyebrow">Fawxzzy / Independent product studio</p>
+            <h1 id="home-title">Software, fitness, games&mdash;and whatever I build next.</h1>
             <p>
-              I&apos;m Fawxzzy—an independent builder creating practical software,
-              games, and the platform that connects them. I share the work as I
-              learn, ship, and make it better.
+              One public home for focused products, experiments, and the work
+              behind them. I build useful things, keep them understandable, and
+              make them better from real use.
             </p>
             <div className="hero__actions">
               <StaticLink
@@ -50,12 +53,9 @@ export default function Home() {
               </StaticLink>
               <StaticLink
                 className="catalog-button catalog-button--secondary"
-                href="/discover"
+                href="/newsletter"
               >
-                Meet Fawxzzy
-              </StaticLink>
-              <StaticLink className="catalog-button" href="/newsletter">
-                Building Fawxzzy weekly
+                Read the build log
               </StaticLink>
             </div>
           </div>
@@ -72,18 +72,50 @@ export default function Home() {
           </div>
         </section>
 
-        <section aria-labelledby="mission-title" className="home-mission">
+        <section aria-labelledby="products-title" className="home-products studio-section">
           <div className="section-heading">
-            <p className="eyebrow">What I&apos;m building</p>
-            <h2 id="mission-title">One platform. Focused products. A human reason behind them.</h2>
+            <p className="eyebrow">Products in the real world</p>
+            <h2 id="products-title">See the work before the pitch.</h2>
             <p>
-              Fawxzzy brings my software, fitness work, games, and community into one
-              clear home without flattening each product into the same thing.
+              Fitness and Mazer are live, independently owned products. Their latest
+              interaction walkthroughs show exactly what is available today.
+            </p>
+          </div>
+
+          <div className="product-showcase-grid">
+            {apps.map((app) => (
+              <ProductShowcase app={app} headingLevel={3} key={app.slug} />
+            ))}
+          </div>
+        </section>
+
+        <section aria-labelledby="build-note-title" className="home-build-note surface-panel">
+          <div>
+            <p className="eyebrow">Current build note / July 2026</p>
+            <h2 id="build-note-title">The products now speak for themselves.</h2>
+            <p>
+              New one-minute Fitness and Mazer walkthroughs use real production
+              interaction, captions, and product-specific posters instead of a
+              static screenshot reel.
+            </p>
+          </div>
+          <StaticLink className="catalog-button catalog-button--secondary" href="/newsletter">
+            Read the build log
+          </StaticLink>
+        </section>
+
+        <section aria-labelledby="mission-title" className="home-mission studio-section">
+          <div className="section-heading">
+            <p className="eyebrow">Why Fawxzzy exists</p>
+            <h2 id="mission-title">Useful software should stay within reach.</h2>
+            <p>
+              Fawxzzy brings software, fitness work, games, and community into one
+              clear home without flattening every product into the same thing.
             </p>
           </div>
 
           <div className="home-principles">
-            <article className="home-principle surface-panel">
+            <article className="home-principle">
               <p className="eyebrow">Why</p>
               <h3>Make useful tools more affordable.</h3>
               <p>
@@ -91,7 +123,7 @@ export default function Home() {
                 basic value behind clutter, pressure, or confusing pricing.
               </p>
             </article>
-            <article className="home-principle surface-panel">
+            <article className="home-principle">
               <p className="eyebrow">How</p>
               <h3>Build in public and improve from real use.</h3>
               <p>
@@ -99,7 +131,7 @@ export default function Home() {
                 use honest feedback to decide what deserves to grow next.
               </p>
             </article>
-            <article className="home-principle surface-panel">
+            <article className="home-principle">
               <p className="eyebrow">Where it goes</p>
               <h3>A connected home for software, services, and games.</h3>
               <p>
@@ -110,33 +142,27 @@ export default function Home() {
           </div>
         </section>
 
-        <section aria-labelledby="apps-callout-title" className="discovery-callout surface-panel">
+        <section aria-labelledby="newsletter-callout-title" className="home-newsletter surface-panel">
           <div>
-            <p className="eyebrow">Software and games</p>
-            <h2 id="apps-callout-title">See what is live and what I&apos;m building next.</h2>
-            <p>Each product has a real trailer, a focused page, and its current destination.</p>
-          </div>
-          <StaticLink
-            className="catalog-button catalog-button--primary"
-            href={productIdentity.appsPath}
-          >
-            View the apps
-          </StaticLink>
-        </section>
-
-        <section aria-labelledby="newsletter-callout-title" className="discovery-callout surface-panel">
-          <div>
-            <p className="eyebrow">Building Fawxzzy weekly</p>
-            <h2 id="newsletter-callout-title">Follow the work without chasing every feed.</h2>
+            <p className="eyebrow">Build in public, without the noise</p>
+            <h2 id="newsletter-callout-title">Follow what ships and why it changed.</h2>
             <p>
-              The weekly archive collects the build story, practical lessons, and what happens next.
-              Subscriber delivery is being set up with a privacy-safe email provider before addresses are collected.
+              Building Fawxzzy is the permanent record of product decisions,
+              practical lessons, and what comes next. The archive is open now;
+              email collection waits for its privacy-safe delivery path.
             </p>
           </div>
-          <StaticLink className="catalog-button catalog-button--primary" href="/newsletter">
-            Open the archive
-          </StaticLink>
+          <div className="home-newsletter__actions">
+            <StaticLink className="catalog-button catalog-button--primary" href="/newsletter">
+              Open the build log
+            </StaticLink>
+            <StaticLink className="catalog-button catalog-button--secondary" href="/discover">
+              Discover Fawxzzy
+            </StaticLink>
+          </div>
         </section>
+
+        <SiteFooter />
       </div>
     </main>
   );
