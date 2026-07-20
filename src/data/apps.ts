@@ -31,6 +31,7 @@ export type CatalogApp = {
   description: string;
   features: string[];
   icon: CatalogAsset;
+  latestUpdate: string;
   name: string;
   origin: CatalogOriginContract;
   slug: string;
@@ -64,6 +65,7 @@ export const apps: CatalogApp[] = [
       source:
         "Exact public readback of the current Fawxzzy Fitness production PWA icon at /app/icon-512.png on July 16, 2026",
     },
+    latestUpdate: "New 60-second live product walkthrough",
     accent: {
       from: "#7F977C",
       glow: "rgba(127, 151, 124, 0.2)",
@@ -112,6 +114,7 @@ export const apps: CatalogApp[] = [
       source:
         "Exact public readback of the current Mazer production app icon at /icons/mazer-app-icon.png on July 16, 2026",
     },
+    latestUpdate: "New 60-second live product walkthrough",
     accent: {
       from: "#6C836D",
       glow: "rgba(164, 181, 163, 0.18)",

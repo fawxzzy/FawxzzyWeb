@@ -28,7 +28,7 @@ export async function assertSiteSmoke(baseUrl) {
   const homeHtml = await assertRoute(
     baseUrl,
     "/",
-    "Useful software should stay within reach.",
+    "Software, fitness, games",
   );
   if (!homeHtml.includes('href="/apps"')) {
     throw new Error("Home route did not link to the canonical app catalog.");
@@ -42,11 +42,18 @@ export async function assertSiteSmoke(baseUrl) {
   if (!homeHtml.includes('href="/newsletter"')) {
     throw new Error("Home route did not link to the owned newsletter archive.");
   }
+  if (!homeHtml.includes('aria-label="Footer"')) {
+    throw new Error("Home route did not render the shared site footer.");
+  }
   if (homeHtml.includes('>Account</a>')) {
     throw new Error("Primary navigation exposed Account instead of the approved Apps and Discover links.");
   }
 
-  const appsHtml = await assertRoute(baseUrl, "/apps", "Software from Fawxzzy.");
+  const appsHtml = await assertRoute(
+    baseUrl,
+    "/apps",
+    "Software and games, shown in motion.",
+  );
   for (const app of catalogApps) {
     if (!appsHtml.includes(`href="${app.path}"`)) {
       throw new Error(`/apps did not link ${app.name} to ${app.path}.`);
@@ -77,8 +84,14 @@ export async function assertSiteSmoke(baseUrl) {
   if (appsHtml.includes('/brand/trove-foxmark.png')) {
     throw new Error("The retired Trove hero image is still present on /apps.");
   }
-  if ((appsHtml.match(/data-review-placeholder=/g) ?? []).length !== catalogApps.length) {
-    throw new Error("The app catalog did not render one truthful review placeholder per app.");
+  if ((appsHtml.match(/data-product-showcase=/g) ?? []).length !== catalogApps.length) {
+    throw new Error("The app catalog did not render one visual showcase per app.");
+  }
+  if ((appsHtml.match(/data-review-placeholder=/g) ?? []).length !== 0) {
+    throw new Error("The app catalog still advertises reviews that do not exist.");
+  }
+  if (!appsHtml.includes('aria-label="Footer"')) {
+    throw new Error("The app catalog did not render the shared site footer.");
   }
 
   const discoverHtml = await assertRoute(

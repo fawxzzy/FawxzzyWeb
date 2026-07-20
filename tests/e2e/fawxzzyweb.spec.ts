@@ -23,7 +23,7 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
   );
   await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Useful software should stay within reach.",
+    "Software, fitness, games—and whatever I build next.",
   );
   await expect(page.getByRole("link", { name: "Fawxzzy home" })).toHaveAttribute("href", "/");
   await expect(page.locator('a[aria-current="page"]')).toHaveCount(1);
@@ -33,11 +33,7 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
     "href",
     "/apps",
   );
-  await expect(page.getByRole("link", { name: "Meet Fawxzzy" })).toHaveAttribute(
-    "href",
-    "/discover",
-  );
-  await expect(page.getByRole("link", { name: "Building Fawxzzy weekly" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Read the build log", exact: true }).first()).toHaveAttribute(
     "href",
     "/newsletter",
   );
@@ -53,6 +49,12 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Make useful tools more affordable." })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Build in public and improve from real use." })).toBeVisible();
   await expect(page.getByRole("heading", { name: /connected home for software/ })).toBeVisible();
+  await expect(page.locator("[data-product-showcase]")).toHaveCount(apps.length);
+  await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Manage account" })).toHaveAttribute(
+    "href",
+    "/account",
+  );
 });
 
 test("discover route exposes centralized public destinations", async ({ page }) => {
@@ -121,26 +123,28 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
   await page.goto("/apps");
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Software from Fawxzzy.",
+    "Software and games, shown in motion.",
   );
 
   for (const app of apps) {
     const entry = page.locator(`#${app.slug}`);
-    const appCard = entry.locator(`[data-app-card="${app.slug}"]`);
-    await expect(appCard).toHaveAttribute("href", `/apps/${app.slug}`);
-    await expect(appCard).toHaveAttribute("aria-label", `View ${app.name} details`);
-    await expect(appCard.getByRole("img", { name: `${app.name} icon` })).toHaveAttribute(
+    await expect(entry).toHaveAttribute("data-product-showcase", app.slug);
+    await expect(entry.getByRole("img", { name: `${app.name} icon` })).toHaveAttribute(
       "src",
       app.icon.src,
     );
-    await expect(appCard).toContainText(app.tagline);
-    await expect(appCard).toContainText(app.status);
-    await expect(appCard).not.toContainText(app.category);
-
-    const reviews = entry.locator(`[data-review-placeholder="${app.slug}"]`);
-    await expect(reviews).toContainText(`${app.name} reviews are coming.`);
-    await expect(reviews).toContainText("No ratings yet.");
-    await expect(reviews).toContainText("Planned");
+    await expect(
+      entry.getByRole("img", { name: `${app.name} interaction walkthrough poster` }),
+    ).toHaveAttribute("src", app.trailer.poster.src);
+    await expect(entry).toContainText(app.tagline);
+    await expect(entry).toContainText(app.status);
+    await expect(entry).toContainText(app.category);
+    await expect(entry).toContainText(app.latestUpdate);
+    await expect(entry.getByRole("link", { name: `Explore ${app.name}` })).toHaveAttribute(
+      "href",
+      `/apps/${app.slug}`,
+    );
+    await expect(entry.locator("[data-review-placeholder]")).toHaveCount(0);
 
     const disclosure = entry.locator("details");
     await expect(disclosure).not.toHaveAttribute("open", "");
@@ -151,6 +155,7 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
     const trailer = page.getByLabel(`${app.name} trailer`);
     await expect(trailer).toBeVisible();
     await expect(trailer).toHaveAttribute("controls", "");
+    await expect(trailer).toHaveAttribute("preload", "none");
     await expect(trailer).toHaveAttribute("poster", app.trailer.poster.src);
     await expect(trailer.locator("source")).toHaveAttribute("src", app.trailer.video.src);
     await expect(trailer.locator("track")).toHaveAttribute("src", app.trailer.captionsSrc);
@@ -176,7 +181,7 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
   await expect(page.locator("details")).toHaveCount(apps.length);
   await expect(page.locator(".meta-chip")).toHaveCount(0);
   await expect(page.locator(".app-store-card__category")).toHaveCount(0);
-  await expect(page.locator("[data-review-placeholder]")).toHaveCount(apps.length);
+  await expect(page.locator("[data-review-placeholder]")).toHaveCount(0);
   await expect(page.locator('img[src="/brand/trove-foxmark.png"]')).toHaveCount(0);
   await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
     "content",
@@ -184,6 +189,64 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
   );
   await expect(page).toHaveTitle("Apps | Fawxzzy");
   await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
+  await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
+});
+
+test("Wave 1 Home and Apps compose as editorial and media-led page families", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+
+  for (const route of ["/", "/apps"]) {
+    await page.goto(route);
+    const grid = page.locator(".product-showcase-grid, .catalog-stack").first();
+    const cards = grid.locator("[data-product-showcase]");
+    await expect(cards).toHaveCount(apps.length);
+
+    const desktopRects = await cards.evaluateAll((elements) =>
+      elements.map((element) => {
+        const rect = element.getBoundingClientRect();
+        return { left: rect.left, top: rect.top, width: rect.width };
+      }),
+    );
+    expect(desktopRects[0].top).toBeCloseTo(desktopRects[1].top, 0);
+    expect(desktopRects[1].left).toBeGreaterThan(desktopRects[0].left);
+    expect(Math.min(...desktopRects.map((rect) => rect.width))).toBeGreaterThan(450);
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const route of ["/", "/apps"]) {
+    await page.goto(route);
+    const cards = page.locator("[data-product-showcase]");
+    const mobileRects = await cards.evaluateAll((elements) =>
+      elements.map((element) => {
+        const rect = element.getBoundingClientRect();
+        return { left: rect.left, right: rect.right, top: rect.top };
+      }),
+    );
+    expect(mobileRects[1].top).toBeGreaterThan(mobileRects[0].top);
+    expect(mobileRects.every((rect) => rect.left >= 0 && rect.right <= 390)).toBe(true);
+    const geometry = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }));
+    expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth);
+  }
+});
+
+test("Wave 1 interactions retain 44px targets and reduced-motion restraint", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/apps");
+
+  const targetHeights = await page
+    .locator(".catalog-button, .trailer-disclosure > summary, .site-footer a")
+    .evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().height));
+  expect(Math.min(...targetHeights)).toBeGreaterThanOrEqual(44);
+
+  const motion = await page.locator("[data-product-showcase]").first().evaluate((element) => {
+    const styles = getComputedStyle(element);
+    return { animation: styles.animationName, transition: styles.transitionDuration };
+  });
+  expect(motion.animation).toBe("none");
+  expect(motion.transition).toBe("0s");
 });
 
 test("each catalog trailer starts real playback from its explicit action", async ({ page }) => {

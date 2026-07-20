@@ -146,7 +146,7 @@ export const TrailerPlayer = forwardRef<TrailerPlayerHandle, TrailerPlayerProps>
         }}
         playsInline
         poster={trailer.poster.src}
-        preload="metadata"
+        preload="none"
         ref={videoRef}
       >
         <source src={trailer.video.src} type="video/mp4" />

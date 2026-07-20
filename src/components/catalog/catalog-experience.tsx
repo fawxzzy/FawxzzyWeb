@@ -1,5 +1,6 @@
 import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
 import { AppCatalogEntry } from "@/components/catalog/app-catalog-entry";
+import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
 import { StaticLink } from "@/components/site/static-link";
 import { productIdentity } from "@/config/product";
@@ -45,26 +46,23 @@ export function CatalogExperience({ compatibilityIdentity }: CatalogExperiencePr
           </aside>
         ) : null}
 
-        <section aria-labelledby="apps-title" className="hero surface-panel">
-          <div className="hero__copy">
-            <div className="hero__intro">
-              <p className="eyebrow">{productIdentity.publicName} / Apps</p>
-              <h1 className="hero__title" id="apps-title">
-                Software from Fawxzzy.
-              </h1>
-              <p className="hero__lede readable-column">
-                Focused tools and games with real demos. Watch each product here,
-                then open its page or current live experience.
-              </p>
-            </div>
-          </div>
-        </section>
+        <header className="catalog-editorial-hero">
+          <p className="eyebrow">{productIdentity.publicName} / Product catalog</p>
+          <h1 id="apps-title">Software and games, shown in motion.</h1>
+          <p>
+            Two focused products, each with a real production walkthrough and a
+            clear path to the current experience. No mockups, invented ratings,
+            or catalog filler.
+          </p>
+        </header>
 
-        <div className="catalog-stack" id="catalog">
+        <section aria-labelledby="apps-title" className="catalog-stack" id="catalog">
           {apps.map((app) => (
             <AppCatalogEntry app={app} key={app.slug} />
           ))}
-        </div>
+        </section>
+
+        <SiteFooter />
       </div>
     </main>
   );
