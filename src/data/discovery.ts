@@ -8,7 +8,6 @@ export type DiscoveryDestinationId =
   | "tiktok"
   | "youtube"
   | "x"
-  | "instagram"
   | "snapchat"
   | "twitch"
   | "cash-app"
@@ -122,19 +121,6 @@ export const discoveryDestinations: DiscoveryDestination[] = [
     href: "https://x.com/Fawxzzy",
     icon: null,
     mark: "X",
-    owner: "Socials OS",
-  },
-  {
-    id: "instagram",
-    category: "social",
-    eyebrow: "Photos and Reels",
-    title: "Instagram",
-    description: "Training, physique, personal moments, and selected project updates.",
-    displayValue: "@fawx.zzy",
-    action: "Open Instagram",
-    href: "https://www.instagram.com/fawx.zzy/",
-    icon: null,
-    mark: "IG",
     owner: "Socials OS",
   },
   {

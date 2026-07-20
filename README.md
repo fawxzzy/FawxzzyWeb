@@ -11,6 +11,7 @@ slug remains `fawxzzyweb`.
 - `/apps` — canonical app catalog, sourced from `src/data/apps.ts`
 - `/discover` — canonical public hub for apps, training, community, verified social profiles,
   support, and gaming identity
+- `/newsletter` is the owned Building Fawxzzy weekly archive and future opt-in subscription surface
 - `/trove` — reversible, no-index compatibility route for the former Trove identity
 - `/apps/fitness/preview` — permanent redirect to the Fitness trailer
 - `/login` — email/password sign-in and account creation
@@ -23,6 +24,13 @@ slug remains `fawxzzyweb`.
 
 Fitness and Mazer remain independently owned and link to their existing production origins.
 The catalog does not synthesize cross-origin install behavior.
+
+## Newsletter contract
+
+`/newsletter` is the owned archive for Building Fawxzzy weekly and is linked from Home, Discover,
+and the primary navigation. It intentionally collects no email address until an approved delivery
+provider, double-opt-in workflow, unsubscribe path, and auditable delivery receipts exist. The
+archive and subscription system are separate from product-account authentication and Supabase.
 
 ## Local development
 

@@ -24,7 +24,6 @@ intentionally omitted.
 | Main TikTok | `https://www.tiktok.com/@fukitzzzzz` | Socials OS |
 | YouTube | `https://www.youtube.com/@fawxzzy` | Socials OS |
 | X | `https://x.com/Fawxzzy` | Socials OS |
-| Instagram | `https://www.instagram.com/fawx.zzy/` | Socials OS |
 | Snapchat | `https://www.snapchat.com/add/fawx.zzy` | Socials OS |
 | Twitch | `https://www.twitch.tv/fawxzzy` | Socials OS |
 | Cash App | `https://cash.app/$fawxzzy` | Socials OS |
@@ -33,6 +32,17 @@ intentionally omitted.
 The PlayStation identity remains plain text because the prior hub exposed it as a username button,
 not a public URL, and no current official public profile URL was established. Do not invent or use
 a third-party profile URL.
+
+Meta-owned surfaces are intentionally out of scope: Fawxzzy is under a standing Meta account ban
+and no Instagram, Facebook, or Threads destination is published or operated through this hub.
+
+## Building Fawxzzy weekly
+
+`/newsletter` is the owned archive and future subscription surface for the weekly Building Fawxzzy
+brief. It is linked from the primary home and Discover routes. The archive may be public before
+email delivery is enabled, but no address may be collected until the delivery provider, double-opt-in
+policy, unsubscribe route, and auditable sending receipts are live. This keeps the subscribe surface
+truthful while Socials OS establishes the delivery boundary.
 
 ## Fitness intake replacement contract
 

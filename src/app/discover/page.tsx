@@ -64,11 +64,28 @@ export default function DiscoverPage() {
               <a className="catalog-button" href="#discovery-social">
                 Find Fawxzzy online
               </a>
+              <StaticLink className="catalog-button" href="/newsletter">
+                Building Fawxzzy weekly
+              </StaticLink>
             </div>
           </div>
         </header>
 
         <DiscoveryGrid destinations={discoveryDestinations} />
+
+        <section aria-labelledby="discover-newsletter-title" className="discovery-callout surface-panel">
+          <div>
+            <p className="eyebrow">Follow the build</p>
+            <h2 id="discover-newsletter-title">The weekly archive lives here, not in another link hub.</h2>
+            <p>
+              Read the Building Fawxzzy record in one place. Email sign-up remains intentionally closed
+              until its delivery provider and privacy controls are live.
+            </p>
+          </div>
+          <StaticLink className="catalog-button catalog-button--primary" href="/newsletter">
+            View the newsletter
+          </StaticLink>
+        </section>
       </div>
     </main>
   );
