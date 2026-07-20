@@ -1,12 +1,14 @@
 # Live interaction trailer remake receipt
 
+Status: prepared and locally verified; not merged or production-released.
+
 ## Purpose
 
 Replace the catalog trailer masters with short, vertically framed production walkthroughs that
 show real navigation and visible input rather than static screen presentation. Every master opens
 with a Fawxzzy brand card and ends with a clear app call-to-action.
 
-## Released assets
+## Prepared assets
 
 | App | Master | Duration | Video SHA-256 | Poster SHA-256 |
 | --- | --- | ---: | --- | --- |
