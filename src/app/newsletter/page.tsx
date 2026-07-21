@@ -4,20 +4,14 @@ import { EditorialSectionHeading } from "@/components/editorial/editorial-sectio
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
 import { StaticLink } from "@/components/site/static-link";
-import { productIdentity } from "@/config/product";
+import { publicPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: "Building Fawxzzy Weekly",
   description:
     "The owned editorial home for Fawxzzy product decisions, development notes, experiments, lessons, and releases.",
-  alternates: { canonical: "/newsletter" },
-  openGraph: {
-    title: `Building Fawxzzy Weekly | ${productIdentity.publicName}`,
-    description:
-      "The owned editorial record for what Fawxzzy ships, what changed, and what the work teaches along the way.",
-    url: "/newsletter",
-  },
-};
+  path: "/newsletter",
+});
 
 const editorialTopics = [
   {

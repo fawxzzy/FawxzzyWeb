@@ -32,5 +32,9 @@ assert(gitignore.includes("/visual-evidence/"), "Generated visual evidence must 
 assert(dockerignore.includes("visual-evidence"), "Generated visual evidence must stay out of Docker build context.");
 assert(captureScript.includes('const knownWebKitMediaControlsError = "Temporal.Duration properties must be finite and of consistent sign";'), "The evidence runner must identify the exact native WebKit media-controls exception.");
 assert(captureScript.includes("knownRunnerExceptions"), "Known runner-only exceptions must remain visible in evidence metadata.");
+assert(captureScript.includes("initialTransferBytes"), "Visual evidence must track initial transferred bytes.");
+assert(captureScript.includes("routeJavascriptBytes"), "Visual evidence must track route JavaScript bytes.");
+assert(captureScript.includes("mp4RequestsBeforeInteraction"), "Visual evidence must record the pre-interaction media contract.");
+assert(captureScript.includes("requested MP4 media before interaction"), "Visual evidence must fail when a trailer loads before interaction.");
 
 console.log("Portable visual and release-evidence contracts are aligned.");

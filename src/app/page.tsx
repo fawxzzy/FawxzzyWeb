@@ -2,23 +2,24 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
 import { ProductShowcase } from "@/components/catalog/product-showcase";
+import { StructuredData } from "@/components/seo/structured-data";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
 import { StaticLink } from "@/components/site/static-link";
 import { productIdentity } from "@/config/product";
 import { apps } from "@/data/apps";
+import { publicPageMetadata, siteStructuredData } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: productIdentity.publicName,
   description: productIdentity.description,
-  alternates: {
-    canonical: "/",
-  },
-};
+  path: "/",
+});
 
 export default function Home() {
   return (
     <main className="home-page app-theme-sage" id="main-content">
+      <StructuredData data={siteStructuredData()} id="fawxzzy-site-structured-data" />
       <AmbientFitnessBackground
         intensity="soft"
         particleCount={10}

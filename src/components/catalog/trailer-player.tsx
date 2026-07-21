@@ -26,16 +26,25 @@ function interruptedPlaybackState(video: HTMLVideoElement): PlaybackState {
 
 export function TrailerPlayer({ appName, appSlug, trailer }: TrailerPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const sourceRef = useRef<HTMLSourceElement>(null);
   const playAttemptRef = useRef(0);
+  const [sourceBound, setSourceBound] = useState(false);
   const [playbackState, setPlaybackState] = useState<PlaybackState>("idle");
   const descriptionId = `${appSlug}-trailer-description`;
   const statusId = `${appSlug}-trailer-status`;
 
   async function playTrailer() {
     const video = videoRef.current;
+    const source = sourceRef.current;
 
-    if (!video) {
+    if (!video || !source) {
       return;
+    }
+
+    if (source.getAttribute("src") !== trailer.video.src) {
+      source.src = trailer.video.src;
+      setSourceBound(true);
+      video.load();
     }
 
     if (playbackState === "ended") {
@@ -83,7 +92,7 @@ export function TrailerPlayer({ appName, appSlug, trailer }: TrailerPlayerProps)
         aria-describedby={`${descriptionId} ${statusId}`}
         aria-label={`${appName} trailer`}
         className="trailer-player__video"
-        controls
+        controls={sourceBound}
         onEnded={() => {
           playAttemptRef.current += 1;
           setPlaybackState("ended");
@@ -121,7 +130,7 @@ export function TrailerPlayer({ appName, appSlug, trailer }: TrailerPlayerProps)
         preload="none"
         ref={videoRef}
       >
-        <source src={trailer.video.src} type="video/mp4" />
+        <source ref={sourceRef} type="video/mp4" />
         <track
           default
           kind="captions"

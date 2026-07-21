@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "measuredAt": "2026-07-21T19:30:42.408Z",
+  "sourceBase": {
+    "commit": "3ade2ce0c5c73b0f29aac598f44aa0f112f0af32",
+    "tree": "ab4da3b3f9a448753a2794c3940a65a3048ac048"
+  },
+  "production": {
+    "measuredAt": "2026-07-21T19:29:33.276Z",
+    "deploymentId": "dpl_BUsjRvDPpBqqtMoZyupdeFcPp7VM",
+    "commit": "9d892a73fb8fc6df7440a18c4b8ea71064604a15",
+    "routes": {
+      "/": {
+        "lcpMs": 2140,
+        "cls": 0,
+        "initialTransferBytes": 5579189,
+        "routeJavascriptBytes": 158233,
+        "mp4RequestsBeforeInteraction": 0
+      },
+      "/apps": {
+        "lcpMs": 600,
+        "cls": 0,
+        "initialTransferBytes": 4704986,
+        "routeJavascriptBytes": 158233,
+        "mp4RequestsBeforeInteraction": 0
+      }
+    }
+  },
+  "sourceStaticExport": {
+    "measurement": "uncompressed optimized static-export assets",
+    "routes": {
+      "/": {
+        "routeJavascriptBytes": 644315,
+        "initialTransferBytesObserved": 3747699
+      },
+      "/apps": {
+        "routeJavascriptBytes": 644315,
+        "initialTransferBytesObserved": 5149637
+      }
+    }
+  },
+  "budgets": {
+    "routeJavascriptGrowthRatio": 1.1,
+    "maximumCls": 0.1,
+    "mp4RequestsBeforeInteraction": 0
+  }
+}
