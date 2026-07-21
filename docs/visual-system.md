@@ -19,8 +19,37 @@ page families:
 5. Utility: Login, confirmation, callback, reset, and Account.
 
 Wave 1 implements the first two families. Wave 2A implements the product-detail
-family. Later waves should migrate editorial and utility routes without
-duplicating the Home, catalog, or product-detail composition.
+family. Wave 2B implements the editorial family. Later work may refine utility
+routes without duplicating the Home, catalog, product-detail, or editorial
+composition.
+
+## Editorial template
+
+Discover and Newsletter share editorial typography, spacing, ruled lists,
+compact metadata, and restrained callouts, but they do not share one generic
+card layout.
+
+- Discover is the ecosystem hub: orient, choose Build/Train/Create, inspect
+  current catalog-backed work, browse verified profiles, then join the community
+  or read the build log.
+- Newsletter is the publication home: explain the editorial value, show the
+  truthful archive state, then disclose email-delivery readiness as secondary
+  operational status.
+- Current-work rows derive their product name, status, update, poster, and route
+  from `src/data/apps.ts`. They must not imply scraped activity or invent dates,
+  metrics, readership, releases, or social proof.
+- The issue archive renders an explicit empty state until a real issue has a
+  stable URL and verified publication metadata. Draft issue titles do not count
+  as published proof.
+- Verified profile targets remain centralized in `src/data/discovery.ts`. The
+  editorial layout may recompose them, but it must not duplicate or silently
+  replace their routing contract.
+
+The production-before contact sheet for Wave 2B is stored at
+`docs/visual-baselines/2026-07-20-wave2b-production-before.png`. It captures
+Discover and Newsletter from production main `9d892a73` in desktop Chromium at
+1440 by 900 and mobile WebKit at 390 by 844. Its SHA-256 is
+`D7D11DCC07F47AF48D7A1143CBEBFD9FE30B1A4C0861421ABF942A66A0B9B8E1`.
 
 ## Surface hierarchy
 

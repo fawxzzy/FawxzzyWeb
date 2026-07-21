@@ -1,23 +1,11 @@
 import Image from "next/image";
+import { EditorialSectionHeading } from "@/components/editorial/editorial-section-heading";
+import { StaticLink } from "@/components/site/static-link";
+import { apps, getAppDetailPath } from "@/data/apps";
 import type { DiscoveryDestination } from "@/data/discovery";
 
 type DiscoveryGridProps = {
   destinations: DiscoveryDestination[];
-};
-
-const sectionCopy: Record<DiscoveryDestination["category"], { eyebrow: string; title: string }> = {
-  featured: {
-    eyebrow: "Start here",
-    title: "Apps, training, and community.",
-  },
-  social: {
-    eyebrow: "Follow the story",
-    title: "Every verified social profile.",
-  },
-  support: {
-    eyebrow: "Elsewhere",
-    title: "Support and gaming.",
-  },
 };
 
 function DestinationMark({ destination }: { destination: DiscoveryDestination }) {
@@ -26,7 +14,7 @@ function DestinationMark({ destination }: { destination: DiscoveryDestination })
       <Image
         alt=""
         aria-hidden="true"
-        className="discovery-card__icon discovery-card__icon--image"
+        className="editorial-directory__mark editorial-directory__mark--image"
         height={96}
         src={destination.icon.src}
         unoptimized
@@ -36,77 +24,26 @@ function DestinationMark({ destination }: { destination: DiscoveryDestination })
   }
 
   return (
-    <span aria-hidden="true" className="discovery-card__icon">
+    <span aria-hidden="true" className="editorial-directory__mark">
       {destination.mark}
     </span>
   );
 }
 
-function FeaturedDestination({ destination }: { destination: DiscoveryDestination }) {
-  return (
-    <article
-      className={`discovery-card surface-panel discovery-card--${destination.id}`}
-      data-destination-id={destination.id}
-    >
-      <div className="discovery-card__topline">
-        <DestinationMark destination={destination} />
-        <div>
-          <p className="field-label">{destination.eyebrow}</p>
-          <p className="discovery-card__owner">{destination.displayValue}</p>
-        </div>
-      </div>
-
-      <div className="discovery-card__copy">
-        <h3>{destination.title}</h3>
-        <p>{destination.description}</p>
-      </div>
-
-      {destination.temporaryBridge ? (
-        <p className="discovery-card__bridge">
-          <strong>Current bridge:</strong> Fitness owns the future intake replacement;
-          Fawxzzy stores no intake or payment state.
-        </p>
-      ) : null}
-
-      {destination.href && destination.action ? (
-        <a
-          aria-label={`${destination.action} (opens in a new tab)`}
-          className="catalog-button catalog-button--primary discovery-card__action"
-          href={destination.href}
-          rel="noreferrer"
-          target="_blank"
-        >
-          {destination.action}
-          <span aria-hidden="true">↗</span>
-        </a>
-      ) : null}
-    </article>
-  );
-}
-
-function CompactDestination({ destination }: { destination: DiscoveryDestination }) {
-  const content = (
-    <>
-      <DestinationMark destination={destination} />
-      <span className="discovery-link__copy">
-        <span className="discovery-link__title">{destination.title}</span>
-        <span className="discovery-link__value">{destination.displayValue}</span>
-      </span>
-      <span aria-hidden="true" className="discovery-link__arrow">
-        {destination.href ? "↗" : "ID"}
-      </span>
-    </>
-  );
-
+function DestinationLink({ destination }: { destination: DiscoveryDestination }) {
   if (!destination.href || !destination.action) {
     return (
       <article
         aria-label={`${destination.title}: ${destination.displayValue}`}
-        className="discovery-link discovery-link--identity surface-panel"
+        className="editorial-directory__item editorial-directory__item--identity"
         data-destination-id={destination.id}
       >
-        {content}
-        <p className="discovery-link__note">{destination.description}</p>
+        <DestinationMark destination={destination} />
+        <span>
+          <strong>{destination.title}</strong>
+          <small>{destination.displayValue}</small>
+        </span>
+        <span className="editorial-directory__note">Verified ID</span>
       </article>
     );
   }
@@ -114,48 +51,156 @@ function CompactDestination({ destination }: { destination: DiscoveryDestination
   return (
     <a
       aria-label={`${destination.action} (opens in a new tab)`}
-      className="discovery-link surface-panel"
+      className="editorial-directory__item"
       data-destination-id={destination.id}
       href={destination.href}
       rel="noreferrer"
       target="_blank"
     >
-      {content}
+      <DestinationMark destination={destination} />
+      <span>
+        <strong>{destination.title}</strong>
+        <small>{destination.displayValue}</small>
+      </span>
+      <span aria-hidden="true" className="editorial-directory__arrow">↗</span>
     </a>
   );
 }
 
 export function DiscoveryGrid({ destinations }: DiscoveryGridProps) {
+  const findDestination = (id: DiscoveryDestination["id"]) => {
+    const destination = destinations.find((candidate) => candidate.id === id);
+    if (!destination) throw new Error(`Missing discovery destination: ${id}`);
+    return destination;
+  };
+
+  const fitness = findDestination("fitness-app");
+  const customWorkout = findDestination("custom-workout");
+  const discord = findDestination("discord");
+  const socialDestinations = destinations.filter((destination) => destination.category === "social");
+  const supportDestinations = destinations.filter((destination) => destination.category === "support");
+
   return (
-    <div className="discovery-sections">
-      {(["featured", "social", "support"] as const).map((category) => {
-        const categoryDestinations = destinations.filter(
-          (destination) => destination.category === category,
-        );
+    <div className="discovery-editorial">
+      <section aria-labelledby="discover-paths-title" className="editorial-section">
+        <EditorialSectionHeading
+          description="Three clear ways into the ecosystem, each grounded in something available now."
+          eyebrow="Start here"
+          id="discover-paths-title"
+          title="Choose what you came to do."
+        />
 
-        return (
-          <section aria-labelledby={`discovery-${category}`} className="discovery-section" key={category}>
-            <header className="discovery-section__heading">
-              <p className="eyebrow">{sectionCopy[category].eyebrow}</p>
-              <h2 id={`discovery-${category}`}>{sectionCopy[category].title}</h2>
-            </header>
+        <div className="editorial-paths">
+          <article className="editorial-path" data-editorial-path="build">
+            <p className="editorial-path__number">01</p>
+            <div>
+              <p className="eyebrow">Build</p>
+              <h3>Use the software.</h3>
+              <p>See the products in motion, understand what is live, and open each one at its real home.</p>
+            </div>
+            <StaticLink className="editorial-text-link" href="/apps">
+              Explore the apps <span aria-hidden="true">&rarr;</span>
+            </StaticLink>
+          </article>
 
-            {category === "featured" ? (
-              <div className="discovery-grid discovery-grid--featured">
-                {categoryDestinations.map((destination) => (
-                  <FeaturedDestination destination={destination} key={destination.id} />
-                ))}
+          <article className="editorial-path" data-editorial-path="train">
+            <p className="editorial-path__number">02</p>
+            <div>
+              <p className="eyebrow">Train</p>
+              <h3>Put the plan to work.</h3>
+              <p>Open Fitness or use the current Fitness-owned bridge for a custom workout setup.</p>
+              <p className="editorial-path__boundary">
+                Fitness owns the future intake replacement. Fawxzzy stores no intake or payment state.
+              </p>
+            </div>
+            <div className="editorial-path__links">
+              <DestinationLink destination={fitness} />
+              <DestinationLink destination={customWorkout} />
+            </div>
+          </article>
+
+          <article className="editorial-path" data-editorial-path="create">
+            <p className="editorial-path__number">03</p>
+            <div>
+              <p className="eyebrow">Create</p>
+              <h3>Follow the work behind it.</h3>
+              <p>Read the build record, watch the real product stories, and join the people around what comes next.</p>
+            </div>
+            <StaticLink className="editorial-text-link" href="/newsletter">
+              Read the build log <span aria-hidden="true">&rarr;</span>
+            </StaticLink>
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="current-work-title" className="editorial-section">
+        <EditorialSectionHeading
+          description="The latest verified product work comes directly from the same catalog contract used by the app pages."
+          eyebrow="Current work / July 2026"
+          id="current-work-title"
+          title="What is moving right now."
+        />
+        <div className="editorial-updates">
+          {apps.map((app) => (
+            <article className="editorial-update" data-current-work={app.slug} key={app.slug}>
+              <Image
+                alt=""
+                aria-hidden="true"
+                className="editorial-update__poster"
+                height={720}
+                src={app.trailer.poster.src}
+                width={1280}
+              />
+              <div>
+                <p className="editorial-update__meta">{app.category} / {app.status}</p>
+                <h3>{app.name}: {app.latestUpdate}</h3>
+                <p>{app.tagline}</p>
               </div>
-            ) : (
-              <div className="discovery-grid discovery-grid--compact">
-                {categoryDestinations.map((destination) => (
-                  <CompactDestination destination={destination} key={destination.id} />
-                ))}
-              </div>
-            )}
-          </section>
-        );
-      })}
+              <StaticLink
+                aria-label={`View ${app.name} details`}
+                className="editorial-text-link"
+                href={getAppDetailPath(app)}
+              >
+                View product <span aria-hidden="true">&rarr;</span>
+              </StaticLink>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section aria-labelledby="verified-profiles-title" className="editorial-section" id="discovery-social">
+        <EditorialSectionHeading
+          description="A compact directory of the profiles Fawxzzy currently publishes. No scraped activity or invented metrics."
+          eyebrow="Verified profiles"
+          id="verified-profiles-title"
+          title="Find Fawxzzy in the places you already use."
+        />
+        <div className="editorial-directory">
+          {socialDestinations.map((destination) => (
+            <DestinationLink destination={destination} key={destination.id} />
+          ))}
+        </div>
+
+        <div className="editorial-directory editorial-directory--secondary" aria-label="Support and gaming identities">
+          {supportDestinations.map((destination) => (
+            <DestinationLink destination={destination} key={destination.id} />
+          ))}
+        </div>
+      </section>
+
+      <section aria-labelledby="community-close-title" className="editorial-community surface-panel" id="community">
+        <div>
+          <p className="eyebrow">Community / Build log</p>
+          <h2 id="community-close-title">Stay close to what ships next.</h2>
+          <p>Join the Discord for the community, or use the owned weekly archive for the quieter record of the work.</p>
+        </div>
+        <div className="editorial-community__actions">
+          <DestinationLink destination={discord} />
+          <StaticLink className="catalog-button catalog-button--secondary" href="/newsletter">
+            View the newsletter
+          </StaticLink>
+        </div>
+      </section>
     </div>
   );
 }

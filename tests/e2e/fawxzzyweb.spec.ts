@@ -77,7 +77,11 @@ test("discover route exposes centralized public destinations", async ({ page }) 
     await expect(card).toContainText(destination.displayValue);
 
     if (destination.href && destination.action) {
-      const link = destination.category === "featured" ? card.locator("a") : card;
+      const link = page
+        .locator(
+          `a[data-destination-id="${destination.id}"], [data-destination-id="${destination.id}"] a`,
+        )
+        .first();
       await expect(link).toHaveAttribute("href", destination.href);
       await expect(link).toHaveAttribute("target", "_blank");
       await expect(link).toHaveAttribute("rel", "noreferrer");
@@ -86,15 +90,20 @@ test("discover route exposes centralized public destinations", async ({ page }) 
     }
   }
 
-  await expect(page.locator('[data-destination-id="custom-workout"]')).toContainText(
+  await expect(page.locator('[data-editorial-path="train"]')).toContainText(
     "Fitness owns the future intake replacement",
   );
   await expect(page.locator('[data-destination-id="youtube"]')).toHaveCount(1);
   await expect(page.locator('[data-destination-id="playstation"]')).toContainText(
     "PSN: fawxzzy",
   );
+  await expect(page.locator("[data-editorial-path]")).toHaveCount(3);
+  await expect(page.locator("[data-current-work]")).toHaveCount(apps.length);
+  for (const app of apps) {
+    await expect(page.locator(`[data-current-work="${app.slug}"]`)).toContainText(app.latestUpdate);
+  }
   await expect(
-    page.getByRole("heading", { level: 2, name: "Every verified social profile." }),
+    page.getByRole("heading", { level: 2, name: "Find Fawxzzy in the places you already use." }),
   ).toBeVisible();
   expect(discoveryDestinations.some((destination) => destination.href?.includes("link.me"))).toBe(
     false,
@@ -104,6 +113,7 @@ test("discover route exposes centralized public destinations", async ({ page }) 
     "href",
     "/newsletter",
   );
+  await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
 });
 
 test("newsletter route provides a truthful owned archive surface", async ({ page }) => {
@@ -111,11 +121,53 @@ test("newsletter route provides a truthful owned archive surface", async ({ page
 
   await expect(page).toHaveTitle("Building Fawxzzy Weekly | Fawxzzy");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Building Fawxzzy weekly.");
-  await expect(page.getByRole("status")).toContainText("no email address is collected");
+  await expect(page.getByRole("status")).toContainText(/no email address is collected/i);
+  await expect(page.locator("[data-editorial-topic]")).toHaveCount(4);
+  await expect(page.locator('[data-archive-state="empty"]')).toContainText(
+    "No issues are public yet.",
+  );
+  await expect(page.locator("body")).not.toContainText("Issue 001");
+  await expect(page.locator("body")).not.toContainText("Next issue");
+  await expect(page.locator('form, input[type="email"]')).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
     `${productIdentity.canonicalOrigin}/newsletter`,
   );
+});
+
+test("editorial pages keep clear mobile hierarchy and interaction contracts", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+
+  for (const route of ["/discover", "/newsletter"]) {
+    for (const width of [320, 360, 390]) {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto(route);
+
+      const geometry = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      }));
+      expect(geometry.scrollWidth, `${route} at ${width}px`).toBeLessThanOrEqual(
+        geometry.clientWidth,
+      );
+
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      const targetHeights = await page
+        .locator(".editorial-text-link, .editorial-directory__item, .catalog-button, .site-footer a")
+        .evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().height));
+      expect(Math.min(...targetHeights), `${route} at ${width}px`).toBeGreaterThanOrEqual(44);
+    }
+  }
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/discover");
+  const motion = await page.locator(".editorial-directory__item").first().evaluate((element) => {
+    const styles = getComputedStyle(element);
+    return { animation: styles.animationName, transition: styles.transitionDuration };
+  });
+  expect(motion.animation).toBe("none");
+  expect(motion.transition).toBe("0s");
 });
 
 test("apps route reflects centralized icon and trailer truth", async ({ page, request }) => {

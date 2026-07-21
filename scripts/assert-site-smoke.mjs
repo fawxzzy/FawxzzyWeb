@@ -117,6 +117,9 @@ export async function assertSiteSmoke(baseUrl) {
   if (!discoverHtml.includes("Fawxzzy stores no intake or payment state")) {
     throw new Error("The Fitness intake ownership boundary was not rendered.");
   }
+  if (!discoverHtml.includes("What is moving right now.")) {
+    throw new Error("/discover did not render centralized current product work.");
+  }
   if (!discoverHtml.includes("PSN: fawxzzy")) {
     throw new Error("The verified PlayStation online ID was not rendered.");
   }
@@ -125,8 +128,14 @@ export async function assertSiteSmoke(baseUrl) {
   }
 
   const newsletterHtml = await assertRoute(baseUrl, "/newsletter", "Building Fawxzzy weekly.");
-  if (!newsletterHtml.includes("no email address is collected")) {
+  if (!newsletterHtml.toLowerCase().includes("no email address is collected")) {
     throw new Error("/newsletter did not truthfully disclose its closed subscription state.");
+  }
+  if (!newsletterHtml.includes("No issues are public yet.")) {
+    throw new Error("/newsletter did not render the truthful empty archive state.");
+  }
+  if (newsletterHtml.includes("Issue 001") || newsletterHtml.includes("Next issue")) {
+    throw new Error("/newsletter rendered an unpublished issue as editorial proof.");
   }
 
   const compatibilityHtml = await assertRoute(
