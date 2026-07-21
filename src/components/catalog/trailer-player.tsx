@@ -28,6 +28,7 @@ export function TrailerPlayer({ appName, appSlug, trailer }: TrailerPlayerProps)
   const videoRef = useRef<HTMLVideoElement>(null);
   const sourceRef = useRef<HTMLSourceElement>(null);
   const playAttemptRef = useRef(0);
+  const [sourceBound, setSourceBound] = useState(false);
   const [playbackState, setPlaybackState] = useState<PlaybackState>("idle");
   const descriptionId = `${appSlug}-trailer-description`;
   const statusId = `${appSlug}-trailer-status`;
@@ -42,6 +43,7 @@ export function TrailerPlayer({ appName, appSlug, trailer }: TrailerPlayerProps)
 
     if (source.getAttribute("src") !== trailer.video.src) {
       source.src = trailer.video.src;
+      setSourceBound(true);
       video.load();
     }
 
@@ -90,7 +92,7 @@ export function TrailerPlayer({ appName, appSlug, trailer }: TrailerPlayerProps)
         aria-describedby={`${descriptionId} ${statusId}`}
         aria-label={`${appName} trailer`}
         className="trailer-player__video"
-        controls
+        controls={sourceBound}
         onEnded={() => {
           playAttemptRef.current += 1;
           setPlaybackState("ended");

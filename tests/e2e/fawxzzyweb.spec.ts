@@ -295,7 +295,7 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
 
     const trailer = entry.getByLabel(`${app.name} trailer`);
     await expect(trailer).toBeVisible();
-    await expect(trailer).toHaveAttribute("controls", "");
+    await expect(trailer).toHaveJSProperty("controls", false);
     await expect(trailer).toHaveAttribute("preload", "none");
     await expect(trailer).toHaveAttribute("poster", app.trailer.poster.src);
     await expect(trailer.locator("source")).not.toHaveAttribute("src", /.+/);
@@ -604,6 +604,7 @@ for (const app of apps) {
     expect(mediaRequests, `${app.name} initial media requests`).toEqual([]);
     const trailer = page.getByLabel(`${app.name} trailer`);
     await expect(trailer.locator("source")).not.toHaveAttribute("src", /.+/);
+    await expect(trailer).toHaveJSProperty("controls", false);
 
     await page.getByRole("button", { name: `Play ${app.name} trailer` }).click();
     await expect.poll(
@@ -611,6 +612,7 @@ for (const app of apps) {
       { timeout: 10_000 },
     ).toBeGreaterThan(0.1);
     await expect(trailer.locator("source")).toHaveAttribute("src", app.trailer.video.src);
+    await expect(trailer).toHaveJSProperty("controls", true);
 
     const activeSource = await trailer.evaluate(
       (video: HTMLVideoElement) => new URL(video.currentSrc).pathname,

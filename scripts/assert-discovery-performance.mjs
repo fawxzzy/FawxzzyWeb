@@ -59,6 +59,10 @@ assert(
   "Catalog trailer sources must bind only after an explicit play action.",
 );
 assert(
+  trailerPlayer.includes("controls={sourceBound}"),
+  "Native controls must appear only after the trailer source is bound.",
+);
+assert(
   captureScript.includes("mp4RequestsBeforeInteraction"),
   "Portable evidence must track pre-interaction MP4 requests.",
 );
