@@ -1,14 +1,16 @@
 # Shared account portal phase 1
 
-Status: source and Preview contract only. Provider binding, custom domains, production, and
-database capabilities are not part of this packet.
+Status: source and Preview implementation. This packet performs no provider mutation. The
+account custom domain was bound separately and is now independently read back in the
+[account-subdomain receipt](receipts/2026-07-21-fawxzzyweb-account-subdomain-readback.md);
+Auth environment/provider binding and database capabilities remain gated.
 
 ## Canonical origin contract
 
 | Surface | Canonical origin | Current state |
 | --- | --- | --- |
 | Public hub | `https://fawxzzy.com` | Existing public origin |
-| Shared account | `https://account.fawxzzy.com` | Live route origin; Auth provider binding remains gated |
+| Shared account | `https://account.fawxzzy.com` | Live route origin with durable readback; Auth provider binding remains gated |
 | Fitness | `https://fitness.fawxzzy.com` | Future owner-lane cutover |
 | Mazer | `https://mazer.fawxzzy.com` | Future owner-lane cutover |
 
@@ -16,9 +18,10 @@ The public brand is `Fawxzzy`. `FawxzzyWeb` and `fawxzzyweb` remain technical re
 package, and provider identities.
 
 The shared account origin is attached to the existing FawxzzyWeb project and serves the current
-source-only account routes. That domain attachment does not prove target Auth environment or
-provider binding. Public navigation stays focused on the public studio; account metadata and
-future provider redirects target `https://account.fawxzzy.com`.
+source-only account routes. The linked receipt proves the project/domain/DNS/TLS/route postimage;
+it does not prove target Auth environment or provider binding. Public navigation stays focused on
+the public studio; account metadata and future provider redirects target
+`https://account.fawxzzy.com`.
 
 Exact account destinations:
 
@@ -176,8 +179,11 @@ existing account, or treat a client-side value as authoritative.
   readback, no false activation, safe origins, session isolation, and token/cookie absence.
 - INTENTIONALLY DEFERRED: authoritative service read/activation transport, username writes,
   user-number allocation/readback, entitlements, billing, and product-owned data.
-- BLOCKED: target schema/API/provider binding, environment values, account domain attachment, DNS,
-  and production launch; each requires a separate owner packet with exact preimages and rollback.
+- LANDED SEPARATELY: `account.fawxzzy.com` project attachment, DNS, TLS, and passive route
+  availability, with the exact readback preserved in the account-subdomain receipt.
+- BLOCKED: target schema/API/provider binding, environment values, Auth activation, and production
+  launch of configured account behavior; each requires a separate owner packet with exact
+  preimages and rollback.
 
 ## Required post-bind smoke proof
 
