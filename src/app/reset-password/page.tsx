@@ -12,8 +12,9 @@ export default function ResetPasswordPage() {
   return (
     <AccountPageShell
       eyebrow="Account recovery"
-      intro="Request a private recovery link or complete a recovery session without weakening password rules."
-      title="Recover safely."
+      intro="Request a private recovery link or choose a new password after the one-time check succeeds."
+      title="Recover your account."
+      variant="utility"
     >
       <AccountPortal mode="reset" />
     </AccountPageShell>
