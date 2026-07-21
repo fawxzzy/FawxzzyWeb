@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=20.9.0"
+    "node": "24.x"
   },
   "scripts": {
     "dev": "node scripts/next-cli.mjs dev --turbopack",
@@ -14,12 +14,13 @@
     "qa:home-smoke": "npm run qa:site-smoke",
     "test:e2e": "playwright test",
     "test:auth-key-guard": "node scripts/test-public-auth-key-guard.mjs",
+    "test:runtime-hygiene": "node scripts/assert-runtime-hygiene.mjs",
     "smoke:lifeline": "node scripts/smoke-lifeline.mjs",
-    "verify": "npm run lint && npm run test:auth-key-guard && npm run build && npm run smoke:lifeline && npm run test:e2e"
+    "verify": "npm run lint && npm run test:auth-key-guard && npm run test:runtime-hygiene && npm run build && npm run smoke:lifeline && npm run test:e2e"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.109.0",
-    "next": "16.2.4",
+    "next": "16.2.11",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "serve-handler": "^6.1.6"
@@ -28,11 +29,11 @@
     "@axe-core/playwright": "^4.12.1",
     "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.4",
+    "eslint-config-next": "16.2.11",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
