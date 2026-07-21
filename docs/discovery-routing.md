@@ -2,10 +2,12 @@
 
 ## Purpose
 
-`/discover` is the canonical Fawxzzy public routing surface. It replaces the former third-party
-LinkMe hub with an owned, versioned route for apps, training, community, verified social profiles,
-support, and gaming identity. It links to independently owned surfaces; it does not duplicate
-their application, account, intake, authentication, data, payment, or platform state.
+`/discover` is the canonical Fawxzzy ecosystem hub. It replaces the former third-party LinkMe
+directory with an owned, versioned route that has one job: help people use the apps, follow what
+is being built, and join the community. Build, Train, and Create provide the primary orientation;
+current work and verified profiles support that journey without becoming equally weighted cards.
+The hub links to independently owned surfaces; it does not duplicate their application, account,
+intake, authentication, data, payment, or platform state.
 
 The canonical hub URL is `https://fawxzzy.com/discover`. Social profile website fields should
 point there rather than at the retired LinkMe profile.
@@ -43,6 +45,18 @@ brief. It is linked from the primary home and Discover routes. The archive may b
 email delivery is enabled, but no address may be collected until the delivery provider, double-opt-in
 policy, unsubscribe route, and auditable sending receipts are live. This keeps the subscribe surface
 truthful while Socials OS establishes the delivery boundary.
+
+The publication surface leads with editorial value: product decisions, development notes,
+experiments, lessons, and releases. Delivery readiness is secondary status. Until a real issue is
+published with a stable URL and verified metadata, the archive must render an honest empty state;
+draft titles, invented issue numbers, implied dates, and readership claims are prohibited.
+
+## Current-work read model
+
+Discover may show compact current-work entries only from centralized FawxzzyWeb catalog truth in
+`src/data/apps.ts`. Product names, status, latest-update copy, posters, and internal detail routes
+must remain synchronized with the app catalog. The hub does not scrape social activity, infer
+recency, or present unverified external activity as a Fawxzzy release.
 
 ## Fitness intake replacement contract
 

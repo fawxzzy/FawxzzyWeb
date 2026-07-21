@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
+import { EditorialSectionHeading } from "@/components/editorial/editorial-section-heading";
+import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
 import { StaticLink } from "@/components/site/static-link";
 import { productIdentity } from "@/config/product";
@@ -7,19 +9,38 @@ import { productIdentity } from "@/config/product";
 export const metadata: Metadata = {
   title: "Building Fawxzzy Weekly",
   description:
-    "The owned archive for Building Fawxzzy: the weekly record of software, training, games, and the work behind them.",
+    "The owned editorial home for Fawxzzy product decisions, development notes, experiments, lessons, and releases.",
   alternates: { canonical: "/newsletter" },
   openGraph: {
     title: `Building Fawxzzy Weekly | ${productIdentity.publicName}`,
     description:
-      "The owned weekly archive for Fawxzzy: what shipped, what changed, and what is next.",
+      "The owned editorial record for what Fawxzzy ships, what changed, and what the work teaches along the way.",
     url: "/newsletter",
   },
 };
 
+const editorialTopics = [
+  {
+    title: "Product decisions",
+    description: "Why a feature, constraint, or direction earned its place.",
+  },
+  {
+    title: "Development notes",
+    description: "The systems, tradeoffs, and fixes behind the finished surface.",
+  },
+  {
+    title: "Experiments and lessons",
+    description: "What worked, what did not, and what changes because of it.",
+  },
+  {
+    title: "Releases",
+    description: "A permanent record of meaningful product work after it ships.",
+  },
+];
+
 export default function NewsletterPage() {
   return (
-    <main className="newsletter-page app-theme-sage" id="main-content">
+    <main className="newsletter-page editorial-page app-theme-sage" id="main-content">
       <AmbientFitnessBackground
         intensity="soft"
         particleCount={8}
@@ -33,59 +54,98 @@ export default function NewsletterPage() {
         }}
       />
 
-      <div className="shell-container newsletter-shell">
+      <div className="shell-container newsletter-shell editorial-shell">
         <SiteNav current="newsletter" />
 
-        <header className="newsletter-hero surface-panel">
-          <p className="eyebrow">Owned archive / weekly field notes</p>
-          <h1>Building Fawxzzy weekly.</h1>
-          <p>
-            A quieter record of the apps, training, games, experiments, and decisions behind the work.
-            Each issue is meant to be useful even if you missed every post that week.
-          </p>
-          <div className="hero__actions">
-            <StaticLink className="catalog-button catalog-button--primary" href="/discover">
-              Explore the hub
-            </StaticLink>
-            <StaticLink className="catalog-button" href="/apps">
-              See the apps
-            </StaticLink>
+        <header className="editorial-hero newsletter-editorial-hero">
+          <div className="editorial-hero__copy">
+            <p className="eyebrow">Building Fawxzzy / Editorial record</p>
+            <h1>Building Fawxzzy weekly.</h1>
+            <p>
+              Product decisions, development notes, experiments, lessons, and releases
+              from an independent studio building software, fitness tools, and games in public.
+            </p>
+            <div className="hero__actions">
+              <a className="catalog-button catalog-button--primary" href="#newsletter-archive">
+                Browse the archive
+              </a>
+              <StaticLink className="catalog-button catalog-button--secondary" href="/discover">
+                Explore the ecosystem
+              </StaticLink>
+            </div>
           </div>
+
+          <aside className="newsletter-editorial-note" aria-label="Editorial promise">
+            <p className="eyebrow">The promise</p>
+            <p>
+              Useful context over noise. Every published issue gets a permanent URL,
+              source links, and an honest place in the archive.
+            </p>
+          </aside>
         </header>
 
-        <section aria-labelledby="newsletter-subscribe-title" className="newsletter-subscribe surface-panel">
-          <div>
-            <p className="eyebrow">Subscribe</p>
-            <h2 id="newsletter-subscribe-title">Delivery is being wired before addresses are collected.</h2>
+        <section aria-labelledby="newsletter-topics-title" className="editorial-section newsletter-topics">
+          <EditorialSectionHeading
+            description="The publication follows the work far enough to explain what changed and why it matters."
+            eyebrow="What readers receive"
+            id="newsletter-topics-title"
+            title="Field notes from the products and the process."
+          />
+          <div className="newsletter-topic-list">
+            {editorialTopics.map((topic, index) => (
+              <article className="newsletter-topic" data-editorial-topic key={topic.title}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <h3>{topic.title}</h3>
+                <p>{topic.description}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section aria-labelledby="newsletter-archive-title" className="editorial-section newsletter-archive" id="newsletter-archive">
+          <EditorialSectionHeading
+            description="Published issues will appear here with truthful dates, categories, source links, and reading time."
+            eyebrow="Issue archive"
+            id="newsletter-archive-title"
+            title="The archive starts when the first issue ships."
+          />
+          <div className="newsletter-archive-empty" data-archive-state="empty">
+            <p className="eyebrow">No published issues</p>
+            <h3>No issues are public yet.</h3>
             <p>
-              This is the permanent subscribe and archive surface. Email collection stays closed until
-              the provider, double-opt-in policy, unsubscribe path, and delivery receipts are live.
+              The empty state is intentional. Draft titles, publication dates, readership,
+              and previews are not presented as real until an issue is actually published.
+            </p>
+          </div>
+        </section>
+
+        <aside aria-labelledby="newsletter-delivery-title" className="newsletter-delivery">
+          <div>
+            <p className="eyebrow">Delivery status / Not open</p>
+            <h2 id="newsletter-delivery-title">Read here now. Subscribe later.</h2>
+            <p>
+              The public archive can grow before email delivery opens. Collection remains closed
+              until storage, confirmation, unsubscribe, privacy, and delivery receipts are ready together.
             </p>
           </div>
           <p className="newsletter-status" role="status">
-            Subscription opening soon — no email address is collected on this page yet.
+            Email delivery is not open. No email address is collected on this page.
           </p>
+        </aside>
+
+        <section aria-labelledby="newsletter-close-title" className="newsletter-close surface-panel">
+          <div>
+            <p className="eyebrow">Until the first issue</p>
+            <h2 id="newsletter-close-title">The live products are the current record.</h2>
+            <p>See what is available now, or use the ecosystem hub to find the community and verified profiles.</p>
+          </div>
+          <div className="newsletter-close__actions">
+            <StaticLink className="catalog-button catalog-button--primary" href="/apps">Explore apps</StaticLink>
+            <StaticLink className="catalog-button catalog-button--secondary" href="/discover">Open Discover</StaticLink>
+          </div>
         </section>
 
-        <section aria-labelledby="newsletter-archive-title" className="newsletter-archive">
-          <div className="section-heading">
-            <p className="eyebrow">Archive</p>
-            <h2 id="newsletter-archive-title">Issues will appear here.</h2>
-            <p>
-              The first issue is in editorial preparation. Published issues will have a stable URL,
-              issue date, source links, and an archive entry rather than disappearing into a social feed.
-            </p>
-          </div>
-          <article className="newsletter-empty surface-panel">
-            <p className="eyebrow">Next issue</p>
-            <h3>Issue 001 / Building the operating system around the work.</h3>
-            <p>
-              The initial edition will cover the live Fawxzzy app catalog, the build-in-public system,
-              and the next product work once the editorial draft is ready to publish.
-            </p>
-            <span>Not published yet</span>
-          </article>
-        </section>
+        <SiteFooter />
       </div>
     </main>
   );
