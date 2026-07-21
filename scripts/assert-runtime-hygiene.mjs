@@ -28,7 +28,7 @@ for (const contract of [
   ["actions/checkout@v7", "CI must use actions/checkout v7."],
   ["actions/setup-node@v7", "CI must use actions/setup-node v7."],
   ['node-version: "24.x"', "CI must verify with Node.js 24.x."],
-  ["docker build --tag fawxzzyweb-ci:${{ github.sha }} .", "CI must build the Lifeline container without publishing it."],
+  ["docker build --tag fawxzzyweb-ci:${{ env.EVIDENCE_SHA }} .", "CI must build the exact reviewed Lifeline source without publishing it."],
 ]) {
   assert(workflow.includes(contract[0]), contract[1]);
 }

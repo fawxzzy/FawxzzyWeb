@@ -15,7 +15,7 @@ const expectedManifest = [
   ...ownership.map(([path]) => `@import "${path}";`),
 ].join("\n");
 
-const manifest = (await readFile("src/app/globals.css", "utf8")).trim();
+const manifest = (await readFile("src/app/globals.css", "utf8")).replace(/\r\n/g, "\n").trim();
 if (manifest !== expectedManifest) {
   throw new Error("globals.css must remain the exact ordered style-ownership manifest.");
 }
