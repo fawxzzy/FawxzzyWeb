@@ -6,5 +6,5 @@ type AppCatalogEntryProps = {
 };
 
 export function AppCatalogEntry({ app }: AppCatalogEntryProps) {
-  return <ProductShowcase app={app} showTrailer />;
+  return <ProductShowcase app={app} />;
 }

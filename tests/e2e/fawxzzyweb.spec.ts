@@ -187,7 +187,7 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
     );
     await expect(
       entry.getByRole("img", { name: `${app.name} interaction walkthrough poster` }),
-    ).toHaveAttribute("src", app.trailer.poster.src);
+    ).toHaveCount(0);
     await expect(entry).toContainText(app.tagline);
     await expect(entry).toContainText(app.status);
     await expect(entry).toContainText(app.category);
@@ -198,20 +198,15 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
     );
     await expect(entry.locator("[data-review-placeholder]")).toHaveCount(0);
 
-    const disclosure = entry.locator("details");
-    await expect(disclosure).not.toHaveAttribute("open", "");
-    await expect(disclosure.getByText(`Watch ${app.name} in motion`)).toBeVisible();
-    await disclosure.locator("summary").click();
-    await expect(disclosure).toHaveAttribute("open", "");
-
-    const trailer = page.getByLabel(`${app.name} trailer`);
+    const trailer = entry.getByLabel(`${app.name} trailer`);
     await expect(trailer).toBeVisible();
     await expect(trailer).toHaveAttribute("controls", "");
     await expect(trailer).toHaveAttribute("preload", "none");
     await expect(trailer).toHaveAttribute("poster", app.trailer.poster.src);
     await expect(trailer.locator("source")).toHaveAttribute("src", app.trailer.video.src);
     await expect(trailer.locator("track")).toHaveAttribute("src", app.trailer.captionsSrc);
-    await expect(page.getByRole("button", { name: `Play ${app.name} trailer` })).toBeVisible();
+    await expect(entry.getByRole("button", { name: `Play ${app.name} trailer` })).toBeVisible();
+    await expect(entry.locator("details")).toHaveCount(0);
 
     for (const asset of [
       app.icon.src,
@@ -222,15 +217,9 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
       const response = await request.get(asset);
       expect(response.ok(), `${asset} should be served`).toBe(true);
     }
-
-    // WebKit can retain an active native video-control layout during the
-    // collapse transition. The user-facing playback suite still exercises
-    // ordinary clicks; this metadata/asset assertion only needs the native
-    // disclosure state reset before proceeding to the next catalog item.
-    await disclosure.locator("summary").click({ force: true });
   }
 
-  await expect(page.locator("details")).toHaveCount(apps.length);
+  await expect(page.locator("details")).toHaveCount(0);
   await expect(page.locator(".meta-chip")).toHaveCount(0);
   await expect(page.locator(".app-store-card__category")).toHaveCount(0);
   await expect(page.locator("[data-review-placeholder]")).toHaveCount(0);
@@ -252,6 +241,12 @@ test("Wave 1 Home and Apps compose as editorial and media-led page families", as
     const grid = page.locator(".product-showcase-grid, .catalog-stack").first();
     const cards = grid.locator("[data-product-showcase]");
     await expect(cards).toHaveCount(apps.length);
+
+    for (const app of apps) {
+      const card = page.locator(`#${app.slug}`);
+      await expect(card.getByLabel(`${app.name} trailer`)).toBeVisible();
+      await expect(card.locator("details")).toHaveCount(0);
+    }
 
     const desktopRects = await cards.evaluateAll((elements) =>
       elements.map((element) => {
@@ -289,7 +284,7 @@ test("Wave 1 interactions retain 44px targets and reduced-motion restraint", asy
   await page.goto("/apps");
 
   const targetHeights = await page
-    .locator(".catalog-button, .trailer-disclosure > summary, .site-footer a")
+    .locator(".catalog-button, .trailer-player__play, .site-footer a")
     .evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().height));
   expect(Math.min(...targetHeights)).toBeGreaterThanOrEqual(44);
 
@@ -306,11 +301,9 @@ test("each catalog trailer starts real playback from its explicit action", async
   await page.goto("/apps");
 
   for (const app of apps) {
-    const disclosure = page.locator(`#${app.slug}-trailer`);
-    await disclosure.locator("summary").click();
-
-    const trailer = page.getByLabel(`${app.name} trailer`);
-    await page.getByRole("button", { name: `Play ${app.name} trailer` }).click();
+    const entry = page.locator(`#${app.slug}`);
+    const trailer = entry.getByLabel(`${app.name} trailer`);
+    await entry.getByRole("button", { name: `Play ${app.name} trailer` }).click();
     await expect.poll(
       () => trailer.evaluate((video: HTMLVideoElement) => video.currentTime),
       { message: `${app.name} trailer should advance`, timeout: 10_000 },
@@ -323,96 +316,11 @@ test("each catalog trailer starts real playback from its explicit action", async
       () => trailer.evaluate((video: HTMLVideoElement) => video.duration),
       { message: `${app.name} trailer should not exceed the one-minute master`, timeout: 10_000 },
     ).toBeLessThanOrEqual(60.1);
-    await expect(disclosure.locator('[data-playback-state="playing"]')).toBeVisible();
+    await expect(entry.locator('[data-playback-state="playing"]')).toBeVisible();
 
     await trailer.evaluate((video: HTMLVideoElement) => video.pause());
-    await expect(page.getByRole("button", { name: `Resume ${app.name} trailer` })).toBeVisible();
+    await expect(entry.getByRole("button", { name: `Resume ${app.name} trailer` })).toBeVisible();
   }
-});
-
-test("closing a trailer pauses only that disclosure and reopening stays paused", async ({ page }) => {
-  test.setTimeout(90_000);
-  await page.goto("/apps");
-
-  const fitnessDisclosure = page.locator("#fitness-trailer");
-  const mazerDisclosure = page.locator("#mazer-trailer");
-  await fitnessDisclosure.locator("summary").click();
-  await mazerDisclosure.locator("summary").click();
-
-  const fitnessTrailer = page.getByLabel("Fitness trailer");
-  const mazerTrailer = page.getByLabel("Mazer trailer");
-
-  await page.evaluate(() => {
-    for (const slug of ["fitness", "mazer"]) {
-      const video = document.querySelector<HTMLVideoElement>(`#${slug}-trailer video`);
-
-      if (!video) {
-        throw new Error(`${slug} trailer is missing`);
-      }
-
-      const pause = video.pause.bind(video);
-      video.dataset.pauseCalls = "0";
-      video.pause = () => {
-        video.dataset.pauseCalls = String(Number(video.dataset.pauseCalls) + 1);
-        pause();
-      };
-    }
-  });
-
-  await page.getByRole("button", { name: "Play Fitness trailer" }).click();
-  await expect.poll(
-    () => fitnessTrailer.evaluate((video: HTMLVideoElement) => video.currentTime),
-    { message: "Fitness trailer should advance before collapse", timeout: 10_000 },
-  ).toBeGreaterThan(0.1);
-
-  await fitnessDisclosure.locator("summary").click();
-  await expect(fitnessDisclosure).not.toHaveAttribute("open", "");
-  await expect.poll(
-    () => fitnessTrailer.evaluate((video: HTMLVideoElement) => video.paused),
-    { message: "collapsed Fitness trailer should pause" },
-  ).toBe(true);
-  await expect(fitnessTrailer).toHaveAttribute("data-pause-calls", "1");
-  await expect(mazerTrailer).toHaveAttribute("data-pause-calls", "0");
-  await expect(mazerDisclosure).toHaveAttribute("open", "");
-
-  const collapsedTime = await fitnessTrailer.evaluate(
-    (video: HTMLVideoElement) => video.currentTime,
-  );
-  await fitnessDisclosure.locator("summary").click();
-  await expect(fitnessDisclosure).toHaveAttribute("open", "");
-  await expect.poll(
-    () => fitnessTrailer.evaluate((video: HTMLVideoElement) => video.paused),
-    { message: "reopened Fitness trailer should remain paused" },
-  ).toBe(true);
-  await expect(page.getByRole("button", { name: "Resume Fitness trailer" })).toBeVisible();
-  expect(
-    await fitnessTrailer.evaluate((video: HTMLVideoElement) => video.currentTime),
-  ).toBeCloseTo(collapsedTime, 1);
-});
-
-test("native trailer controls resynchronize state after a disclosure pause", async ({ page }) => {
-  test.setTimeout(60_000);
-  await page.goto("/apps");
-
-  const disclosure = page.locator("#fitness-trailer");
-  const trailer = page.getByLabel("Fitness trailer");
-  await disclosure.locator("summary").click();
-  await page.getByRole("button", { name: "Play Fitness trailer" }).click();
-  await expect.poll(
-    () => trailer.evaluate((video: HTMLVideoElement) => video.currentTime),
-    { message: "Fitness trailer should advance before collapse", timeout: 10_000 },
-  ).toBeGreaterThan(0.1);
-
-  await disclosure.locator("summary").click();
-  await disclosure.locator("summary").click();
-  await expect(page.getByRole("button", { name: "Resume Fitness trailer" })).toBeVisible();
-
-  await trailer.evaluate(async (video: HTMLVideoElement) => {
-    await video.play();
-  });
-  await expect(disclosure.locator('[data-playback-state="playing"]')).toBeVisible();
-  await expect(page.getByRole("button", { name: "Resume Fitness trailer" })).toHaveCount(0);
-  await expect(disclosure.locator(".trailer-player__status")).toHaveText("Trailer playing.");
 });
 
 for (const app of apps) {
@@ -422,46 +330,15 @@ for (const app of apps) {
     test.setTimeout(60_000);
     await page.goto("/apps");
 
-    const disclosure = page.locator(`#${app.slug}-trailer`);
-    const trailer = page.getByLabel(`${app.name} trailer`);
-    const retryableAction = page.getByRole("button", {
-      name: new RegExp(`^(Play|Resume) ${app.name} trailer$`),
-    });
-    const setDisclosureOpen = async (open: boolean) => {
-      const isOpen = (await disclosure.getAttribute("open")) !== null;
-
-      if (isOpen !== open) {
-        await disclosure.locator("summary").click({ force: true });
-      }
-
-      if (open) {
-        await expect(disclosure).toHaveAttribute("open", "");
-      } else {
-        await expect(disclosure).not.toHaveAttribute("open", "");
-        await expect(disclosure.locator(".trailer-player")).toHaveAttribute(
-          "data-playback-state",
-          /^(idle|paused|ended|error)$/,
-        );
-      }
-    };
-
-    await setDisclosureOpen(true);
+    const entry = page.locator(`#${app.slug}`);
+    const player = entry.locator(".trailer-player");
+    const trailer = entry.getByLabel(`${app.name} trailer`);
     await trailer.evaluate((video: HTMLVideoElement) => {
-      type ControlledVideo = HTMLVideoElement & {
-        rejectPendingPlay?: () => void;
-        playbackMode?: "pending" | "abort" | "success" | "error";
-      };
+      type ControlledVideo = HTMLVideoElement & { playbackMode?: "abort" | "success" | "error" };
 
       const controlledVideo = video as ControlledVideo;
-      controlledVideo.playbackMode = "pending";
+      controlledVideo.playbackMode = "abort";
       controlledVideo.play = () => {
-        if (controlledVideo.playbackMode === "pending") {
-          return new Promise<void>((_resolve, reject) => {
-            controlledVideo.rejectPendingPlay = () =>
-              reject(new DOMException("Playback was interrupted", "AbortError"));
-          });
-        }
-
         if (controlledVideo.playbackMode === "error") {
           return Promise.reject(new DOMException("Media decode failed", "NotSupportedError"));
         }
@@ -474,74 +351,36 @@ for (const app of apps) {
       };
     });
 
-    await page.getByRole("button", { name: `Play ${app.name} trailer` }).click({ force: true });
-    await expect(disclosure.locator('[data-playback-state="loading"]')).toBeVisible();
-
-    await setDisclosureOpen(false);
-    await setDisclosureOpen(true);
-    await expect(retryableAction).toBeVisible();
-
-    await trailer.evaluate((video: HTMLVideoElement) => {
-      (video as HTMLVideoElement & { playbackMode?: string }).playbackMode = "success";
-    });
-    await retryableAction.click({ force: true });
-    await expect(disclosure.locator('[data-playback-state="playing"]')).toBeVisible();
-
-    await trailer.evaluate((video: HTMLVideoElement) => {
-      const controlledVideo = video as HTMLVideoElement & { rejectPendingPlay?: () => void };
-      controlledVideo.rejectPendingPlay?.();
-    });
-    await expect(disclosure.locator('[data-playback-state="playing"]')).toBeVisible();
-    await expect(disclosure).not.toContainText("This trailer could not play here.");
-
-    await setDisclosureOpen(false);
-    await setDisclosureOpen(true);
-    await trailer.evaluate((video: HTMLVideoElement) => {
-      (video as HTMLVideoElement & { playbackMode?: string }).playbackMode = "abort";
-    });
-    await retryableAction.click({ force: true });
-    await expect(disclosure.locator(".trailer-player")).toHaveAttribute(
-      "data-playback-state",
-      /^(idle|paused)$/,
-    );
-    await expect(retryableAction).toBeVisible();
+    const playAction = entry.getByRole("button", { name: `Play ${app.name} trailer` });
+    await playAction.click({ force: true });
+    await expect(player).toHaveAttribute("data-playback-state", /^(idle|paused)$/);
+    await expect(playAction).toBeVisible();
+    await expect(entry).not.toContainText("This trailer could not play here.");
 
     await trailer.evaluate((video: HTMLVideoElement) => {
       (video as HTMLVideoElement & { playbackMode?: string }).playbackMode = "success";
     });
-    await retryableAction.click({ force: true });
-    await expect(disclosure.locator('[data-playback-state="playing"]')).toBeVisible();
+    await playAction.click({ force: true });
+    await expect(player).toHaveAttribute("data-playback-state", "playing");
 
-    for (let cycle = 0; cycle < 2; cycle += 1) {
-      await setDisclosureOpen(false);
-      await setDisclosureOpen(true);
-      await expect(retryableAction).toBeVisible();
-      await retryableAction.click({ force: true });
-      await expect(disclosure.locator('[data-playback-state="playing"]')).toBeVisible();
-    }
-
-    await setDisclosureOpen(false);
-    await setDisclosureOpen(true);
+    await trailer.evaluate((video: HTMLVideoElement) => {
+      video.dispatchEvent(new Event("pause"));
+    });
+    await expect(playAction).toBeVisible();
     await trailer.evaluate((video: HTMLVideoElement) => {
       (video as HTMLVideoElement & { playbackMode?: string }).playbackMode = "error";
     });
-    await retryableAction.click({ force: true });
-    await expect(disclosure.locator('[data-playback-state="error"]')).toBeVisible();
-    await expect(disclosure).toContainText("This trailer could not play here.");
-    await expect(page.getByRole("button", { name: `Retry ${app.name} trailer` })).toBeVisible();
-
-    await setDisclosureOpen(false);
-    await setDisclosureOpen(true);
-    await expect(disclosure.locator('[data-playback-state="error"]')).toBeVisible();
-    await expect(page.getByRole("button", { name: `Retry ${app.name} trailer` })).toBeVisible();
+    await playAction.click({ force: true });
+    await expect(player).toHaveAttribute("data-playback-state", "error");
+    await expect(entry).toContainText("This trailer could not play here.");
+    const retryAction = entry.getByRole("button", { name: `Retry ${app.name} trailer` });
+    await expect(retryAction).toBeVisible();
 
     await trailer.evaluate((video: HTMLVideoElement) => {
       (video as HTMLVideoElement & { playbackMode?: string }).playbackMode = "success";
     });
-    await page.getByRole("button", { name: `Retry ${app.name} trailer` }).click({ force: true });
-    await expect(disclosure.locator('[data-playback-state="playing"]')).toBeVisible();
-
-    await setDisclosureOpen(false);
+    await retryAction.click({ force: true });
+    await expect(player).toHaveAttribute("data-playback-state", "playing");
   });
 }
 
@@ -559,15 +398,12 @@ for (const app of apps) {
     );
     await expect(
       page.getByRole("img", { name: `${app.name} interaction walkthrough poster` }),
-    ).toHaveAttribute("src", app.trailer.poster.src);
+    ).toHaveCount(0);
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       "href",
       `${productIdentity.canonicalOrigin}/apps/${app.slug}`,
     );
     await expect(page.getByText(app.description)).toBeVisible();
-    await expect(
-      page.getByRole("heading", { level: 2, name: app.detail.headline }),
-    ).toBeVisible();
     await expect(page.getByRole("listitem")).toHaveCount(app.detail.capabilities.length);
 
     for (const capability of app.detail.capabilities) {
@@ -618,10 +454,12 @@ for (const app of apps) {
     }));
     expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth);
 
-    const disclosure = page.locator(`#${app.slug}-trailer`);
-    await expect(disclosure).not.toHaveAttribute("open", "");
-    await disclosure.locator("summary").click();
-    const trailer = page.getByLabel(`${app.name} trailer`);
+    const primaryMedia = page.locator(`#${app.slug}-trailer`);
+    const trailer = primaryMedia.getByLabel(`${app.name} trailer`);
+    await expect(primaryMedia.locator("details")).toHaveCount(0);
+    await expect(trailer).toHaveAttribute("poster", app.trailer.poster.src);
+    await expect(trailer.locator("source")).toHaveAttribute("src", app.trailer.video.src);
+    await expect(trailer.locator("track")).toHaveAttribute("src", app.trailer.captionsSrc);
     await page.getByRole("button", { name: `Play ${app.name} trailer` }).click();
     await expect.poll(
       () => trailer.evaluate((video: HTMLVideoElement) => video.currentTime),
@@ -637,15 +475,9 @@ for (const app of apps) {
   });
 }
 
-test("trailer disclosure and playback are keyboard operable", async ({ page }) => {
+test("primary trailer playback is keyboard operable without a disclosure", async ({ page }) => {
   test.setTimeout(60_000);
   await page.goto("/apps");
-
-  const disclosure = page.locator("#fitness-trailer");
-  const summary = disclosure.locator("summary");
-  await summary.focus();
-  await page.keyboard.press("Enter");
-  await expect(disclosure).toHaveAttribute("open", "");
 
   const playButton = page.getByRole("button", { name: "Play Fitness trailer" });
   await playButton.focus();
@@ -657,21 +489,7 @@ test("trailer disclosure and playback are keyboard operable", async ({ page }) =
     () => trailer.evaluate((video: HTMLVideoElement) => video.currentTime),
     { message: "keyboard-activated trailer should advance", timeout: 10_000 },
   ).toBeGreaterThan(0.1);
-
-  await summary.focus();
-  await page.keyboard.press("Enter");
-  await expect(disclosure).not.toHaveAttribute("open", "");
-  await expect.poll(
-    () => trailer.evaluate((video: HTMLVideoElement) => video.paused),
-    { message: "keyboard-collapsed trailer should pause" },
-  ).toBe(true);
-
-  await page.keyboard.press("Enter");
-  await expect(disclosure).toHaveAttribute("open", "");
-  await expect.poll(
-    () => trailer.evaluate((video: HTMLVideoElement) => video.paused),
-    { message: "keyboard-reopened trailer should remain paused" },
-  ).toBe(true);
+  await expect(page.locator("details")).toHaveCount(0);
 });
 
 test("public branding stays separate from repository and provider identity", async ({ request }) => {

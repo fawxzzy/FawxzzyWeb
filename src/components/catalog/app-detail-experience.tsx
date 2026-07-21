@@ -3,7 +3,7 @@ import Image from "next/image";
 import type { CatalogApp } from "@/data/apps";
 import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
 import { ReviewPlaceholder } from "@/components/catalog/review-placeholder";
-import { TrailerDisclosure } from "@/components/catalog/trailer-disclosure";
+import { TrailerPlayer } from "@/components/catalog/trailer-player";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
 import { StaticLink } from "@/components/site/static-link";
@@ -77,6 +77,7 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
             <h1 id="app-detail-title">{app.name}</h1>
             <p className="app-detail-headline">{app.detail.headline}</p>
             <p className="app-detail-tagline">{app.tagline}</p>
+            <p className="app-detail-description">{app.description}</p>
 
             <div className="app-detail-actions">
               <a
@@ -90,7 +91,7 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
               </a>
               <StaticLink
                 className="catalog-button catalog-button--secondary"
-                href={`#${app.slug}-walkthrough`}
+                href={`#${app.slug}-trailer`}
               >
                 Watch the walkthrough
                 <span aria-hidden="true">&darr;</span>
@@ -98,35 +99,9 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
             </div>
           </div>
 
-          <figure className="app-detail-hero__media">
-            <Image
-              alt={`${app.name} interaction walkthrough poster`}
-              className="app-detail-hero__poster"
-              fill
-              priority
-              sizes="(min-width: 1000px) 480px, (min-width: 700px) 42vw, calc(100vw - 2rem)"
-              src={app.trailer.poster.src}
-              unoptimized
-            />
-            <figcaption>
-              <span>Live product walkthrough</span>
-              <strong>{app.trailer.durationLabel}</strong>
-            </figcaption>
+          <figure className="app-detail-hero__media" id={`${app.slug}-trailer`}>
+            <TrailerPlayer appName={app.name} appSlug={app.slug} trailer={app.trailer} />
           </figure>
-        </section>
-
-        <section
-          aria-labelledby={`${app.slug}-proof-title`}
-          className="app-detail-proof"
-          id={`${app.slug}-walkthrough`}
-        >
-          <header className="app-detail-section-copy">
-            <p className="eyebrow">{app.detail.proofLabel}</p>
-            <h2 id={`${app.slug}-proof-title`}>{app.detail.headline}</h2>
-            <p>{app.description}</p>
-          </header>
-
-          <TrailerDisclosure appName={app.name} appSlug={app.slug} trailer={app.trailer} />
         </section>
 
         <section
