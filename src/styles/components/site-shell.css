@@ -1,0 +1,119 @@
+.shell-container {
+  width: min(1180px, calc(100vw - 1.5rem));
+  margin-inline: auto;
+}
+
+.catalog-page,
+.discover-page,
+.newsletter-page {
+  position: relative;
+  isolation: isolate;
+  padding: 1rem 0 4.5rem;
+}
+
+.home-page {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  padding: 1rem 0 4.5rem;
+}
+
+.home-shell {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.discover-shell {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.newsletter-shell {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.site-nav {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-radius: 24px;
+  padding: 0.55rem 0.65rem;
+}
+
+.site-nav__brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.65rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  color: rgb(var(--text));
+  padding-inline: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 760;
+  letter-spacing: -0.02em;
+}
+
+.site-nav__mark {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.72rem;
+  object-fit: cover;
+  box-shadow: 0 0 24px rgb(var(--accent) / 0.14);
+}
+
+.site-nav__links {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.site-nav__links a {
+  display: inline-flex;
+  border-radius: 999px;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  color: rgb(var(--muted));
+  padding: 0.58rem 0.82rem;
+  font-size: 0.84rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.site-nav__brand[aria-current="page"] .site-nav__brand-label,
+.site-nav__links a[aria-current="page"] {
+  color: rgb(var(--text));
+}
+
+.site-nav__links a[aria-current="page"] {
+  background: rgb(var(--accent) / 0.14);
+}
+
+.site-nav a:focus-visible {
+  outline: 3px solid rgb(var(--accent) / 0.62);
+  outline-offset: -3px;
+}
+
+.home-app-card a:focus-visible,
+.app-store-card:focus-visible,
+.app-detail-breadcrumb a:focus-visible,
+.app-detail-actions a:focus-visible,
+.discovery-card a:focus-visible,
+.discovery-callout a:focus-visible,
+.compatibility-note a:focus-visible {
+  outline: 3px solid rgb(var(--accent) / 0.62);
+  outline-offset: 3px;
+}

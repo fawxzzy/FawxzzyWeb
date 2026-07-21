@@ -23,6 +23,28 @@ family. Wave 2B implements the editorial family. Later work may refine utility
 routes without duplicating the Home, catalog, product-detail, or editorial
 composition.
 
+## Style ownership
+
+`src/app/globals.css` is the ordered import manifest, not a selector bucket. New
+styles belong to the narrowest established owner:
+
+- `src/styles/foundations/` owns tokens, reset rules, and document primitives.
+- `src/styles/components/` owns cross-family site-shell and catalog primitives.
+- `src/styles/page-families/utility.css` owns Login, Auth handoff, recovery, and
+  Account presentation until the utility-family refinement lands.
+- `src/styles/page-families/product-detail.css` owns Fitness, Mazer, and future
+  product-detail composition.
+- `src/styles/page-families/studio-public.css` owns the Home/catalog studio
+  frame and its current shared footer/navigation refinements.
+- `src/styles/page-families/editorial.css` owns Discover and Newsletter.
+- `src/styles/page-families/legacy-public.css` retains the earlier public rules
+  in their original cascade position while later lanes retire or migrate them.
+
+Import order is a compatibility contract because later studio and editorial
+rules intentionally refine earlier foundations. Do not reorder the manifest to
+solve a one-page styling issue. Extend the canonical owner or perform a bounded,
+screenshot-proven migration instead.
+
 ## Editorial template
 
 Discover and Newsletter share editorial typography, spacing, ruled lists,
