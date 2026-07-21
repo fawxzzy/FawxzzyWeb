@@ -764,6 +764,7 @@ function LinkHandler({
   const hydrated = useHydrated();
   const adapter = adapterFrom(resolution);
   const processed = useRef<OneShotAttemptState>({ started: false });
+  const redirectTimer = useRef<number | null>(null);
   const [notice, setNotice] = useState<Notice>({
     kind: "info",
     text: mode === "confirm" ? "Checking this confirmation link…" : "Checking this sign-in handoff…",
@@ -772,7 +773,14 @@ function LinkHandler({
 
   useEffect(() => {
     if (!hydrated) return;
-    return scheduleDeferredAttempt(processed.current, () => {
+    const scheduleRedirect = (target: string) => {
+      if (redirectTimer.current !== null) return;
+      redirectTimer.current = window.setTimeout(() => {
+        redirectTimer.current = null;
+        window.location.assign(sanitizeReturnTarget(target));
+      }, 1400);
+    };
+    const cancelAttempt = scheduleDeferredAttempt(processed.current, () => {
       const url = new URL(window.location.href);
 
       if (mode === "confirm") {
@@ -804,6 +812,7 @@ function LinkHandler({
       const receipt = callbackReceiptKey(payload.code);
       if (window.sessionStorage.getItem(receipt) === "complete") {
         setNotice({ kind: "success", text: "This sign-in handoff was already completed." });
+        scheduleRedirect(payload.returnTo);
         return;
       }
       const storedState = window.sessionStorage.getItem(accountContract.callbackStateKey);
@@ -821,29 +830,53 @@ function LinkHandler({
           window.sessionStorage.setItem(receipt, "complete");
           window.sessionStorage.removeItem(accountContract.callbackStateKey);
           setNotice({ kind: "success", text: "Sign-in handoff complete." });
+          scheduleRedirect(payload.returnTo);
         })
         .catch(() => setNotice({ kind: "error", text: safeAuthError("callback") }));
     });
+
+    return () => {
+      cancelAttempt();
+      if (redirectTimer.current !== null) {
+        window.clearTimeout(redirectTimer.current);
+        redirectTimer.current = null;
+      }
+    };
   }, [adapter, hydrated, mode]);
 
   return (
-    <section aria-labelledby="link-handler-title" className="account-card surface-panel">
+    <section
+      aria-busy={notice.kind === "info"}
+      aria-labelledby="link-handler-title"
+      className="account-card account-state-card surface-panel"
+      data-auth-state={notice.kind}
+    >
       <RuntimeNote />
       <div className="account-card__heading">
-        <p className="field-label">{mode === "confirm" ? "Confirmation" : "Authorization code"}</p>
+        <p className="field-label">{mode === "confirm" ? "Account confirmation" : "Secure sign-in"}</p>
         <h2 id="link-handler-title">
-          {mode === "confirm" ? "Finish securely." : "Complete the account handoff."}
+          {notice.kind === "info"
+            ? "Checking your link."
+            : notice.kind === "success"
+              ? "You are all set."
+              : "This link needs a fresh start."}
         </h2>
         <p>
-          Access and refresh tokens are never accepted in this URL. Sensitive query material is
-          removed after it is read once.
+          We check one-time details once, clear them from the address bar, and continue only to an
+          approved Fawxzzy destination.
         </p>
       </div>
-      <SetupState resolution={resolution} />
       <StatusNotice notice={notice} />
-      <a className="catalog-button catalog-button--primary" href={sanitizeReturnTarget(returnTo)}>
-        Continue safely
-      </a>
+      <div className="account-state-actions">
+        <a className="catalog-button catalog-button--primary" href={sanitizeReturnTarget(returnTo)}>
+          Continue safely
+        </a>
+        {notice.kind === "error" ? (
+          <a className="catalog-button catalog-button--secondary" href="/login">
+            Start again
+          </a>
+        ) : null}
+      </div>
     </section>
   );
 }

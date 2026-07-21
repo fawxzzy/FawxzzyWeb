@@ -8,16 +8,17 @@ database capabilities are not part of this packet.
 | Surface | Canonical origin | Current state |
 | --- | --- | --- |
 | Public hub | `https://fawxzzy.com` | Existing public origin |
-| Shared account | `https://account.fawxzzy.com` | Required later; not attached here |
+| Shared account | `https://account.fawxzzy.com` | Live route origin; Auth provider binding remains gated |
 | Fitness | `https://fitness.fawxzzy.com` | Future owner-lane cutover |
 | Mazer | `https://mazer.fawxzzy.com` | Future owner-lane cutover |
 
 The public brand is `Fawxzzy`. `FawxzzyWeb` and `fawxzzyweb` remain technical repository,
 package, and provider identities.
 
-Until the shared account origin is attached and publicly proven, public navigation stays on the
-live in-project `/account` route. Canonical account metadata and future provider redirects continue
-to target `https://account.fawxzzy.com` for the later binding packet.
+The shared account origin is attached to the existing FawxzzyWeb project and serves the current
+source-only account routes. That domain attachment does not prove target Auth environment or
+provider binding. Public navigation stays focused on the public studio; account metadata and
+future provider redirects target `https://account.fawxzzy.com`.
 
 Exact account destinations:
 
@@ -79,6 +80,9 @@ redirects must be admitted individually in a future packet; do not add a broad p
   origin-scoped and provider-owned. Reset responses likewise do not disclose whether an address exists.
 - Callback state must match browser session storage. Authorization codes are exchanged once and
   receive an idempotency receipt; sensitive query material is removed from the visible URL.
+- A successful callback briefly exposes a readable success state, then navigates to its sanitized
+  allowlisted destination. The visible fallback link remains available; failed, missing, and
+  setup-pending callbacks never auto-navigate.
 - Confirmation and callback processing is deferred through a one-shot lifecycle boundary. A
   canceled pre-processing setup remains retryable for React's development setup/cleanup probe,
   while a launched provider operation cannot be duplicated by a later effect setup.
@@ -110,8 +114,8 @@ Only a later provider-authorized packet may:
    30-day absolute lifetime, 7-day inactivity timeout, refresh-token compromise detection on with
    a 10-second reuse interval, and the 15-minute AAL1 limit unless application evidence changes it.
    These are blocked provider settings, not browser-source enforcement.
-5. Attach `account.fawxzzy.com` to the existing FawxzzyWeb Vercel project, then make the minimum
-   DNS change through the separately authorized DNS owner. `www` continues redirecting to the
+5. Preserve the existing `account.fawxzzy.com` attachment on the FawxzzyWeb Vercel project. Any
+   future DNS or routing mutation remains separately governed. `www` continues redirecting to the
    apex hub.
 6. Configure sender metadata only after mail ownership is proven: display name `Fawxzzy`;
    Google/Gmail-backed sender identity per operator policy; exact sender address remains `UNKNOWN`

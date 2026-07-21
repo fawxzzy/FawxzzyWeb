@@ -12,8 +12,9 @@ export default function CallbackPage() {
   return (
     <AccountPageShell
       eyebrow="Secure handoff"
-      intro="Only an authorization code with matching browser state can complete this route."
-      title="Finish signing in."
+      intro="We finish the one-time sign-in check, clean the address bar, then continue only to an approved destination."
+      title="Finishing sign-in."
+      variant="utility"
     >
       <AccountPortal mode="callback" />
     </AccountPageShell>

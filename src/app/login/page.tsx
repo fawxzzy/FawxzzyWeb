@@ -12,8 +12,9 @@ export default function LoginPage() {
   return (
     <AccountPageShell
       eyebrow="Fawxzzy account"
-      intro="One identity for Fawxzzy products, with each product keeping its own data and session."
-      title="Your account starts here."
+      intro="Use one shared identity while every Fawxzzy product keeps its own session and product data."
+      title="Sign in to Fawxzzy."
+      variant="utility"
     >
       <AccountPortal mode="login" />
     </AccountPageShell>

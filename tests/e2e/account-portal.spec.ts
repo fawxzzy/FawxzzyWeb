@@ -42,6 +42,8 @@ const accountRoutes = [
   ["/reset-password", "Reset password | Fawxzzy"],
 ] as const;
 
+const utilityRoutes = accountRoutes.filter(([route]) => route !== "/account");
+
 const syntheticPublishableKey = `sb_publishable_${"a-b_".repeat(5)}ab_${"c-d_".repeat(2)}`;
 
 function encodeSyntheticJwtPart(value: object) {
@@ -507,9 +509,79 @@ test("all account routes carry account canonical metadata and setup-pending stat
       `${accountContract.canonicalOrigin}${route}`,
     );
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
-    await expect(page.locator('[data-auth-state="setup-pending"]')).toBeVisible();
+    if (route === "/auth/confirm" || route === "/auth/callback") {
+      await expect(page.locator('.account-state-card[data-auth-state="error"]')).toBeVisible();
+      await expect(page.locator('[data-auth-state="setup-pending"]')).toHaveCount(0);
+    } else {
+      await expect(page.locator('[data-auth-state="setup-pending"]')).toBeVisible();
+    }
     await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
-    await expect(page.getByRole("navigation", { name: "Primary" })).not.toContainText("Account");
+    if (route === "/account") {
+      await expect(page.getByRole("navigation", { name: "Primary" })).not.toContainText("Account");
+    } else {
+      await expect(page.getByRole("navigation", { name: "Account" })).toBeVisible();
+      await expect(page.getByRole("navigation", { name: "Primary" })).toHaveCount(0);
+    }
+  }
+});
+
+test("utility Auth routes use one focused task shell", async ({ page }) => {
+  for (const [route] of utilityRoutes) {
+    await page.goto(route);
+    const navigation = page.getByRole("navigation", { name: "Account" });
+    await expect(navigation.getByRole("link", { name: "Fawxzzy home" })).toHaveAttribute(
+      "href",
+      "/",
+    );
+    await expect(navigation.getByRole("link", { name: "Back to site" })).toHaveAttribute(
+      "href",
+      "/",
+    );
+    await expect(page.locator(".account-utility-layout > .account-card")).toHaveCount(1);
+    await expect(page.locator(".account-hero--utility")).toBeVisible();
+  }
+});
+
+test("utility forms preserve password-manager and autofill semantics", async ({ page }) => {
+  await page.goto("/login?auth_test=success");
+  const loginForm = page.locator("form");
+  await expect(loginForm.getByLabel("Email")).toHaveAttribute("autocomplete", "email");
+  await expect(loginForm.getByLabel("Password")).toHaveAttribute(
+    "autocomplete",
+    "current-password",
+  );
+
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(loginForm.getByLabel("Password")).toHaveAttribute(
+    "autocomplete",
+    "new-password",
+  );
+
+  await page.goto("/reset-password?auth_test=success");
+  await expect(page.getByLabel("Email")).toHaveAttribute("autocomplete", "email");
+});
+
+test("utility shell stays usable without overflow at 320px and 360px", async ({ page }) => {
+  for (const width of [320, 360]) {
+    await page.setViewportSize({ width, height: 844 });
+    for (const [route] of utilityRoutes) {
+      await page.goto(route);
+      const geometry = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        minimumNavigationTarget: Math.min(
+          ...[...document.querySelectorAll<HTMLElement>(".account-utility-nav a")].map(
+            (element) => Math.round(element.getBoundingClientRect().height),
+          ),
+        ),
+        scrollWidth: document.documentElement.scrollWidth,
+      }));
+      expect(geometry.scrollWidth, `${route} at ${width}px`).toBeLessThanOrEqual(
+        geometry.clientWidth,
+      );
+      expect(geometry.minimumNavigationTarget, `${route} utility navigation`).toBeGreaterThanOrEqual(
+        44,
+      );
+    }
   }
 });
 
@@ -762,18 +834,19 @@ test("callback validates state, exchanges once, and never retains token material
   await page.goto("/");
   await page.evaluate((key) => window.sessionStorage.setItem(key, "expected-state"), accountContract.callbackStateKey);
   const callback =
-    "/auth/callback?auth_test=success&code=one-time-code&state=expected-state&returnTo=https%3A%2F%2Fmazer.fawxzzy.com%2F";
+    "/auth/callback?auth_test=success&code=one-time-code&state=expected-state&returnTo=%2Faccount";
   await page.goto(callback);
   await expect(page.getByRole("status")).toHaveText("Sign-in handoff complete.");
   await expect(page).toHaveURL(/\/auth\/callback$/);
   await expect(page.getByRole("link", { name: "Continue safely" })).toHaveAttribute(
     "href",
-    "https://mazer.fawxzzy.com/",
+    "/account",
   );
 
   await page.goto(callback);
   await expect(page.getByRole("status")).toHaveText("This sign-in handoff was already completed.");
   await expect(page).toHaveURL(/\/auth\/callback$/);
+  await expect(page).toHaveURL(/\/account$/, { timeout: 4_000 });
 
   await page.goto("/auth/callback?auth_test=success#access_token=secret&refresh_token=secret");
   await expect(page.locator('.account-notice[role="alert"]')).toHaveText(
@@ -789,6 +862,9 @@ test("callback rejects a mismatched state without an exchange", async ({ page })
   await expect(page.locator('.account-notice[role="alert"]')).toHaveText(
     safeAuthError("callback"),
   );
+  await expect(page.getByRole("link", { name: "Start again" })).toHaveAttribute("href", "/login");
+  await page.waitForTimeout(1_500);
+  await expect(page).toHaveURL(/\/auth\/callback$/);
 });
 
 test("account routes load without app console, page, or framework errors", async ({ context }) => {
@@ -822,7 +898,7 @@ test("account routes fit an iPhone-class viewport and expose visible focus state
       clientWidth: document.documentElement.clientWidth,
       minimumTargetHeight: Math.min(
         ...[...document.querySelectorAll<HTMLElement>(
-          ".site-nav a, .account-card button, .account-card input, .account-card a",
+          ".site-nav a, .account-utility-nav a, .account-card button, .account-card input, .account-card a",
         )]
           .map((element) => Math.round(element.getBoundingClientRect().height))
           .filter((height) => height > 0),
