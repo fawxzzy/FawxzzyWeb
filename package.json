@@ -15,8 +15,9 @@
     "test:e2e": "playwright test",
     "test:auth-key-guard": "node scripts/test-public-auth-key-guard.mjs",
     "test:runtime-hygiene": "node scripts/assert-runtime-hygiene.mjs",
+    "test:style-architecture": "node scripts/assert-style-architecture.mjs",
     "smoke:lifeline": "node scripts/smoke-lifeline.mjs",
-    "verify": "npm run lint && npm run test:auth-key-guard && npm run test:runtime-hygiene && npm run build && npm run smoke:lifeline && npm run test:e2e"
+    "verify": "npm run lint && npm run test:auth-key-guard && npm run test:runtime-hygiene && npm run test:style-architecture && npm run build && npm run smoke:lifeline && npm run test:e2e"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.109.0",
