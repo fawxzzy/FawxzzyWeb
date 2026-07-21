@@ -40,8 +40,11 @@ measured source baseline.
 
 ## Media isolation
 
-All catalog videos retain `preload="none"`. Portable evidence fails if any MP4 is
-requested before interaction. Browser tests open a fresh Apps page for each
+All catalog videos retain `preload="none"`, and their MP4 source is not bound
+until the explicit play action. The missing source is the deterministic boundary;
+`preload` alone is only a browser hint and did not prevent CI WebKit from loading
+both files. Portable evidence fails if any MP4 is requested before interaction.
+Browser tests open a fresh Apps page for each
 product, prove the initial request set contains no MP4, start one trailer, require
 real playback, keep the sibling paused at time zero, and require a byte-range
 video response. Chromium additionally proves the exact page-request set contains

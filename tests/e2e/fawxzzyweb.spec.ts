@@ -298,7 +298,7 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
     await expect(trailer).toHaveAttribute("controls", "");
     await expect(trailer).toHaveAttribute("preload", "none");
     await expect(trailer).toHaveAttribute("poster", app.trailer.poster.src);
-    await expect(trailer.locator("source")).toHaveAttribute("src", app.trailer.video.src);
+    await expect(trailer.locator("source")).not.toHaveAttribute("src", /.+/);
     await expect(trailer.locator("track")).toHaveAttribute("src", app.trailer.captionsSrc);
     await expect(entry.getByRole("button", { name: `Play ${app.name} trailer` })).toBeVisible();
     await expect(entry.locator("details")).toHaveCount(0);
@@ -553,9 +553,10 @@ for (const app of apps) {
     const trailer = primaryMedia.getByLabel(`${app.name} trailer`);
     await expect(primaryMedia.locator("details")).toHaveCount(0);
     await expect(trailer).toHaveAttribute("poster", app.trailer.poster.src);
-    await expect(trailer.locator("source")).toHaveAttribute("src", app.trailer.video.src);
+    await expect(trailer.locator("source")).not.toHaveAttribute("src", /.+/);
     await expect(trailer.locator("track")).toHaveAttribute("src", app.trailer.captionsSrc);
     await page.getByRole("button", { name: `Play ${app.name} trailer` }).click();
+    await expect(trailer.locator("source")).toHaveAttribute("src", app.trailer.video.src);
     await expect.poll(
       () => trailer.evaluate((video: HTMLVideoElement) => video.currentTime),
       { message: `${app.name} detail trailer should advance`, timeout: 10_000 },
@@ -601,16 +602,19 @@ for (const app of apps) {
 
     await page.goto("/apps", { waitUntil: "networkidle" });
     expect(mediaRequests, `${app.name} initial media requests`).toEqual([]);
+    const trailer = page.getByLabel(`${app.name} trailer`);
+    await expect(trailer.locator("source")).not.toHaveAttribute("src", /.+/);
 
     await page.getByRole("button", { name: `Play ${app.name} trailer` }).click();
     await expect.poll(
-      () => page.getByLabel(`${app.name} trailer`).evaluate((video: HTMLVideoElement) => video.currentTime),
+      () => trailer.evaluate((video: HTMLVideoElement) => video.currentTime),
       { timeout: 10_000 },
     ).toBeGreaterThan(0.1);
+    await expect(trailer.locator("source")).toHaveAttribute("src", app.trailer.video.src);
 
-    const activeSource = await page
-      .getByLabel(`${app.name} trailer`)
-      .evaluate((video: HTMLVideoElement) => new URL(video.currentSrc).pathname);
+    const activeSource = await trailer.evaluate(
+      (video: HTMLVideoElement) => new URL(video.currentSrc).pathname,
+    );
     expect(activeSource).toBe(app.trailer.video.src);
     for (const candidate of apps.filter(({ slug }) => slug !== app.slug)) {
       const siblingState = await page
@@ -637,7 +641,7 @@ for (const app of apps) {
       ).toBe(false);
     }
 
-    await page.getByLabel(`${app.name} trailer`).evaluate((video: HTMLVideoElement) => video.pause());
+    await trailer.evaluate((video: HTMLVideoElement) => video.pause());
     const rangeResponse = await page.request.get(app.trailer.video.src, {
       headers: { Range: "bytes=0-2047" },
     });

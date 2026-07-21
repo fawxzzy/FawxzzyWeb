@@ -54,6 +54,11 @@ assert(
 );
 assert(trailerPlayer.includes('preload="none"'), "Catalog trailers must retain preload=none.");
 assert(
+  trailerPlayer.includes('<source ref={sourceRef} type="video/mp4" />') &&
+    !trailerPlayer.includes('<source src={trailer.video.src}'),
+  "Catalog trailer sources must bind only after an explicit play action.",
+);
+assert(
   captureScript.includes("mp4RequestsBeforeInteraction"),
   "Portable evidence must track pre-interaction MP4 requests.",
 );
