@@ -66,6 +66,9 @@ export async function assertSiteSmoke(baseUrl) {
     if (!detailHtml.includes(app.origin)) {
       throw new Error(`${app.path} did not include grounded app origin ${app.origin}.`);
     }
+    if (!detailHtml.includes('class="trailer-player"') || detailHtml.includes("<details")) {
+      throw new Error(`${app.path} did not render one primary trailer without a disclosure.`);
+    }
   }
   for (const asset of [
     "/apps/fitness/icon.png",
@@ -78,8 +81,12 @@ export async function assertSiteSmoke(baseUrl) {
     }
   }
   const disclosureCount = (appsHtml.match(/<details\b/g) ?? []).length;
-  if (disclosureCount !== catalogApps.length) {
-    throw new Error(`/apps rendered ${disclosureCount} trailer disclosures instead of ${catalogApps.length}.`);
+  if (disclosureCount !== 0) {
+    throw new Error(`/apps rendered ${disclosureCount} retired trailer disclosures.`);
+  }
+  const primaryTrailerCount = (appsHtml.match(/class="trailer-player"/g) ?? []).length;
+  if (primaryTrailerCount !== catalogApps.length) {
+    throw new Error(`/apps rendered ${primaryTrailerCount} primary trailers instead of ${catalogApps.length}.`);
   }
   if (appsHtml.includes('/brand/trove-foxmark.png')) {
     throw new Error("The retired Trove hero image is still present on /apps.");

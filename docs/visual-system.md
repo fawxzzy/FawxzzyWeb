@@ -74,10 +74,12 @@ the canvas unless a panel communicates a real section boundary.
 ## Product media
 
 The product showcase is the canonical Home and Apps product primitive. It reads
-icons, posters, status, current updates, and routes from `src/data/apps.ts`.
-Posters render before playback UI. Video keeps native controls, captions,
-explicit user-start behavior, and `preload="none"` so the MP4 payload is not an
-initial-page requirement.
+icons, trailer media, status, current updates, and routes from `src/data/apps.ts`.
+The real trailer player occupies the primary media frame; there is no duplicate
+poster-only image or secondary disclosure. Its poster remains the lightweight
+pre-play fallback. Video keeps native controls, captions, explicit user-start
+behavior, and `preload="none"` so the MP4 payload is not an initial-page
+requirement.
 
 Product accents occupy a small part of the composition and remain subordinate
 to the shared black-green canvas. Fitness and Mazer continue to own their
@@ -87,10 +89,11 @@ origins and their canonical branding assets.
 
 Product pages are proof-led rather than card-led. The shared template uses:
 
-- an editorial split hero with the current app icon, a large walkthrough poster,
-  one launch action, and one in-page walkthrough action;
-- a compact native trailer disclosure whose open state reveals the real player,
-  captions, loading/error handling, and the current verified media;
+- an editorial split hero with the current app icon, the playable walkthrough
+  in the primary media position, one launch action, and one in-page walkthrough
+  action;
+- one canonical trailer player with captions and loading/error handling rather
+  than a poster plus duplicate disclosure;
 - three numbered capability statements sourced from `src/data/apps.ts`;
 - a truthful current-build panel, a restrained future-reviews contract, and a
   final action section;
@@ -119,8 +122,8 @@ social destinations.
 
 - Every interactive surface needs a visible keyboard focus state.
 - Normal text must meet WCAG AA contrast.
-- Product posters carry useful alternative text; decorative wolf marks do not.
-- Trailer disclosures retain native `details`/`summary` semantics.
+- Trailer players have an accessible name, captions, native controls, and a
+  keyboard-operable explicit play action; decorative wolf marks remain hidden.
 - `prefers-reduced-motion` removes ambient animation, product lift, navigation
   transitions, and nonessential button movement.
 - No essential information or action may depend on hover.

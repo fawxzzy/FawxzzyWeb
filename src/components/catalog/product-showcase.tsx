@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import Image from "next/image";
-import { TrailerDisclosure } from "@/components/catalog/trailer-disclosure";
+import { TrailerPlayer } from "@/components/catalog/trailer-player";
 import { StaticLink } from "@/components/site/static-link";
 import type { CatalogApp } from "@/data/apps";
 import { getAppDetailPath } from "@/data/apps";
@@ -8,7 +8,6 @@ import { getAppDetailPath } from "@/data/apps";
 type ProductShowcaseProps = {
   app: CatalogApp;
   headingLevel?: 2 | 3;
-  showTrailer?: boolean;
 };
 
 type ProductAccentStyle = CSSProperties & {
@@ -21,7 +20,6 @@ type ProductAccentStyle = CSSProperties & {
 export function ProductShowcase({
   app,
   headingLevel = 2,
-  showTrailer = false,
 }: ProductShowcaseProps) {
   const Heading = headingLevel === 2 ? "h2" : "h3";
   const accentStyle: ProductAccentStyle = {
@@ -39,14 +37,7 @@ export function ProductShowcase({
       style={accentStyle}
     >
       <div className="product-showcase__media">
-        <Image
-          alt={`${app.name} interaction walkthrough poster`}
-          className="product-showcase__poster"
-          fill
-          sizes="(min-width: 900px) 600px, 100vw"
-          src={app.trailer.poster.src}
-          unoptimized
-        />
+        <TrailerPlayer appName={app.name} appSlug={app.slug} trailer={app.trailer} />
         <span className="product-showcase__availability">{app.status}</span>
       </div>
 
@@ -84,13 +75,6 @@ export function ProductShowcase({
           </StaticLink>
         </div>
 
-        {showTrailer ? (
-          <TrailerDisclosure
-            appName={app.name}
-            appSlug={app.slug}
-            trailer={app.trailer}
-          />
-        ) : null}
       </div>
     </article>
   );

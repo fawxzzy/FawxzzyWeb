@@ -1,16 +1,12 @@
 "use client";
 
-import { forwardRef, useImperativeHandle, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { CatalogTrailer } from "@/data/apps";
 
 type TrailerPlayerProps = {
   appName: string;
   appSlug: string;
   trailer: CatalogTrailer;
-};
-
-export type TrailerPlayerHandle = {
-  pauseForDisclosure: () => void;
 };
 
 type PlaybackState = "idle" | "loading" | "playing" | "paused" | "ended" | "error";
@@ -28,33 +24,12 @@ function interruptedPlaybackState(video: HTMLVideoElement): PlaybackState {
   return video.currentTime > 0 ? "paused" : "idle";
 }
 
-export const TrailerPlayer = forwardRef<TrailerPlayerHandle, TrailerPlayerProps>(
-  function TrailerPlayer({ appName, appSlug, trailer }, ref) {
+export function TrailerPlayer({ appName, appSlug, trailer }: TrailerPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const disclosurePausedRef = useRef(false);
   const playAttemptRef = useRef(0);
   const [playbackState, setPlaybackState] = useState<PlaybackState>("idle");
   const descriptionId = `${appSlug}-trailer-description`;
   const statusId = `${appSlug}-trailer-status`;
-
-  useImperativeHandle(
-    ref,
-    () => ({
-      pauseForDisclosure() {
-        const video = videoRef.current;
-
-        disclosurePausedRef.current = true;
-        playAttemptRef.current += 1;
-        video?.pause();
-        setPlaybackState((currentState) =>
-          currentState === "ended" || currentState === "error" || !video
-            ? currentState
-            : interruptedPlaybackState(video),
-        );
-      },
-    }),
-    [],
-  );
 
   async function playTrailer() {
     const video = videoRef.current;
@@ -62,8 +37,6 @@ export const TrailerPlayer = forwardRef<TrailerPlayerHandle, TrailerPlayerProps>
     if (!video) {
       return;
     }
-
-    disclosurePausedRef.current = false;
 
     if (playbackState === "ended") {
       video.currentTime = 0;
@@ -133,12 +106,11 @@ export const TrailerPlayer = forwardRef<TrailerPlayerHandle, TrailerPlayerProps>
         }}
         onPlaying={(event) => {
           if (!event.currentTarget.paused) {
-            disclosurePausedRef.current = false;
             setPlaybackState("playing");
           }
         }}
         onWaiting={(event) => {
-          if (!disclosurePausedRef.current && !event.currentTarget.paused) {
+          if (!event.currentTarget.paused) {
             setPlaybackState((currentState) =>
               currentState === "error" ? currentState : "loading",
             );
@@ -200,4 +172,4 @@ export const TrailerPlayer = forwardRef<TrailerPlayerHandle, TrailerPlayerProps>
       </p>
     </div>
   );
-});
+}
