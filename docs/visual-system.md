@@ -19,9 +19,22 @@ page families:
 5. Utility: Login, confirmation, callback, reset, and Account.
 
 Wave 1 implements the first two families. Wave 2A implements the product-detail
-family. Wave 2B implements the editorial family. Later work may refine utility
-routes without duplicating the Home, catalog, product-detail, or editorial
-composition.
+family. Wave 2B implements the editorial family. The secure utility shell gives
+Login, confirmation, callback, and reset a focused task layout; the Account
+dashboard remains the operational branch of the same family.
+
+## Utility and Auth template
+
+Secure handoff pages do one job. They use a compact account navigation bar,
+an unbordered orientation column, one task panel, and deterministic pending,
+success, failure, and retry states. They do not repeat the public marketing
+navigation or expose provider terminology in primary copy.
+
+Successful callbacks sanitize the visible URL before a short announced handoff
+to an exact allowlisted destination. A visible link remains as the fallback.
+Missing, invalid, expired, or setup-pending actions fail closed and never navigate
+automatically. Browser autofill semantics, origin-scoped sessions, and the
+existing token/return-target constraints remain behavioral contracts.
 
 ## Style ownership
 

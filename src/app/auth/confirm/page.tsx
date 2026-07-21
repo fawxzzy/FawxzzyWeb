@@ -12,8 +12,9 @@ export default function ConfirmPage() {
   return (
     <AccountPageShell
       eyebrow="One-time link"
-      intro="Confirmation material is handled once, then removed from the visible URL."
+      intro="We check this link once, clear it from the address bar, and keep the next destination inside the approved Fawxzzy route set."
       title="Confirm your account."
+      variant="utility"
     >
       <AccountPortal mode="confirm" />
     </AccountPageShell>
