@@ -9,6 +9,8 @@
 | Utility/Auth | origin, return, PKCE, password, error, cooldown contracts | Login/confirm/callback/reset states, WCAG, errors | four Auth routes in both engines |
 | Account | session, capability, username, service-state contracts | signed-out/unavailable state, WCAG, overflow | `/account` in both engines |
 | Compatibility | canonical and reversible Trove assertions | redirect/canonical/no runtime errors | `/trove` in both engines |
+| Discovery and SEO | exact sitemap/robots, canonical social metadata, sanitized Organization/WebSite/SoftwareApplication/Breadcrumb JSON-LD | public-route metadata and noindex exclusions | Home, Apps, product details, Discover, Newsletter, Trove |
+| Media performance | optimized route-JavaScript budget, `preload=none`, no MP4 before interaction, one-product range-request isolation | real trailer start plus response header assertions | `/apps` in Chromium and mobile WebKit |
 | Runtime/security | Node, Actions, Docker, HTTP-header contracts | Lifeline smoke | source receipt captures exact tree/run |
 | Style ownership | ordered import and file-owner assertions | full cross-family regression matrix | contact sheet makes visual review portable |
 

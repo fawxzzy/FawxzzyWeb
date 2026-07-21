@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Request } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -55,6 +55,101 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
     "href",
     "/account",
   );
+});
+
+test("public discovery files expose only canonical indexable routes", async ({
+  request,
+}) => {
+  const sitemapResponse = await request.get("/sitemap.xml");
+  expect(sitemapResponse.ok()).toBe(true);
+  expect(sitemapResponse.headers()["content-type"]).toContain("application/xml");
+  const sitemap = await sitemapResponse.text();
+  const expectedRoutes = ["/", "/apps", "/apps/fitness", "/apps/mazer", "/discover", "/newsletter"];
+
+  for (const route of expectedRoutes) {
+    const canonical =
+      route === "/"
+        ? productIdentity.canonicalOrigin
+        : new URL(route, productIdentity.canonicalOrigin).href;
+    expect(sitemap).toContain(`<loc>${canonical}</loc>`);
+  }
+  for (const excluded of ["/trove", "/account", "/login", "/auth/confirm", "/reset-password"]) {
+    expect(sitemap).not.toContain(`<loc>${new URL(excluded, productIdentity.canonicalOrigin).href}</loc>`);
+  }
+
+  const robotsResponse = await request.get("/robots.txt");
+  expect(robotsResponse.ok()).toBe(true);
+  const robots = await robotsResponse.text();
+  expect(robots).toContain("Allow: /");
+  expect(robots).toContain("Disallow: /account");
+  expect(robots).toContain("Disallow: /auth/");
+  expect(robots).toContain("Disallow: /trove");
+  expect(robots).toContain(`Sitemap: ${productIdentity.canonicalOrigin}/sitemap.xml`);
+  expect(robots).toContain(`Host: ${productIdentity.canonicalOrigin}`);
+});
+
+test("public routes carry social metadata and grounded structured data", async ({
+  page,
+}) => {
+  const publicRoutes = [
+    { path: "/", image: "/brand/fawxzzy-banner-v2.png" },
+    { path: "/apps", image: "/brand/fawxzzy-banner-v2.png" },
+    { path: "/discover", image: "/brand/fawxzzy-banner-v2.png" },
+    { path: "/newsletter", image: "/brand/fawxzzy-banner-v2.png" },
+  ];
+
+  for (const route of publicRoutes) {
+    await page.goto(route.path);
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute("content", /\S/);
+    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute("content", /Fawxzzy/);
+    await expect(page.locator('meta[property="og:description"]')).toHaveAttribute("content", /\S/);
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
+      "content",
+      new URL(route.image, productIdentity.canonicalOrigin).href,
+    );
+    await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
+      "content",
+      "summary_large_image",
+    );
+  }
+
+  await page.goto("/");
+  const siteGraph = JSON.parse(
+    (await page.locator("#fawxzzy-site-structured-data").textContent()) ?? "{}",
+  );
+  expect(siteGraph["@context"]).toBe("https://schema.org");
+  expect(siteGraph["@graph"].map((entry: { "@type": string }) => entry["@type"])).toEqual([
+    "Organization",
+    "WebSite",
+  ]);
+
+  for (const app of apps) {
+    await page.goto(`/apps/${app.slug}`);
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
+      "content",
+      new URL(app.trailer.poster.src, productIdentity.canonicalOrigin).href,
+    );
+    const graph = JSON.parse(
+      (await page.locator(`#${app.slug}-application-structured-data`).textContent()) ?? "{}",
+    );
+    const application = graph["@graph"].find(
+      (entry: { "@type": string }) => entry["@type"] === "SoftwareApplication",
+    );
+    const breadcrumb = graph["@graph"].find(
+      (entry: { "@type": string }) => entry["@type"] === "BreadcrumbList",
+    );
+
+    expect(application.name).toBe(app.name);
+    expect(application.url).toBe(`${productIdentity.canonicalOrigin}/apps/${app.slug}`);
+    expect(application.sameAs).toBe(app.origin.current);
+    expect(application.featureList).toEqual(
+      app.detail.capabilities.map(({ title }) => title),
+    );
+    expect(application).not.toHaveProperty("aggregateRating");
+    expect(application).not.toHaveProperty("offers");
+    expect(application).not.toHaveProperty("review");
+    expect(breadcrumb.itemListElement).toHaveLength(2);
+  }
 });
 
 test("discover route exposes centralized public destinations", async ({ page }) => {
@@ -491,6 +586,67 @@ test("primary trailer playback is keyboard operable without a disclosure", async
   ).toBeGreaterThan(0.1);
   await expect(page.locator("details")).toHaveCount(0);
 });
+
+for (const app of apps) {
+  test(`${app.name} trailer defers media and isolates its byte-range request`, async ({
+    page,
+  }, testInfo) => {
+    test.setTimeout(90_000);
+    const mediaRequests: string[] = [];
+    const recordMediaRequest = (request: Request) => {
+      const pathname = new URL(request.url()).pathname;
+      if (pathname.endsWith(".mp4")) mediaRequests.push(pathname);
+    };
+    page.on("request", recordMediaRequest);
+
+    await page.goto("/apps", { waitUntil: "networkidle" });
+    expect(mediaRequests, `${app.name} initial media requests`).toEqual([]);
+
+    await page.getByRole("button", { name: `Play ${app.name} trailer` }).click();
+    await expect.poll(
+      () => page.getByLabel(`${app.name} trailer`).evaluate((video: HTMLVideoElement) => video.currentTime),
+      { timeout: 10_000 },
+    ).toBeGreaterThan(0.1);
+
+    const activeSource = await page
+      .getByLabel(`${app.name} trailer`)
+      .evaluate((video: HTMLVideoElement) => new URL(video.currentSrc).pathname);
+    expect(activeSource).toBe(app.trailer.video.src);
+    for (const candidate of apps.filter(({ slug }) => slug !== app.slug)) {
+      const siblingState = await page
+        .getByLabel(`${candidate.name} trailer`)
+        .evaluate((video: HTMLVideoElement) => ({
+          currentTime: video.currentTime,
+          paused: video.paused,
+        }));
+      expect(siblingState).toEqual({ currentTime: 0, paused: true });
+    }
+
+    // Chromium reports native media requests through Playwright's page event.
+    // WebKit still proves real playback and source isolation above; its native
+    // media loader is intentionally verified through the explicit range probe.
+    if (testInfo.project.name === "chromium") {
+      expect(new Set(mediaRequests)).toEqual(new Set([app.trailer.video.src]));
+      expect(
+        mediaRequests.some((requestPath) =>
+          apps.some(
+            (candidate) =>
+              candidate.slug !== app.slug && requestPath === candidate.trailer.video.src,
+          ),
+        ),
+      ).toBe(false);
+    }
+
+    await page.getByLabel(`${app.name} trailer`).evaluate((video: HTMLVideoElement) => video.pause());
+    const rangeResponse = await page.request.get(app.trailer.video.src, {
+      headers: { Range: "bytes=0-2047" },
+    });
+    expect(rangeResponse.status()).toBe(206);
+    expect(rangeResponse.headers()["content-type"]).toContain("video/mp4");
+    expect(rangeResponse.headers()["content-range"]).toMatch(/^bytes 0-2047\//);
+    page.off("request", recordMediaRequest);
+  });
+}
 
 test("public branding stays separate from repository and provider identity", async ({ request }) => {
   expect(productIdentity.publicName).toBe("Fawxzzy");

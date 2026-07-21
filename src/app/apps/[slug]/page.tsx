@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AppDetailExperience } from "@/components/catalog/app-detail-experience";
-import { productIdentity } from "@/config/product";
+import { StructuredData } from "@/components/seo/structured-data";
 import { apps, getAppBySlug, getAppDetailPath } from "@/data/apps";
+import { appStructuredData, publicPageMetadata } from "@/lib/seo";
 
 type AppDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -22,19 +23,15 @@ export async function generateMetadata({ params }: AppDetailPageProps): Promise<
     return {};
   }
 
-  const canonical = getAppDetailPath(app);
-
-  return {
+  return publicPageMetadata({
     title: app.name,
     description: app.tagline,
-    alternates: { canonical },
-    openGraph: {
-      title: `${app.name} | ${productIdentity.publicName}`,
-      description: app.tagline,
-      images: [{ alt: `${app.name} icon`, url: app.icon.src }],
-      url: canonical,
+    image: {
+      alt: `${app.name} interaction walkthrough`,
+      url: app.trailer.poster.src,
     },
-  };
+    path: getAppDetailPath(app),
+  });
 }
 
 export default async function AppDetailPage({ params }: AppDetailPageProps) {
@@ -45,5 +42,13 @@ export default async function AppDetailPage({ params }: AppDetailPageProps) {
     notFound();
   }
 
-  return <AppDetailExperience app={app} />;
+  return (
+    <>
+      <StructuredData
+        data={appStructuredData(app)}
+        id={`${app.slug}-application-structured-data`}
+      />
+      <AppDetailExperience app={app} />
+    </>
+  );
 }

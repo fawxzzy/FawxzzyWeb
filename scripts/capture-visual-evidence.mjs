@@ -90,6 +90,35 @@ try {
       const page = await context.newPage();
       const browserErrors = [];
       const knownRunnerExceptions = [];
+      const requestedMedia = [];
+      await page.addInitScript(() => {
+        globalThis.__fawxzzyEvidenceVitals = { cls: 0, lcpMs: 0 };
+
+        if (PerformanceObserver.supportedEntryTypes.includes("largest-contentful-paint")) {
+          new PerformanceObserver((list) => {
+            for (const entry of list.getEntries()) {
+              globalThis.__fawxzzyEvidenceVitals.lcpMs = Math.max(
+                globalThis.__fawxzzyEvidenceVitals.lcpMs,
+                entry.startTime,
+              );
+            }
+          }).observe({ type: "largest-contentful-paint", buffered: true });
+        }
+
+        if (PerformanceObserver.supportedEntryTypes.includes("layout-shift")) {
+          new PerformanceObserver((list) => {
+            for (const entry of list.getEntries()) {
+              if (!entry.hadRecentInput) {
+                globalThis.__fawxzzyEvidenceVitals.cls += entry.value;
+              }
+            }
+          }).observe({ type: "layout-shift", buffered: true });
+        }
+      });
+      page.on("request", (request) => {
+        const pathname = new URL(request.url()).pathname;
+        if (pathname.endsWith(".mp4")) requestedMedia.push(pathname);
+      });
       page.on("pageerror", (error) => {
         if (browserContract.engine === "webkit" && error.message === knownWebKitMediaControlsError) {
           knownRunnerExceptions.push(`pageerror: ${error.message}`);
@@ -105,6 +134,33 @@ try {
         throw new Error(`${route.path} returned ${response?.status() ?? "no response"}.`);
       }
       await page.evaluate(() => document.fonts.ready);
+      const performance = await page.evaluate(() => {
+        const resources = performance.getEntriesByType("resource");
+        const transferredBytes = (entry) => entry.transferSize || entry.encodedBodySize || 0;
+        const routeJavascript = resources.filter(
+          (entry) => entry.name.includes("/_next/static/") && entry.name.endsWith(".js"),
+        );
+        const vitals = globalThis.__fawxzzyEvidenceVitals ?? { cls: 0, lcpMs: 0 };
+
+        return {
+          cls: Number(vitals.cls.toFixed(4)),
+          initialTransferBytes: resources.reduce(
+            (total, entry) => total + transferredBytes(entry),
+            0,
+          ),
+          lcpMs: Math.round(vitals.lcpMs),
+          routeJavascriptBytes: routeJavascript.reduce(
+            (total, entry) => total + transferredBytes(entry),
+            0,
+          ),
+          routeJavascriptFiles: routeJavascript.length,
+        };
+      });
+      if (requestedMedia.length > 0) {
+        throw new Error(
+          `${browserContract.label} ${route.path} requested MP4 media before interaction: ${requestedMedia.join(", ")}`,
+        );
+      }
       const geometry = await page.evaluate(() => ({
         clientWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth,
@@ -134,6 +190,10 @@ try {
         bytes: bytes.length,
         image: pngDimensions(bytes),
         sha256: sha256(bytes),
+        performance: {
+          ...performance,
+          mp4RequestsBeforeInteraction: requestedMedia,
+        },
         knownRunnerExceptions,
       });
       await page.close();

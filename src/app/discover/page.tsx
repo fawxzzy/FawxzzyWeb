@@ -5,23 +5,15 @@ import { DiscoveryGrid } from "@/components/discovery/discovery-grid";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
 import { StaticLink } from "@/components/site/static-link";
-import { productIdentity } from "@/config/product";
 import { discoveryDestinations } from "@/data/discovery";
+import { publicPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = publicPageMetadata({
   title: "Discover",
   description:
     "The Fawxzzy ecosystem hub for using the apps, following the work, and joining the community.",
-  alternates: {
-    canonical: "/discover",
-  },
-  openGraph: {
-    title: `Discover | ${productIdentity.publicName}`,
-    description:
-      "Use the apps, follow what is being built, and join the Fawxzzy community from one verified home.",
-    url: "/discover",
-  },
-};
+  path: "/discover",
+});
 
 export default function DiscoverPage() {
   return (

@@ -15,11 +15,12 @@
     "evidence:visual": "node scripts/capture-visual-evidence.mjs",
     "test:e2e": "playwright test",
     "test:auth-key-guard": "node scripts/test-public-auth-key-guard.mjs",
+    "test:discovery-performance": "node scripts/assert-discovery-performance.mjs",
     "test:release-evidence": "node scripts/assert-release-evidence.mjs",
     "test:runtime-hygiene": "node scripts/assert-runtime-hygiene.mjs",
     "test:style-architecture": "node scripts/assert-style-architecture.mjs",
     "smoke:lifeline": "node scripts/smoke-lifeline.mjs",
-    "verify": "npm run lint && npm run test:auth-key-guard && npm run test:runtime-hygiene && npm run test:style-architecture && npm run test:release-evidence && npm run build && npm run smoke:lifeline && npm run test:e2e"
+    "verify": "npm run lint && npm run test:auth-key-guard && npm run test:runtime-hygiene && npm run test:style-architecture && npm run test:release-evidence && npm run build && npm run test:discovery-performance && npm run smoke:lifeline && npm run test:e2e"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.109.0",

@@ -13,7 +13,8 @@ container build therefore bind to the same reviewable 40-character source commit
 - 12 governed routes in desktop Chromium at 1440×900.
 - The same 12 routes in iPhone-class WebKit at 390×844.
 - `visual-manifest.json` with route, family, engine, viewport, byte size, image
-  dimensions, and SHA-256 for every capture.
+  dimensions, SHA-256, observed LCP/CLS, initial transfer bytes, route JavaScript,
+  and pre-interaction MP4 requests for every capture.
 - A labelled `contact-sheet.png` plus its standalone HTML source.
 - `release-receipt.json` with exact source commit/tree and CI-run provenance.
 
@@ -26,8 +27,9 @@ and unknown release state must not be inferred from a successful build.
 Run `npm run verify` first so the optimized static export exists, then run
 `npm run evidence:visual`. The generator starts an isolated local static server,
 fails on route errors, page/console errors, or horizontal overflow, captures with
-reduced motion, writes evidence under `visual-evidence/<commit>`, and terminates
-its server. Generated output is ignored by Git and Docker.
+reduced motion, fails if a trailer MP4 loads before interaction, writes evidence
+under `visual-evidence/<commit>`, and terminates its server. Generated output is
+ignored by Git and Docker.
 
 Playwright WebKit 26.5 can emit one exact exception from its native modern-media-
 controls implementation: `Temporal.Duration properties must be finite and of
