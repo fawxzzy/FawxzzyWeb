@@ -48,3 +48,8 @@ A separately authorized production lane completes the source receipt with the
 reviewed head, merge commit, Vercel deployment ID/URL, aliases, smoke result, and
 preserved rollback deployment. Automation records evidence; it never grants the
 deployment decision.
+
+Production execution uses the fail-closed wrapper documented in
+`docs/deployment-safety.md`. The wrapper requires the committed team/project
+identity, a clean exact-main source commit, and a successful exact-commit CI run
+before it can invoke Vercel. It never links or creates a project.
