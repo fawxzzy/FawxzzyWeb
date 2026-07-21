@@ -33,3 +33,6 @@ jobs:
 
       - name: Verify
         run: npm run verify
+
+      - name: Build Lifeline container
+        run: docker build --tag fawxzzyweb-ci:${{ github.sha }} .

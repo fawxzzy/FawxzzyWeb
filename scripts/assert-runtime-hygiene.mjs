@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 const packageJson = JSON.parse(await readFile("package.json", "utf8"));
 const vercelConfig = JSON.parse(await readFile("vercel.json", "utf8"));
 const workflow = await readFile(".github/workflows/ci.yml", "utf8");
+const dockerfile = await readFile("Dockerfile", "utf8");
 
 function assert(condition, message) {
   if (!condition) {
@@ -27,9 +28,17 @@ for (const contract of [
   ["actions/checkout@v7", "CI must use actions/checkout v7."],
   ["actions/setup-node@v7", "CI must use actions/setup-node v7."],
   ['node-version: "24.x"', "CI must verify with Node.js 24.x."],
+  ["docker build --tag fawxzzyweb-ci:${{ github.sha }} .", "CI must build the Lifeline container without publishing it."],
 ]) {
   assert(workflow.includes(contract[0]), contract[1]);
 }
+
+const dockerNodeImages = dockerfile.match(/^FROM\s+node:([^\s]+).*$/gm) ?? [];
+assert(
+  dockerNodeImages.length === 2 &&
+    dockerNodeImages.every((image) => image.startsWith("FROM node:24-alpine")),
+  "Every Docker build and runtime stage must use Node.js 24 Alpine.",
+);
 
 const expectedHeaders = new Map([
   ["x-content-type-options", "nosniff"],

@@ -4,8 +4,9 @@ This receipt governs the source-side runtime, dependency, CI, and baseline HTTP-
 
 ## Runtime contract
 
-- `package.json`, GitHub Actions, and the existing Vercel project target Node.js 24.
+- `package.json`, GitHub Actions, both Docker build/runtime stages, and the existing Vercel project target Node.js 24.
 - CI uses the current major releases of the official checkout and setup-node actions.
+- CI builds the Lifeline container from the exact source head without publishing or deploying it.
 - Next.js and `eslint-config-next` remain version-aligned on the audited 16.2 patch line.
 - `npm run verify` runs a deterministic contract check before building the application.
 
@@ -30,4 +31,4 @@ Vercel already supplies HSTS for production. A Content Security Policy is intent
 
 ## Verification and release boundary
 
-The maintenance lane must pass lint, the public Auth-key guard, the runtime-hygiene contract, an optimized build, Lifeline smoke, Chromium, and mobile WebKit. A source merge is not deployment authority. Security headers become public only after a separately authorized production release and route-aware readback.
+The maintenance lane must pass lint, the public Auth-key guard, the runtime-hygiene contract, an optimized build, Lifeline smoke, Chromium, mobile WebKit, and a non-published Docker build. Docker is not installed in the local Codex runtime, so the exact-head hosted CI job is authoritative for the container build. A source merge is not deployment authority. Security headers become public only after a separately authorized production release and route-aware readback.
