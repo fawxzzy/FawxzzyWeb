@@ -26,9 +26,11 @@ npm run deploy:production -- --dry-run --expected-commit <40-hex-sha> --ci-run-i
 ```
 
 The dry-run verifies the local binding, clean checkout, exact HEAD, reachability
-from `origin/main`, successful CI for the exact commit, live Vercel team/project
-identity, current production deployment, and rollback candidate. It performs no
-deployment.
+from `origin/main`, a successful `push` CI run whose branch is exactly `main`
+and whose head is the exact release commit, live Vercel team/project identity,
+current production deployment, and rollback candidate. A pull-request,
+workflow-dispatch, or non-main run for the same SHA is not release evidence. The
+dry-run performs no deployment.
 
 ## Authorized release
 

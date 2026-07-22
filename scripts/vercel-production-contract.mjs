@@ -98,6 +98,9 @@ export function assertCiRun(ciRun, expectedCommit) {
   if (!ciRun || ciRun.headSha !== expectedCommit) {
     throw new Error("The supplied GitHub Actions run does not cover the release commit.");
   }
+  if (ciRun.headBranch !== "main" || ciRun.event !== "push") {
+    throw new Error("The supplied GitHub Actions run is not an exact-main push run.");
+  }
   if (ciRun.status !== "completed" || ciRun.conclusion !== "success") {
     throw new Error("The supplied exact-main GitHub Actions run is not successful.");
   }
