@@ -32,6 +32,11 @@ current production deployment, and rollback candidate. A pull-request,
 workflow-dispatch, or non-main run for the same SHA is not release evidence. The
 dry-run performs no deployment.
 
+On Windows, the wrapper resolves the installed CLI form from `PATH` in fail-closed
+order (`.exe`, then `.cmd`, then an exact command match). This supports the native
+GitHub CLI executable and the npm-installed Vercel command without assuming that
+both tools use the same shim extension. A missing CLI stops before provider access.
+
 ## Authorized release
 
 After separate current production authorization:
