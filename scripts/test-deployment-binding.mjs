@@ -80,9 +80,19 @@ try {
   const divergent = git(valid, "rev-parse", "HEAD");
   assert.throws(() => assertReleaseSource({ repoRoot: valid, expectedCommit: divergent }), /not reachable/);
 
-  assert.doesNotThrow(() => assertCiRun({ headSha: head, status: "completed", conclusion: "success" }, head));
-  assert.throws(() => assertCiRun({ headSha: "0".repeat(40), status: "completed", conclusion: "success" }, head), /does not cover/);
-  assert.throws(() => assertCiRun({ headSha: head, status: "completed", conclusion: "failure" }, head), /not successful/);
+  const successfulMainRun = {
+    headSha: head,
+    headBranch: "main",
+    event: "push",
+    status: "completed",
+    conclusion: "success",
+  };
+  assert.doesNotThrow(() => assertCiRun(successfulMainRun, head));
+  assert.throws(() => assertCiRun({ ...successfulMainRun, headSha: "0".repeat(40) }, head), /does not cover/);
+  assert.throws(() => assertCiRun({ ...successfulMainRun, headBranch: "codex/release-candidate", event: "pull_request" }, head), /not an exact-main push/);
+  assert.throws(() => assertCiRun({ ...successfulMainRun, headBranch: "release" }, head), /not an exact-main push/);
+  assert.throws(() => assertCiRun({ ...successfulMainRun, event: "workflow_dispatch" }, head), /not an exact-main push/);
+  assert.throws(() => assertCiRun({ ...successfulMainRun, conclusion: "failure" }, head), /not successful/);
 
   assert.doesNotThrow(() => assertRemoteProject({
     id: VERCEL_PRODUCTION_CONTRACT.projectId,

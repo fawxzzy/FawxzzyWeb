@@ -40,7 +40,7 @@ const ciRun = assertCiRun(runJsonCommand(getCommand("gh"), [
   "--repo",
   VERCEL_PRODUCTION_CONTRACT.repository,
   "--json",
-  "status,conclusion,headSha,url",
+  "status,conclusion,headSha,headBranch,event,url",
 ], { cwd: repoRoot }), expectedCommit);
 const project = assertRemoteProject(runJsonCommand(getCommand("vercel"), [
   "api",
