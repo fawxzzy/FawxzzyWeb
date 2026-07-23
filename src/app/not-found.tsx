@@ -1,22 +1,36 @@
+import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
+import { SiteFooter } from "@/components/site/site-footer";
+import { SiteNav } from "@/components/site/site-nav";
 import { StaticLink } from "@/components/site/static-link";
+import { SystemState } from "@/components/system/system-state";
 import { productIdentity } from "@/config/product";
 
 export default function NotFound() {
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-12">
-      <div className="surface-panel w-full max-w-xl rounded-[34px] px-6 py-7 text-center">
-        <p className="eyebrow">Missing Surface</p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-text">
-          That surface is not in {productIdentity.publicName}.
-        </h1>
-        <p className="mt-4 text-base leading-8 text-muted">
-          The app catalog only renders entries that exist in the typed catalog data.
-        </p>
-        <div className="mt-6 flex justify-center">
-          <StaticLink className="catalog-button catalog-button--primary" href="/apps">
-            Return to apps
-          </StaticLink>
-        </div>
+    <main className="system-page app-theme-sage" id="main-content">
+      <AmbientFitnessBackground intensity="soft" particleCount={8} pulseEnabled={false} />
+      <div className="shell-container system-shell">
+        <SiteNav current="apps" />
+        <SystemState
+          actions={
+            <>
+              <StaticLink className="catalog-button catalog-button--primary" href="/apps">
+                Explore apps
+              </StaticLink>
+              <StaticLink className="catalog-button catalog-button--secondary" href="/">
+                Return home
+              </StaticLink>
+            </>
+          }
+          description={
+            <>The address does not match a current {productIdentity.publicName} page.</>
+          }
+          eyebrow="Page not found"
+          headingLevel={1}
+          title="This page is not here."
+          variant="empty"
+        />
+        <SiteFooter />
       </div>
     </main>
   );

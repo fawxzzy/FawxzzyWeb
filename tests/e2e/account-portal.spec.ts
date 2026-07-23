@@ -1,6 +1,10 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import {
+  resolveSystemStateSemantics,
+  systemStateVariants,
+} from "../../src/components/system/system-state";
+import {
   accountContract,
   accountUrls,
   classifyRuntimeOrigin,
@@ -57,6 +61,37 @@ function syntheticLegacyKey(role: "anon" | "service_role") {
     Buffer.from("synthetic-signature", "utf8").toString("base64url"),
   ].join(".");
 }
+
+test("shared system-state variants have deterministic status semantics", () => {
+  const assertive = new Set([
+    "unauthorized",
+    "invalid",
+    "expired",
+    "recoverable-error",
+    "terminal-error",
+  ]);
+
+  expect(systemStateVariants).toEqual([
+    "loading",
+    "pending",
+    "success",
+    "empty",
+    "unavailable",
+    "unauthorized",
+    "invalid",
+    "expired",
+    "recoverable-error",
+    "terminal-error",
+  ]);
+
+  for (const variant of systemStateVariants) {
+    expect(resolveSystemStateSemantics(variant)).toEqual({
+      busy: variant === "loading" || variant === "pending",
+      live: assertive.has(variant) ? "assertive" : "polite",
+      role: assertive.has(variant) ? "alert" : "status",
+    });
+  }
+});
 
 test("account origins and exact redirects are centralized", () => {
   expect(accountContract.canonicalOrigin).toBe("https://account.fawxzzy.com");
@@ -510,10 +545,10 @@ test("all account routes carry account canonical metadata and setup-pending stat
     );
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
     if (route === "/auth/confirm" || route === "/auth/callback") {
-      await expect(page.locator('.account-state-card[data-auth-state="error"]')).toBeVisible();
-      await expect(page.locator('[data-auth-state="setup-pending"]')).toHaveCount(0);
+      await expect(page.locator('[data-auth-state="invalid"]')).toBeVisible();
+      await expect(page.locator('[data-system-state="unavailable"]')).toHaveCount(0);
     } else {
-      await expect(page.locator('[data-auth-state="setup-pending"]')).toBeVisible();
+      await expect(page.locator('[data-system-state="unavailable"]').first()).toBeVisible();
     }
     await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
     if (route === "/account") {
@@ -619,7 +654,7 @@ test("login accepts a legacy short password and maps adapter errors safely", asy
   await page.locator("form").getByLabel("Email").fill("unknown@example.test");
   await page.locator("form").getByLabel("Password").fill("short");
   await page.locator("form").getByRole("button", { name: "Sign in" }).click();
-  await expect(page.locator('.account-notice[role="alert"]')).toHaveText(safeAuthError("login"));
+  await expect(page.locator('.account-notice[role="alert"]')).toContainText(safeAuthError("login"));
 });
 
 test("signup enforces ten characters and accepts long passwords", async ({ browserName, page }) => {
@@ -684,8 +719,8 @@ test("every settled provider signup outcome has one non-enumerating result", asy
     await expect(submit).toHaveText(/^Working/);
     await expect(submit).toBeDisabled();
     const notice = page.locator('.account-notice[role="status"]');
-    await expect(notice).toHaveText(expectedNotice);
-    await expect(notice).toHaveClass(/account-notice--success/);
+    await expect(notice).toContainText(expectedNotice);
+    await expect(notice).toHaveAttribute("data-system-state", "success");
     await expect(page.locator('.account-notice[role="alert"]')).toHaveCount(0);
     await expect(submit).toHaveText(/Try again in [1-5]s/);
     await expect(submit).toBeDisabled();
@@ -716,17 +751,21 @@ test("account settings stay session-scoped and username remains capability-gated
   await emailForm.getByLabel("Update email").fill("changed@example.test");
   await emailForm.getByLabel("Current password").fill("current-account-password");
   await emailForm.getByRole("button", { name: "Save email" }).click();
-  await expect(page.getByRole("status")).toContainText("email update was accepted");
+  await expect(page.locator('.account-notice[role="status"]')).toContainText(
+    "email update was accepted",
+  );
 
   const passwordForm = page.locator("form").filter({ has: page.getByLabel("New password") });
   await expect(passwordForm.getByLabel("Current password")).toHaveAttribute("required", "");
   await passwordForm.getByLabel("Current password").fill("current-account-password");
   await passwordForm.getByLabel("New password").fill("x".repeat(129));
   await passwordForm.getByRole("button", { name: "Save password" }).click();
-  await expect(page.getByRole("status")).toContainText("password has been updated");
+  await expect(page.locator('.account-notice[role="status"]')).toContainText(
+    "password has been updated",
+  );
 
   await page.getByRole("button", { name: "Sign out here" }).click();
-  await expect(page.getByText("You are not signed in on this origin.")).toBeVisible();
+  await expect(page.getByText("You are signed out here.")).toBeVisible();
 });
 
 test("service cards render every local-only disposition without enabling client activation", async ({
@@ -753,6 +792,14 @@ test("service cards render every local-only disposition without enabling client 
         service.canonicalDestination,
       );
     }
+    const capabilityState = page.locator("[data-service-capability] > [data-system-state]");
+    if (scenario === "unavailable") {
+      await expect(capabilityState).toHaveAttribute("data-system-state", "unavailable");
+    } else if (scenario === "unknown") {
+      await expect(capabilityState).toHaveAttribute("data-system-state", "terminal-error");
+    } else {
+      await expect(capabilityState).toHaveCount(0);
+    }
     await expect(page.getByText("DiscordOS", { exact: true })).toHaveCount(0);
   }
 
@@ -766,6 +813,9 @@ test("default account presentation does not claim service registration without r
 }) => {
   await page.goto("/account");
   await expect(page.locator('[data-service-capability="unavailable"]')).toBeVisible();
+  await expect(
+    page.locator('[data-service-capability="unavailable"] > [data-system-state="unavailable"]'),
+  ).toBeVisible();
   await expect(page.locator('[data-service-disposition="unavailable"]')).toHaveCount(2);
   await expect(page.locator('[data-service-disposition="active"]')).toHaveCount(0);
 });
@@ -775,7 +825,7 @@ test("recovery exchanges PKCE before exposing the password form", async ({ brows
   await page.goto("/reset-password?auth_test=error");
   await page.getByLabel("Email").fill("private@example.test");
   await page.getByRole("button", { name: "Send recovery link" }).click();
-  await expect(page.getByRole("status")).toHaveText(safeAuthSuccess("reset-request"));
+  await expect(page.getByRole("status")).toContainText(safeAuthSuccess("reset-request"));
   await expect(page.getByRole("button")).toBeDisabled();
 
   await page.goto("/reset-password?recovery=1&auth_test=pending&code=pending-code");
@@ -783,15 +833,22 @@ test("recovery exchanges PKCE before exposing the password form", async ({ brows
   await expect(page.getByLabel("New password", { exact: true })).toHaveCount(0);
 
   await page.goto("/reset-password?recovery=1&auth_test=error&code=failed-code");
-  await expect(page.locator('.account-notice[role="alert"]')).toHaveText(
+  await expect(page.locator('.account-notice[role="alert"]')).toContainText(
     safeAuthError("reset-complete"),
   );
   await expect(page.getByLabel("New password", { exact: true })).toHaveCount(0);
   await expect(page).toHaveURL(/\/reset-password\?recovery=1$/);
 
+  await page.goto("/reset-password?recovery=1&auth_test=success&token=blocked");
+  await expect(page.locator('.account-notice[data-system-state="invalid"]')).toContainText(
+    "missing a valid one-time handoff",
+  );
+  await expect(page.getByLabel("New password", { exact: true })).toHaveCount(0);
+  await expect(page).toHaveURL(/\/reset-password\?recovery=1$/);
+
   await page.goto("/reset-password?recovery=1&auth_test=success");
-  await expect(page.locator('.account-notice[role="alert"]')).toHaveText(
-    safeAuthError("reset-complete"),
+  await expect(page.locator('.account-notice[data-system-state="expired"]')).toContainText(
+    "did not establish a session",
   );
   await expect(page.getByLabel("New password", { exact: true })).toHaveCount(0);
 
@@ -803,7 +860,7 @@ test("recovery exchanges PKCE before exposing the password form", async ({ brows
   await page.getByLabel("New password", { exact: true }).fill(password);
   await page.getByLabel("Confirm new password").fill("y".repeat(129));
   await submit.click();
-  await expect(page.locator('.account-notice[role="alert"]')).toHaveText(
+  await expect(page.locator('.account-notice[role="alert"]')).toContainText(
     "The passwords do not match.",
   );
   await expect(submit).toBeEnabled();
@@ -822,7 +879,7 @@ test("confirmation is one-time, sanitized, and preserves only an approved return
   await page.goto(
     "/auth/confirm?auth_test=success&token_hash=private-hash&type=signup&returnTo=https%3A%2F%2Ffitness.fawxzzy.com%2F",
   );
-  await expect(page.getByRole("status")).toHaveText("Confirmation complete.");
+  await expect(page.getByRole("status")).toContainText("Confirmation complete.");
   await expect(page).toHaveURL(/\/auth\/confirm$/);
   await expect(page.getByRole("link", { name: "Continue safely" })).toHaveAttribute(
     "href",
@@ -836,7 +893,7 @@ test("callback validates state, exchanges once, and never retains token material
   const callback =
     "/auth/callback?auth_test=success&code=one-time-code&state=expected-state&returnTo=%2Faccount";
   await page.goto(callback);
-  await expect(page.getByRole("status")).toHaveText("Sign-in handoff complete.");
+  await expect(page.getByRole("status")).toContainText("Sign-in handoff complete.");
   await expect(page).toHaveURL(/\/auth\/callback$/);
   await expect(page.getByRole("link", { name: "Continue safely" })).toHaveAttribute(
     "href",
@@ -844,13 +901,13 @@ test("callback validates state, exchanges once, and never retains token material
   );
 
   await page.goto(callback);
-  await expect(page.getByRole("status")).toHaveText("This sign-in handoff was already completed.");
+  await expect(page.getByRole("status")).toContainText("This sign-in handoff was already completed.");
   await expect(page).toHaveURL(/\/auth\/callback$/);
   await expect(page).toHaveURL(/\/account$/, { timeout: 4_000 });
 
   await page.goto("/auth/callback?auth_test=success#access_token=secret&refresh_token=secret");
-  await expect(page.locator('.account-notice[role="alert"]')).toHaveText(
-    safeAuthError("callback"),
+  await expect(page.locator('[data-auth-state="invalid"] [role="alert"]')).toContainText(
+    "missing a valid authorization handoff",
   );
   await expect(page).toHaveURL(/\/auth\/callback$/);
 });
@@ -859,8 +916,8 @@ test("callback rejects a mismatched state without an exchange", async ({ page })
   await page.goto("/");
   await page.evaluate((key) => window.sessionStorage.setItem(key, "expected"), accountContract.callbackStateKey);
   await page.goto("/auth/callback?auth_test=success&code=code&state=wrong");
-  await expect(page.locator('.account-notice[role="alert"]')).toHaveText(
-    safeAuthError("callback"),
+  await expect(page.locator('[data-auth-state="unauthorized"] [role="alert"]')).toContainText(
+    "does not match the browser",
   );
   await expect(page.getByRole("link", { name: "Start again" })).toHaveAttribute("href", "/login");
   await page.waitForTimeout(1_500);

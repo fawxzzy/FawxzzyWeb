@@ -717,16 +717,61 @@ test("compatibility route is reversible and points search engines to apps", asyn
   await page.goto("/trove");
 
   await expect(page.locator('main[data-compatibility-identity="trove"]')).toBeVisible();
-  await expect(page.getByRole("link", { name: "/apps", exact: true })).toHaveAttribute(
+  await expect(page.locator('[data-system-state="unavailable"]')).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "The catalog moved to Apps.",
+  );
+  await expect(page.getByRole("link", { name: "Open the app catalog" })).toHaveAttribute(
     "href",
     "/apps",
   );
+  await expect(page.locator("[data-product-showcase], video")).toHaveCount(0);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
     `${productIdentity.canonicalOrigin}/apps`,
   );
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
   expect(productIdentity.legacyProviderOrigin).toBe("https://fawxzzy-trove.vercel.app");
+});
+
+test("missing routes use the shared recoverable system surface", async ({ page }) => {
+  for (const width of [320, 390]) {
+    await page.setViewportSize({ width, height: 844 });
+    const response = await page.goto("/this-page-does-not-exist");
+
+    expect(response?.status()).toBe(404);
+    await expect(page.locator('[data-system-state="empty"]')).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+      "This page is not here.",
+    );
+    await expect(page.getByRole("link", { name: "Explore apps" })).toHaveAttribute(
+      "href",
+      "/apps",
+    );
+    const geometry = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }));
+    expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth);
+  }
+
+  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+  expect(results.violations).toEqual([]);
+});
+
+test("route and root error boundaries use explicit shared recovery states", async () => {
+  const routeError = await readFile(resolve(process.cwd(), "src", "app", "error.tsx"), "utf8");
+  const globalError = await readFile(
+    resolve(process.cwd(), "src", "app", "global-error.tsx"),
+    "utf8",
+  );
+
+  expect(routeError).toContain('variant="recoverable-error"');
+  expect(routeError).toContain("unstable_retry()");
+  expect(globalError).toContain('variant="terminal-error"');
+  expect(globalError).toContain("unstable_retry()");
+  expect(globalError).toContain("<html lang=\"en\">");
+  expect(globalError).not.toContain("error.message");
 });
 
 test("the retired Fitness screenshot-board URL has a permanent trailer redirect", async () => {

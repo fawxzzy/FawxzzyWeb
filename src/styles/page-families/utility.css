@@ -5,6 +5,179 @@
   padding: 1rem 0 4.5rem;
 }
 
+.system-page {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  padding: 1rem 0 4.5rem;
+}
+
+.system-page--global {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding-block: 2rem;
+}
+
+.system-shell {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: clamp(1.5rem, 4vw, 3rem);
+}
+
+.system-shell--global {
+  width: min(760px, calc(100vw - 2rem));
+}
+
+.system-state {
+  display: grid;
+  gap: 1.25rem;
+  width: min(100%, 760px);
+  min-width: 0;
+  margin-inline: auto;
+  border-radius: 28px;
+  padding: clamp(1.35rem, 4vw, 2.5rem);
+  box-shadow: inset 0 3px 0 rgb(var(--accent) / 0.36), 0 24px 80px rgb(0 0 0 / 0.2);
+}
+
+.system-state[data-system-state="success"] {
+  box-shadow: inset 0 3px 0 rgb(var(--accent) / 0.82), 0 24px 80px rgb(0 0 0 / 0.2);
+}
+
+.system-state[data-system-state="unavailable"],
+.system-state[data-system-state="empty"] {
+  box-shadow: inset 0 3px 0 rgb(189 168 112 / 0.72), 0 24px 80px rgb(0 0 0 / 0.2);
+}
+
+.system-state[data-system-state="unauthorized"],
+.system-state[data-system-state="invalid"],
+.system-state[data-system-state="expired"],
+.system-state[data-system-state="recoverable-error"],
+.system-state[data-system-state="terminal-error"] {
+  box-shadow: inset 0 3px 0 rgb(204 128 115 / 0.82), 0 24px 80px rgb(0 0 0 / 0.2);
+}
+
+.system-state__copy {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.system-state__copy h1,
+.system-state__copy h2,
+.system-state__copy h3,
+.system-state__copy p {
+  margin: 0;
+}
+
+.system-state__copy h1,
+.system-state__copy h2,
+.system-state__copy h3 {
+  max-width: 18ch;
+  color: rgb(var(--text));
+  font-size: clamp(2rem, 6vw, 3.8rem);
+  font-weight: 690;
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+.system-state__description {
+  max-width: 60ch;
+  color: rgb(var(--muted));
+  font-size: clamp(1rem, 2vw, 1.1rem);
+  line-height: 1.65;
+}
+
+.system-state__description > :first-child,
+.system-state__description > :last-child,
+.system-state__details p {
+  margin-block: 0;
+}
+
+.system-state__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.system-state__actions > * {
+  min-height: 2.75rem;
+}
+
+.system-state__actions button:focus-visible,
+.system-state__actions a:focus-visible,
+.system-state__details summary:focus-visible {
+  outline: 3px solid rgb(var(--accent) / 0.66);
+  outline-offset: 3px;
+}
+
+.system-state__details {
+  border-top: 1px solid rgb(var(--stroke) / 0.28);
+  color: rgb(var(--subtle));
+  padding-top: 0.9rem;
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.system-state__details summary {
+  width: fit-content;
+  min-height: 2.75rem;
+  border-radius: 10px;
+  color: rgb(var(--muted));
+  cursor: pointer;
+  font-weight: 680;
+  line-height: 2.75rem;
+}
+
+.system-state__details > div {
+  padding-top: 0.6rem;
+}
+
+.system-state--compact {
+  width: 100%;
+  gap: 0.75rem;
+  margin: 0;
+  border: 1px solid rgb(var(--stroke) / 0.28);
+  border-radius: 18px;
+  background: rgb(var(--canvas) / 0.34);
+  padding: 0.9rem 1rem;
+  box-shadow: inset 3px 0 0 rgb(var(--accent) / 0.45);
+}
+
+.system-state--compact[data-system-state="unauthorized"],
+.system-state--compact[data-system-state="invalid"],
+.system-state--compact[data-system-state="expired"],
+.system-state--compact[data-system-state="recoverable-error"],
+.system-state--compact[data-system-state="terminal-error"] {
+  border-color: rgb(204 128 115 / 0.42);
+  background: rgb(112 48 40 / 0.18);
+  box-shadow: inset 3px 0 0 rgb(204 128 115 / 0.78);
+}
+
+.system-state--compact[data-system-state="success"] {
+  border-color: rgb(var(--accent) / 0.38);
+  background: rgb(var(--accent) / 0.1);
+  box-shadow: inset 3px 0 0 rgb(var(--accent) / 0.78);
+}
+
+.system-state--compact .system-state__copy {
+  gap: 0.35rem;
+}
+
+.system-state--compact .system-state__copy h2,
+.system-state--compact .system-state__copy h3 {
+  max-width: none;
+  font-size: 1rem;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+.system-state--compact .system-state__description {
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
 .account-shell {
   position: relative;
   z-index: 1;
@@ -130,28 +303,6 @@
   font-size: clamp(1.8rem, 3.5vw, 2.6rem);
 }
 
-.account-state-card {
-  box-shadow: inset 0 3px 0 rgb(var(--accent) / 0.34), 0 24px 80px rgb(0 0 0 / 0.22);
-}
-
-.account-state-card[data-auth-state="success"] {
-  box-shadow: inset 0 3px 0 rgb(var(--accent) / 0.76), 0 24px 80px rgb(0 0 0 / 0.22);
-}
-
-.account-state-card[data-auth-state="error"] {
-  box-shadow: inset 0 3px 0 rgb(204 128 115 / 0.8), 0 24px 80px rgb(0 0 0 / 0.22);
-}
-
-.account-state-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-
-.account-state-actions > :only-child {
-  grid-column: 1 / -1;
-}
-
 .account-card {
   display: grid;
   gap: 1.25rem;
@@ -260,33 +411,6 @@
 .account-segmented button:disabled {
   cursor: not-allowed;
   opacity: 0.58;
-}
-
-.account-notice {
-  display: grid;
-  gap: 0.25rem;
-  border: 1px solid rgb(var(--stroke) / 0.28);
-  border-radius: 18px;
-  padding: 0.9rem 1rem;
-  line-height: 1.5;
-}
-
-.account-notice span {
-  color: rgb(var(--muted));
-}
-
-.account-notice--info {
-  background: rgb(var(--accent) / 0.08);
-}
-
-.account-notice--success {
-  border-color: rgb(var(--accent) / 0.38);
-  background: rgb(var(--accent) / 0.13);
-}
-
-.account-notice--error {
-  border-color: rgb(204 128 115 / 0.48);
-  background: rgb(112 48 40 / 0.22);
 }
 
 .account-card__links {
@@ -435,7 +559,6 @@
   .account-session-row,
   .account-capability,
   .account-empty-state,
-  .account-state-actions,
   .account-footer {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -446,6 +569,28 @@
   .account-session-row .catalog-button,
   .account-capability .catalog-button,
   .account-empty-state .catalog-button {
+    width: 100%;
+  }
+
+  .system-page {
+    padding-top: 0.6rem;
+  }
+
+  .system-shell {
+    gap: 1.25rem;
+  }
+
+  .system-state {
+    border-radius: 24px;
+    padding: 1.2rem;
+  }
+
+  .system-state__actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .system-state__actions .catalog-button {
     width: 100%;
   }
 
