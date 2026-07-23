@@ -29,6 +29,10 @@ import {
 } from "@/lib/auth/browser-adapter";
 import { PASSWORD_MINIMUM, validatePassword } from "@/lib/auth/password-policy";
 import {
+  SystemState,
+  type SystemStateVariant,
+} from "@/components/system/system-state";
+import {
   normalizeServiceRegistrationReadModel,
   resolveServiceRegistrationPresentation,
   serviceDispositionCopy,
@@ -40,6 +44,7 @@ type PortalMode = "login" | "account" | "confirm" | "callback" | "reset";
 type Notice = {
   kind: "error" | "info" | "success";
   text: string;
+  variant?: SystemStateVariant;
 };
 
 const emptySubscribe = () => () => undefined;
@@ -105,23 +110,28 @@ function useCooldown(seconds = 5) {
 function SetupState({ resolution }: { resolution: AdapterResolution | null }) {
   if (!resolution) {
     return (
-      <div aria-live="polite" className="account-notice account-notice--info">
-        Loading the account surface…
-      </div>
+      <SystemState
+        className="account-notice"
+        compact
+        description="Preparing the browser-only account boundary. No account request has started."
+        framed={false}
+        title="Loading the account surface…"
+        variant="loading"
+      />
     );
   }
   if (resolution.status === "ready") return null;
 
   return (
-    <div
-      aria-live="polite"
-      className="account-notice account-notice--info"
-      data-auth-state="setup-pending"
-      role="status"
-    >
-      <strong>Account setup is pending.</strong>
-      <span>{resolution.reason} No credentials or account data were sent.</span>
-    </div>
+    <SystemState
+      className="account-notice"
+      compact
+      description="This page stays read-only until the approved account origin and public configuration are available."
+      details={<p>{resolution.reason} No credentials or account data were sent.</p>}
+      framed={false}
+      title="Account setup is pending."
+      variant="unavailable"
+    />
   );
 }
 
@@ -143,16 +153,51 @@ function RuntimeNote() {
   );
 }
 
+function noticeVariant(notice: Notice): SystemStateVariant {
+  return (
+    notice.variant ??
+    (notice.kind === "success"
+      ? "success"
+      : notice.kind === "error"
+        ? "recoverable-error"
+        : "pending")
+  );
+}
+
+function noticeTitle(variant: SystemStateVariant) {
+  switch (variant) {
+    case "success":
+      return "Action complete.";
+    case "invalid":
+      return "This action is invalid.";
+    case "expired":
+      return "This action has expired.";
+    case "unauthorized":
+      return "This action is not authorized.";
+    case "unavailable":
+      return "This service is unavailable.";
+    case "terminal-error":
+      return "This action cannot continue.";
+    case "recoverable-error":
+      return "This action needs another try.";
+    default:
+      return "Working on this action.";
+  }
+}
+
 function StatusNotice({ notice }: { notice: Notice | null }) {
   if (!notice) return null;
+  const variant = noticeVariant(notice);
+
   return (
-    <div
-      aria-live="polite"
+    <SystemState
       className={`account-notice account-notice--${notice.kind}`}
-      role={notice.kind === "error" ? "alert" : "status"}
-    >
-      {notice.text}
-    </div>
+      compact
+      description={notice.text}
+      framed={false}
+      title={noticeTitle(variant)}
+      variant={variant}
+    />
   );
 }
 
@@ -313,6 +358,22 @@ function usePortalSession(adapter: PortalAuthAdapter | null) {
 
 function ServiceRegistrationPanel() {
   const snapshot = useServiceRegistrationPresentation();
+  const unresolvedState =
+    snapshot.capability === "available"
+      ? null
+      : snapshot.capability === "unknown"
+        ? {
+            description:
+              "The platform did not provide one complete authoritative service readback, so no service is treated as active.",
+            title: "Service status could not be verified.",
+            variant: "terminal-error" as const,
+          }
+        : {
+            description:
+              "Authoritative service registration is not connected here. Product links remain available without claiming activation.",
+            title: "Service registration is unavailable.",
+            variant: "unavailable" as const,
+          };
 
   return (
     <div
@@ -329,6 +390,15 @@ function ServiceRegistrationPanel() {
           service account. This page never treats local state as proof.
         </p>
       </div>
+      {unresolvedState ? (
+        <SystemState
+          compact
+          description={unresolvedState.description}
+          framed={false}
+          title={unresolvedState.title}
+          variant={unresolvedState.variant}
+        />
+      ) : null}
       {snapshot.services.map((service) => (
         <div
           className="account-capability"
@@ -452,12 +522,18 @@ function AccountPanel({ resolution }: { resolution: AdapterResolution | null }) 
       {error ? <StatusNotice notice={{ kind: "error", text: safeAuthError("session") }} /> : null}
       <StatusNotice notice={notice} />
       {adapter && loaded && !session ? (
-        <div className="account-empty-state">
-          <p>You are not signed in on this origin.</p>
-          <a className="catalog-button catalog-button--primary" href="/login">
-            Sign in
-          </a>
-        </div>
+        <SystemState
+          actions={
+            <a className="catalog-button catalog-button--primary" href="/login">
+              Sign in
+            </a>
+          }
+          compact
+          description="This browser has no Fawxzzy account session on the current origin."
+          framed={false}
+          title="You are signed out here."
+          variant="unauthorized"
+        />
       ) : null}
       {session ? (
         <div className="account-settings">
@@ -566,7 +642,14 @@ function AccountPanel({ resolution }: { resolution: AdapterResolution | null }) 
   );
 }
 
-type RecoverySessionState = "error" | "idle" | "pending" | "ready" | "setup-pending";
+type RecoverySessionState =
+  | "expired"
+  | "idle"
+  | "invalid"
+  | "pending"
+  | "ready"
+  | "recoverable-error"
+  | "setup-pending";
 
 function useRecoverySession(
   hydrated: boolean,
@@ -586,7 +669,7 @@ function useRecoverySession(
       sanitizeRecoveryUrl();
 
       if (!payload) {
-        if (active) setState("error");
+        if (active) setState("invalid");
         return;
       }
       if (resolution.status !== "ready") {
@@ -600,10 +683,10 @@ function useRecoverySession(
         : resolution.adapter.getSession();
       sessionPromise
         .then((session) => {
-          if (active) setState(session ? "ready" : "error");
+          if (active) setState(session ? "ready" : "expired");
         })
         .catch(() => {
-          if (active) setState("error");
+          if (active) setState("recoverable-error");
         });
     }, 0);
 
@@ -690,16 +773,40 @@ function ResetPanel({ resolution }: { resolution: AdapterResolution | null }) {
       {recovery && !notice ? (
         <StatusNotice
           notice={
-            recoveryState === "error"
-              ? { kind: "error", text: safeAuthError("reset-complete") }
+            recoveryState === "invalid"
+              ? {
+                  kind: "error",
+                  text: "This recovery address is missing a valid one-time handoff. Request a fresh link.",
+                  variant: "invalid",
+                }
+              : recoveryState === "expired"
+                ? {
+                    kind: "error",
+                    text: "This recovery handoff did not establish a session. Request a fresh link.",
+                    variant: "expired",
+                  }
+                : recoveryState === "recoverable-error"
+                  ? {
+                      kind: "error",
+                      text: safeAuthError("reset-complete"),
+                      variant: "recoverable-error",
+                    }
               : recoveryState === "ready"
                 ? {
                     kind: "success",
                     text: "Recovery session established. Choose a new password.",
                   }
                 : recoveryState === "setup-pending"
-                  ? { kind: "info", text: "Recovery is ready, but account setup is pending." }
-                  : { kind: "info", text: "Establishing your recovery session…" }
+                  ? {
+                      kind: "info",
+                      text: "Recovery is ready, but account setup is pending.",
+                      variant: "unavailable",
+                    }
+                  : {
+                      kind: "info",
+                      text: "Establishing your recovery session…",
+                      variant: "pending",
+                    }
           }
         />
       ) : null}
@@ -787,12 +894,20 @@ function LinkHandler({
         const payload = parseConfirmPayload(url);
         sanitizeAuthUrl();
         if (!payload) {
-          setNotice({ kind: "error", text: safeAuthError("confirm") });
+          setNotice({
+            kind: "error",
+            text: "This confirmation address is missing valid one-time details. Request a fresh link.",
+            variant: "invalid",
+          });
           return;
         }
         setReturnTo(payload.returnTo);
         if (!adapter) {
-          setNotice({ kind: "info", text: "Confirmation is ready, but account setup is pending." });
+          setNotice({
+            kind: "info",
+            text: "Confirmation is ready, but account setup is pending.",
+            variant: "unavailable",
+          });
           return;
         }
         adapter
@@ -805,7 +920,11 @@ function LinkHandler({
       const payload = parseCallbackPayload(url);
       sanitizeAuthUrl();
       if (!payload) {
-        setNotice({ kind: "error", text: safeAuthError("callback") });
+        setNotice({
+          kind: "error",
+          text: "This sign-in address is missing a valid authorization handoff. Start again.",
+          variant: "invalid",
+        });
         return;
       }
       setReturnTo(payload.returnTo);
@@ -817,11 +936,19 @@ function LinkHandler({
       }
       const storedState = window.sessionStorage.getItem(accountContract.callbackStateKey);
       if (!callbackStateMatches(payload.state, storedState)) {
-        setNotice({ kind: "error", text: safeAuthError("callback") });
+        setNotice({
+          kind: "error",
+          text: "This sign-in handoff does not match the browser that started it. Start again.",
+          variant: "unauthorized",
+        });
         return;
       }
       if (!adapter) {
-        setNotice({ kind: "info", text: "The handoff is valid, but account setup is pending." });
+        setNotice({
+          kind: "info",
+          text: "The handoff is valid, but account setup is pending.",
+          variant: "unavailable",
+        });
         return;
       }
       adapter
@@ -844,39 +971,56 @@ function LinkHandler({
     };
   }, [adapter, hydrated, mode]);
 
+  const variant = noticeVariant(notice);
+  const title =
+    variant === "pending"
+      ? "Checking your link."
+      : variant === "success"
+        ? "You are all set."
+        : variant === "invalid"
+          ? "This link is invalid."
+          : variant === "unauthorized"
+            ? "This handoff does not match."
+            : variant === "unavailable"
+              ? "Account setup is not connected here."
+              : variant === "expired"
+                ? "This link has expired."
+                : "This link needs a fresh start.";
+  const actions =
+    variant === "success" ? (
+      <a className="catalog-button catalog-button--primary" href={sanitizeReturnTarget(returnTo)}>
+        Continue safely
+      </a>
+    ) : variant === "pending" ? null : variant === "unavailable" ? (
+      <a className="catalog-button catalog-button--primary" href="/account">
+        View account status
+      </a>
+    ) : (
+      <a className="catalog-button catalog-button--primary" href="/login">
+        Start again
+      </a>
+    );
+
   return (
     <section
-      aria-busy={notice.kind === "info"}
-      aria-labelledby="link-handler-title"
-      className="account-card account-state-card surface-panel"
-      data-auth-state={notice.kind}
+      className="account-card surface-panel"
+      data-auth-state={variant}
     >
       <RuntimeNote />
-      <div className="account-card__heading">
-        <p className="field-label">{mode === "confirm" ? "Account confirmation" : "Secure sign-in"}</p>
-        <h2 id="link-handler-title">
-          {notice.kind === "info"
-            ? "Checking your link."
-            : notice.kind === "success"
-              ? "You are all set."
-              : "This link needs a fresh start."}
-        </h2>
-        <p>
-          We check one-time details once, clear them from the address bar, and continue only to an
-          approved Fawxzzy destination.
-        </p>
-      </div>
-      <StatusNotice notice={notice} />
-      <div className="account-state-actions">
-        <a className="catalog-button catalog-button--primary" href={sanitizeReturnTarget(returnTo)}>
-          Continue safely
-        </a>
-        {notice.kind === "error" ? (
-          <a className="catalog-button catalog-button--secondary" href="/login">
-            Start again
-          </a>
-        ) : null}
-      </div>
+      <SystemState
+        actions={actions}
+        description={notice.text}
+        details={
+          <p>
+            One-time details are processed once, removed from the address bar, and allowed to
+            continue only to an approved Fawxzzy destination.
+          </p>
+        }
+        eyebrow={mode === "confirm" ? "Account confirmation" : "Secure sign-in"}
+        framed={false}
+        title={title}
+        variant={variant}
+      />
     </section>
   );
 }
