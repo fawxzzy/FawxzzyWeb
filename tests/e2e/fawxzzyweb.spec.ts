@@ -718,6 +718,7 @@ test("compatibility route is reversible and points search engines to apps", asyn
 
   await expect(page.locator('main[data-compatibility-identity="trove"]')).toBeVisible();
   await expect(page.locator('[data-system-state="unavailable"]')).toBeVisible();
+  await expect(page.getByText(/reversible compatibility surface/i)).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "The catalog moved to Apps.",
   );

@@ -40,7 +40,7 @@ export default function TroveCompatibilityPage() {
           description={
             <>
               {productIdentity.legacyCatalogName} remains available only as a reversible
-              compatibility address. The current catalog and every product detail now live under
+              compatibility surface. The current catalog and every product detail now live under
               {` ${productIdentity.appsPath}`}.
             </>
           }
