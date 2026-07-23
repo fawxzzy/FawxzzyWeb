@@ -19,8 +19,30 @@ export const VERCEL_PRODUCTION_CONTRACT = Object.freeze({
 
 const fullCommitPattern = /^[0-9a-f]{40}$/;
 
-export function getCommand(name) {
-  return process.platform === "win32" ? `${name}.cmd` : name;
+function commandIsAvailable(candidate) {
+  try {
+    execFileSync("where.exe", [candidate], {
+      encoding: "utf8",
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function getCommand(
+  name,
+  { platform = process.platform, isAvailable = commandIsAvailable } = {},
+) {
+  if (platform !== "win32") return name;
+
+  for (const candidate of [`${name}.exe`, `${name}.cmd`, name]) {
+    if (isAvailable(candidate)) return candidate;
+  }
+
+  throw new Error(`Required command is unavailable on PATH: ${name}.`);
 }
 
 export function runGit(repoRoot, args) {

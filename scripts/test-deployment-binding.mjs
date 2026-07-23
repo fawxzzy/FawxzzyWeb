@@ -12,6 +12,7 @@ import {
   assertRemoteProject,
   assertVercelBinding,
   createDeploymentInvocation,
+  getCommand,
   readVercelBinding,
 } from "./vercel-production-contract.mjs";
 
@@ -100,6 +101,32 @@ try {
     accountId: VERCEL_PRODUCTION_CONTRACT.teamId,
   }));
   assert.throws(() => assertRemoteProject({ id: "prj_wrong" }), /does not match/);
+
+  assert.equal(
+    getCommand("gh", {
+      platform: "win32",
+      isAvailable: (candidate) => candidate === "gh.exe",
+    }),
+    "gh.exe",
+  );
+  assert.equal(
+    getCommand("vercel", {
+      platform: "win32",
+      isAvailable: (candidate) => candidate === "vercel.cmd",
+    }),
+    "vercel.cmd",
+  );
+  assert.equal(
+    getCommand("gh", {
+      platform: "linux",
+      isAvailable: () => false,
+    }),
+    "gh",
+  );
+  assert.throws(
+    () => getCommand("missing", { platform: "win32", isAvailable: () => false }),
+    /unavailable on PATH/,
+  );
 
   const invocation = createDeploymentInvocation(head);
   assert.deepEqual(invocation.args.slice(0, 3), ["deploy", "--prod", "--yes"]);
