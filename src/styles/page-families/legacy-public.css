@@ -387,8 +387,7 @@
 }
 
 .discovery-card--fitness-app,
-.discovery-card--custom-workout,
-.discovery-card--discord {
+.discovery-card--custom-workout {
   grid-column: span 2;
 }
 
@@ -659,8 +658,7 @@ a.discovery-link:hover {
 
   .discovery-card,
   .discovery-card--fitness-app,
-  .discovery-card--custom-workout,
-  .discovery-card--discord {
+  .discovery-card--custom-workout {
     grid-column: auto;
     min-height: auto;
   }
