@@ -143,9 +143,7 @@ by this source packet.
 ### Shared-service registration presentation
 
 The source-only account surface now carries one transport-neutral, typed presentation contract for
-human-account services. Fitness and Mazer are the only admitted services in version one. DiscordOS
-remains an operational coordination surface and must not be presented as a human account unless a
-separate linkage capability is ratified and proven.
+human-account services. Fitness and Mazer are the only admitted services in version one.
 
 The read model distinguishes `unavailable`, `not_registered`, `active`, `action_required`, and
 `unknown`. Missing capability data is `unavailable`; incomplete, duplicate, unsupported-version, or

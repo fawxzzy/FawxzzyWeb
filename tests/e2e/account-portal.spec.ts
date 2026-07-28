@@ -30,7 +30,6 @@ import { validatePassword } from "../../src/lib/auth/password-policy";
 import { isBrowserSafeSupabasePublicKey } from "../../src/lib/auth/supabase-public-key.mjs";
 import {
   humanAccountServices,
-  nonHumanAccountSurfaces,
   normalizeServiceRegistrationReadModel,
   resolveServiceRegistrationPresentation,
   serviceRegistrationDispositions,
@@ -125,12 +124,6 @@ test("shared human services inherit centralized current and canonical origins", 
       id: "mazer",
     }),
   ]);
-  expect(nonHumanAccountSurfaces).toEqual([
-    expect.objectContaining({ id: "discordos" }),
-  ]);
-  expect(humanAccountServices.some((service) => service.id === ("discordos" as never))).toBe(
-    false,
-  );
 });
 
 test("service registration normalization preserves every explicit disposition", () => {
@@ -183,7 +176,7 @@ test("absent, partial, duplicate, and malformed service readback fails closed as
       services: [
         { disposition: "active", serviceId: "fitness" },
         { disposition: "active", serviceId: "mazer" },
-        { disposition: "active", serviceId: "discordos" },
+        { disposition: "active", serviceId: "unsupported" },
       ],
       status: "available",
       version: 1,
@@ -800,7 +793,6 @@ test("service cards render every local-only disposition without enabling client 
     } else {
       await expect(capabilityState).toHaveCount(0);
     }
-    await expect(page.getByText("DiscordOS", { exact: true })).toHaveCount(0);
   }
 
   expect(await context.cookies()).toEqual([]);

@@ -203,6 +203,17 @@ test("discover route exposes centralized public destinations", async ({ page }) 
   expect(discoveryDestinations.some((destination) => destination.href?.includes("link.me"))).toBe(
     false,
   );
+  expect(discoveryDestinations.map((destination) => destination.id)).toEqual([
+    "fitness-app",
+    "custom-workout",
+    "tiktok",
+    "youtube",
+    "x",
+    "snapchat",
+    "twitch",
+    "cash-app",
+    "playstation",
+  ]);
   expect(discoveryDestinations.some((destination) => destination.id === "instagram")).toBe(false);
   await expect(page.getByRole("link", { name: "View the newsletter" })).toHaveAttribute(
     "href",

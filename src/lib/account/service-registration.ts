@@ -50,15 +50,6 @@ export const humanAccountServices = [
   },
 ] as const satisfies readonly HumanAccountService[];
 
-export const nonHumanAccountSurfaces = [
-  {
-    id: "discordos",
-    name: "DiscordOS",
-    reason:
-      "DiscordOS is an operational coordination surface, not a human account service without a separately ratified linkage capability.",
-  },
-] as const;
-
 export type ServiceRegistrationAdapter = {
   activate(input: {
     idempotencyKey: string;

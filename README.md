@@ -107,7 +107,7 @@ otherwise use the stable project `.vercel.app` production origin. Omit an ungrou
 
 Update `src/data/discovery.ts` when a public discovery destination changes. The `/discover`
 surface is the canonical replacement for the retired LinkMe hub. It renders Fitness, the current
-Fitness-owned custom-workout offer, Discord, every verified outbound social destination, Cash App,
+Fitness-owned custom-workout offer, every verified outbound social destination, Cash App,
 and the exact PlayStation online ID from that single record. A display handle is never promoted to
 an outbound URL without public target proof.
 

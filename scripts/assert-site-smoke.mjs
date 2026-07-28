@@ -109,7 +109,6 @@ export async function assertSiteSmoke(baseUrl) {
   for (const target of [
     "https://fawxzzy-fitness-local.vercel.app",
     "https://buy.stripe.com/cNi9AL4a02Qf3T4dA02cg02",
-    "https://discord.gg/tnnV7BNJ7h",
     "https://www.tiktok.com/@fukitzzzzz",
     "https://www.youtube.com/@fawxzzy",
     "https://x.com/Fawxzzy",

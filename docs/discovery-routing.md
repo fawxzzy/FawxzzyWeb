@@ -22,7 +22,6 @@ intentionally omitted.
 | --- | --- | --- |
 | FawxzzyFitness App | `https://fawxzzy-fitness-local.vercel.app` | Fitness |
 | Custom Workout Setup | `https://buy.stripe.com/cNi9AL4a02Qf3T4dA02cg02` | Fitness |
-| Join the Discord | `https://discord.gg/tnnV7BNJ7h` | Fawxzzy community |
 | Main TikTok | `https://www.tiktok.com/@fukitzzzzz` | Socials OS |
 | YouTube | `https://www.youtube.com/@fawxzzy` | Socials OS |
 | X | `https://x.com/Fawxzzy` | Socials OS |

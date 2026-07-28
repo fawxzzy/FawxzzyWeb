@@ -4,7 +4,6 @@ import { getAppBySlug } from "@/data/apps";
 export type DiscoveryDestinationId =
   | "fitness-app"
   | "custom-workout"
-  | "discord"
   | "tiktok"
   | "youtube"
   | "x"
@@ -23,7 +22,7 @@ export type DiscoveryDestination = {
   icon: CatalogAsset | null;
   id: DiscoveryDestinationId;
   mark: string;
-  owner: "Fitness" | "Fawxzzy community" | "Socials OS";
+  owner: "Fitness" | "Socials OS";
   title: string;
   temporaryBridge?: {
     futureOwner: "Fitness";
@@ -70,19 +69,6 @@ export const discoveryDestinations: DiscoveryDestination[] = [
       replacementContract:
         "Replace this external offer URL with the canonical Fitness-owned public intake route after Fitness ships and verifies it. Fawxzzy must not own intake, authentication, training data, or payment state.",
     },
-  },
-  {
-    id: "discord",
-    category: "featured",
-    eyebrow: "Community / Discord",
-    title: "Join the Discord",
-    description: "Join the community around the builds, training, experiments, and what comes next.",
-    displayValue: "Fawxzzy community",
-    action: "Open Discord",
-    href: "https://discord.gg/tnnV7BNJ7h",
-    icon: null,
-    mark: "DC",
-    owner: "Fawxzzy community",
   },
   {
     id: "tiktok",

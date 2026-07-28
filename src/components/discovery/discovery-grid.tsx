@@ -76,7 +76,6 @@ export function DiscoveryGrid({ destinations }: DiscoveryGridProps) {
 
   const fitness = findDestination("fitness-app");
   const customWorkout = findDestination("custom-workout");
-  const discord = findDestination("discord");
   const socialDestinations = destinations.filter((destination) => destination.category === "social");
   const supportDestinations = destinations.filter((destination) => destination.category === "support");
 
@@ -192,10 +191,9 @@ export function DiscoveryGrid({ destinations }: DiscoveryGridProps) {
         <div>
           <p className="eyebrow">Community / Build log</p>
           <h2 id="community-close-title">Stay close to what ships next.</h2>
-          <p>Join the Discord for the community, or use the owned weekly archive for the quieter record of the work.</p>
+          <p>Use the owned weekly archive for the quieter record of the work.</p>
         </div>
         <div className="editorial-community__actions">
-          <DestinationLink destination={discord} />
           <StaticLink className="catalog-button catalog-button--secondary" href="/newsletter">
             View the newsletter
           </StaticLink>
