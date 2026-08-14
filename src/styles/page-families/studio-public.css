@@ -3,6 +3,133 @@
   width: min(1240px, calc(100vw - 2rem));
 }
 
+/* Focused storefront: compact app distribution hierarchy without cross-page duplication. */
+.home-hero--storefront {
+  align-items: center;
+  min-height: min(42rem, 76vh);
+}
+
+.home-hero--storefront .home-hero__copy {
+  max-width: 43rem;
+}
+
+.storefront-facts,
+.catalog-overview,
+.app-detail-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid rgb(var(--stroke) / 0.38);
+  border-radius: 20px;
+  background: rgb(var(--stroke) / 0.28);
+}
+
+.storefront-facts {
+  margin: -0.5rem 0 clamp(4.5rem, 9vw, 7rem);
+}
+
+.storefront-facts > div,
+.catalog-overview > div,
+.app-detail-facts > div {
+  display: grid;
+  gap: 0.38rem;
+  background: rgb(7 12 10 / 0.9);
+  padding: 1rem 1.2rem;
+}
+
+.storefront-facts dt,
+.catalog-overview dt,
+.app-detail-facts dt {
+  color: rgb(var(--subtle));
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.storefront-facts dd,
+.catalog-overview dd,
+.app-detail-facts dd {
+  margin: 0;
+  color: rgb(var(--text));
+  font-size: 0.92rem;
+  font-weight: 680;
+}
+
+.section-heading--split {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 2rem;
+  max-width: none;
+}
+
+.home-app-directory__grid,
+.discover-app-directory {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.home-discover {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2rem;
+  margin: clamp(4.5rem, 9vw, 7rem) 0;
+  border-radius: 26px;
+  padding: clamp(1.4rem, 4vw, 2.5rem);
+}
+
+.home-discover h2 {
+  margin: 0.45rem 0 0.7rem;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  letter-spacing: -0.05em;
+}
+
+.home-discover p:not(.eyebrow) {
+  max-width: 48rem;
+  margin: 0;
+  color: rgb(var(--muted));
+  line-height: 1.65;
+}
+
+.catalog-editorial-hero--store {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(17rem, 0.75fr);
+  align-items: end;
+  gap: clamp(2rem, 6vw, 6rem);
+}
+
+.catalog-editorial-hero--store > div > p:not(.eyebrow) {
+  max-width: 42rem;
+}
+
+.catalog-overview {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (max-width: 760px) {
+  .storefront-facts,
+  .app-detail-facts,
+  .home-app-directory__grid,
+  .discover-app-directory,
+  .catalog-editorial-hero--store,
+  .home-discover {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .section-heading--split {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .home-discover .catalog-button {
+    width: 100%;
+  }
+}
+
 .home-shell,
 .catalog-page > .shell-container {
   position: relative;

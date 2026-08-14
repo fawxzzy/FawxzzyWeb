@@ -1,36 +1,20 @@
 # FawxzzyWeb
 
-FawxzzyWeb is the repository identity and codebase for the public `Fawxzzy` home: apps, product
-updates, and grounded links to independently owned experiences. It preserves the source history
-of Trove while moving the app catalog to its canonical `/apps` route. The provider and package
-slug remains `fawxzzyweb`.
+FawxzzyWeb is the public app-distribution surface owned by the Socials OS program. Its active public scope is the app catalog, app detail, focused discovery, and product-account capability. TikTok is the only active external discovery destination. Retired channel and newsletter history remains repository knowledge, not active navigation or routing. The provider and package slug remains `fawxzzyweb`.
 
 ## Route contract
 
-- `/` — canonical Fawxzzy root experience
-- `/apps` — canonical app catalog, sourced from `src/data/apps.ts`
-- `/discover` — canonical public hub for apps, training, community, verified social profiles,
-  support, and gaming identity
-- `/newsletter` is the owned Building Fawxzzy weekly archive and future opt-in subscription surface
+- `/` — concise Fawxzzy storefront and app directory
+- `/apps` — canonical full app catalog sourced from `src/data/apps.ts`
+- `/apps/[slug]` — canonical product detail and direct launch surface
+- `/discover` — focused app and TikTok discovery hub
 - `/trove` — reversible, no-index compatibility route for the former Trove identity
 - `/apps/fitness/preview` — permanent redirect to the Fitness trailer
-- `/login` — email/password sign-in and account creation
-- `/account` — origin-scoped session status and safe account settings
-- `/auth/confirm` — one-time `token_hash` confirmation handler
-- `/auth/callback` — PKCE authorization-code callback scaffold
-- `/reset-password` — recovery request and password completion surface
+- `/login`, `/account`, `/auth/*`, `/reset-password` — product-account capability
 - `/healthz.json` — static health and compatibility identity
 - `/manifest.webmanifest` — Fawxzzy install metadata
 
-Fitness and Mazer remain independently owned and link to their existing production origins.
-The catalog does not synthesize cross-origin install behavior.
-
-## Newsletter contract
-
-`/newsletter` is the owned archive for Building Fawxzzy weekly and is linked from Home, Discover,
-and the primary navigation. It intentionally collects no email address until an approved delivery
-provider, double-opt-in workflow, unsubscribe path, and auditable delivery receipts exist. The
-archive and subscription system are separate from product-account authentication and Supabase.
+The former newsletter route and custom-workout intake bridge are retired from the public product. Historical documents remain provenance only. Product-account email fields are authentication plumbing and are not a newsletter, marketing list, or discovery destination.
 
 ## Local development
 
@@ -41,101 +25,51 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-## Commands
+## Verification
 
 ```bash
-npm run dev
-npm run lint
-npm run build
-npm run qa:site-smoke
-npm run smoke:lifeline
-npm run test:e2e
 npm run verify
 ```
 
-`npm run verify` runs lint, a static export, route/identity smoke checks, and route-aware
-Playwright checks for metadata, catalog and discovery truth, accessibility, mobile overflow,
-deep links, account safety contracts, and compatibility rollback.
-
-## Shared account portal
-
-Phase one adds a client-only account surface for the future canonical origin
-`https://account.fawxzzy.com`. The static source fails closed with a setup-pending state until
-both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are supplied by a
-separately governed provider-binding packet. No key values belong in this repository.
-
-Sessions remain scoped to the browser origin. FawxzzyWeb does not set parent-domain cookies,
-accept access or refresh tokens in URLs, or claim username/profile capability before the shared
-platform schema is live. Exact redirects, return-target rules, provider settings, rollback, and
-post-bind verification are frozen in `docs/shared-account-portal-phase1.md`.
+Verification covers lint, static export, route and identity smoke checks, source and deployment guards, accessibility, responsive layout, media provenance, discovery truth, account boundaries, and compatibility rollback.
 
 ## Catalog contract
 
-Update `src/data/apps.ts` when the catalog changes. Each entry owns its current launch origin,
-planned canonical subdomain, rollback origins, current app icon, trailer, poster, captions,
-provenance hashes, copy, and tags. Home, Apps, and Discover consume this record so an icon or
-origin update cannot drift between surfaces. The Playwright suite verifies every vendored icon,
-poster, and trailer against its recorded SHA-256 hash.
+Update `src/data/apps.ts` when the catalog changes. Each entry owns its current launch origin, planned canonical subdomain, rollback origins, icon, trailer, poster, captions, provenance hashes, and product copy.
 
-The Apps catalog uses always-visible, user-controlled HTML video with `preload="none"` and a
-caption track. The historical screenshot rail and inline Fitness preview board were replaced by
-these trailer surfaces; Vercel redirects `/apps/fitness/preview` to the Fitness trailer.
-
-Current media sources:
-
-- Fawxzzy brand artwork: operator-approved Socials OS derivatives from
-  `assets/brand/manifest.json`.
-- Fitness icon: exact public readback of the current production PWA `icon-512.png`.
-- Fitness trailer: approved Socials OS `FITNESS-LAUNCH-TRAILER-V1` master and cover.
-- Mazer icon: exact public readback of the current production `mazer-app-icon.png`.
-- Mazer trailer: Fawxzzy-owned montage from the existing owned Mazer catalog captures.
+Home and Discover use compact directory entries. Apps is the only full catalog. Each detail route owns the complete product explanation. This prevents the same status, media, and call-to-action blocks from being repeated across every route.
 
 Current grounded origins:
 
 - Fitness: `https://fawxzzy-fitness-local.vercel.app`
 - Mazer: `https://fawxzzy-mazer.vercel.app`
 
-Planned owner-lane canonical origins (not live and not authorized by this repository change):
+Planned canonical origins are not live and are not authorized by this repository change:
 
 - Fitness: `https://fitness.fawxzzy.com`
 - Mazer: `https://mazer.fawxzzy.com`
 
-Do not guess app domains. Prefer an attached custom domain proven by provider readback;
-otherwise use the stable project `.vercel.app` production origin. Omit an ungrounded CTA.
+Do not guess app domains or synthesize cross-origin install behavior.
 
-## Discovery contract
+## Discovery and analytics contract
 
-Update `src/data/discovery.ts` when a public discovery destination changes. The `/discover`
-surface is the canonical replacement for the retired LinkMe hub. It renders Fitness, the current
-Fitness-owned custom-workout offer, every verified outbound social destination, Cash App,
-and the exact PlayStation online ID from that single record. A display handle is never promoted to
-an outbound URL without public target proof.
+Update `src/data/discovery.ts` when the canonical TikTok destination changes. `/discover` renders only the centralized app catalog and that exact TikTok destination. YouTube, X, Discord, Snapchat, newsletters, custom intake, support links, gaming identities, and other retired surfaces must not re-enter active navigation without a new current owner decision.
 
-The custom-workout Stripe URL is a temporary external bridge. Fitness owns the future canonical
-intake route; the Fawxzzy public hub must not duplicate intake, authentication, training data, or
-payment state. The replacement and Socials OS removal gates are documented in
-`docs/discovery-routing.md`.
+Stable `data-analytics-event` attributes define the future website measurement vocabulary for catalog views, app launches, and TikTok exits. No analytics collector or provider is installed; website analytics remain explicitly unmeasured until a separate privacy-safe implementation.
 
 ## Static export
 
-FawxzzyWeb remains a Next.js static export. Keep routes build-time deterministic, avoid
-server-only runtime behavior, and use real static compatibility pages because Next.js config
-redirects are not supported with `output: "export"`.
+FawxzzyWeb remains a Next.js static export. Keep routes build-time deterministic and use real static compatibility pages because Next.js config redirects are not supported with `output: "export"`.
 
-Internal route links render through `src/components/site/static-link.tsx`. They deliberately use
-native document navigation so the exported site never depends on speculative React Server
-Component route-data requests that a generic static host may not expose.
+Internal route links render through `src/components/site/static-link.tsx` so the exported site does not depend on speculative route-data requests.
 
-## Identity and rollback
+## Identity, history, and rollback
+
+Historical Trove, Discord, newsletter, LinkMe, retired-channel, release, and deployment materials remain knowledge-only provenance. They are not current product or routing authority.
 
 - `docs/fawxzzyweb-identity-classification.md`
 - `docs/brand-and-app-origin-contract.md`
 - `docs/fawxzzyweb-migration-and-rollback.md`
 - `docs/fawxzzyweb-dependency-packet.md`
-
-Frozen Wave 1 Lifeline manifests, releases, QA evidence, and preservation bundles retain
-their historical Trove identifiers. They are not current product-name authority.
-
-## Local-only files
 
 Never commit `.vercel/`, pulled environment files, or machine-local provider linkage state.

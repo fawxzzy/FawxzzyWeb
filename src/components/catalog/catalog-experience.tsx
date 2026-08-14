@@ -6,9 +6,7 @@ import { StaticLink } from "@/components/site/static-link";
 import { productIdentity } from "@/config/product";
 import { apps } from "@/data/apps";
 
-type CatalogExperienceProps = {
-  compatibilityIdentity?: "trove";
-};
+type CatalogExperienceProps = { compatibilityIdentity?: "trove" };
 
 export function CatalogExperience({ compatibilityIdentity }: CatalogExperienceProps) {
   return (
@@ -19,7 +17,7 @@ export function CatalogExperience({ compatibilityIdentity }: CatalogExperiencePr
     >
       <AmbientFitnessBackground
         intensity="soft"
-        particleCount={10}
+        particleCount={8}
         palette={{
           base: "#070C0A",
           glow: "#7F977C",
@@ -36,30 +34,30 @@ export function CatalogExperience({ compatibilityIdentity }: CatalogExperiencePr
         {compatibilityIdentity ? (
           <aside className="compatibility-note" aria-label="Compatibility route notice">
             <p>
-              The Trove catalog now lives at{" "}
-              <StaticLink href={productIdentity.appsPath}>
-                /apps
-              </StaticLink>
-              .
+              The Trove catalog now lives at <StaticLink href={productIdentity.appsPath}>/apps</StaticLink>.
               This route remains available as a reversible compatibility surface.
             </p>
           </aside>
         ) : null}
 
-        <header className="catalog-editorial-hero">
-          <p className="eyebrow">{productIdentity.publicName} / Product catalog</p>
-          <h1 id="apps-title">Software and games, shown in motion.</h1>
-          <p>
-            Two focused products, each with a real production walkthrough and a
-            clear path to the current experience. No mockups, invented ratings,
-            or catalog filler.
-          </p>
+        <header className="catalog-editorial-hero catalog-editorial-hero--store">
+          <div>
+            <p className="eyebrow">{productIdentity.publicName} / App catalog</p>
+            <h1 id="apps-title">Apps built to be used.</h1>
+            <p>
+              Browse current Fawxzzy products with direct access, grounded status,
+              and real walkthroughs. No filler listings or invented marketplace signals.
+            </p>
+          </div>
+          <dl className="catalog-overview" aria-label="Catalog overview">
+            <div><dt>Apps</dt><dd>{apps.length}</dd></div>
+            <div><dt>Status</dt><dd>Available now</dd></div>
+            <div><dt>Proof</dt><dd>Live walkthroughs</dd></div>
+          </dl>
         </header>
 
         <section aria-labelledby="apps-title" className="catalog-stack" id="catalog">
-          {apps.map((app) => (
-            <AppCatalogEntry app={app} key={app.slug} />
-          ))}
+          {apps.map((app) => <AppCatalogEntry app={app} key={app.slug} />)}
         </section>
 
         <SiteFooter />

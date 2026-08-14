@@ -3,7 +3,7 @@ import { StaticLink } from "@/components/site/static-link";
 import { productIdentity } from "@/config/product";
 
 type SiteNavProps = {
-  current: "account" | "apps" | "discover" | "home" | "newsletter";
+  current: "account" | "apps" | "discover" | "home";
 };
 
 export function SiteNav({ current }: SiteNavProps) {
@@ -38,12 +38,6 @@ export function SiteNav({ current }: SiteNavProps) {
           href="/discover"
         >
           Discover
-        </StaticLink>
-        <StaticLink
-          aria-current={current === "newsletter" ? "page" : undefined}
-          href="/newsletter"
-        >
-          Newsletter
         </StaticLink>
       </div>
     </nav>

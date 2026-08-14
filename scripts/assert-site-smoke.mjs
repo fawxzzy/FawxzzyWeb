@@ -28,7 +28,7 @@ export async function assertSiteSmoke(baseUrl) {
   const homeHtml = await assertRoute(
     baseUrl,
     "/",
-    "Software, fitness, games",
+    "Focused software, presented clearly.",
   );
   if (!homeHtml.includes('href="/apps"')) {
     throw new Error("Home route did not link to the canonical app catalog.");
@@ -39,8 +39,8 @@ export async function assertSiteSmoke(baseUrl) {
   if (!homeHtml.includes('href="/discover"')) {
     throw new Error("Home route did not link to the discovery hub.");
   }
-  if (!homeHtml.includes('href="/newsletter"')) {
-    throw new Error("Home route did not link to the owned newsletter archive.");
+  if (homeHtml.includes('href="/newsletter"')) {
+    throw new Error("Home route still linked to the retired newsletter archive.");
   }
   if (!homeHtml.includes('aria-label="Footer"')) {
     throw new Error("Home route did not render the shared site footer.");
@@ -52,7 +52,7 @@ export async function assertSiteSmoke(baseUrl) {
   const appsHtml = await assertRoute(
     baseUrl,
     "/apps",
-    "Software and games, shown in motion.",
+    "Apps built to be used.",
   );
   for (const app of catalogApps) {
     if (!appsHtml.includes(`href="${app.path}"`)) {
@@ -104,44 +104,15 @@ export async function assertSiteSmoke(baseUrl) {
   const discoverHtml = await assertRoute(
     baseUrl,
     "/discover",
-    "Build. Train. Create.",
+    "Apps here. The build on TikTok.",
   );
-  for (const target of [
-    "https://fawxzzy-fitness-local.vercel.app",
-    "https://buy.stripe.com/cNi9AL4a02Qf3T4dA02cg02",
-    "https://www.tiktok.com/@fukitzzzzz",
-    "https://www.youtube.com/@fawxzzy",
-    "https://x.com/Fawxzzy",
-    "https://www.snapchat.com/add/fawx.zzy",
-    "https://www.twitch.tv/fawxzzy",
-    "https://cash.app/$fawxzzy",
-  ]) {
-    if (!discoverHtml.includes(target)) {
-      throw new Error(`/discover did not include grounded destination ${target}.`);
+  if (!discoverHtml.includes("https://www.tiktok.com/@fukitzzzzz")) {
+    throw new Error("/discover did not include the canonical TikTok destination.");
+  }
+  for (const retiredTarget of ["youtube.com", "x.com/", "snapchat.com", "twitch.tv", "cash.app", "link.me"]) {
+    if (discoverHtml.includes(retiredTarget)) {
+      throw new Error(`/discover still rendered retired destination ${retiredTarget}.`);
     }
-  }
-  if (!discoverHtml.includes("Fawxzzy stores no intake or payment state")) {
-    throw new Error("The Fitness intake ownership boundary was not rendered.");
-  }
-  if (!discoverHtml.includes("What is moving right now.")) {
-    throw new Error("/discover did not render centralized current product work.");
-  }
-  if (!discoverHtml.includes("PSN: fawxzzy")) {
-    throw new Error("The verified PlayStation online ID was not rendered.");
-  }
-  if (discoverHtml.includes("link.me/fawxzzy")) {
-    throw new Error("The retired LinkMe destination remained on /discover.");
-  }
-
-  const newsletterHtml = await assertRoute(baseUrl, "/newsletter", "Building Fawxzzy weekly.");
-  if (!newsletterHtml.toLowerCase().includes("no email address is collected")) {
-    throw new Error("/newsletter did not truthfully disclose its closed subscription state.");
-  }
-  if (!newsletterHtml.includes("No issues are public yet.")) {
-    throw new Error("/newsletter did not render the truthful empty archive state.");
-  }
-  if (newsletterHtml.includes("Issue 001") || newsletterHtml.includes("Next issue")) {
-    throw new Error("/newsletter rendered an unpublished issue as editorial proof.");
   }
 
   const compatibilityHtml = await assertRoute(

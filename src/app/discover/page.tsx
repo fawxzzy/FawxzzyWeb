@@ -10,8 +10,7 @@ import { publicPageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = publicPageMetadata({
   title: "Discover",
-  description:
-    "The Fawxzzy ecosystem hub for using the apps, following the work, and joining the community.",
+  description: "Discover Fawxzzy apps on the website and follow the public build on TikTok.",
   path: "/discover",
 });
 
@@ -36,25 +35,26 @@ export default function DiscoverPage() {
 
         <header className="editorial-hero editorial-hero--discover">
           <div className="editorial-hero__copy">
-            <p className="eyebrow">Fawxzzy / Ecosystem hub</p>
-            <h1>Build. Train. Create.</h1>
+            <p className="eyebrow">Fawxzzy / Discover</p>
+            <h1>Apps here. The build on TikTok.</h1>
             <p>
-              Use the products, follow what is being built, and find the people and places
-              around the work. This is the clear starting point for the full Fawxzzy ecosystem.
+              A deliberately focused discovery page: use the products on this website,
+              or follow the public work in motion on TikTok.
             </p>
             <div className="hero__actions">
               <StaticLink className="catalog-button catalog-button--primary" href="/apps">
-                Use the apps
+                Browse apps
               </StaticLink>
-              <StaticLink className="catalog-button catalog-button--secondary" href="/newsletter">
-                Follow the build
-              </StaticLink>
+              <a
+                className="catalog-button catalog-button--secondary"
+                data-analytics-event="tiktok_open"
+                href={discoveryDestinations[0].href}
+                rel="noreferrer"
+                target="_blank"
+              >
+                Open TikTok <span aria-hidden="true">&nearr;</span>
+              </a>
             </div>
-            <ul aria-label="Ways to explore Fawxzzy" className="editorial-hero__orientation">
-              <li>Use the apps</li>
-              <li>Follow the build</li>
-              <li>Join the community</li>
-            </ul>
           </div>
 
           <div className="editorial-hero__artwork" aria-hidden="true">
@@ -70,7 +70,6 @@ export default function DiscoverPage() {
         </header>
 
         <DiscoveryGrid destinations={discoveryDestinations} />
-
         <SiteFooter />
       </div>
     </main>

@@ -19,7 +19,7 @@ export function SiteFooter() {
         <div>
           <p className="eyebrow">Independent product studio</p>
           <h2>{productIdentity.publicName}</h2>
-          <p>Software, fitness, games, and the work behind them.</p>
+          <p>A clear home for independent apps and their current product truth.</p>
         </div>
       </div>
 
@@ -34,9 +34,16 @@ export function SiteFooter() {
           ))}
         </div>
         <div>
-          <p>Follow the work</p>
+          <p>Discover</p>
           <StaticLink href="/discover">Discover</StaticLink>
-          <StaticLink href="/newsletter">Build log</StaticLink>
+          <a
+            data-analytics-event="tiktok_open"
+            href="https://www.tiktok.com/@fukitzzzzz"
+            rel="noreferrer"
+            target="_blank"
+          >
+            TikTok
+          </a>
         </div>
         <div>
           <p>Account</p>

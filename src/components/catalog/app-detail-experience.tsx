@@ -2,15 +2,12 @@ import type { CSSProperties } from "react";
 import Image from "next/image";
 import type { CatalogApp } from "@/data/apps";
 import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
-import { ReviewPlaceholder } from "@/components/catalog/review-placeholder";
 import { TrailerPlayer } from "@/components/catalog/trailer-player";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
 import { StaticLink } from "@/components/site/static-link";
 
-type AppDetailExperienceProps = {
-  app: CatalogApp;
-};
+type AppDetailExperienceProps = { app: CatalogApp };
 
 type ProductAccentStyle = CSSProperties & {
   "--product-from": string;
@@ -36,7 +33,7 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
     >
       <AmbientFitnessBackground
         intensity="soft"
-        particleCount={10}
+        particleCount={8}
         palette={{
           base: "#070C0A",
           glow: app.accent.from,
@@ -49,14 +46,13 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
 
       <div className="shell-container app-detail-shell">
         <SiteNav current="apps" />
-
         <nav aria-label="Breadcrumb" className="app-detail-breadcrumb">
           <StaticLink href="/apps">Apps</StaticLink>
           <span aria-hidden="true">/</span>
           <span aria-current="page">{app.name}</span>
         </nav>
 
-        <section aria-labelledby="app-detail-title" className="app-detail-hero">
+        <section aria-labelledby="app-detail-title" className="app-detail-hero app-detail-hero--store">
           <div className="app-detail-hero__copy">
             <header className="app-detail-identity">
               <Image
@@ -70,31 +66,31 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
               />
               <div>
                 <p className="eyebrow">{app.category}</p>
-                <p className="app-detail-status">{app.status}</p>
+                <h1 id="app-detail-title">{app.name}</h1>
               </div>
             </header>
-
-            <h1 id="app-detail-title">{app.name}</h1>
             <p className="app-detail-headline">{app.detail.headline}</p>
-            <p className="app-detail-tagline">{app.tagline}</p>
             <p className="app-detail-description">{app.description}</p>
+
+            <dl className="app-detail-facts" aria-label={`${app.name} product facts`}>
+              <div><dt>Availability</dt><dd>{app.status}</dd></div>
+              <div><dt>Latest</dt><dd>{app.latestUpdate}</dd></div>
+              <div><dt>Access</dt><dd>Direct product link</dd></div>
+            </dl>
 
             <div className="app-detail-actions">
               <a
                 className="catalog-button catalog-button--primary"
+                data-analytics-app={app.slug}
+                data-analytics-event="app_launch"
                 href={app.origin.current}
                 rel="noreferrer"
                 target="_blank"
               >
-                Open {app.name}
-                <span aria-hidden="true">↗</span>
+                Open {app.name} <span aria-hidden="true">&nearr;</span>
               </a>
-              <StaticLink
-                className="catalog-button catalog-button--secondary"
-                href={`#${app.slug}-trailer`}
-              >
-                Watch the walkthrough
-                <span aria-hidden="true">&darr;</span>
+              <StaticLink className="catalog-button catalog-button--secondary" href={`#${app.slug}-trailer`}>
+                Watch walkthrough <span aria-hidden="true">&darr;</span>
               </StaticLink>
             </div>
           </div>
@@ -104,15 +100,11 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
           </figure>
         </section>
 
-        <section
-          aria-labelledby={`${app.slug}-capabilities-title`}
-          className="app-detail-capabilities"
-        >
+        <section aria-labelledby={`${app.slug}-capabilities-title`} className="app-detail-capabilities">
           <header className="app-detail-section-copy">
-            <p className="eyebrow">What it does</p>
+            <p className="eyebrow">Core experience</p>
             <h2 id={`${app.slug}-capabilities-title`}>{app.detail.capabilitiesHeading}</h2>
           </header>
-
           <ol className="app-detail-capability-list">
             {app.detail.capabilities.map((capability, index) => (
               <li key={capability.title}>
@@ -122,40 +114,6 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
               </li>
             ))}
           </ol>
-        </section>
-
-        <section aria-labelledby={`${app.slug}-status-title`} className="app-detail-build surface-panel">
-          <div>
-            <p className="eyebrow">Current build</p>
-            <h2 id={`${app.slug}-status-title`}>{app.latestUpdate}</h2>
-          </div>
-          <p>{app.detail.statusSummary}</p>
-          <span>{app.status}</span>
-        </section>
-
-        <ReviewPlaceholder appName={app.name} appSlug={app.slug} compact />
-
-        <section aria-labelledby={`${app.slug}-cta-title`} className="app-detail-cta surface-panel">
-          <div>
-            <p className="eyebrow">Ready when you are</p>
-            <h2 id={`${app.slug}-cta-title`}>Start with {app.name}.</h2>
-            <p>Open the live product at its current, independently owned home.</p>
-          </div>
-          <div className="app-detail-actions">
-            <a
-              className="catalog-button catalog-button--primary"
-              href={app.origin.current}
-              rel="noreferrer"
-              target="_blank"
-            >
-              Launch {app.name}
-              <span aria-hidden="true">↗</span>
-            </a>
-            <StaticLink className="catalog-button catalog-button--secondary" href="/apps">
-              All apps
-              <span aria-hidden="true">&rarr;</span>
-            </StaticLink>
-          </div>
         </section>
 
         <SiteFooter />

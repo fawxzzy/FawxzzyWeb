@@ -1,9 +1,79 @@
-/* Wave 2B editorial family: Discover and Newsletter. */
+/* Wave 2B focused Discover family. Retired editorial history remains in legacy-public.css. */
 .editorial-shell {
   position: relative;
   z-index: 1;
   display: grid;
   gap: 0;
+}
+
+/* Focused Discover: website catalog plus one canonical TikTok destination. */
+.discovery-editorial--focused {
+  display: grid;
+  gap: clamp(4.5rem, 9vw, 7rem);
+}
+
+.discover-tiktok {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(1rem, 3vw, 2rem);
+  border-radius: 28px;
+  padding: clamp(1.4rem, 4vw, 2.4rem);
+}
+
+.discover-tiktok__mark {
+  display: grid;
+  place-items: center;
+  width: 5rem;
+  height: 5rem;
+  border: 1px solid rgb(var(--accent) / 0.32);
+  border-radius: 22px;
+  background: rgb(var(--accent) / 0.1);
+  color: rgb(var(--accent));
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.discover-tiktok__copy h2,
+.discover-boundary h2 {
+  margin: 0.4rem 0 0.7rem;
+  color: rgb(var(--text));
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+
+.discover-tiktok__copy p:not(.eyebrow),
+.discover-boundary > p:not(.eyebrow) {
+  max-width: 48rem;
+  margin: 0;
+  color: rgb(var(--muted));
+  line-height: 1.68;
+}
+
+.discover-tiktok__copy > span {
+  display: inline-block;
+  margin-top: 0.7rem;
+  color: rgb(var(--accent));
+  font-weight: 700;
+}
+
+.discover-boundary {
+  max-width: 54rem;
+  border-top: 1px solid rgb(var(--stroke) / 0.4);
+  padding-top: clamp(2rem, 5vw, 3.5rem);
+}
+
+@media (max-width: 760px) {
+  .discover-tiktok {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .discover-tiktok .catalog-button {
+    width: 100%;
+  }
 }
 
 .editorial-hero {
@@ -642,6 +712,7 @@ a.editorial-directory__item:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .discover-tiktok .catalog-button,
   .editorial-text-link,
   .editorial-directory__item {
     animation: none;

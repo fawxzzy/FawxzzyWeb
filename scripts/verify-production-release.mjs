@@ -19,7 +19,6 @@ const smokeRoutes = [
   "/apps/fitness",
   "/apps/mazer",
   "/discover",
-  "/newsletter",
   "/login",
   "/account",
   "/auth/callback",

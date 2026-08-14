@@ -12,6 +12,8 @@ export function AppStoreCard({ app }: AppStoreCardProps) {
     <StaticLink
       aria-label={`View ${app.name} details`}
       className="app-store-card surface-panel"
+      data-analytics-app={app.slug}
+      data-analytics-event="catalog_app_view"
       data-app-card={app.slug}
       href={getAppDetailPath(app)}
     >
@@ -29,7 +31,7 @@ export function AppStoreCard({ app }: AppStoreCardProps) {
         <span className="app-store-card__status">{app.status}</span>
       </span>
       <span aria-hidden="true" className="app-store-card__cue">
-        ›
+        &rsaquo;
       </span>
     </StaticLink>
   );
