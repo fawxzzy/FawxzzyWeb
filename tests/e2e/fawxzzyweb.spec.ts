@@ -12,6 +12,21 @@ async function sha256ForPublicAsset(src: string) {
   return createHash("sha256").update(asset).digest("hex").toUpperCase();
 }
 
+test("visual-system documentation keeps Newsletter historical only", async () => {
+  const visualSystem = await readFile(
+    resolve(process.cwd(), "docs", "visual-system.md"),
+    "utf8",
+  );
+
+  expect(visualSystem).toContain("## Historical editorial template");
+  expect(visualSystem).toContain("`/newsletter` is intentionally\nabsent and returns 404");
+  expect(visualSystem).toContain("immutable comparison evidence");
+  expect(visualSystem).toContain("The current footer uses only Home, Apps");
+  expect(visualSystem).not.toContain("Newsletter is the publication home");
+  expect(visualSystem).not.toContain("Discover and Newsletter share");
+  expect(visualSystem).not.toContain("Newsletter/build log, Login, and Account");
+});
+
 test("root is the canonical Fawxzzy experience", async ({ page }) => {
   await page.goto("/");
 
