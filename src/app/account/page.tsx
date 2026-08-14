@@ -4,16 +4,16 @@ import { accountPageMetadata } from "@/lib/account-metadata";
 
 export const metadata = accountPageMetadata(
   "Account",
-  "Review the session and safe account settings available on this Fawxzzy account origin.",
+  "Manage your Fawxzzy sign-in and connected apps.",
   "/account",
 );
 
 export default function AccountPage() {
   return (
     <AccountPageShell
-      eyebrow="Account home"
-      intro="See this origin's session, manage safe credential updates, and understand what remains capability-gated."
-      title="One identity. Clear boundaries."
+      eyebrow="Account"
+      intro="Manage your sign-in and connected apps."
+      title="Your account."
     >
       <AccountPortal mode="account" />
     </AccountPageShell>

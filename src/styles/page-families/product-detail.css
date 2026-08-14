@@ -339,3 +339,179 @@
     border-radius: 20px;
   }
 }
+
+/* Product detail V2 — direct navigation, one decision, one preview. */
+.app-detail-page {
+  min-height: 100vh;
+  padding: 1rem 0 3rem;
+  background:
+    radial-gradient(circle at 76% 10%, var(--product-glow), transparent 26rem),
+    linear-gradient(180deg, rgb(14 14 17), rgb(7 8 9));
+}
+
+.app-detail-shell {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 0;
+}
+
+.app-detail-back {
+  width: fit-content;
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: clamp(1.25rem, 3vw, 2.5rem) 0;
+  border-radius: 999px;
+  color: rgb(var(--muted));
+  padding: 0.55rem 0.85rem;
+  font-size: 0.86rem;
+  font-weight: 640;
+}
+
+.app-detail-back:hover {
+  background: rgb(255 255 255 / 0.07);
+  color: rgb(var(--text));
+}
+
+.app-detail-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 27rem);
+  gap: clamp(2.5rem, 7vw, 7rem);
+  margin-bottom: clamp(4rem, 9vw, 7rem);
+  border: 1px solid rgb(255 255 255 / 0.09);
+  border-radius: clamp(24px, 4vw, 38px);
+  background:
+    radial-gradient(circle at 88% 12%, var(--product-glow), transparent 35%),
+    rgb(22 22 25 / 0.92);
+  padding: clamp(1.4rem, 5vw, 4rem);
+  box-shadow: 0 36px 110px rgb(0 0 0 / 0.28);
+}
+
+.app-detail-identity {
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.app-detail-icon {
+  width: clamp(4.25rem, 8vw, 6rem);
+  height: clamp(4.25rem, 8vw, 6rem);
+  border: 1px solid rgb(255 255 255 / 0.15);
+  border-radius: 22px;
+}
+
+.app-detail-hero--store .app-detail-identity h1 {
+  margin-top: 0.2rem;
+  font-size: clamp(3rem, 7vw, 6rem);
+  font-weight: 650;
+  line-height: 0.92;
+}
+
+.app-detail-headline {
+  max-width: 14ch;
+  margin-top: 1.5rem;
+  font-size: clamp(2rem, 4vw, 3.65rem);
+  font-weight: 620;
+  line-height: 1;
+}
+
+.app-detail-description {
+  max-width: 34rem;
+  margin-top: 1rem;
+  color: rgb(var(--muted));
+  font-size: 1.02rem;
+  line-height: 1.6;
+}
+
+.app-detail-actions {
+  gap: 0.65rem;
+  margin-top: 2rem;
+}
+
+.app-detail-hero__media {
+  width: min(100%, 25rem);
+  border: 1px solid rgb(255 255 255 / 0.13);
+  border-radius: 28px;
+  box-shadow: 0 30px 90px rgb(0 0 0 / 0.42), 0 0 70px var(--product-glow);
+}
+
+.app-detail-capabilities {
+  margin-bottom: clamp(4rem, 8vw, 6rem);
+  border-top: 0;
+  padding-top: 0;
+}
+
+.app-detail-section-copy {
+  max-width: 46rem;
+  margin-bottom: 1.5rem;
+}
+
+.app-detail-section-copy h2 {
+  margin-top: 0.35rem;
+  font-size: clamp(2.35rem, 5vw, 4.5rem);
+  font-weight: 630;
+}
+
+.app-detail-capability-list {
+  gap: 0.75rem;
+}
+
+.app-detail-capability-list li {
+  min-height: 12rem;
+  border: 1px solid rgb(255 255 255 / 0.09);
+  border-radius: 22px;
+  background: rgb(24 24 27 / 0.9);
+  padding: 1.35rem;
+}
+
+.app-detail-capability-list h3 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.app-detail-capability-list p {
+  margin-top: 0.65rem;
+}
+
+@media (max-width: 880px) {
+  .app-detail-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-detail-hero__media {
+    justify-self: center;
+  }
+}
+
+@media (max-width: 520px) {
+  .app-detail-page {
+    padding-top: 0.5rem;
+  }
+
+  .app-detail-hero {
+    margin-bottom: 4rem;
+    border-radius: 22px;
+    padding: 1.2rem;
+  }
+
+  .app-detail-identity {
+    align-items: center;
+  }
+
+  .app-detail-hero--store .app-detail-identity h1 {
+    font-size: clamp(2.8rem, 15vw, 4rem);
+  }
+
+  .app-detail-headline {
+    font-size: clamp(2rem, 11vw, 3.1rem);
+  }
+
+  .app-detail-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .app-detail-actions .catalog-button {
+    width: 100%;
+  }
+}

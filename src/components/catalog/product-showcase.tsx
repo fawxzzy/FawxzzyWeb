@@ -38,7 +38,6 @@ export function ProductShowcase({
     >
       <div className="product-showcase__media">
         <TrailerPlayer appName={app.name} appSlug={app.slug} trailer={app.trailer} />
-        <span className="product-showcase__availability">{app.status}</span>
       </div>
 
       <div className="product-showcase__content">
@@ -59,20 +58,15 @@ export function ProductShowcase({
 
         <p className="product-showcase__promise">{app.tagline}</p>
 
-        <p className="product-showcase__update">
-          <span>Latest</span>
-          {app.latestUpdate}
-        </p>
-
         <div className="product-showcase__actions">
           <StaticLink
-            aria-label={`Explore ${app.name}`}
+            aria-label={`View ${app.name}`}
             className="catalog-button catalog-button--primary"
             data-analytics-app={app.slug}
             data-analytics-event="catalog_app_view"
             href={getAppDetailPath(app)}
           >
-            Explore {app.name}
+            View {app.name}
             <span aria-hidden="true">&rarr;</span>
           </StaticLink>
         </div>

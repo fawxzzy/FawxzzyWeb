@@ -35,7 +35,6 @@ import {
 import {
   normalizeServiceRegistrationReadModel,
   resolveServiceRegistrationPresentation,
-  serviceDispositionCopy,
   serviceDispositionLabel,
 } from "@/lib/account/service-registration";
 
@@ -276,14 +275,14 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
         </button>
       </div>
       <div className="account-card__heading">
-        <p className="field-label">Email + password</p>
+        <p className="field-label">{intent === "login" ? "Sign in" : "New account"}</p>
         <h2 id="login-panel-title">
-          {intent === "login" ? "Welcome back." : "Make one Fawxzzy account."}
+          {intent === "login" ? "Enter your details." : "Create your account."}
         </h2>
         <p>
           {intent === "login"
-            ? "Sign in with your existing credentials. Legacy shorter passwords still work here."
-            : `Use ${PASSWORD_MINIMUM} or more characters. We never trim or truncate your password.`}
+            ? "Use the email and password connected to your account."
+            : `Use ${PASSWORD_MINIMUM} or more characters.`}
         </p>
       </div>
       <SetupState resolution={resolution} />
@@ -382,13 +381,9 @@ function ServiceRegistrationPanel() {
       data-service-capability={snapshot.capability}
     >
       <div className="account-card__heading">
-        <p className="field-label">Shared identity services</p>
-        <h2 id="shared-services-title">One identity. Explicit service state.</h2>
-        <p>
-          Fitness and Mazer are human-account services. When the authoritative platform
-          capability is enabled, signing into a service can idempotently create or activate its
-          service account. This page never treats local state as proof.
-        </p>
+        <p className="field-label">Connected apps</p>
+        <h2 id="shared-services-title">Your apps.</h2>
+        <p>See where your Fawxzzy account can be used.</p>
       </div>
       {unresolvedState ? (
         <SystemState
@@ -407,18 +402,15 @@ function ServiceRegistrationPanel() {
           key={service.id}
         >
           <div>
-            <p className="field-label">
-              {service.name} · Service available · Registration {serviceDispositionLabel(service.disposition)}
-            </p>
+            <p className="field-label">{service.name}</p>
             <h3>{serviceDispositionLabel(service.disposition)}</h3>
-            <p>{serviceDispositionCopy(service.disposition)}</p>
             <p>{service.summary}</p>
             <div className="account-card__links">
               <a href={service.currentDestination} rel="noreferrer">
-                Open current {service.name}
+                Open {service.name}
               </a>
-              <span data-service-canonical={service.canonicalDestination}>
-                Canonical home: {new URL(service.canonicalDestination).hostname}
+              <span data-service-canonical={service.canonicalDestination} hidden>
+                {new URL(service.canonicalDestination).hostname}
               </span>
             </div>
           </div>
@@ -429,8 +421,8 @@ function ServiceRegistrationPanel() {
             type="button"
           >
             {service.disposition === "active"
-              ? "Active via platform readback"
-              : "Activation not connected"}
+              ? "Connected"
+              : "Not connected"}
           </button>
         </div>
       ))}

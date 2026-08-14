@@ -32,27 +32,15 @@ export default function TroveCompatibilityPage() {
           actions={
             <StaticLink
               className="catalog-button catalog-button--primary"
-              href={productIdentity.appsPath}
+              href="/#apps"
             >
-              Open the app catalog
+              Browse apps
             </StaticLink>
           }
-          description={
-            <>
-              {productIdentity.legacyCatalogName} remains available only as a reversible
-              compatibility surface. The current catalog and every product detail now live under
-              {` ${productIdentity.appsPath}`}.
-            </>
-          }
-          details={
-            <p>
-              This route is excluded from search indexing and points its canonical metadata to
-              {` ${productIdentity.appsPath}`}.
-            </p>
-          }
-          eyebrow={`${productIdentity.legacyCatalogName} compatibility`}
+          description="Everything is still here—just in one cleaner place."
+          eyebrow={productIdentity.legacyCatalogName}
           headingLevel={1}
-          title="The catalog moved to Apps."
+          title="Apps moved home."
           variant="unavailable"
         />
         <SiteFooter />

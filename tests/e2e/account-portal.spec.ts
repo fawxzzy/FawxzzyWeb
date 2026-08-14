@@ -561,7 +561,7 @@ test("utility Auth routes use one focused task shell", async ({ page }) => {
       "href",
       "/",
     );
-    await expect(navigation.getByRole("link", { name: "Back to site" })).toHaveAttribute(
+    await expect(navigation.getByRole("link", { name: "Back home" })).toHaveAttribute(
       "href",
       "/",
     );
@@ -613,18 +613,18 @@ test("utility shell stays usable without overflow at 320px and 360px", async ({ 
   }
 });
 
-test("public navigation stays focused on apps and discovery", async ({
+test("public navigation stays focused on home and apps", async ({
   page,
 }) => {
   await page.goto("/");
   const navigation = page.getByRole("navigation", { name: "Primary" });
+  await expect(navigation.getByRole("link", { name: "Home", exact: true })).toHaveAttribute(
+    "href",
+    "/",
+  );
   await expect(navigation.getByRole("link", { name: "Apps", exact: true })).toHaveAttribute(
     "href",
-    "/apps",
-  );
-  await expect(navigation.getByRole("link", { name: "Discover", exact: true })).toHaveAttribute(
-    "href",
-    "/discover",
+    "/#apps",
   );
   await expect(navigation.locator("a")).toHaveCount(3);
   await expect(navigation).not.toContainText("Account");

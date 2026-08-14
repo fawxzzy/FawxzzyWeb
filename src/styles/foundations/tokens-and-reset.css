@@ -4,21 +4,21 @@
   --app-safe-bottom: env(safe-area-inset-bottom, 0px);
   --app-safe-left: env(safe-area-inset-left, 0px);
   --app-safe-right: env(safe-area-inset-right, 0px);
-  --canvas: 7 12 10;
-  --canvas-deep: 4 7 6;
-  --panel: 11 17 14;
-  --panel-strong: 16 24 20;
-  --card: 19 29 23;
-  --stroke: 76 93 80;
-  --text: 214 223 214;
-  --muted: 173 188 175;
-  --subtle: 113 130 116;
-  --accent: 127 151 124;
-  --accent-strong: 93 114 95;
-  --glow: 163 181 164;
-  --earth: 28 36 31;
-  --earth-soft: 61 75 64;
-  --shadow-card: 0 24px 72px rgba(0, 0, 0, 0.42);
+  --canvas: 10 10 12;
+  --canvas-deep: 5 6 7;
+  --panel: 20 20 23;
+  --panel-strong: 28 28 32;
+  --card: 32 32 36;
+  --stroke: 70 70 76;
+  --text: 245 245 247;
+  --muted: 174 174 182;
+  --subtle: 128 128 138;
+  --accent: 174 203 169;
+  --accent-strong: 129 161 125;
+  --glow: 174 203 169;
+  --earth: 24 29 25;
+  --earth-soft: 51 62 53;
+  --shadow-card: 0 30px 90px rgba(0, 0, 0, 0.38);
 }
 
 @theme inline {
@@ -44,8 +44,7 @@
 html {
   min-height: 100%;
   background:
-    radial-gradient(circle at 50% 0%, rgb(var(--glow) / 0.035), transparent 38%),
-    radial-gradient(circle at 18% 14%, rgb(var(--earth) / 0.08), transparent 34%),
+    radial-gradient(circle at 50% 0%, rgb(var(--glow) / 0.045), transparent 42%),
     linear-gradient(180deg, rgb(var(--canvas)), rgb(var(--canvas-deep)));
   scroll-behavior: smooth;
 }
@@ -56,8 +55,7 @@ body {
   color: rgb(var(--text));
   font-family: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
   background:
-    radial-gradient(circle at 50% -10%, rgb(var(--glow) / 0.03), transparent 32%),
-    radial-gradient(circle at 84% 4%, rgb(var(--earth) / 0.08), transparent 32%),
+    radial-gradient(circle at 50% -10%, rgb(var(--glow) / 0.04), transparent 38%),
     linear-gradient(180deg, rgb(var(--canvas)), rgb(var(--canvas-deep)));
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

@@ -101,7 +101,7 @@ export function SystemState({
       {actions ? <div className="system-state__actions">{actions}</div> : null}
       {details ? (
         <details className="system-state__details">
-          <summary>Technical details</summary>
+          <summary>Details</summary>
           <div>{details}</div>
         </details>
       ) : null}

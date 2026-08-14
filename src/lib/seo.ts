@@ -15,7 +15,6 @@ export const publicIndexableRoutes = [
   productIdentity.appsPath,
   "/apps/fitness",
   "/apps/mazer",
-  "/discover",
 ] as const;
 
 export function absolutePublicUrl(path: string) {

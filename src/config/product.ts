@@ -3,7 +3,7 @@ export const productIdentity = {
   repositoryName: "FawxzzyWeb",
   providerSlug: "fawxzzyweb",
   description:
-    "The public home for Fawxzzy software, games, and independently built services designed to stay useful, clear, and affordable.",
+    "Discover focused Fawxzzy apps for training, play, and everyday momentum.",
   canonicalOrigin: "https://fawxzzy.com",
   appsPath: "/apps",
   legacyCatalogName: "Trove",

@@ -28,19 +28,19 @@ export async function assertSiteSmoke(baseUrl) {
   const homeHtml = await assertRoute(
     baseUrl,
     "/",
-    "Focused software, presented clearly.",
+    "Find something worth keeping.",
   );
   if (homeHtml.includes("&amp;nearr;") || homeHtml.includes("&nearr;")) {
     throw new Error("Home route rendered a literal named entity in external action text.");
   }
-  if (!homeHtml.includes('href="/apps"')) {
-    throw new Error("Home route did not link to the canonical app catalog.");
+  if (!homeHtml.includes('href="#apps"')) {
+    throw new Error("Home route did not link directly to its unified app section.");
   }
   if (!homeHtml.includes('/brand/fawxzzy-banner-v2.png')) {
     throw new Error("Home route did not render the approved V2 Fawxzzy banner.");
   }
-  if (!homeHtml.includes('href="/discover"')) {
-    throw new Error("Home route did not link to the discovery hub.");
+  if (homeHtml.includes('>Discover</a>')) {
+    throw new Error("Home route still exposed a duplicate Discover navigation surface.");
   }
   if (homeHtml.includes('href="/newsletter"')) {
     throw new Error("Home route still linked to the retired newsletter archive.");
@@ -48,14 +48,10 @@ export async function assertSiteSmoke(baseUrl) {
   if (!homeHtml.includes('aria-label="Footer"')) {
     throw new Error("Home route did not render the shared site footer.");
   }
-  if (homeHtml.includes('>Account</a>')) {
-    throw new Error("Primary navigation exposed Account instead of the approved Apps and Discover links.");
-  }
-
   const appsHtml = await assertRoute(
     baseUrl,
     "/apps",
-    "Apps built to be used.",
+    "Pick an app and jump in.",
   );
   for (const app of catalogApps) {
     if (!appsHtml.includes(`href="${app.path}"`)) {
@@ -107,7 +103,7 @@ export async function assertSiteSmoke(baseUrl) {
   const discoverHtml = await assertRoute(
     baseUrl,
     "/discover",
-    "Apps here. The build on TikTok.",
+    "Find something worth keeping.",
   );
   if (discoverHtml.includes("&amp;nearr;") || discoverHtml.includes("&nearr;")) {
     throw new Error("Discover route rendered a literal named entity in external action text.");
@@ -124,18 +120,18 @@ export async function assertSiteSmoke(baseUrl) {
   const compatibilityHtml = await assertRoute(
     baseUrl,
     "/trove",
-    "reversible compatibility surface",
+    "Everything is still here",
   );
   if (!compatibilityHtml.includes('data-compatibility-identity="trove"')) {
     throw new Error("Trove compatibility identity was not rendered.");
   }
 
   const accountRoutes = [
-    ["/login", "Sign in to Fawxzzy."],
-    ["/account", "One identity. Clear boundaries."],
+    ["/login", "Welcome back."],
+    ["/account", "Your account."],
     ["/auth/confirm", "Confirm your account."],
-    ["/auth/callback", "Finishing sign-in."],
-    ["/reset-password", "Recover your account."],
+    ["/auth/callback", "Signing you in."],
+    ["/reset-password", "Reset your password."],
   ];
   for (const [path, expectedText] of accountRoutes) {
     const html = await assertRoute(baseUrl, path, expectedText);

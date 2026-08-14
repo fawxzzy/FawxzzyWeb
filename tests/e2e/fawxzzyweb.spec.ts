@@ -23,17 +23,14 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
   );
   await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Focused software, presented clearly.",
+    "Find something worth keeping.",
   );
   await expect(page.getByRole("link", { name: "Fawxzzy home" })).toHaveAttribute("href", "/");
   await expect(page.locator('a[aria-current="page"]')).toHaveCount(1);
   await expect(page.locator(".site-nav__links a")).toHaveCount(2);
   await expect(page.getByRole("navigation", { name: "Primary" })).not.toContainText("Account");
-  await expect(page.getByRole("link", { name: "Browse all apps" })).toHaveAttribute(
-    "href",
-    "/apps",
-  );
-  await expect(page.getByRole("link", { name: "Open Discover" })).toHaveAttribute("href", "/discover");
+  await expect(page.getByRole("link", { name: "Explore apps" })).toHaveAttribute("href", "#apps");
+  await expect(page.getByRole("navigation", { name: "Primary" })).not.toContainText("Discover");
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
     productIdentity.canonicalOrigin,
@@ -43,15 +40,15 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
     /Fawxzzy/,
   );
 
-  await expect(page.getByRole("heading", { name: "Choose a product." })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Product updates live on TikTok." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Choose your next app." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "See what is being built." })).toBeVisible();
   await expect(page.locator("[data-app-card]")).toHaveCount(apps.length);
   await expect(page.locator("[data-product-showcase], video")).toHaveCount(0);
-  await expect(page.locator('.home-discover [data-analytics-event="tiktok_open"]')).toHaveCount(1);
+  await expect(page.locator('.storefront-social [data-analytics-event="tiktok_open"]')).toHaveCount(1);
   await expect(page.locator('.site-footer [data-analytics-event="tiktok_open"]')).toHaveCount(1);
   await expect(page.locator("body")).not.toContainText("&nearr;");
   await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Manage account" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Account" })).toHaveAttribute(
     "href",
     "/account",
   );
@@ -64,7 +61,7 @@ test("public discovery files expose only canonical indexable routes", async ({
   expect(sitemapResponse.ok()).toBe(true);
   expect(sitemapResponse.headers()["content-type"]).toContain("application/xml");
   const sitemap = await sitemapResponse.text();
-  const expectedRoutes = ["/", "/apps", "/apps/fitness", "/apps/mazer", "/discover"];
+  const expectedRoutes = ["/", "/apps", "/apps/fitness", "/apps/mazer"];
 
   for (const route of expectedRoutes) {
     const canonical =
@@ -73,7 +70,7 @@ test("public discovery files expose only canonical indexable routes", async ({
         : new URL(route, productIdentity.canonicalOrigin).href;
     expect(sitemap).toContain(`<loc>${canonical}</loc>`);
   }
-  for (const excluded of ["/trove", "/newsletter", "/account", "/login", "/auth/confirm", "/reset-password"]) {
+  for (const excluded of ["/discover", "/trove", "/newsletter", "/account", "/login", "/auth/confirm", "/reset-password"]) {
     expect(sitemap).not.toContain(`<loc>${new URL(excluded, productIdentity.canonicalOrigin).href}</loc>`);
   }
 
@@ -151,22 +148,22 @@ test("public routes carry social metadata and grounded structured data", async (
   }
 });
 
-test("discover route exposes centralized public destinations", async ({ page }) => {
+test("discover route renders the canonical unified storefront", async ({ page }) => {
   await page.goto("/discover");
 
-  await expect(page).toHaveTitle("Discover | Fawxzzy");
+  await expect(page).toHaveTitle("Fawxzzy");
   await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
   await expect(page.locator("body")).not.toContainText("LinkMe");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Apps here. The build on TikTok.",
+    "Find something worth keeping.",
   );
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
-    `${productIdentity.canonicalOrigin}/discover`,
+    productIdentity.canonicalOrigin,
   );
 
   for (const destination of discoveryDestinations) {
-    const card = page.locator(".discover-tiktok");
+    const card = page.locator(".storefront-social");
     await expect(card).toContainText(destination.title);
     await expect(card).toContainText(destination.displayValue);
 
@@ -186,12 +183,12 @@ test("discover route exposes centralized public destinations", async ({ page }) 
 
   await expect(page.locator("[data-app-card]")).toHaveCount(apps.length);
   await expect(page.locator('[data-destination-id="tiktok"]')).toHaveCount(1);
-  await expect(page.locator('.editorial-hero [data-analytics-event="tiktok_open"]')).toHaveCount(1);
-  await expect(page.locator('.discover-tiktok [data-analytics-event="tiktok_open"]')).toHaveCount(1);
+  await expect(page.locator('.storefront-hero [data-analytics-event="tiktok_open"]')).toHaveCount(1);
+  await expect(page.locator('.storefront-social [data-analytics-event="tiktok_open"]')).toHaveCount(1);
   await expect(page.locator('.site-footer [data-analytics-event="tiktok_open"]')).toHaveCount(1);
   await expect(page.locator("body")).not.toContainText("&nearr;");
   await expect(
-    page.getByRole("heading", { level: 2, name: "Follow the work in motion." }),
+    page.getByRole("heading", { level: 2, name: "See what is being built." }),
   ).toBeVisible();
   expect(discoveryDestinations.some((destination) => destination.href?.includes("link.me"))).toBe(
     false,
@@ -249,7 +246,7 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
   await page.goto("/apps");
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Apps built to be used.",
+    "Pick an app and jump in.",
   );
 
   for (const app of apps) {
@@ -263,10 +260,8 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
       entry.getByRole("img", { name: `${app.name} interaction walkthrough poster` }),
     ).toHaveCount(0);
     await expect(entry).toContainText(app.tagline);
-    await expect(entry).toContainText(app.status);
     await expect(entry).toContainText(app.category);
-    await expect(entry).toContainText(app.latestUpdate);
-    await expect(entry.getByRole("link", { name: `Explore ${app.name}` })).toHaveAttribute(
+    await expect(entry.getByRole("link", { name: `View ${app.name}` })).toHaveAttribute(
       "href",
       `/apps/${app.slug}`,
     );
@@ -475,9 +470,6 @@ for (const app of apps) {
       await expect(page.getByText(capability.description)).toBeVisible();
     }
 
-    await expect(page.getByText(app.latestUpdate, { exact: true })).toBeVisible();
-    await expect(page.getByText(app.status, { exact: true })).toBeVisible();
-
     const openApp = page.getByRole("link", { name: `Open ${app.name}` });
     await expect(openApp).toHaveAttribute("href", app.origin.current);
     await expect(openApp).toHaveAttribute("target", "_blank");
@@ -678,18 +670,17 @@ test("vendored media matches its centralized provenance hashes", async () => {
   }
 });
 
-test("compatibility route is reversible and points search engines to apps", async ({ page }) => {
+test("compatibility route points people and search engines to the current apps experience", async ({ page }) => {
   await page.goto("/trove");
 
   await expect(page.locator('main[data-compatibility-identity="trove"]')).toBeVisible();
   await expect(page.locator('[data-system-state="unavailable"]')).toBeVisible();
-  await expect(page.getByText(/reversible compatibility surface/i)).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "The catalog moved to Apps.",
+    "Apps moved home.",
   );
-  await expect(page.getByRole("link", { name: "Open the app catalog" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Browse apps" })).toHaveAttribute(
     "href",
-    "/apps",
+    "/#apps",
   );
   await expect(page.locator("[data-product-showcase], video")).toHaveCount(0);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
@@ -710,9 +701,9 @@ test("missing routes use the shared recoverable system surface", async ({ page }
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       "This page is not here.",
     );
-    await expect(page.getByRole("link", { name: "Explore apps" })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: "Browse apps" })).toHaveAttribute(
       "href",
-      "/apps",
+      "/#apps",
     );
     const geometry = await page.evaluate(() => ({
       clientWidth: document.documentElement.clientWidth,
@@ -815,8 +806,8 @@ test("primary navigation adapts without clipping from 320px through desktop", as
     "/trove",
   ];
   const destinations = [
-    ["Apps", "/apps"],
-    ["Discover", "/discover"],
+    ["Home", "/"],
+    ["Apps", "/#apps"],
   ] as const;
 
   for (const width of [320, 360]) {

@@ -4,10 +4,10 @@ FawxzzyWeb is the public app-distribution surface owned by the Socials OS progra
 
 ## Route contract
 
-- `/` — concise Fawxzzy storefront and app directory
+- `/` — canonical Fawxzzy storefront, app directory, and TikTok discovery surface
 - `/apps` — canonical full app catalog sourced from `src/data/apps.ts`
 - `/apps/[slug]` — canonical product detail and direct launch surface
-- `/discover` — focused app and TikTok discovery hub
+- `/discover` — compatibility entry that renders the canonical storefront and points search engines to `/`
 - `/trove` — reversible, no-index compatibility route for the former Trove identity
 - `/apps/fitness/preview` — permanent redirect to the Fitness trailer
 - `/login`, `/account`, `/auth/*`, `/reset-password` — product-account capability
@@ -37,7 +37,7 @@ Verification covers lint, static export, route and identity smoke checks, source
 
 Update `src/data/apps.ts` when the catalog changes. Each entry owns its current launch origin, planned canonical subdomain, rollback origins, icon, trailer, poster, captions, provenance hashes, and product copy.
 
-Home and Discover use compact directory entries. Apps is the only full catalog. Each detail route owns the complete product explanation. This prevents the same status, media, and call-to-action blocks from being repeated across every route.
+Home and Discover share one storefront experience. Apps is the only full catalog. Each detail route owns the complete product explanation. This keeps navigation, product copy, media, and calls to action from being repeated across routes.
 
 Current grounded origins:
 
@@ -53,7 +53,7 @@ Do not guess app domains or synthesize cross-origin install behavior.
 
 ## Discovery and analytics contract
 
-Update `src/data/discovery.ts` when the canonical TikTok destination changes. `/discover` renders only the centralized app catalog and that exact TikTok destination. YouTube, X, Discord, Snapchat, newsletters, custom intake, support links, gaming identities, and other retired surfaces must not re-enter active navigation without a new current owner decision.
+Update `src/data/discovery.ts` when the canonical TikTok destination changes. `/` and its `/discover` compatibility entry render only the centralized app catalog and that exact TikTok destination. YouTube, X, Discord, Snapchat, newsletters, custom intake, support links, gaming identities, and other retired surfaces must not re-enter active navigation without a new current owner decision.
 
 Stable `data-analytics-event` attributes define the future website measurement vocabulary for catalog views, app launches, and TikTok exits. No analytics collector or provider is installed; website analytics remain explicitly unmeasured until a separate privacy-safe implementation.
 

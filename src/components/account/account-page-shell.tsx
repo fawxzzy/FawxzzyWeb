@@ -32,8 +32,7 @@ function AccountUtilityNav() {
         <span>{productIdentity.publicName}</span>
       </StaticLink>
       <div className="account-utility-nav__actions">
-        <span>Secure account</span>
-        <StaticLink href="/">Back to site</StaticLink>
+        <StaticLink href="/">Back home</StaticLink>
       </div>
     </nav>
   );
@@ -76,10 +75,8 @@ export function AccountPageShell({
           </>
         )}
         <footer className="account-footer">
-          <p>
-            One Fawxzzy identity. Product data stays with the product that owns it.
-          </p>
-          <a href="https://fawxzzy.com/">Back to Fawxzzy</a>
+          <p>&copy; 2026 {productIdentity.publicName}</p>
+          <StaticLink href="/">Home</StaticLink>
         </footer>
       </div>
     </main>

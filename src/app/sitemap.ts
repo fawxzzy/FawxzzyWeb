@@ -24,10 +24,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
       images: [absolutePublicUrl(app.trailer.poster.src)],
     })),
-    {
-      url: absolutePublicUrl("/discover"),
-      changeFrequency: "weekly",
-      priority: 0.7,
-    },
   ];
 }

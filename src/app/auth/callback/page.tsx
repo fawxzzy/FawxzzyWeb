@@ -4,16 +4,16 @@ import { accountPageMetadata } from "@/lib/account-metadata";
 
 export const metadata = accountPageMetadata(
   "Account handoff",
-  "Complete a validated authorization-code handoff for a Fawxzzy account.",
+  "Finish signing in to your Fawxzzy account.",
   "/auth/callback",
 );
 
 export default function CallbackPage() {
   return (
     <AccountPageShell
-      eyebrow="Secure handoff"
-      intro="We finish the one-time sign-in check, clean the address bar, then continue only to an approved destination."
-      title="Finishing sign-in."
+      eyebrow="Account"
+      intro="This should only take a moment."
+      title="Signing you in."
       variant="utility"
     >
       <AccountPortal mode="callback" />

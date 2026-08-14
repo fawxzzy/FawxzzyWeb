@@ -59,25 +59,25 @@ export const apps: CatalogApp[] = [
     slug: "fitness",
     category: "Health & Fitness",
     status: "Available now",
-    tagline: "Training plans, workout logging, and session history in one mobile-first shell.",
+    tagline: "Plan workouts, log sessions, and see your progress.",
     description:
-      "Fawxzzy Fitness brings planning, daily training, workout logging, and session history into one focused mobile-first experience. Build a routine, see what is due today, record a session, and return to a clear history of the work.",
+      "Build a routine, train from today's plan, log the session, and keep your history close.",
     detail: {
       headline: "Plan the work. Log the session. See the progress.",
       proofLabel: "Built for repeatable training",
-      capabilitiesHeading: "The whole training loop stays close.",
+      capabilitiesHeading: "Everything you need to keep training.",
       capabilities: [
         {
           title: "Plan a routine",
-          description: "Shape repeatable training around the way you actually work.",
+          description: "Build a repeatable routine around your goals.",
         },
         {
           title: "Train from today",
-          description: "Keep the next workout and session logging within easy reach.",
+          description: "Open today's workout and log it as you go.",
         },
         {
           title: "Keep the history",
-          description: "Return to completed sessions and exercise history over time.",
+          description: "Review completed sessions and track your work over time.",
         },
       ],
       statusSummary:
@@ -124,25 +124,25 @@ export const apps: CatalogApp[] = [
     slug: "mazer",
     category: "Games",
     status: "Available now",
-    tagline: "An atmospheric maze experience tuned for watch mode, play mode, and ambient runs.",
+    tagline: "Play an atmospheric maze or watch it unfold.",
     description:
-      "Mazer is an atmospheric maze experience built for active play and ambient watch modes. Enter a run when you want to navigate it yourself, or let the maze unfold as a calm visual experience across desktop and mobile screens.",
+      "Take control of a maze run, or switch to watch mode and let the atmosphere carry the screen.",
     detail: {
       headline: "Play the maze—or let it run.",
       proofLabel: "Built for active and ambient runs",
-      capabilitiesHeading: "Move, watch, and return to the atmosphere.",
+      capabilitiesHeading: "Play it your way.",
       capabilities: [
         {
           title: "Enter the run",
-          description: "Move through atmospheric mazes in a focused play mode.",
+          description: "Navigate atmospheric mazes in a focused play mode.",
         },
         {
           title: "Switch to watch",
-          description: "Let the maze unfold as a calm, hands-off visual experience.",
+          description: "Let the maze unfold as a hands-off visual experience.",
         },
         {
           title: "Carry the world",
-          description: "Keep the same visual language across desktop and mobile layouts.",
+          description: "Return to the same world across desktop and mobile.",
         },
       ],
       statusSummary:
