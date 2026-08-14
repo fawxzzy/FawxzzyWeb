@@ -104,7 +104,7 @@ export function appStructuredData(app: CatalogApp) {
         "@type": "SoftwareApplication",
         applicationCategory: app.category,
         description: app.description,
-        featureList: app.detail.capabilities.map(({ title }) => title),
+        featureList: app.detail.stories.map(({ title }) => title),
         image: absolutePublicUrl(app.trailer.poster.src),
         mainEntityOfPage: detailUrl,
         name: app.name,

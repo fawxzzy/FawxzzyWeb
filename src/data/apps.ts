@@ -25,17 +25,31 @@ type Accent = {
   to: string;
 };
 
-export type CatalogCapability = {
+export type CatalogDetailMedia = CatalogAsset & {
+  alt: string;
+  caption: string;
+  height: number;
+  width: number;
+};
+
+export type CatalogProductStory = {
   description: string;
+  eyebrow: string;
+  id: string;
+  media: CatalogDetailMedia[];
+  points?: string[];
   title: string;
 };
 
+export type CatalogPlannedDirection = CatalogProductStory & {
+  statusLabel: string;
+};
+
 export type CatalogAppDetail = {
-  capabilities: CatalogCapability[];
-  capabilitiesHeading: string;
   headline: string;
-  proofLabel: string;
+  plannedDirection?: CatalogPlannedDirection;
   statusSummary: string;
+  stories: CatalogProductStory[];
 };
 
 export type CatalogDisplayAssets = {
@@ -70,20 +84,73 @@ export const apps: CatalogApp[] = [
       "Build a routine, train from today's plan, log the session, and keep your history close.",
     detail: {
       headline: "Plan the work. Log the session. See the progress.",
-      proofLabel: "Built for repeatable training",
-      capabilitiesHeading: "Everything you need to keep training.",
-      capabilities: [
+      stories: [
         {
-          title: "Plan a routine",
-          description: "Build a repeatable routine around your goals.",
+          id: "today",
+          eyebrow: "Your training day",
+          title: "Know what you are doing when you arrive.",
+          description:
+            "Today brings the active routine, exercise order, training details, and next action into one calm view.",
+          media: [
+            {
+              src: "/apps/fitness/detail/today.webp",
+              width: 430,
+              height: 932,
+              alt: "Fitness Today screen showing a lower-body workout and Start action",
+              caption: "Current app · Today",
+              sha256: "996781D14AD85EDA0B94C0A38D931044B33CAAF4957C854183DF20A6F70F7422",
+              source:
+                "Responsive WebP derivative of the tracked Fitness today.png preview fixture at source commit 223982fb7ef93e760d7b0845378f5b05e196456b",
+            },
+          ],
         },
         {
-          title: "Train from today",
-          description: "Open today's workout and log it as you go.",
+          id: "session",
+          eyebrow: "Inside the workout",
+          title: "Log the set without losing the session.",
+          description:
+            "Exercises, targets, completed work, the session timer, and the finish action stay together while you train.",
+          media: [
+            {
+              src: "/apps/fitness/detail/session.webp",
+              width: 430,
+              height: 932,
+              alt: "Fitness active session screen with exercises, set logging, timer, and Finish action",
+              caption: "Current app · Active session",
+              sha256: "96DCD09FAB065E9342C7EBB134DCA504F40AB11A50D48AAE033F60121604A332",
+              source:
+                "Responsive WebP derivative of the tracked Fitness session.png preview fixture at source commit 223982fb7ef93e760d7b0845378f5b05e196456b",
+            },
+          ],
         },
         {
-          title: "Keep the history",
-          description: "Review completed sessions and track your work over time.",
+          id: "routine-history",
+          eyebrow: "The longer view",
+          title: "Shape the week. Read the work back.",
+          description:
+            "Routine structure keeps training days understandable, while history turns completed sessions into a useful record.",
+          media: [
+            {
+              src: "/apps/fitness/detail/routines.webp",
+              width: 430,
+              height: 932,
+              alt: "Fitness routine screen showing training and recovery days",
+              caption: "Current app · Routine",
+              sha256: "A348559817BD0808103DF12F95CEA1E4A62010F25E6BBA8DD6BAAC50E9B0DEBC",
+              source:
+                "Responsive WebP derivative of the tracked Fitness routines.png preview fixture at source commit 223982fb7ef93e760d7b0845378f5b05e196456b",
+            },
+            {
+              src: "/apps/fitness/detail/history.webp",
+              width: 430,
+              height: 932,
+              alt: "Fitness history screen summarizing three completed sessions",
+              caption: "Current app · History",
+              sha256: "174DE3AEE192F56B85F0028952E7708ED417ADEF4EA669AA94B5110483AF728F",
+              source:
+                "Responsive WebP derivative of the tracked Fitness history.png preview fixture at source commit 223982fb7ef93e760d7b0845378f5b05e196456b",
+            },
+          ],
         },
       ],
       statusSummary:
@@ -147,22 +214,81 @@ export const apps: CatalogApp[] = [
       "Take control of a maze run, or switch to watch mode and let the atmosphere carry the screen.",
     detail: {
       headline: "Play the maze—or let it run.",
-      proofLabel: "Built for active and ambient runs",
-      capabilitiesHeading: "Play it your way.",
-      capabilities: [
+      stories: [
         {
-          title: "Enter the run",
-          description: "Navigate atmospheric mazes in a focused play mode.",
+          id: "current-play",
+          eyebrow: "Playable now",
+          title: "The maze stays at the center.",
+          description:
+            "The current game keeps the route, player position, score, rank, pause action, and movement control in one focused play surface.",
+          media: [
+            {
+              src: "/apps/mazer/detail/current-play.webp",
+              width: 444,
+              height: 460,
+              alt: "Current Mazer play screen with maze, score, rank, pause, and movement control",
+              caption: "Current app · Play",
+              sha256: "4C7C07D4BD4126C9A541F93B54D7A203291BB08FB497B03C2F013DB66268935A",
+              source:
+                "Purpose-built crop of the implemented Mazer current-core-runtime catalog captured at source commit 462030ac942e4ffecd442fe0ceeb22584dcda931",
+            },
+          ],
         },
         {
-          title: "Switch to watch",
-          description: "Let the maze unfold as a hands-off visual experience.",
-        },
-        {
-          title: "Carry the world",
-          description: "Return to the same world across desktop and mobile.",
+          id: "current-control",
+          eyebrow: "Ways to enter",
+          title: "Start simply. Tune only when you want to.",
+          description:
+            "The current menu keeps the decision short, while Options exposes the player guide and visual or control preferences without crowding the maze.",
+          media: [
+            {
+              src: "/apps/mazer/detail/current-menu.webp",
+              width: 444,
+              height: 460,
+              alt: "Current Mazer guest menu with maze preview and Login action",
+              caption: "Current app · Guest menu",
+              sha256: "9F484AF9301A942919DDA345A2B9AA8E59FEFA02F8821939FE3FDADE94DC912B",
+              source:
+                "Purpose-built crop of the implemented Mazer current-core-runtime catalog captured at source commit 462030ac942e4ffecd442fe0ceeb22584dcda931",
+            },
+            {
+              src: "/apps/mazer/detail/current-options.webp",
+              width: 444,
+              height: 460,
+              alt: "Current Mazer Options screen with player guide and display preferences",
+              caption: "Current app · Options",
+              sha256: "A553CF8D530029205F17C12C8E7A24E8ADB6DED2258BA7379729FFA9869887CD",
+              source:
+                "Purpose-built crop of the implemented Mazer current-core-runtime catalog captured at source commit 462030ac942e4ffecd442fe0ceeb22584dcda931",
+            },
+          ],
         },
       ],
+      plannedDirection: {
+        id: "precision-arcade",
+        eyebrow: "Upcoming direction",
+        statusLabel: "Preview · In development",
+        title: "Precision Arcade is the planned visual language.",
+        description:
+          "This is a design direction—not the current game. It keeps maze play direct while exploring clearer topology, stronger score hierarchy, modern controls, and tighter feedback.",
+        points: [
+          "Retro arcade directness with modern clarity",
+          "The maze and player state remain the visual priority",
+          "Color communicates energy, information, reward, and danger",
+        ],
+        media: [
+          {
+            src: "/apps/mazer/detail/planned-precision-arcade.webp",
+            width: 870,
+            height: 578,
+            alt: "Planned Mazer Precision Arcade concept board with topology, gameplay, and interface studies",
+            caption: "Planned concept · Not current gameplay",
+            sha256: "EBDA0E36667ADE6EB7217ADF48C0E3D93643F98C720082FD621CCE4D9D2D726A",
+            source:
+              "Purpose-built crop of the planned Precision Arcade direction catalog governed by visual-direction.md and explicitly not implemented",
+          },
+        ],
+      },
       statusSummary:
         "Available now at its current product home. Fawxzzy opens Mazer there without copying game state into this site.",
     },

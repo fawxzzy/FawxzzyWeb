@@ -139,7 +139,7 @@ test("public routes carry social metadata and grounded structured data", async (
     expect(application.url).toBe(`${productIdentity.canonicalOrigin}/apps/${app.slug}`);
     expect(application.sameAs).toBe(app.origin.current);
     expect(application.featureList).toEqual(
-      app.detail.capabilities.map(({ title }) => title),
+      app.detail.stories.map(({ title }) => title),
     );
     expect(application).not.toHaveProperty("aggregateRating");
     expect(application).not.toHaveProperty("offers");
@@ -393,11 +393,12 @@ for (const app of apps) {
     await trailer.evaluate((video: HTMLVideoElement) => {
       video.dispatchEvent(new Event("pause"));
     });
-    await expect(playAction).toBeVisible();
+    const resumeAction = entry.getByRole("button", { name: `Resume ${app.name} trailer` });
+    await expect(resumeAction).toBeVisible();
     await trailer.evaluate((video: HTMLVideoElement) => {
       (video as HTMLVideoElement & { playbackMode?: string }).playbackMode = "error";
     });
-    await playAction.click({ force: true });
+    await resumeAction.click({ force: true });
     await expect(player).toHaveAttribute("data-playback-state", "error");
     await expect(entry).toContainText("This trailer could not play here.");
     const retryAction = entry.getByRole("button", { name: `Retry ${app.name} trailer` });
@@ -431,11 +432,34 @@ for (const app of apps) {
       `${productIdentity.canonicalOrigin}/apps/${app.slug}`,
     );
     await expect(page.getByText(app.description)).toBeVisible();
-    await expect(page.getByRole("listitem")).toHaveCount(app.detail.capabilities.length);
+    await expect(page.getByRole("link", { name: "Back home" })).toHaveAttribute("href", "/");
+    await expect(page.getByText(app.status, { exact: true })).toBeVisible();
 
-    for (const capability of app.detail.capabilities) {
-      await expect(page.getByRole("heading", { level: 3, name: capability.title })).toBeVisible();
-      await expect(page.getByText(capability.description)).toBeVisible();
+    for (const story of app.detail.stories) {
+      const storySection = page.locator(`[data-product-story="${story.id}"]`);
+      await expect(storySection).toBeVisible();
+      await expect(storySection.getByRole("heading", { level: 2, name: story.title })).toBeVisible();
+      await expect(storySection.getByText(story.description)).toBeVisible();
+      for (const media of story.media) {
+        const image = storySection.getByRole("img", { name: media.alt });
+        await expect(image).toHaveAttribute("src", media.src);
+        await expect(image).toHaveAttribute("loading", "lazy");
+        await expect(storySection.getByText(media.caption)).toBeVisible();
+      }
+      if (story.media.length > 1) {
+        const gallery = storySection.getByRole("region", { name: `${story.title} media gallery` });
+        await expect(gallery).toHaveAttribute("tabindex", "0");
+      }
+    }
+
+    if (app.detail.plannedDirection) {
+      const planned = app.detail.plannedDirection;
+      const plannedSection = page.locator(`[data-product-story="${planned.id}"]`);
+      await expect(plannedSection).toBeVisible();
+      await expect(plannedSection.getByText(planned.statusLabel)).toBeVisible();
+      await expect(plannedSection.getByText("Planned concept · Not current gameplay")).toBeVisible();
+    } else {
+      await expect(page.locator(".app-detail-planned")).toHaveCount(0);
     }
 
     const openApp = page.getByRole("link", { name: `Open ${app.name}` });

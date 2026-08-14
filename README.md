@@ -40,11 +40,11 @@ contact sheet and individual screenshots.
 
 ## Catalog contract
 
-Update `src/data/apps.ts` when the catalog changes. Each entry owns its current launch origin, planned canonical subdomain, rollback origins, icon, trailer, poster, captions, provenance hashes, and product copy.
+Update `src/data/apps.ts` when the catalog changes. Each entry owns its current launch origin, planned canonical subdomain, rollback origins, icon, trailer, poster, captions, product-story media, provenance hashes, and product copy.
 
 Home is the only discovery storefront. Apps is the comparison catalog, and each detail route owns its trailer and complete product explanation. Home and Apps share one product identity, status, and responsive-media contract without repeating the full detail experience.
 
-The storefront uses small WebP derivatives for listing media while preserving canonical icons, posters, trailers, and their hashes as source provenance. Rebuild a derivative only from its declared canonical asset and update the centralized derivative hash in `src/data/apps.ts`.
+The storefront uses small WebP derivatives for listing and detail media while preserving canonical icons, posters, trailers, approved implementation references, and their hashes as source provenance. Rebuild a derivative only from its declared canonical source and update the centralized derivative hash in `src/data/apps.ts`. Never publish a whole internal visual-reference catalog as route media; planned imagery requires an adjacent status label.
 
 Current grounded origins:
 

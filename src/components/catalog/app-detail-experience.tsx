@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import Image from "next/image";
-import type { CatalogApp } from "@/data/apps";
+import type { CatalogApp, CatalogProductStory } from "@/data/apps";
 import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
 import { TrailerPlayer } from "@/components/catalog/trailer-player";
 import { SiteFooter } from "@/components/site/site-footer";
@@ -15,6 +15,69 @@ type ProductAccentStyle = CSSProperties & {
   "--product-panel": string;
   "--product-to": string;
 };
+
+function ProductStory({
+  planned = false,
+  statusLabel,
+  story,
+}: {
+  planned?: boolean;
+  statusLabel?: string;
+  story: CatalogProductStory;
+}) {
+  return (
+    <article
+      className={`app-detail-story${planned ? " app-detail-story--planned" : ""}`}
+      data-product-story={story.id}
+    >
+      <div className="app-detail-story__copy">
+        <div className="app-detail-story__label-row">
+          <p className="eyebrow">{story.eyebrow}</p>
+          {statusLabel ? <span className="app-detail-story__status">{statusLabel}</span> : null}
+        </div>
+        <h2>{story.title}</h2>
+        <p>{story.description}</p>
+        {story.points ? (
+          <ul className="app-detail-story__points">
+            {story.points.map((point) => (
+              <li key={point}>{point}</li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+
+      <div
+        aria-label={story.media.length > 1 ? `${story.title} media gallery` : undefined}
+        className="app-detail-story__media"
+        data-media-count={story.media.length}
+        role={story.media.length > 1 ? "region" : undefined}
+        tabIndex={story.media.length > 1 ? 0 : undefined}
+      >
+        {story.media.map((media) => (
+          <figure key={media.src}>
+            <Image
+              alt={media.alt}
+              height={media.height}
+              loading="lazy"
+              sizes={
+                story.media.length > 1
+                  ? "(max-width: 720px) 82vw, (max-width: 1100px) 38vw, 24rem"
+                  : "(max-width: 720px) 92vw, (max-width: 1100px) 52vw, 39rem"
+              }
+              src={media.src}
+              unoptimized
+              width={media.width}
+            />
+            <figcaption>
+              {planned ? <span aria-hidden="true">Preview</span> : null}
+              {media.caption}
+            </figcaption>
+          </figure>
+        ))}
+      </div>
+    </article>
+  );
+}
 
 export function AppDetailExperience({ app }: AppDetailExperienceProps) {
   const accentStyle: ProductAccentStyle = {
@@ -46,8 +109,8 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
 
       <div className="shell-container app-detail-shell">
         <SiteNav current="apps" />
-        <StaticLink className="app-detail-back" href="/apps">
-          <span aria-hidden="true">←</span> All apps
+        <StaticLink className="app-detail-back" href="/">
+          <span aria-hidden="true">←</span> Back home
         </StaticLink>
 
         <section aria-labelledby="app-detail-title" className="app-detail-hero app-detail-hero--store">
@@ -65,6 +128,7 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
               <div>
                 <p className="eyebrow">{app.category}</p>
                 <h1 id="app-detail-title">{app.name}</h1>
+                <p className="app-detail-status">{app.status}</p>
               </div>
             </header>
             <p className="app-detail-headline">{app.detail.headline}</p>
@@ -95,20 +159,21 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
           </figure>
         </section>
 
-        <section aria-labelledby={`${app.slug}-capabilities-title`} className="app-detail-capabilities">
-          <header className="app-detail-section-copy">
-            <p className="eyebrow">What you can do</p>
-            <h2 id={`${app.slug}-capabilities-title`}>{app.detail.capabilitiesHeading}</h2>
-          </header>
-          <ul className="app-detail-capability-list">
-            {app.detail.capabilities.map((capability) => (
-              <li key={capability.title}>
-                <h3>{capability.title}</h3>
-                <p>{capability.description}</p>
-              </li>
-            ))}
-          </ul>
+        <section aria-label={`${app.name} product experience`} className="app-detail-stories">
+          {app.detail.stories.map((story) => (
+            <ProductStory key={story.id} story={story} />
+          ))}
         </section>
+
+        {app.detail.plannedDirection ? (
+          <section aria-label="Planned product direction" className="app-detail-planned">
+            <ProductStory
+              planned
+              statusLabel={app.detail.plannedDirection.statusLabel}
+              story={app.detail.plannedDirection}
+            />
+          </section>
+        ) : null}
 
         <SiteFooter />
       </div>

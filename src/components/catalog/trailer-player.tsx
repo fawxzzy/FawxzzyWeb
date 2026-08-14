@@ -110,7 +110,9 @@ export function TrailerPlayer({ appName, appSlug, trailer }: TrailerPlayerProps)
           setPlaybackState((currentState) =>
             currentState === "ended" || currentState === "error"
               ? currentState
-              : interruptedPlaybackState(video),
+              : currentState === "playing"
+                ? "paused"
+                : interruptedPlaybackState(video),
           );
         }}
         onPlaying={(event) => {

@@ -3,11 +3,23 @@ const catalogApps = [
     name: "Fitness",
     origin: "https://fawxzzy-fitness-local.vercel.app",
     path: "/apps/fitness",
+    storyAssets: [
+      "/apps/fitness/detail/today.webp",
+      "/apps/fitness/detail/session.webp",
+      "/apps/fitness/detail/routines.webp",
+      "/apps/fitness/detail/history.webp",
+    ],
   },
   {
     name: "Mazer",
     origin: "https://fawxzzy-mazer.vercel.app",
     path: "/apps/mazer",
+    storyAssets: [
+      "/apps/mazer/detail/current-menu.webp",
+      "/apps/mazer/detail/current-play.webp",
+      "/apps/mazer/detail/current-options.webp",
+      "/apps/mazer/detail/planned-precision-arcade.webp",
+    ],
   },
 ];
 
@@ -67,6 +79,11 @@ export async function assertSiteSmoke(baseUrl) {
     }
     if (!detailHtml.includes('class="trailer-player"') || detailHtml.includes("<details")) {
       throw new Error(`${app.path} did not render one primary trailer without a disclosure.`);
+    }
+    for (const asset of app.storyAssets) {
+      if (!detailHtml.includes(asset)) {
+        throw new Error(`${app.path} did not render grounded product media ${asset}.`);
+      }
     }
   }
   for (const asset of [

@@ -129,9 +129,10 @@ Product pages are proof-led rather than card-led. The shared template uses:
   action;
 - one canonical trailer player with captions and loading/error handling rather
   than a poster plus duplicate disclosure;
-- three numbered capability statements sourced from `src/data/apps.ts`;
-- a truthful current-build panel, a restrained future-reviews contract, and a
-  final action section;
+- app-specific product stories sourced from `src/data/apps.ts`, each paired with
+  small purpose-built public media derived from approved implementation truth;
+- a clear current-product boundary, with any planned visual direction isolated
+  in its own labeled section beside the imagery;
 - a product accent constrained to borders, status text, media glow, and small
   section details rather than a separate visual theme.
 
@@ -142,6 +143,11 @@ canvas, global typography, navigation, footer, and interaction rules.
 Product-detail copy must describe current product behavior. It must not invent
 roadmap dates, usage metrics, ratings, testimonials, or canonical-origin
 cutovers. Launch links continue to use the centralized current-origin contract.
+Whole internal screenshot catalogs are reference evidence, not public route
+media. Product-route derivatives retain their source commit or design-authority
+provenance and explicit dimensions in `src/data/apps.ts`. All story images load
+below the fold; planned Mazer imagery must say `Preview`, `In development`, and
+`Not current gameplay` next to the image.
 
 ## Navigation and footer
 
