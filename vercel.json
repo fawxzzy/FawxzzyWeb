@@ -28,6 +28,16 @@
   ],
   "redirects": [
     {
+      "source": "/discover",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/trove",
+      "destination": "/apps",
+      "permanent": true
+    },
+    {
       "source": "/apps/fitness/preview",
       "destination": "/apps/fitness#fitness-trailer",
       "permanent": true

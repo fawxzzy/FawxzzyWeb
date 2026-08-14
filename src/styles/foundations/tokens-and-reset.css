@@ -76,6 +76,11 @@ a {
   text-decoration: none;
 }
 
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid rgb(var(--accent) / 0.72);
+  outline-offset: 3px;
+}
+
 img {
   display: block;
   max-width: 100%;
@@ -101,4 +106,18 @@ img {
 
 .skip-link:focus {
   transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
 }

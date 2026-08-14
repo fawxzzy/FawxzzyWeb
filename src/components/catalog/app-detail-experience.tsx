@@ -46,7 +46,7 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
 
       <div className="shell-container app-detail-shell">
         <SiteNav current="apps" />
-        <StaticLink className="app-detail-back" href="/#apps">
+        <StaticLink className="app-detail-back" href="/apps">
           <span aria-hidden="true">←</span> All apps
         </StaticLink>
 

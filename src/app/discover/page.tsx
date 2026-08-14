@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { StorefrontExperience } from "@/components/storefront/storefront-experience";
+import { CompatibilityRoute } from "@/components/system/compatibility-route";
 import { productIdentity } from "@/config/product";
 import { publicPageMetadata } from "@/lib/seo";
 
@@ -12,8 +12,22 @@ const unifiedStorefrontMetadata = publicPageMetadata({
 export const metadata: Metadata = {
   ...unifiedStorefrontMetadata,
   title: { absolute: productIdentity.publicName },
+  robots: {
+    index: false,
+    follow: true,
+  },
 };
 
 export default function DiscoverPage() {
-  return <StorefrontExperience compatibilityIdentity="discover" />;
+  return (
+    <CompatibilityRoute
+      actionLabel="Go to Fawxzzy"
+      current="home"
+      description="Discovery now lives on the Fawxzzy home page."
+      destination="/"
+      identity="discover"
+      label="Discovery"
+      title="Everything is together now."
+    />
+  );
 }

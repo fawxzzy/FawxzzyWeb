@@ -624,7 +624,7 @@ test("public navigation stays focused on home and apps", async ({
   );
   await expect(navigation.getByRole("link", { name: "Apps", exact: true })).toHaveAttribute(
     "href",
-    "/#apps",
+    "/apps",
   );
   await expect(navigation.locator("a")).toHaveCount(3);
   await expect(navigation).not.toContainText("Account");

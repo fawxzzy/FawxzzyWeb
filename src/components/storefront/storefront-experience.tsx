@@ -1,27 +1,16 @@
-import type { CSSProperties } from "react";
 import Image from "next/image";
 import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
+import { ProductShowcase } from "@/components/catalog/product-showcase";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
 import { StaticLink } from "@/components/site/static-link";
-import { apps, getAppDetailPath } from "@/data/apps";
+import { apps } from "@/data/apps";
 import { tiktokDestination } from "@/data/discovery";
 
-type StorefrontExperienceProps = {
-  compatibilityIdentity?: "discover";
-};
-
-type StorefrontAccentStyle = CSSProperties & {
-  "--app-accent": string;
-};
-
-export function StorefrontExperience({
-  compatibilityIdentity,
-}: StorefrontExperienceProps) {
+export function StorefrontExperience() {
   return (
     <main
       className="home-page storefront-page app-theme-sage"
-      data-compatibility-identity={compatibilityIdentity}
       id="main-content"
     >
       <AmbientFitnessBackground
@@ -42,12 +31,12 @@ export function StorefrontExperience({
 
         <header className="storefront-hero">
           <div className="storefront-hero__copy">
-            <p className="eyebrow">Independent apps by Fawxzzy</p>
-            <h1>Find something worth keeping.</h1>
-            <p>Focused apps for training, play, and everyday momentum.</p>
+            <p className="eyebrow">Fawxzzy apps</p>
+            <h1>Train. Play. Keep moving.</h1>
+            <p>Two focused apps. One simple place to choose what comes next.</p>
             <div className="storefront-hero__actions">
-              <StaticLink className="catalog-button catalog-button--primary" href="#apps">
-                Explore apps
+              <StaticLink className="catalog-button catalog-button--primary" href="/apps">
+                Browse all apps <span aria-hidden="true">&rarr;</span>
               </StaticLink>
               <a
                 className="catalog-button catalog-button--ghost"
@@ -65,7 +54,7 @@ export function StorefrontExperience({
               alt="Fawxzzy apps"
               height={500}
               priority
-              src="/brand/fawxzzy-banner-v2.png"
+              src="/brand/fawxzzy-banner-v2-hero.webp"
               unoptimized
               width={1500}
             />
@@ -75,67 +64,24 @@ export function StorefrontExperience({
         <section aria-labelledby="storefront-apps-title" className="storefront-apps" id="apps">
           <header className="storefront-section-heading">
             <div>
-              <p className="eyebrow">Featured apps</p>
-              <h2 id="storefront-apps-title">Choose your next app.</h2>
+              <p className="eyebrow">Choose your app</p>
+              <h2 id="storefront-apps-title">Built for momentum and play.</h2>
             </div>
-            <StaticLink href="/apps">See every app</StaticLink>
+            <StaticLink href="/apps">
+              View the catalog <span aria-hidden="true">&rarr;</span>
+            </StaticLink>
           </header>
 
           <div className="storefront-app-grid">
-            {apps.map((app) => {
-              const accentStyle: StorefrontAccentStyle = {
-                "--app-accent": app.accent.from,
-              };
-
-              return (
-                <article
-                  className="storefront-app"
-                  data-app-card={app.slug}
-                  key={app.slug}
-                  style={accentStyle}
-                >
-                  <StaticLink
-                    aria-label={`View ${app.name}`}
-                    className="storefront-app__media"
-                    data-analytics-app={app.slug}
-                    data-analytics-event="catalog_app_view"
-                    href={getAppDetailPath(app)}
-                  >
-                    <Image
-                      alt={`${app.name} app preview`}
-                      fill
-                      sizes="(max-width: 760px) 100vw, 50vw"
-                      src={app.trailer.poster.src}
-                      unoptimized
-                    />
-                  </StaticLink>
-                  <div className="storefront-app__body">
-                    <Image
-                      alt={`${app.name} icon`}
-                      className="storefront-app__icon"
-                      height={72}
-                      src={app.icon.src}
-                      unoptimized
-                      width={72}
-                    />
-                    <div className="storefront-app__copy">
-                      <p>{app.category}</p>
-                      <h3>{app.name}</h3>
-                      <span>{app.tagline}</span>
-                    </div>
-                    <StaticLink
-                      aria-label={`View ${app.name}`}
-                      className="storefront-app__button"
-                      data-analytics-app={app.slug}
-                      data-analytics-event="catalog_app_view"
-                      href={getAppDetailPath(app)}
-                    >
-                      View
-                    </StaticLink>
-                  </div>
-                </article>
-              );
-            })}
+            {apps.map((app, index) => (
+              <ProductShowcase
+                app={app}
+                compact
+                headingLevel={3}
+                key={app.slug}
+                priority={index === 0}
+              />
+            ))}
           </div>
         </section>
 
@@ -144,9 +90,9 @@ export function StorefrontExperience({
             TikTok
           </div>
           <div>
-            <p className="eyebrow">Behind the apps</p>
-            <h2 id="storefront-social-title">See what is being built.</h2>
-            <p>Short demos, updates, and the work in progress.</p>
+            <p className="eyebrow">On TikTok</p>
+            <h2 id="storefront-social-title">See the next build.</h2>
+            <p>Short demos and product updates, straight from the workbench.</p>
           </div>
           <a
             className="catalog-button catalog-button--secondary"

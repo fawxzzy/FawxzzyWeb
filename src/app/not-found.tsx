@@ -14,7 +14,7 @@ export default function NotFound() {
         <SystemState
           actions={
             <>
-              <StaticLink className="catalog-button catalog-button--primary" href="/#apps">
+              <StaticLink className="catalog-button catalog-button--primary" href="/apps">
                 Browse apps
               </StaticLink>
             </>

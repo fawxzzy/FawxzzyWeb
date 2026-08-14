@@ -7,8 +7,8 @@ FawxzzyWeb is the public app-distribution surface owned by the Socials OS progra
 - `/` — canonical Fawxzzy storefront, app directory, and TikTok discovery surface
 - `/apps` — canonical full app catalog sourced from `src/data/apps.ts`
 - `/apps/[slug]` — canonical product detail and direct launch surface
-- `/discover` — compatibility entry that renders the canonical storefront and points search engines to `/`
-- `/trove` — reversible, no-index compatibility route for the former Trove identity
+- `/discover` — permanent provider redirect to `/` with a lightweight no-index static fallback
+- `/trove` — permanent provider redirect to `/apps` with a reversible no-index static fallback
 - `/apps/fitness/preview` — permanent redirect to the Fitness trailer
 - `/login`, `/account`, `/auth/*`, `/reset-password` — product-account capability
 - `/healthz.json` — static health and compatibility identity
@@ -42,7 +42,9 @@ contact sheet and individual screenshots.
 
 Update `src/data/apps.ts` when the catalog changes. Each entry owns its current launch origin, planned canonical subdomain, rollback origins, icon, trailer, poster, captions, provenance hashes, and product copy.
 
-Home and Discover share one storefront experience. Apps is the only full catalog. Each detail route owns the complete product explanation. This keeps navigation, product copy, media, and calls to action from being repeated across routes.
+Home is the only discovery storefront. Apps is the comparison catalog, and each detail route owns its trailer and complete product explanation. Home and Apps share one product identity, status, and responsive-media contract without repeating the full detail experience.
+
+The storefront uses small WebP derivatives for listing media while preserving canonical icons, posters, trailers, and their hashes as source provenance. Rebuild a derivative only from its declared canonical asset and update the centralized derivative hash in `src/data/apps.ts`.
 
 Current grounded origins:
 
@@ -58,13 +60,13 @@ Do not guess app domains or synthesize cross-origin install behavior.
 
 ## Discovery and analytics contract
 
-Update `src/data/discovery.ts` when the canonical TikTok destination changes. `/` and its `/discover` compatibility entry render only the centralized app catalog and that exact TikTok destination. YouTube, X, Discord, Snapchat, newsletters, custom intake, support links, gaming identities, and other retired surfaces must not re-enter active navigation without a new current owner decision.
+Update `src/data/discovery.ts` when the canonical TikTok destination changes. `/` renders the centralized app shelf and that exact TikTok destination; `/discover` is routing compatibility only. YouTube, X, Discord, Snapchat, newsletters, custom intake, support links, gaming identities, and other retired surfaces must not re-enter active navigation without a new current owner decision.
 
 Stable `data-analytics-event` attributes define the future website measurement vocabulary for catalog views, app launches, and TikTok exits. No analytics collector or provider is installed; website analytics remain explicitly unmeasured until a separate privacy-safe implementation.
 
 ## Static export
 
-FawxzzyWeb remains a Next.js static export. Keep routes build-time deterministic and use real static compatibility pages because Next.js config redirects are not supported with `output: "export"`.
+FawxzzyWeb remains a Next.js static export. Keep routes build-time deterministic. Vercel owns permanent compatibility redirects, while real static fallback pages preserve useful behavior on local and non-Vercel hosts because Next.js config redirects are not supported with `output: "export"`.
 
 Internal route links render through `src/components/site/static-link.tsx` so the exported site does not depend on speculative route-data requests.
 

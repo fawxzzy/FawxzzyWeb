@@ -38,11 +38,17 @@ export type CatalogAppDetail = {
   statusSummary: string;
 };
 
+export type CatalogDisplayAssets = {
+  icon: CatalogAsset;
+  poster: CatalogAsset;
+};
+
 export type CatalogApp = {
   accent: Accent;
   category: string;
   description: string;
   detail: CatalogAppDetail;
+  display: CatalogDisplayAssets;
   icon: CatalogAsset;
   latestUpdate: string;
   name: string;
@@ -93,6 +99,18 @@ export const apps: CatalogApp[] = [
       sha256: "5F1011EF2DB7A4725E991D5FB6347F3E589028669F74BC35F273E6E800F11F03",
       source:
         "Exact public readback of the current Fawxzzy Fitness production PWA icon at /app/icon-512.png on July 16, 2026",
+    },
+    display: {
+      icon: {
+        src: "/apps/fitness/storefront-icon.webp",
+        sha256: "68EA981E132B52B38A8CF56A9C931361881A52B19CB302EEDC7502448F82A23E",
+        source: "Responsive WebP derivative of the canonical Fitness icon for storefront display",
+      },
+      poster: {
+        src: "/apps/fitness/storefront-poster.webp",
+        sha256: "E12316F496C1216D0EF564DECC1CDCB0DA64403FDD057F002F1347C5EFECF225",
+        source: "Responsive WebP derivative of the grounded Fitness walkthrough poster",
+      },
     },
     latestUpdate: "New 60-second live product walkthrough",
     accent: {
@@ -158,6 +176,18 @@ export const apps: CatalogApp[] = [
       sha256: "91764E546B8C1488B3D48BAEDA927AE18600B088178E190244FB9D8CE35E2440",
       source:
         "Exact public readback of the current Mazer production app icon at /icons/mazer-app-icon.png on July 16, 2026",
+    },
+    display: {
+      icon: {
+        src: "/apps/mazer/storefront-icon.webp",
+        sha256: "D369527A7CF096CC16DC701EF8986B70875A78EFF17A3E5016D27E0BEEC00826",
+        source: "Responsive WebP derivative of the canonical Mazer icon for storefront display",
+      },
+      poster: {
+        src: "/apps/mazer/storefront-poster.webp",
+        sha256: "F6470BEAD6DFB1FEB38A4C637683A6B047F61EFFC9AB04F2FEDF2F47C441D7AA",
+        source: "Responsive WebP derivative of the grounded Mazer walkthrough poster",
+      },
     },
     latestUpdate: "New 60-second live product walkthrough",
     accent: {

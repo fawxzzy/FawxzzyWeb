@@ -924,108 +924,6 @@
   gap: 1rem;
 }
 
-.storefront-app {
-  min-width: 0;
-  overflow: clip;
-  border: 1px solid rgb(255 255 255 / 0.09);
-  border-radius: 26px;
-  background: rgb(25 25 28 / 0.92);
-  box-shadow: 0 22px 70px rgb(0 0 0 / 0.24);
-  transition: border-color 180ms ease, transform 180ms ease;
-}
-
-.storefront-app:hover {
-  border-color: color-mix(in srgb, var(--app-accent) 56%, transparent);
-  transform: translateY(-3px);
-}
-
-.storefront-app__media {
-  position: relative;
-  display: block;
-  width: 100%;
-  aspect-ratio: 16 / 10;
-  overflow: hidden;
-  background: #070809;
-}
-
-.storefront-app__media::after {
-  position: absolute;
-  inset: auto 0 0;
-  height: 35%;
-  content: "";
-  background: linear-gradient(transparent, rgb(25 25 28));
-  pointer-events: none;
-}
-
-.storefront-app__media img {
-  object-fit: cover;
-  object-position: center 28%;
-  transition: transform 260ms ease;
-}
-
-.storefront-app:hover .storefront-app__media img {
-  transform: scale(1.025);
-}
-
-.storefront-app__body {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.9rem;
-  padding: 1.1rem;
-}
-
-.storefront-app__icon {
-  width: 3.8rem;
-  height: 3.8rem;
-  border: 1px solid rgb(255 255 255 / 0.13);
-  border-radius: 15px;
-  box-shadow: 0 12px 30px rgb(0 0 0 / 0.28);
-}
-
-.storefront-app__copy {
-  min-width: 0;
-}
-
-.storefront-app__copy p {
-  margin: 0 0 0.2rem;
-  color: rgb(var(--subtle));
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.storefront-app__copy h3 {
-  margin: 0;
-  font-size: 1.3rem;
-  letter-spacing: -0.035em;
-}
-
-.storefront-app__copy span {
-  display: block;
-  margin-top: 0.25rem;
-  overflow: hidden;
-  color: rgb(var(--muted));
-  font-size: 0.86rem;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.storefront-app__button {
-  min-width: 4.5rem;
-  min-height: 2.75rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: rgb(var(--text));
-  color: rgb(var(--canvas));
-  font-size: 0.82rem;
-  font-weight: 720;
-}
-
 .storefront-social {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -1092,6 +990,7 @@
 }
 
 .product-showcase {
+  display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(17rem, 0.75fr);
   min-height: 29rem;
   overflow: clip;
@@ -1099,6 +998,60 @@
   border-radius: 28px;
   background: rgb(24 24 27 / 0.9);
   box-shadow: 0 22px 70px rgb(0 0 0 / 0.2);
+}
+
+.product-showcase--compact {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+}
+
+.product-showcase__media {
+  display: block;
+  min-height: 0;
+}
+
+.product-showcase__media img {
+  z-index: 1;
+  object-fit: cover;
+  object-position: center 24%;
+  transition: transform 260ms ease;
+}
+
+.product-showcase:hover .product-showcase__media img {
+  transform: scale(1.025);
+}
+
+.product-showcase__status {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 3;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 999px;
+  background: rgb(7 8 9 / 0.82);
+  color: rgb(var(--text));
+  padding: 0.5rem 0.7rem;
+  font-size: 0.72rem;
+  font-weight: 680;
+  backdrop-filter: blur(14px);
+}
+
+.product-showcase--compact .product-showcase__media {
+  aspect-ratio: 16 / 10;
+}
+
+.product-showcase--compact .product-showcase__content {
+  padding: 1.15rem;
+}
+
+.product-showcase--compact .product-showcase__identity h3 {
+  font-size: 1.55rem;
+}
+
+.product-showcase--compact .product-showcase__promise {
+  min-height: 3rem;
+  font-size: 0.94rem;
+  line-height: 1.5;
 }
 
 .product-showcase__content {
@@ -1223,23 +1176,6 @@
     width: 100%;
   }
 
-  .storefront-app {
-    border-radius: 22px;
-  }
-
-  .storefront-app__body {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .storefront-app__button {
-    grid-column: 1 / -1;
-    width: 100%;
-  }
-
-  .storefront-app__copy span {
-    white-space: normal;
-  }
-
   .catalog-editorial-hero--store {
     margin-top: 1rem;
   }
@@ -1255,8 +1191,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .storefront-app,
-  .storefront-app__media img {
+  .product-showcase,
+  .product-showcase__media img {
     transition: none;
   }
 }

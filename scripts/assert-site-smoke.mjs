@@ -28,16 +28,16 @@ export async function assertSiteSmoke(baseUrl) {
   const homeHtml = await assertRoute(
     baseUrl,
     "/",
-    "Find something worth keeping.",
+    "Train. Play. Keep moving.",
   );
   if (homeHtml.includes("&amp;nearr;") || homeHtml.includes("&nearr;")) {
     throw new Error("Home route rendered a literal named entity in external action text.");
   }
-  if (!homeHtml.includes('href="#apps"')) {
-    throw new Error("Home route did not link directly to its unified app section.");
+  if (!homeHtml.includes('href="/apps"')) {
+    throw new Error("Home route did not link directly to the canonical Apps page.");
   }
-  if (!homeHtml.includes('/brand/fawxzzy-banner-v2.png')) {
-    throw new Error("Home route did not render the approved V2 Fawxzzy banner.");
+  if (!homeHtml.includes('/brand/fawxzzy-banner-v2-hero.webp')) {
+    throw new Error("Home route did not render the optimized Fawxzzy hero derivative.");
   }
   if (homeHtml.includes('>Discover</a>')) {
     throw new Error("Home route still exposed a duplicate Discover navigation surface.");
@@ -51,7 +51,7 @@ export async function assertSiteSmoke(baseUrl) {
   const appsHtml = await assertRoute(
     baseUrl,
     "/apps",
-    "Pick an app and jump in.",
+    "Choose what you want to do.",
   );
   for (const app of catalogApps) {
     if (!appsHtml.includes(`href="${app.path}"`)) {
@@ -70,10 +70,10 @@ export async function assertSiteSmoke(baseUrl) {
     }
   }
   for (const asset of [
-    "/apps/fitness/icon.png",
-    "/apps/fitness/trailer.mp4",
-    "/apps/mazer/icon.png",
-    "/apps/mazer/trailer.mp4",
+    "/apps/fitness/storefront-icon.webp",
+    "/apps/fitness/storefront-poster.webp",
+    "/apps/mazer/storefront-icon.webp",
+    "/apps/mazer/storefront-poster.webp",
   ]) {
     if (!appsHtml.includes(asset)) {
       throw new Error(`/apps did not render centralized catalog asset ${asset}.`);
@@ -84,8 +84,8 @@ export async function assertSiteSmoke(baseUrl) {
     throw new Error(`/apps rendered ${disclosureCount} retired trailer disclosures.`);
   }
   const primaryTrailerCount = (appsHtml.match(/class="trailer-player"/g) ?? []).length;
-  if (primaryTrailerCount !== catalogApps.length) {
-    throw new Error(`/apps rendered ${primaryTrailerCount} primary trailers instead of ${catalogApps.length}.`);
+  if (primaryTrailerCount !== 0) {
+    throw new Error(`/apps rendered ${primaryTrailerCount} trailer players before a product was selected.`);
   }
   if (appsHtml.includes('/brand/trove-foxmark.png')) {
     throw new Error("The retired Trove hero image is still present on /apps.");
@@ -103,13 +103,16 @@ export async function assertSiteSmoke(baseUrl) {
   const discoverHtml = await assertRoute(
     baseUrl,
     "/discover",
-    "Find something worth keeping.",
+    "Everything is together now.",
   );
-  if (discoverHtml.includes("&amp;nearr;") || discoverHtml.includes("&nearr;")) {
-    throw new Error("Discover route rendered a literal named entity in external action text.");
+  if (!discoverHtml.includes('data-compatibility-identity="discover"')) {
+    throw new Error("Discover compatibility identity was not rendered.");
   }
-  if (!discoverHtml.includes("https://www.tiktok.com/@fukitzzzzz")) {
-    throw new Error("/discover did not include the canonical TikTok destination.");
+  if (!discoverHtml.includes('href="/"')) {
+    throw new Error("/discover did not point to canonical Home.");
+  }
+  if (discoverHtml.includes("data-app-card") || discoverHtml.includes("data-product-showcase")) {
+    throw new Error("/discover duplicated product content instead of remaining lightweight.");
   }
   for (const retiredTarget of ["youtube.com", "x.com/", "snapchat.com", "twitch.tv", "cash.app", "link.me"]) {
     if (discoverHtml.includes(retiredTarget)) {
@@ -120,7 +123,7 @@ export async function assertSiteSmoke(baseUrl) {
   const compatibilityHtml = await assertRoute(
     baseUrl,
     "/trove",
-    "Everything is still here",
+    "The app catalog has a shorter name",
   );
   if (!compatibilityHtml.includes('data-compatibility-identity="trove"')) {
     throw new Error("Trove compatibility identity was not rendered.");
