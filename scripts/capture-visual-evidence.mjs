@@ -23,6 +23,7 @@ const port = Number.parseInt(process.env.VISUAL_EVIDENCE_PORT ?? "4312", 10);
 const baseUrl = `http://127.0.0.1:${port}`;
 const launchers = { chromium, webkit };
 const knownWebKitMediaControlsError = "Temporal.Duration properties must be finite and of consistent sign";
+const knownNavigation404ConsoleError = "Failed to load resource: the server responded with a status of 404 (Not Found)";
 
 function sha256(buffer) {
   return crypto.createHash("sha256").update(buffer).digest("hex");
@@ -75,14 +76,17 @@ try {
     console.log(`[visual-evidence] starting ${browserContract.label}`);
     const launcher = launchers[browserContract.engine];
     const browser = await launcher.launch();
-    const iphone = devices["iPhone 14"];
+    const device = devices[browserContract.deviceName];
+    if (!device) {
+      throw new Error(`Unknown Playwright device descriptor: ${browserContract.deviceName}`);
+    }
     const context = await browser.newContext({
+      ...device,
       viewport: browserContract.viewport,
       reducedMotion: "reduce",
       deviceScaleFactor: 1,
       isMobile: browserContract.isMobile,
       hasTouch: browserContract.hasTouch,
-      userAgent: browserContract.isMobile ? iphone.userAgent : undefined,
     });
 
     for (const route of visualEvidenceRoutes) {
@@ -91,6 +95,7 @@ try {
       const browserErrors = [];
       const knownRunnerExceptions = [];
       const requestedMedia = [];
+      let expectedNavigation404Console = route.expectedStatus === 404;
       await page.addInitScript(() => {
         globalThis.__fawxzzyEvidenceVitals = { cls: 0, lcpMs: 0 };
 
@@ -127,11 +132,18 @@ try {
         browserErrors.push(`pageerror: ${error.message}`);
       });
       page.on("console", (message) => {
-        if (message.type() === "error") browserErrors.push(`console: ${message.text()}`);
+        if (message.type() !== "error") return;
+        if (expectedNavigation404Console && message.text() === knownNavigation404ConsoleError) {
+          knownRunnerExceptions.push(`console: ${message.text()}`);
+          expectedNavigation404Console = false;
+          return;
+        }
+        browserErrors.push(`console: ${message.text()}`);
       });
       const response = await page.goto(`${baseUrl}${route.path}`, { waitUntil: "networkidle" });
-      if (!response?.ok()) {
-        throw new Error(`${route.path} returned ${response?.status() ?? "no response"}.`);
+      const expectedStatus = route.expectedStatus ?? 200;
+      if (response?.status() !== expectedStatus) {
+        throw new Error(`${route.path} returned ${response?.status() ?? "no response"}; expected ${expectedStatus}.`);
       }
       await page.evaluate(() => document.fonts.ready);
       const performance = await page.evaluate(() => {
@@ -180,8 +192,10 @@ try {
         throw new Error(`${browserContract.label} ${route.path} emitted errors during capture: ${browserErrors.join(" | ")}`);
       }
       captures.push({
+        target: browserContract.id,
         browser: browserContract.label,
         engine: browserContract.engine,
+        device: browserContract.deviceName,
         viewport: browserContract.viewport,
         route: route.path,
         routeId: route.id,

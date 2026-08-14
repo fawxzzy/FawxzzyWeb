@@ -10,8 +10,11 @@ container build therefore bind to the same reviewable 40-character source commit
 
 ## Artifact contents
 
-- 12 governed routes in desktop Chromium at 1440×900.
-- The same 12 routes in iPhone-class WebKit at 390×844.
+- 12 governed pages, including the real 404 surface, in Windows desktop
+  Chromium at 1440×900.
+- The same 12 pages in macOS desktop WebKit at 1440×900.
+- The same 12 pages in iPhone 14 WebKit at 390×844.
+- The same 12 pages in Pixel 7 Android Chromium at 412×839.
 - `visual-manifest.json` with route, family, engine, viewport, byte size, image
   dimensions, SHA-256, observed LCP/CLS, initial transfer bytes, route JavaScript,
   and pre-interaction MP4 requests for every capture.
@@ -33,7 +36,7 @@ ignored by Git and Docker.
 
 Playwright WebKit 26.5 can emit one exact exception from its native modern-media-
 controls implementation: `Temporal.Duration properties must be finite and of
-consistent sign`. The existing mobile-WebKit suite documents the same runner-only
+consistent sign`. The existing WebKit suites document the same runner-only
 behavior and separately verifies real trailer playback. The evidence manifest
 records every occurrence under `knownRunnerExceptions`; all other page and console
 errors fail the capture.

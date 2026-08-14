@@ -70,6 +70,8 @@ static output while keeping browser work visible.
   render `error.message`.
 - Full repository verification remains `npm run verify` across Chromium and
   iPhone-class WebKit.
+- UI-design evidence always covers Windows desktop Chromium, macOS desktop
+  WebKit, iPhone WebKit, and Android Chromium across every governed page.
 
 ## Reusable captures
 

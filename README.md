@@ -33,6 +33,11 @@ npm run verify
 
 Verification covers lint, static export, route and identity smoke checks, source and deployment guards, accessibility, responsive layout, media provenance, discovery truth, account boundaries, and compatibility rollback.
 
+Portable UI evidence covers every governed page in Windows desktop Chromium,
+macOS desktop WebKit, iPhone WebKit, and Android Chromium. Run
+`npm run evidence:visual` after a successful build to create the four-target
+contact sheet and individual screenshots.
+
 ## Catalog contract
 
 Update `src/data/apps.ts` when the catalog changes. Each entry owns its current launch origin, planned canonical subdomain, rollback origins, icon, trailer, poster, captions, provenance hashes, and product copy.
