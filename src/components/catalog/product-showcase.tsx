@@ -68,6 +68,8 @@ export function ProductShowcase({
           <StaticLink
             aria-label={`Explore ${app.name}`}
             className="catalog-button catalog-button--primary"
+            data-analytics-app={app.slug}
+            data-analytics-event="catalog_app_view"
             href={getAppDetailPath(app)}
           >
             Explore {app.name}

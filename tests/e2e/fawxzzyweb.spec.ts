@@ -23,20 +23,17 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
   );
   await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Software, fitness, games—and whatever I build next.",
+    "Focused software, presented clearly.",
   );
   await expect(page.getByRole("link", { name: "Fawxzzy home" })).toHaveAttribute("href", "/");
   await expect(page.locator('a[aria-current="page"]')).toHaveCount(1);
-  await expect(page.locator(".site-nav__links a")).toHaveCount(3);
+  await expect(page.locator(".site-nav__links a")).toHaveCount(2);
   await expect(page.getByRole("navigation", { name: "Primary" })).not.toContainText("Account");
-  await expect(page.getByRole("link", { name: "Explore apps" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Browse all apps" })).toHaveAttribute(
     "href",
     "/apps",
   );
-  await expect(page.getByRole("link", { name: "Read the build log", exact: true }).first()).toHaveAttribute(
-    "href",
-    "/newsletter",
-  );
+  await expect(page.getByRole("link", { name: "Open Discover" })).toHaveAttribute("href", "/discover");
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
     productIdentity.canonicalOrigin,
@@ -46,10 +43,13 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
     /Fawxzzy/,
   );
 
-  await expect(page.getByRole("heading", { name: "Make useful tools more affordable." })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Build in public and improve from real use." })).toBeVisible();
-  await expect(page.getByRole("heading", { name: /connected home for software/ })).toBeVisible();
-  await expect(page.locator("[data-product-showcase]")).toHaveCount(apps.length);
+  await expect(page.getByRole("heading", { name: "Choose a product." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Product updates live on TikTok." })).toBeVisible();
+  await expect(page.locator("[data-app-card]")).toHaveCount(apps.length);
+  await expect(page.locator("[data-product-showcase], video")).toHaveCount(0);
+  await expect(page.locator('.home-discover [data-analytics-event="tiktok_open"]')).toHaveCount(1);
+  await expect(page.locator('.site-footer [data-analytics-event="tiktok_open"]')).toHaveCount(1);
+  await expect(page.locator("body")).not.toContainText("&nearr;");
   await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Manage account" })).toHaveAttribute(
     "href",
@@ -64,7 +64,7 @@ test("public discovery files expose only canonical indexable routes", async ({
   expect(sitemapResponse.ok()).toBe(true);
   expect(sitemapResponse.headers()["content-type"]).toContain("application/xml");
   const sitemap = await sitemapResponse.text();
-  const expectedRoutes = ["/", "/apps", "/apps/fitness", "/apps/mazer", "/discover", "/newsletter"];
+  const expectedRoutes = ["/", "/apps", "/apps/fitness", "/apps/mazer", "/discover"];
 
   for (const route of expectedRoutes) {
     const canonical =
@@ -73,7 +73,7 @@ test("public discovery files expose only canonical indexable routes", async ({
         : new URL(route, productIdentity.canonicalOrigin).href;
     expect(sitemap).toContain(`<loc>${canonical}</loc>`);
   }
-  for (const excluded of ["/trove", "/account", "/login", "/auth/confirm", "/reset-password"]) {
+  for (const excluded of ["/trove", "/newsletter", "/account", "/login", "/auth/confirm", "/reset-password"]) {
     expect(sitemap).not.toContain(`<loc>${new URL(excluded, productIdentity.canonicalOrigin).href}</loc>`);
   }
 
@@ -95,7 +95,6 @@ test("public routes carry social metadata and grounded structured data", async (
     { path: "/", image: "/brand/fawxzzy-banner-v2.png" },
     { path: "/apps", image: "/brand/fawxzzy-banner-v2.png" },
     { path: "/discover", image: "/brand/fawxzzy-banner-v2.png" },
-    { path: "/newsletter", image: "/brand/fawxzzy-banner-v2.png" },
   ];
 
   for (const route of publicRoutes) {
@@ -159,7 +158,7 @@ test("discover route exposes centralized public destinations", async ({ page }) 
   await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
   await expect(page.locator("body")).not.toContainText("LinkMe");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Build. Train. Create.",
+    "Apps here. The build on TikTok.",
   );
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
@@ -167,7 +166,7 @@ test("discover route exposes centralized public destinations", async ({ page }) 
   );
 
   for (const destination of discoveryDestinations) {
-    const card = page.locator(`[data-destination-id="${destination.id}"]`);
+    const card = page.locator(".discover-tiktok");
     await expect(card).toContainText(destination.title);
     await expect(card).toContainText(destination.displayValue);
 
@@ -185,67 +184,36 @@ test("discover route exposes centralized public destinations", async ({ page }) 
     }
   }
 
-  await expect(page.locator('[data-editorial-path="train"]')).toContainText(
-    "Fitness owns the future intake replacement",
-  );
-  await expect(page.locator('[data-destination-id="youtube"]')).toHaveCount(1);
-  await expect(page.locator('[data-destination-id="playstation"]')).toContainText(
-    "PSN: fawxzzy",
-  );
-  await expect(page.locator("[data-editorial-path]")).toHaveCount(3);
-  await expect(page.locator("[data-current-work]")).toHaveCount(apps.length);
-  for (const app of apps) {
-    await expect(page.locator(`[data-current-work="${app.slug}"]`)).toContainText(app.latestUpdate);
-  }
+  await expect(page.locator("[data-app-card]")).toHaveCount(apps.length);
+  await expect(page.locator('[data-destination-id="tiktok"]')).toHaveCount(1);
+  await expect(page.locator('.editorial-hero [data-analytics-event="tiktok_open"]')).toHaveCount(1);
+  await expect(page.locator('.discover-tiktok [data-analytics-event="tiktok_open"]')).toHaveCount(1);
+  await expect(page.locator('.site-footer [data-analytics-event="tiktok_open"]')).toHaveCount(1);
+  await expect(page.locator("body")).not.toContainText("&nearr;");
   await expect(
-    page.getByRole("heading", { level: 2, name: "Find Fawxzzy in the places you already use." }),
+    page.getByRole("heading", { level: 2, name: "Follow the work in motion." }),
   ).toBeVisible();
   expect(discoveryDestinations.some((destination) => destination.href?.includes("link.me"))).toBe(
     false,
   );
-  expect(discoveryDestinations.map((destination) => destination.id)).toEqual([
-    "fitness-app",
-    "custom-workout",
-    "tiktok",
-    "youtube",
-    "x",
-    "snapchat",
-    "twitch",
-    "cash-app",
-    "playstation",
-  ]);
+  expect(discoveryDestinations.map((destination) => destination.id)).toEqual(["tiktok"]);
   expect(discoveryDestinations.some((destination) => destination.id === "instagram")).toBe(false);
-  await expect(page.getByRole("link", { name: "View the newsletter" })).toHaveAttribute(
-    "href",
-    "/newsletter",
-  );
+  await expect(page.locator('a[href*="youtube"], a[href*="twitter"], a[href*="snapchat"]')).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
 });
 
-test("newsletter route provides a truthful owned archive surface", async ({ page }) => {
-  await page.goto("/newsletter");
+test("retired newsletter route is absent", async ({ page }) => {
+  const response = await page.goto("/newsletter");
 
-  await expect(page).toHaveTitle("Building Fawxzzy Weekly | Fawxzzy");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Building Fawxzzy weekly.");
-  await expect(page.getByRole("status")).toContainText(/no email address is collected/i);
-  await expect(page.locator("[data-editorial-topic]")).toHaveCount(4);
-  await expect(page.locator('[data-archive-state="empty"]')).toContainText(
-    "No issues are public yet.",
-  );
-  await expect(page.locator("body")).not.toContainText("Issue 001");
-  await expect(page.locator("body")).not.toContainText("Next issue");
-  await expect(page.locator('form, input[type="email"]')).toHaveCount(0);
-  await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
-  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
-    "href",
-    `${productIdentity.canonicalOrigin}/newsletter`,
-  );
+  expect(response?.status()).toBe(404);
+  await expect(page.locator('[data-system-state="empty"]')).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("This page is not here.");
 });
 
 test("editorial pages keep clear mobile hierarchy and interaction contracts", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
 
-  for (const route of ["/discover", "/newsletter"]) {
+  for (const route of ["/discover"]) {
     for (const width of [320, 360, 390]) {
       await page.setViewportSize({ width, height: 844 });
       await page.goto(route);
@@ -260,7 +228,7 @@ test("editorial pages keep clear mobile hierarchy and interaction contracts", as
 
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
       const targetHeights = await page
-        .locator(".editorial-text-link, .editorial-directory__item, .catalog-button, .site-footer a")
+        .locator(".app-store-card, .catalog-button, .site-footer a")
         .evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().height));
       expect(Math.min(...targetHeights), `${route} at ${width}px`).toBeGreaterThanOrEqual(44);
     }
@@ -268,7 +236,7 @@ test("editorial pages keep clear mobile hierarchy and interaction contracts", as
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/discover");
-  const motion = await page.locator(".editorial-directory__item").first().evaluate((element) => {
+  const motion = await page.locator('[data-destination-id="tiktok"]').evaluate((element) => {
     const styles = getComputedStyle(element);
     return { animation: styles.animationName, transition: styles.transitionDuration };
   });
@@ -281,7 +249,7 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
   await page.goto("/apps");
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Software and games, shown in motion.",
+    "Apps built to be used.",
   );
 
   for (const app of apps) {
@@ -339,37 +307,27 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
   await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
 });
 
-test("Wave 1 Home and Apps compose as editorial and media-led page families", async ({ page }) => {
+test("Home stays concise while Apps owns the full media catalog", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
 
-  for (const route of ["/", "/apps"]) {
-    await page.goto(route);
-    const grid = page.locator(".product-showcase-grid, .catalog-stack").first();
-    const cards = grid.locator("[data-product-showcase]");
-    await expect(cards).toHaveCount(apps.length);
+  await page.goto("/");
+  await expect(page.locator("[data-app-card]")).toHaveCount(apps.length);
+  await expect(page.locator("[data-product-showcase], video")).toHaveCount(0);
 
-    for (const app of apps) {
-      const card = page.locator(`#${app.slug}`);
-      await expect(card.getByLabel(`${app.name} trailer`)).toBeVisible();
-      await expect(card.locator("details")).toHaveCount(0);
-    }
-
-    const desktopRects = await cards.evaluateAll((elements) =>
-      elements.map((element) => {
-        const rect = element.getBoundingClientRect();
-        return { left: rect.left, top: rect.top, width: rect.width };
-      }),
-    );
-    expect(desktopRects[0].top).toBeCloseTo(desktopRects[1].top, 0);
-    expect(desktopRects[1].left).toBeGreaterThan(desktopRects[0].left);
-    expect(Math.min(...desktopRects.map((rect) => rect.width))).toBeGreaterThan(450);
+  await page.goto("/apps");
+  const cards = page.locator("[data-product-showcase]");
+  await expect(cards).toHaveCount(apps.length);
+  for (const app of apps) {
+    const card = page.locator(`#${app.slug}`);
+    await expect(card.getByLabel(`${app.name} trailer`)).toBeVisible();
+    await expect(card.locator("details")).toHaveCount(0);
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const route of ["/", "/apps"]) {
+  for (const [route, selector] of [["/", "[data-app-card]"], ["/apps", "[data-product-showcase]"]] as const) {
     await page.goto(route);
-    const cards = page.locator("[data-product-showcase]");
-    const mobileRects = await cards.evaluateAll((elements) =>
+    const routeCards = page.locator(selector);
+    const mobileRects = await routeCards.evaluateAll((elements) =>
       elements.map((element) => {
         const rect = element.getBoundingClientRect();
         return { left: rect.left, right: rect.right, top: rect.top };
@@ -517,22 +475,21 @@ for (const app of apps) {
       await expect(page.getByText(capability.description)).toBeVisible();
     }
 
-    await expect(page.getByRole("heading", { name: app.latestUpdate })).toBeVisible();
-    await expect(page.getByText(app.detail.statusSummary)).toBeVisible();
+    await expect(page.getByText(app.latestUpdate, { exact: true })).toBeVisible();
+    await expect(page.getByText(app.status, { exact: true })).toBeVisible();
 
     const openApp = page.getByRole("link", { name: `Open ${app.name}` });
     await expect(openApp).toHaveAttribute("href", app.origin.current);
     await expect(openApp).toHaveAttribute("target", "_blank");
     await expect(openApp).toHaveAttribute("rel", "noreferrer");
+    await expect(openApp).toHaveAttribute("data-analytics-event", "app_launch");
+    await expect(openApp).toHaveAttribute("data-analytics-app", app.slug);
+    await expect(page.locator("body")).not.toContainText("&nearr;");
 
     await expect(page.locator(".app-screenshots-section")).toHaveCount(0);
 
-    const launchApp = page.getByRole("link", { name: `Launch ${app.name}` });
-    await expect(launchApp).toHaveAttribute("href", app.origin.current);
-    await expect(page.locator(".app-detail-cta").getByRole("link", { name: "All apps" })).toHaveAttribute(
-      "href",
-      "/apps",
-    );
+    await expect(page.locator(`a[href="${app.origin.current}"]`)).toHaveCount(1);
+    await expect(page.locator(".app-detail-cta, [data-review-placeholder]")).toHaveCount(0);
 
     const accent = await page.locator(`[data-app-detail="${app.slug}"]`).evaluate((element) =>
       getComputedStyle(element).getPropertyValue("--product-from").trim(),
@@ -573,10 +530,7 @@ for (const app of apps) {
       { message: `${app.name} detail trailer should advance`, timeout: 10_000 },
     ).toBeGreaterThan(0.1);
     await trailer.evaluate((video: HTMLVideoElement) => video.pause());
-    await expect(page.locator("body")).toContainText(
-      `Verified ${app.name} feedback, when it is ready.`,
-    );
-    await expect(page.locator("body")).toContainText("No rating or count is implied today.");
+    await expect(page.locator("body")).not.toContainText("No rating or count is implied today.");
     await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
     await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
   });
@@ -803,7 +757,6 @@ test("public routes load without browser errors or framework overlays", async ({
     "/apps/fitness",
     "/apps/mazer",
     "/discover",
-    "/newsletter",
     "/trove",
   ]) {
     const page = await context.newPage();
@@ -840,7 +793,6 @@ for (const route of [
   "/apps/fitness",
   "/apps/mazer",
   "/discover",
-  "/newsletter",
   "/trove",
 ]) {
   test(`${route} has no automated WCAG A/AA violations`, async ({ page }) => {
@@ -860,13 +812,11 @@ test("primary navigation adapts without clipping from 320px through desktop", as
     "/apps/fitness",
     "/apps/mazer",
     "/discover",
-    "/newsletter",
     "/trove",
   ];
   const destinations = [
     ["Apps", "/apps"],
     ["Discover", "/discover"],
-    ["Newsletter", "/newsletter"],
   ] as const;
 
   for (const width of [320, 360]) {
@@ -936,7 +886,7 @@ test("primary navigation adapts without clipping from 320px through desktop", as
   }
 
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto("/newsletter");
+  await page.goto("/discover");
   const primaryNav = page.getByRole("navigation", { name: "Primary" });
   const desktopGeometry = await primaryNav.evaluate((nav) => {
     const brand = nav.querySelector<HTMLElement>(".site-nav__brand");
@@ -971,7 +921,6 @@ test("primary navigation stays viewport-sticky while the document owns scrolling
     "/apps/fitness",
     "/apps/mazer",
     "/discover",
-    "/newsletter",
     "/account",
   ]) {
     await page.goto(route);

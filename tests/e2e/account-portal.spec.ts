@@ -613,7 +613,7 @@ test("utility shell stays usable without overflow at 320px and 360px", async ({ 
   }
 });
 
-test("public navigation stays focused on apps, discovery, and the owned archive", async ({
+test("public navigation stays focused on apps and discovery", async ({
   page,
 }) => {
   await page.goto("/");
@@ -626,10 +626,7 @@ test("public navigation stays focused on apps, discovery, and the owned archive"
     "href",
     "/discover",
   );
-  await expect(navigation.getByRole("link", { name: "Newsletter", exact: true })).toHaveAttribute(
-    "href",
-    "/newsletter",
-  );
+  await expect(navigation.locator("a")).toHaveCount(3);
   await expect(navigation).not.toContainText("Account");
 });
 

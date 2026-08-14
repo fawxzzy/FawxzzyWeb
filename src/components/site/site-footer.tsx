@@ -2,6 +2,7 @@ import Image from "next/image";
 import { StaticLink } from "@/components/site/static-link";
 import { productIdentity } from "@/config/product";
 import { apps, getAppDetailPath } from "@/data/apps";
+import { tiktokDestination } from "@/data/discovery";
 
 export function SiteFooter() {
   return (
@@ -19,7 +20,7 @@ export function SiteFooter() {
         <div>
           <p className="eyebrow">Independent product studio</p>
           <h2>{productIdentity.publicName}</h2>
-          <p>Software, fitness, games, and the work behind them.</p>
+          <p>A clear home for independent apps and their current product truth.</p>
         </div>
       </div>
 
@@ -34,9 +35,16 @@ export function SiteFooter() {
           ))}
         </div>
         <div>
-          <p>Follow the work</p>
+          <p>Discover</p>
           <StaticLink href="/discover">Discover</StaticLink>
-          <StaticLink href="/newsletter">Build log</StaticLink>
+          <a
+            data-analytics-event="tiktok_open"
+            href={tiktokDestination.href}
+            rel="noreferrer"
+            target="_blank"
+          >
+            {tiktokDestination.title}
+          </a>
         </div>
         <div>
           <p>Account</p>

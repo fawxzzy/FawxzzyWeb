@@ -11,7 +11,7 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-assert(visualEvidenceRoutes.length === 12, "Visual evidence must cover the 12 governed page routes.");
+assert(visualEvidenceRoutes.length === 11, "Visual evidence must cover the 11 governed page routes.");
 assert(new Set(visualEvidenceRoutes.map(({ path }) => path)).size === visualEvidenceRoutes.length, "Visual evidence routes must be unique.");
 assert(visualEvidenceBrowsers.length === 2, "Visual evidence must cover desktop Chromium and mobile WebKit.");
 assert(visualEvidenceBrowsers[0].viewport.width === 1440 && visualEvidenceBrowsers[0].viewport.height === 900, "Desktop evidence must use 1440×900.");
