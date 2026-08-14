@@ -42,7 +42,7 @@ export function DiscoveryGrid({ destinations }: DiscoveryGridProps) {
           rel="noreferrer"
           target="_blank"
         >
-          Open TikTok <span aria-hidden="true">&nearr;</span>
+          Open TikTok <span aria-hidden="true">↗</span>
         </a>
       </section>
 

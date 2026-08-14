@@ -30,6 +30,9 @@ export async function assertSiteSmoke(baseUrl) {
     "/",
     "Focused software, presented clearly.",
   );
+  if (homeHtml.includes("&amp;nearr;") || homeHtml.includes("&nearr;")) {
+    throw new Error("Home route rendered a literal named entity in external action text.");
+  }
   if (!homeHtml.includes('href="/apps"')) {
     throw new Error("Home route did not link to the canonical app catalog.");
   }
@@ -106,6 +109,9 @@ export async function assertSiteSmoke(baseUrl) {
     "/discover",
     "Apps here. The build on TikTok.",
   );
+  if (discoverHtml.includes("&amp;nearr;") || discoverHtml.includes("&nearr;")) {
+    throw new Error("Discover route rendered a literal named entity in external action text.");
+  }
   if (!discoverHtml.includes("https://www.tiktok.com/@fukitzzzzz")) {
     throw new Error("/discover did not include the canonical TikTok destination.");
   }

@@ -87,7 +87,7 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
                 rel="noreferrer"
                 target="_blank"
               >
-                Open {app.name} <span aria-hidden="true">&nearr;</span>
+                Open {app.name} <span aria-hidden="true">↗</span>
               </a>
               <StaticLink className="catalog-button catalog-button--secondary" href={`#${app.slug}-trailer`}>
                 Watch walkthrough <span aria-hidden="true">&darr;</span>

@@ -104,7 +104,7 @@ export default function Home() {
             rel="noreferrer"
             target="_blank"
           >
-            {tiktokDestination.displayValue} <span aria-hidden="true">&nearr;</span>
+            {tiktokDestination.displayValue} <span aria-hidden="true">↗</span>
           </a>
         </section>
 

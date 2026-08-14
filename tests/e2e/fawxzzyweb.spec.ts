@@ -49,6 +49,7 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
   await expect(page.locator("[data-product-showcase], video")).toHaveCount(0);
   await expect(page.locator('.home-discover [data-analytics-event="tiktok_open"]')).toHaveCount(1);
   await expect(page.locator('.site-footer [data-analytics-event="tiktok_open"]')).toHaveCount(1);
+  await expect(page.locator("body")).not.toContainText("&nearr;");
   await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Manage account" })).toHaveAttribute(
     "href",
@@ -188,6 +189,7 @@ test("discover route exposes centralized public destinations", async ({ page }) 
   await expect(page.locator('.editorial-hero [data-analytics-event="tiktok_open"]')).toHaveCount(1);
   await expect(page.locator('.discover-tiktok [data-analytics-event="tiktok_open"]')).toHaveCount(1);
   await expect(page.locator('.site-footer [data-analytics-event="tiktok_open"]')).toHaveCount(1);
+  await expect(page.locator("body")).not.toContainText("&nearr;");
   await expect(
     page.getByRole("heading", { level: 2, name: "Follow the work in motion." }),
   ).toBeVisible();
@@ -482,6 +484,7 @@ for (const app of apps) {
     await expect(openApp).toHaveAttribute("rel", "noreferrer");
     await expect(openApp).toHaveAttribute("data-analytics-event", "app_launch");
     await expect(openApp).toHaveAttribute("data-analytics-app", app.slug);
+    await expect(page.locator("body")).not.toContainText("&nearr;");
 
     await expect(page.locator(".app-screenshots-section")).toHaveCount(0);
 

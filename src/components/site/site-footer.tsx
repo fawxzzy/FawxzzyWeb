@@ -2,6 +2,7 @@ import Image from "next/image";
 import { StaticLink } from "@/components/site/static-link";
 import { productIdentity } from "@/config/product";
 import { apps, getAppDetailPath } from "@/data/apps";
+import { tiktokDestination } from "@/data/discovery";
 
 export function SiteFooter() {
   return (
@@ -38,11 +39,11 @@ export function SiteFooter() {
           <StaticLink href="/discover">Discover</StaticLink>
           <a
             data-analytics-event="tiktok_open"
-            href="https://www.tiktok.com/@fukitzzzzz"
+            href={tiktokDestination.href}
             rel="noreferrer"
             target="_blank"
           >
-            TikTok
+            {tiktokDestination.title}
           </a>
         </div>
         <div>
