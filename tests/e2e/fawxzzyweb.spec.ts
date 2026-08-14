@@ -22,8 +22,12 @@ test("visual-system documentation keeps Newsletter historical only", async () =>
   expect(visualSystem).toContain("`/newsletter` is intentionally\nabsent and returns 404");
   expect(visualSystem).toContain("immutable comparison evidence");
   expect(visualSystem).toContain("The current footer uses only Home, Apps");
+  expect(visualSystem).toContain(
+    "The retired Wave 2B editorial family remains historical provenance only",
+  );
   expect(visualSystem).not.toContain("Newsletter is the publication home");
   expect(visualSystem).not.toContain("Discover and Newsletter share");
+  expect(visualSystem).not.toContain("Wave 2B implements the editorial family");
   expect(visualSystem).not.toContain("Newsletter/build log, Login, and Account");
 });
 

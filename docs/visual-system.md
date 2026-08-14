@@ -18,10 +18,11 @@ page families:
 4. Compatibility and provenance: the Discover fallback and retired editorial history.
 5. Utility: Login, confirmation, callback, reset, and Account.
 
-Wave 1 implements the first two families. Wave 2A implements the product-detail
-family. Wave 2B implements the editorial family. The secure utility shell gives
-Login, confirmation, callback, and reset a focused task layout; the Account
-dashboard remains the operational branch of the same family.
+Wave 1 established the first two families. Wave 2A established the product-detail
+family. The retired Wave 2B editorial family remains historical provenance only.
+The secure utility shell gives Login, confirmation, callback, and reset a focused
+task layout; the Account dashboard remains the operational branch of the same
+family.
 
 ## Utility and Auth template
 
