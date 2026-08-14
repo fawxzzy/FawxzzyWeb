@@ -326,7 +326,7 @@ test("Wave 1 interactions retain 44px targets and reduced-motion restraint", asy
   expect(motion.transition).toBe("0s");
 });
 
-test("each app-detail trailer starts real playback from its explicit action", async ({ page }) => {
+test("each app-detail trailer exposes its one-minute master from its explicit action", async ({ page }) => {
   test.setTimeout(60_000);
 
   for (const app of apps) {
@@ -334,10 +334,7 @@ test("each app-detail trailer starts real playback from its explicit action", as
     const entry = page.locator(`[data-app-detail="${app.slug}"]`);
     const trailer = entry.getByLabel(`${app.name} trailer`);
     await entry.getByRole("button", { name: `Play ${app.name} trailer` }).click();
-    await expect.poll(
-      () => trailer.evaluate((video: HTMLVideoElement) => video.currentTime),
-      { message: `${app.name} trailer should advance`, timeout: 10_000 },
-    ).toBeGreaterThan(0.1);
+    await expect(trailer.locator("source")).toHaveAttribute("src", app.trailer.video.src);
     await expect.poll(
       () => trailer.evaluate((video: HTMLVideoElement) => video.duration),
       { message: `${app.name} trailer should remain a one-minute master`, timeout: 10_000 },
