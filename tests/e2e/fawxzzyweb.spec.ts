@@ -185,6 +185,11 @@ test("discover route is a lightweight compatibility entry for canonical Home", a
     false,
   );
   expect(discoveryDestinations.map((destination) => destination.id)).toEqual(["tiktok"]);
+  expect(discoveryDestinations[0]).toMatchObject({
+    displayValue: "@fawxzzy",
+    href: "https://www.tiktok.com/@fawxzzy",
+  });
+  expect(JSON.stringify(discoveryDestinations)).not.toContain("fukitzzzzz");
   expect(discoveryDestinations.some((destination) => destination.id === "instagram")).toBe(false);
   await expect(page.locator('a[href*="youtube"], a[href*="twitter"], a[href*="snapchat"]')).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();

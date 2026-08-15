@@ -12,9 +12,9 @@ export const tiktokDestination: DiscoveryDestination = {
   id: "tiktok",
   title: "TikTok",
   description: "Fitness, software, product proof, and the public build in motion.",
-  displayValue: "@fukitzzzzz",
+  displayValue: "@fawxzzy",
   action: "Open TikTok",
-  href: "https://www.tiktok.com/@fukitzzzzz",
+  href: "https://www.tiktok.com/@fawxzzy",
   mark: "TT",
 };
 
