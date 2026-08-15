@@ -12,6 +12,25 @@ async function sha256ForPublicAsset(src: string) {
   return createHash("sha256").update(asset).digest("hex").toUpperCase();
 }
 
+test("visual-system documentation keeps Newsletter historical only", async () => {
+  const visualSystem = await readFile(
+    resolve(process.cwd(), "docs", "visual-system.md"),
+    "utf8",
+  );
+
+  expect(visualSystem).toContain("## Historical editorial template");
+  expect(visualSystem).toContain("`/newsletter` is intentionally\nabsent and returns 404");
+  expect(visualSystem).toContain("immutable comparison evidence");
+  expect(visualSystem).toContain("The current footer uses only Home, Apps");
+  expect(visualSystem).toContain(
+    "The retired Wave 2B editorial family remains historical provenance only",
+  );
+  expect(visualSystem).not.toContain("Newsletter is the publication home");
+  expect(visualSystem).not.toContain("Discover and Newsletter share");
+  expect(visualSystem).not.toContain("Wave 2B implements the editorial family");
+  expect(visualSystem).not.toContain("Newsletter/build log, Login, and Account");
+});
+
 test("root is the canonical Fawxzzy experience", async ({ page }) => {
   await page.goto("/");
 
@@ -23,35 +42,33 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
   );
   await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Focused software, presented clearly.",
+    "Train. Play. Keep moving.",
   );
+  await expect(page.getByText(`${apps.length} focused apps.`)).toBeVisible();
   await expect(page.getByRole("link", { name: "Fawxzzy home" })).toHaveAttribute("href", "/");
   await expect(page.locator('a[aria-current="page"]')).toHaveCount(1);
   await expect(page.locator(".site-nav__links a")).toHaveCount(2);
   await expect(page.getByRole("navigation", { name: "Primary" })).not.toContainText("Account");
-  await expect(page.getByRole("link", { name: "Browse all apps" })).toHaveAttribute(
-    "href",
-    "/apps",
-  );
-  await expect(page.getByRole("link", { name: "Open Discover" })).toHaveAttribute("href", "/discover");
+  await expect(page.getByRole("link", { name: "Browse all apps" })).toHaveAttribute("href", "/apps");
+  await expect(page.getByRole("navigation", { name: "Primary" })).not.toContainText("Discover");
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
     productIdentity.canonicalOrigin,
   );
-  await expect(page.locator('img[src="/brand/fawxzzy-banner-v2.png"]')).toHaveAttribute(
+  await expect(page.locator('img[src="/brand/fawxzzy-banner-v2-hero.webp"]')).toHaveAttribute(
     "alt",
     /Fawxzzy/,
   );
 
-  await expect(page.getByRole("heading", { name: "Choose a product." })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Product updates live on TikTok." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Built for momentum and play." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "See the next build." })).toBeVisible();
   await expect(page.locator("[data-app-card]")).toHaveCount(apps.length);
   await expect(page.locator("[data-product-showcase], video")).toHaveCount(0);
-  await expect(page.locator('.home-discover [data-analytics-event="tiktok_open"]')).toHaveCount(1);
+  await expect(page.locator('.storefront-social [data-analytics-event="tiktok_open"]')).toHaveCount(1);
   await expect(page.locator('.site-footer [data-analytics-event="tiktok_open"]')).toHaveCount(1);
   await expect(page.locator("body")).not.toContainText("&nearr;");
   await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Manage account" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Account" })).toHaveAttribute(
     "href",
     "/account",
   );
@@ -64,7 +81,7 @@ test("public discovery files expose only canonical indexable routes", async ({
   expect(sitemapResponse.ok()).toBe(true);
   expect(sitemapResponse.headers()["content-type"]).toContain("application/xml");
   const sitemap = await sitemapResponse.text();
-  const expectedRoutes = ["/", "/apps", "/apps/fitness", "/apps/mazer", "/discover"];
+  const expectedRoutes = ["/", "/apps", "/apps/fitness", "/apps/mazer"];
 
   for (const route of expectedRoutes) {
     const canonical =
@@ -73,7 +90,7 @@ test("public discovery files expose only canonical indexable routes", async ({
         : new URL(route, productIdentity.canonicalOrigin).href;
     expect(sitemap).toContain(`<loc>${canonical}</loc>`);
   }
-  for (const excluded of ["/trove", "/newsletter", "/account", "/login", "/auth/confirm", "/reset-password"]) {
+  for (const excluded of ["/discover", "/trove", "/newsletter", "/account", "/login", "/auth/confirm", "/reset-password"]) {
     expect(sitemap).not.toContain(`<loc>${new URL(excluded, productIdentity.canonicalOrigin).href}</loc>`);
   }
 
@@ -142,7 +159,7 @@ test("public routes carry social metadata and grounded structured data", async (
     expect(application.url).toBe(`${productIdentity.canonicalOrigin}/apps/${app.slug}`);
     expect(application.sameAs).toBe(app.origin.current);
     expect(application.featureList).toEqual(
-      app.detail.capabilities.map(({ title }) => title),
+      app.detail.stories.map(({ title }) => title),
     );
     expect(application).not.toHaveProperty("aggregateRating");
     expect(application).not.toHaveProperty("offers");
@@ -151,48 +168,20 @@ test("public routes carry social metadata and grounded structured data", async (
   }
 });
 
-test("discover route exposes centralized public destinations", async ({ page }) => {
+test("discover route is a lightweight compatibility entry for canonical Home", async ({ page }) => {
   await page.goto("/discover");
 
-  await expect(page).toHaveTitle("Discover | Fawxzzy");
-  await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
-  await expect(page.locator("body")).not.toContainText("LinkMe");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Apps here. The build on TikTok.",
-  );
+  await expect(page).toHaveTitle("Fawxzzy");
+  await expect(page.locator('main[data-compatibility-identity="discover"]')).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Everything is together now.");
+  await expect(page.getByRole("link", { name: "Go to Fawxzzy" })).toHaveAttribute("href", "/");
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
-    `${productIdentity.canonicalOrigin}/discover`,
+    productIdentity.canonicalOrigin,
   );
-
-  for (const destination of discoveryDestinations) {
-    const card = page.locator(".discover-tiktok");
-    await expect(card).toContainText(destination.title);
-    await expect(card).toContainText(destination.displayValue);
-
-    if (destination.href && destination.action) {
-      const link = page
-        .locator(
-          `a[data-destination-id="${destination.id}"], [data-destination-id="${destination.id}"] a`,
-        )
-        .first();
-      await expect(link).toHaveAttribute("href", destination.href);
-      await expect(link).toHaveAttribute("target", "_blank");
-      await expect(link).toHaveAttribute("rel", "noreferrer");
-    } else {
-      await expect(card.locator("a")).toHaveCount(0);
-    }
-  }
-
-  await expect(page.locator("[data-app-card]")).toHaveCount(apps.length);
-  await expect(page.locator('[data-destination-id="tiktok"]')).toHaveCount(1);
-  await expect(page.locator('.editorial-hero [data-analytics-event="tiktok_open"]')).toHaveCount(1);
-  await expect(page.locator('.discover-tiktok [data-analytics-event="tiktok_open"]')).toHaveCount(1);
-  await expect(page.locator('.site-footer [data-analytics-event="tiktok_open"]')).toHaveCount(1);
-  await expect(page.locator("body")).not.toContainText("&nearr;");
-  await expect(
-    page.getByRole("heading", { level: 2, name: "Follow the work in motion." }),
-  ).toBeVisible();
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+  await expect(page.locator("[data-app-card], [data-product-showcase], video")).toHaveCount(0);
+  await expect(page.locator('[data-analytics-event="tiktok_open"]')).toHaveCount(1);
   expect(discoveryDestinations.some((destination) => destination.href?.includes("link.me"))).toBe(
     false,
   );
@@ -236,7 +225,7 @@ test("editorial pages keep clear mobile hierarchy and interaction contracts", as
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/discover");
-  const motion = await page.locator('[data-destination-id="tiktok"]').evaluate((element) => {
+  const motion = await page.getByRole("link", { name: "Go to Fawxzzy" }).evaluate((element) => {
     const styles = getComputedStyle(element);
     return { animation: styles.animationName, transition: styles.transitionDuration };
   });
@@ -249,7 +238,7 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
   await page.goto("/apps");
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Apps built to be used.",
+    "Choose what you want to do.",
   );
 
   for (const app of apps) {
@@ -257,34 +246,26 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
     await expect(entry).toHaveAttribute("data-product-showcase", app.slug);
     await expect(entry.getByRole("img", { name: `${app.name} icon` })).toHaveAttribute(
       "src",
-      app.icon.src,
+      app.display.icon.src,
     );
     await expect(
-      entry.getByRole("img", { name: `${app.name} interaction walkthrough poster` }),
-    ).toHaveCount(0);
-    await expect(entry).toContainText(app.tagline);
-    await expect(entry).toContainText(app.status);
+      entry.getByRole("img", { name: `${app.name} app preview` }),
+    ).toHaveAttribute("src", app.display.poster.src);
+    await expect(entry).toContainText(app.description);
     await expect(entry).toContainText(app.category);
-    await expect(entry).toContainText(app.latestUpdate);
-    await expect(entry.getByRole("link", { name: `Explore ${app.name}` })).toHaveAttribute(
+    await expect(entry.getByRole("link", { name: `View ${app.name}` })).toHaveAttribute(
       "href",
       `/apps/${app.slug}`,
     );
     await expect(entry.locator("[data-review-placeholder]")).toHaveCount(0);
 
-    const trailer = entry.getByLabel(`${app.name} trailer`);
-    await expect(trailer).toBeVisible();
-    await expect(trailer).toHaveJSProperty("controls", false);
-    await expect(trailer).toHaveAttribute("preload", "none");
-    await expect(trailer).toHaveAttribute("poster", app.trailer.poster.src);
-    await expect(trailer.locator("source")).not.toHaveAttribute("src", /.+/);
-    await expect(trailer.locator("track")).toHaveAttribute("src", app.trailer.captionsSrc);
-    await expect(entry.getByRole("button", { name: `Play ${app.name} trailer` })).toBeVisible();
+    await expect(entry).toContainText(app.status);
+    await expect(entry.locator("video")).toHaveCount(0);
     await expect(entry.locator("details")).toHaveCount(0);
 
     for (const asset of [
-      app.icon.src,
-      app.trailer.poster.src,
+      app.display.icon.src,
+      app.display.poster.src,
       app.trailer.video.src,
       app.trailer.captionsSrc,
     ]) {
@@ -307,7 +288,7 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
   await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
 });
 
-test("Home stays concise while Apps owns the full media catalog", async ({ page }) => {
+test("Home stays concise, Apps owns comparison, and detail routes own trailers", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
 
   await page.goto("/");
@@ -319,8 +300,13 @@ test("Home stays concise while Apps owns the full media catalog", async ({ page 
   await expect(cards).toHaveCount(apps.length);
   for (const app of apps) {
     const card = page.locator(`#${app.slug}`);
-    await expect(card.getByLabel(`${app.name} trailer`)).toBeVisible();
+    await expect(card.getByRole("img", { name: `${app.name} app preview` })).toBeVisible();
+    await expect(card.locator("video")).toHaveCount(0);
     await expect(card.locator("details")).toHaveCount(0);
+
+    await page.goto(`/apps/${app.slug}`);
+    await expect(page.getByLabel(`${app.name} trailer`)).toBeVisible();
+    await page.goto("/apps");
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -348,7 +334,7 @@ test("Wave 1 interactions retain 44px targets and reduced-motion restraint", asy
   await page.goto("/apps");
 
   const targetHeights = await page
-    .locator(".catalog-button, .trailer-player__play, .site-footer a")
+    .locator(".catalog-button, .site-footer a")
     .evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().height));
   expect(Math.min(...targetHeights)).toBeGreaterThanOrEqual(44);
 
@@ -360,18 +346,15 @@ test("Wave 1 interactions retain 44px targets and reduced-motion restraint", asy
   expect(motion.transition).toBe("0s");
 });
 
-test("each catalog trailer starts real playback from its explicit action", async ({ page }) => {
+test("each app-detail trailer exposes its one-minute master from its explicit action", async ({ page }) => {
   test.setTimeout(60_000);
-  await page.goto("/apps");
 
   for (const app of apps) {
-    const entry = page.locator(`#${app.slug}`);
+    await page.goto(`/apps/${app.slug}`);
+    const entry = page.locator(`[data-app-detail="${app.slug}"]`);
     const trailer = entry.getByLabel(`${app.name} trailer`);
     await entry.getByRole("button", { name: `Play ${app.name} trailer` }).click();
-    await expect.poll(
-      () => trailer.evaluate((video: HTMLVideoElement) => video.currentTime),
-      { message: `${app.name} trailer should advance`, timeout: 10_000 },
-    ).toBeGreaterThan(0.1);
+    await expect(trailer.locator("source")).toHaveAttribute("src", app.trailer.video.src);
     await expect.poll(
       () => trailer.evaluate((video: HTMLVideoElement) => video.duration),
       { message: `${app.name} trailer should remain a one-minute master`, timeout: 10_000 },
@@ -392,9 +375,9 @@ for (const app of apps) {
     page,
   }) => {
     test.setTimeout(60_000);
-    await page.goto("/apps");
+    await page.goto(`/apps/${app.slug}`);
 
-    const entry = page.locator(`#${app.slug}`);
+    const entry = page.locator(`[data-app-detail="${app.slug}"]`);
     const player = entry.locator(".trailer-player");
     const trailer = entry.getByLabel(`${app.name} trailer`);
     await trailer.evaluate((video: HTMLVideoElement) => {
@@ -430,11 +413,12 @@ for (const app of apps) {
     await trailer.evaluate((video: HTMLVideoElement) => {
       video.dispatchEvent(new Event("pause"));
     });
-    await expect(playAction).toBeVisible();
+    const resumeAction = entry.getByRole("button", { name: `Resume ${app.name} trailer` });
+    await expect(resumeAction).toBeVisible();
     await trailer.evaluate((video: HTMLVideoElement) => {
       (video as HTMLVideoElement & { playbackMode?: string }).playbackMode = "error";
     });
-    await playAction.click({ force: true });
+    await resumeAction.click({ force: true });
     await expect(player).toHaveAttribute("data-playback-state", "error");
     await expect(entry).toContainText("This trailer could not play here.");
     const retryAction = entry.getByRole("button", { name: `Retry ${app.name} trailer` });
@@ -468,15 +452,35 @@ for (const app of apps) {
       `${productIdentity.canonicalOrigin}/apps/${app.slug}`,
     );
     await expect(page.getByText(app.description)).toBeVisible();
-    await expect(page.getByRole("listitem")).toHaveCount(app.detail.capabilities.length);
+    await expect(page.getByRole("link", { name: "Back home" })).toHaveAttribute("href", "/");
+    await expect(page.getByText(app.status, { exact: true })).toBeVisible();
 
-    for (const capability of app.detail.capabilities) {
-      await expect(page.getByRole("heading", { level: 3, name: capability.title })).toBeVisible();
-      await expect(page.getByText(capability.description)).toBeVisible();
+    for (const story of app.detail.stories) {
+      const storySection = page.locator(`[data-product-story="${story.id}"]`);
+      await expect(storySection).toBeVisible();
+      await expect(storySection.getByRole("heading", { level: 2, name: story.title })).toBeVisible();
+      await expect(storySection.getByText(story.description)).toBeVisible();
+      for (const media of story.media) {
+        const image = storySection.getByRole("img", { name: media.alt });
+        await expect(image).toHaveAttribute("src", media.src);
+        await expect(image).toHaveAttribute("loading", "lazy");
+        await expect(storySection.getByText(media.caption)).toBeVisible();
+      }
+      if (story.media.length > 1) {
+        const gallery = storySection.getByRole("region", { name: `${story.title} media gallery` });
+        await expect(gallery).toHaveAttribute("tabindex", "0");
+      }
     }
 
-    await expect(page.getByText(app.latestUpdate, { exact: true })).toBeVisible();
-    await expect(page.getByText(app.status, { exact: true })).toBeVisible();
+    if (app.detail.plannedDirection) {
+      const planned = app.detail.plannedDirection;
+      const plannedSection = page.locator(`[data-product-story="${planned.id}"]`);
+      await expect(plannedSection).toBeVisible();
+      await expect(plannedSection.getByText(planned.statusLabel)).toBeVisible();
+      await expect(plannedSection.getByText("Planned concept · Not current gameplay")).toBeVisible();
+    } else {
+      await expect(page.locator(".app-detail-planned")).toHaveCount(0);
+    }
 
     const openApp = page.getByRole("link", { name: `Open ${app.name}` });
     await expect(openApp).toHaveAttribute("href", app.origin.current);
@@ -538,7 +542,7 @@ for (const app of apps) {
 
 test("primary trailer playback is keyboard operable without a disclosure", async ({ page }) => {
   test.setTimeout(60_000);
-  await page.goto("/apps");
+  await page.goto("/apps/fitness");
 
   const playButton = page.getByRole("button", { name: "Play Fitness trailer" });
   await playButton.focus();
@@ -565,7 +569,7 @@ for (const app of apps) {
     };
     page.on("request", recordMediaRequest);
 
-    await page.goto("/apps", { waitUntil: "networkidle" });
+    await page.goto(`/apps/${app.slug}`, { waitUntil: "networkidle" });
     expect(mediaRequests, `${app.name} initial media requests`).toEqual([]);
     const trailer = page.getByLabel(`${app.name} trailer`);
     await expect(trailer.locator("source")).not.toHaveAttribute("src", /.+/);
@@ -583,15 +587,7 @@ for (const app of apps) {
       (video: HTMLVideoElement) => new URL(video.currentSrc).pathname,
     );
     expect(activeSource).toBe(app.trailer.video.src);
-    for (const candidate of apps.filter(({ slug }) => slug !== app.slug)) {
-      const siblingState = await page
-        .getByLabel(`${candidate.name} trailer`)
-        .evaluate((video: HTMLVideoElement) => ({
-          currentTime: video.currentTime,
-          paused: video.paused,
-        }));
-      expect(siblingState).toEqual({ currentTime: 0, paused: true });
-    }
+    await expect(page.locator("video")).toHaveCount(1);
 
     // Chromium reports native media requests through Playwright's page event.
     // WebKit still proves real playback and source isolation above; its native
@@ -671,23 +667,32 @@ test("app origins preserve the future owner-lane cutover and rollback contract",
 test("vendored media matches its centralized provenance hashes", async () => {
   for (const app of apps) {
     expect(await sha256ForPublicAsset(app.icon.src)).toBe(app.icon.sha256);
+    expect(await sha256ForPublicAsset(app.display.icon.src)).toBe(app.display.icon.sha256);
+    expect(await sha256ForPublicAsset(app.display.poster.src)).toBe(app.display.poster.sha256);
     expect(await sha256ForPublicAsset(app.trailer.video.src)).toBe(app.trailer.video.sha256);
     expect(await sha256ForPublicAsset(app.trailer.poster.src)).toBe(
       app.trailer.poster.sha256,
     );
+    for (const story of app.detail.stories) {
+      for (const media of story.media) {
+        expect(await sha256ForPublicAsset(media.src)).toBe(media.sha256);
+      }
+    }
+    for (const media of app.detail.plannedDirection?.media ?? []) {
+      expect(await sha256ForPublicAsset(media.src)).toBe(media.sha256);
+    }
   }
 });
 
-test("compatibility route is reversible and points search engines to apps", async ({ page }) => {
+test("Trove compatibility points people and search engines to Apps", async ({ page }) => {
   await page.goto("/trove");
 
   await expect(page.locator('main[data-compatibility-identity="trove"]')).toBeVisible();
   await expect(page.locator('[data-system-state="unavailable"]')).toBeVisible();
-  await expect(page.getByText(/reversible compatibility surface/i)).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "The catalog moved to Apps.",
+    "Trove is now Apps.",
   );
-  await expect(page.getByRole("link", { name: "Open the app catalog" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Browse apps" })).toHaveAttribute(
     "href",
     "/apps",
   );
@@ -710,7 +715,7 @@ test("missing routes use the shared recoverable system surface", async ({ page }
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       "This page is not here.",
     );
-    await expect(page.getByRole("link", { name: "Explore apps" })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: "Browse apps" })).toHaveAttribute(
       "href",
       "/apps",
     );
@@ -740,13 +745,23 @@ test("route and root error boundaries use explicit shared recovery states", asyn
   expect(globalError).not.toContain("error.message");
 });
 
-test("the retired Fitness screenshot-board URL has a permanent trailer redirect", async () => {
+test("provider redirects preserve permanent and reversible compatibility boundaries", async () => {
   const vercelConfig = JSON.parse(await readFile(resolve(process.cwd(), "vercel.json"), "utf8"));
 
   expect(vercelConfig.redirects).toContainEqual({
     source: "/apps/fitness/preview",
     destination: "/apps/fitness#fitness-trailer",
     permanent: true,
+  });
+  expect(vercelConfig.redirects).toContainEqual({
+    source: "/discover",
+    destination: "/",
+    permanent: true,
+  });
+  expect(vercelConfig.redirects).toContainEqual({
+    source: "/trove",
+    destination: "/apps",
+    permanent: false,
   });
 });
 
@@ -815,8 +830,8 @@ test("primary navigation adapts without clipping from 320px through desktop", as
     "/trove",
   ];
   const destinations = [
+    ["Home", "/"],
     ["Apps", "/apps"],
-    ["Discover", "/discover"],
   ] as const;
 
   for (const width of [320, 360]) {

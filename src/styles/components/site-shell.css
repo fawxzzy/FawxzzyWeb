@@ -117,3 +117,71 @@
   outline: 3px solid rgb(var(--accent) / 0.62);
   outline-offset: 3px;
 }
+
+/* Unified storefront navigation: compact, predictable, and touch-friendly. */
+.shell-container {
+  width: min(1240px, calc(100vw - 2rem));
+}
+
+.site-nav {
+  position: sticky;
+  top: max(0.75rem, var(--app-safe-top));
+  z-index: 20;
+  border: 1px solid rgb(255 255 255 / 0.09);
+  border-radius: 18px;
+  background: rgb(18 18 21 / 0.78);
+  padding: 0.45rem 0.55rem;
+  box-shadow: 0 14px 48px rgb(0 0 0 / 0.24);
+  backdrop-filter: blur(22px) saturate(140%);
+}
+
+.site-nav__brand {
+  gap: 0.55rem;
+  min-height: 2.75rem;
+  padding-inline: 0.35rem 0.65rem;
+  font-size: 0.9rem;
+  font-weight: 680;
+}
+
+.site-nav__mark {
+  width: 1.95rem;
+  height: 1.95rem;
+  border-radius: 0.58rem;
+}
+
+.site-nav__links {
+  gap: 0.2rem;
+}
+
+.site-nav__links a {
+  min-height: 2.75rem;
+  border-radius: 12px;
+  padding: 0.55rem 0.9rem;
+  color: rgb(var(--muted));
+  font-size: 0.84rem;
+  font-weight: 620;
+}
+
+.site-nav__links a[aria-current="page"] {
+  background: rgb(255 255 255 / 0.09);
+  color: rgb(var(--text));
+}
+
+@media (max-width: 520px) {
+  .shell-container {
+    width: min(100% - 1rem, 1240px);
+  }
+
+  .site-nav {
+    top: max(0.5rem, var(--app-safe-top));
+    border-radius: 16px;
+  }
+
+  .site-nav__brand-label {
+    display: none;
+  }
+
+  .site-nav__links a {
+    padding-inline: 0.78rem;
+  }
+}

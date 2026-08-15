@@ -3,14 +3,13 @@ import { StaticLink } from "@/components/site/static-link";
 import { productIdentity } from "@/config/product";
 
 type SiteNavProps = {
-  current: "account" | "apps" | "discover" | "home";
+  current: "account" | "apps" | "home";
 };
 
 export function SiteNav({ current }: SiteNavProps) {
   return (
     <nav aria-label="Primary" className="site-nav surface-panel">
       <StaticLink
-        aria-current={current === "home" ? "page" : undefined}
         aria-label={`${productIdentity.publicName} home`}
         className="site-nav__brand"
         href="/"
@@ -28,16 +27,16 @@ export function SiteNav({ current }: SiteNavProps) {
       </StaticLink>
       <div className="site-nav__links">
         <StaticLink
+          aria-current={current === "home" ? "page" : undefined}
+          href="/"
+        >
+          Home
+        </StaticLink>
+        <StaticLink
           aria-current={current === "apps" ? "page" : undefined}
           href={productIdentity.appsPath}
         >
           Apps
-        </StaticLink>
-        <StaticLink
-          aria-current={current === "discover" ? "page" : undefined}
-          href="/discover"
-        >
-          Discover
         </StaticLink>
       </div>
     </nav>

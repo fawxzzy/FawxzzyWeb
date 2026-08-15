@@ -25,17 +25,36 @@ type Accent = {
   to: string;
 };
 
-export type CatalogCapability = {
+export type CatalogDetailMedia = CatalogAsset & {
+  alt: string;
+  caption: string;
+  height: number;
+  width: number;
+};
+
+export type CatalogProductStory = {
   description: string;
+  eyebrow: string;
+  id: string;
+  media: CatalogDetailMedia[];
+  points?: string[];
   title: string;
 };
 
+export type CatalogPlannedDirection = CatalogProductStory & {
+  statusLabel: string;
+};
+
 export type CatalogAppDetail = {
-  capabilities: CatalogCapability[];
-  capabilitiesHeading: string;
   headline: string;
-  proofLabel: string;
+  plannedDirection?: CatalogPlannedDirection;
   statusSummary: string;
+  stories: CatalogProductStory[];
+};
+
+export type CatalogDisplayAssets = {
+  icon: CatalogAsset;
+  poster: CatalogAsset;
 };
 
 export type CatalogApp = {
@@ -43,6 +62,7 @@ export type CatalogApp = {
   category: string;
   description: string;
   detail: CatalogAppDetail;
+  display: CatalogDisplayAssets;
   icon: CatalogAsset;
   latestUpdate: string;
   name: string;
@@ -59,25 +79,78 @@ export const apps: CatalogApp[] = [
     slug: "fitness",
     category: "Health & Fitness",
     status: "Available now",
-    tagline: "Training plans, workout logging, and session history in one mobile-first shell.",
+    tagline: "Plan workouts, log sessions, and see your progress.",
     description:
-      "Fawxzzy Fitness brings planning, daily training, workout logging, and session history into one focused mobile-first experience. Build a routine, see what is due today, record a session, and return to a clear history of the work.",
+      "Build a routine, train from today's plan, log the session, and keep your history close.",
     detail: {
       headline: "Plan the work. Log the session. See the progress.",
-      proofLabel: "Built for repeatable training",
-      capabilitiesHeading: "The whole training loop stays close.",
-      capabilities: [
+      stories: [
         {
-          title: "Plan a routine",
-          description: "Shape repeatable training around the way you actually work.",
+          id: "today",
+          eyebrow: "Your training day",
+          title: "Know what you are doing when you arrive.",
+          description:
+            "Today brings the active routine, exercise order, training details, and next action into one calm view.",
+          media: [
+            {
+              src: "/apps/fitness/detail/today.webp",
+              width: 430,
+              height: 932,
+              alt: "Fitness Today screen showing a lower-body workout and Start action",
+              caption: "Current app · Today",
+              sha256: "996781D14AD85EDA0B94C0A38D931044B33CAAF4957C854183DF20A6F70F7422",
+              source:
+                "Responsive WebP derivative of the tracked Fitness today.png preview fixture at source commit 223982fb7ef93e760d7b0845378f5b05e196456b",
+            },
+          ],
         },
         {
-          title: "Train from today",
-          description: "Keep the next workout and session logging within easy reach.",
+          id: "session",
+          eyebrow: "Inside the workout",
+          title: "Log the set without losing the session.",
+          description:
+            "Exercises, targets, completed work, the session timer, and the finish action stay together while you train.",
+          media: [
+            {
+              src: "/apps/fitness/detail/session.webp",
+              width: 430,
+              height: 932,
+              alt: "Fitness active session screen with exercises, set logging, timer, and Finish action",
+              caption: "Current app · Active session",
+              sha256: "96DCD09FAB065E9342C7EBB134DCA504F40AB11A50D48AAE033F60121604A332",
+              source:
+                "Responsive WebP derivative of the tracked Fitness session.png preview fixture at source commit 223982fb7ef93e760d7b0845378f5b05e196456b",
+            },
+          ],
         },
         {
-          title: "Keep the history",
-          description: "Return to completed sessions and exercise history over time.",
+          id: "routine-history",
+          eyebrow: "The longer view",
+          title: "Shape the week. Read the work back.",
+          description:
+            "Routine structure keeps training days understandable, while history turns completed sessions into a useful record.",
+          media: [
+            {
+              src: "/apps/fitness/detail/routines.webp",
+              width: 430,
+              height: 932,
+              alt: "Fitness routine screen showing training and recovery days",
+              caption: "Current app · Routine",
+              sha256: "A348559817BD0808103DF12F95CEA1E4A62010F25E6BBA8DD6BAAC50E9B0DEBC",
+              source:
+                "Responsive WebP derivative of the tracked Fitness routines.png preview fixture at source commit 223982fb7ef93e760d7b0845378f5b05e196456b",
+            },
+            {
+              src: "/apps/fitness/detail/history.webp",
+              width: 430,
+              height: 932,
+              alt: "Fitness history screen summarizing three completed sessions",
+              caption: "Current app · History",
+              sha256: "174DE3AEE192F56B85F0028952E7708ED417ADEF4EA669AA94B5110483AF728F",
+              source:
+                "Responsive WebP derivative of the tracked Fitness history.png preview fixture at source commit 223982fb7ef93e760d7b0845378f5b05e196456b",
+            },
+          ],
         },
       ],
       statusSummary:
@@ -93,6 +166,18 @@ export const apps: CatalogApp[] = [
       sha256: "5F1011EF2DB7A4725E991D5FB6347F3E589028669F74BC35F273E6E800F11F03",
       source:
         "Exact public readback of the current Fawxzzy Fitness production PWA icon at /app/icon-512.png on July 16, 2026",
+    },
+    display: {
+      icon: {
+        src: "/apps/fitness/storefront-icon.webp",
+        sha256: "68EA981E132B52B38A8CF56A9C931361881A52B19CB302EEDC7502448F82A23E",
+        source: "Responsive WebP derivative of the canonical Fitness icon for storefront display",
+      },
+      poster: {
+        src: "/apps/fitness/storefront-poster.webp",
+        sha256: "E12316F496C1216D0EF564DECC1CDCB0DA64403FDD057F002F1347C5EFECF225",
+        source: "Responsive WebP derivative of the grounded Fitness walkthrough poster",
+      },
     },
     latestUpdate: "New 60-second live product walkthrough",
     accent: {
@@ -124,27 +209,86 @@ export const apps: CatalogApp[] = [
     slug: "mazer",
     category: "Games",
     status: "Available now",
-    tagline: "An atmospheric maze experience tuned for watch mode, play mode, and ambient runs.",
+    tagline: "Play an atmospheric maze or watch it unfold.",
     description:
-      "Mazer is an atmospheric maze experience built for active play and ambient watch modes. Enter a run when you want to navigate it yourself, or let the maze unfold as a calm visual experience across desktop and mobile screens.",
+      "Take control of a maze run, or switch to watch mode and let the atmosphere carry the screen.",
     detail: {
       headline: "Play the maze—or let it run.",
-      proofLabel: "Built for active and ambient runs",
-      capabilitiesHeading: "Move, watch, and return to the atmosphere.",
-      capabilities: [
+      stories: [
         {
-          title: "Enter the run",
-          description: "Move through atmospheric mazes in a focused play mode.",
+          id: "current-play",
+          eyebrow: "Playable now",
+          title: "The maze stays at the center.",
+          description:
+            "The current game keeps the route, player position, score, rank, pause action, and movement control in one focused play surface.",
+          media: [
+            {
+              src: "/apps/mazer/detail/current-play.webp",
+              width: 444,
+              height: 460,
+              alt: "Current Mazer play screen with maze, score, rank, pause, and movement control",
+              caption: "Current app · Play",
+              sha256: "4C7C07D4BD4126C9A541F93B54D7A203291BB08FB497B03C2F013DB66268935A",
+              source:
+                "Purpose-built crop of the implemented Mazer current-core-runtime catalog captured at source commit 462030ac942e4ffecd442fe0ceeb22584dcda931",
+            },
+          ],
         },
         {
-          title: "Switch to watch",
-          description: "Let the maze unfold as a calm, hands-off visual experience.",
-        },
-        {
-          title: "Carry the world",
-          description: "Keep the same visual language across desktop and mobile layouts.",
+          id: "current-control",
+          eyebrow: "Ways to enter",
+          title: "Start simply. Tune only when you want to.",
+          description:
+            "The current menu keeps the decision short, while Options exposes the player guide and visual or control preferences without crowding the maze.",
+          media: [
+            {
+              src: "/apps/mazer/detail/current-menu.webp",
+              width: 444,
+              height: 460,
+              alt: "Current Mazer guest menu with maze preview and Login action",
+              caption: "Current app · Guest menu",
+              sha256: "9F484AF9301A942919DDA345A2B9AA8E59FEFA02F8821939FE3FDADE94DC912B",
+              source:
+                "Purpose-built crop of the implemented Mazer current-core-runtime catalog captured at source commit 462030ac942e4ffecd442fe0ceeb22584dcda931",
+            },
+            {
+              src: "/apps/mazer/detail/current-options.webp",
+              width: 444,
+              height: 460,
+              alt: "Current Mazer Options screen with player guide and display preferences",
+              caption: "Current app · Options",
+              sha256: "A553CF8D530029205F17C12C8E7A24E8ADB6DED2258BA7379729FFA9869887CD",
+              source:
+                "Purpose-built crop of the implemented Mazer current-core-runtime catalog captured at source commit 462030ac942e4ffecd442fe0ceeb22584dcda931",
+            },
+          ],
         },
       ],
+      plannedDirection: {
+        id: "precision-arcade",
+        eyebrow: "Upcoming direction",
+        statusLabel: "Preview · In development",
+        title: "Precision Arcade is the planned visual language.",
+        description:
+          "This is a design direction—not the current game. It keeps maze play direct while exploring clearer topology, stronger score hierarchy, modern controls, and tighter feedback.",
+        points: [
+          "Retro arcade directness with modern clarity",
+          "The maze and player state remain the visual priority",
+          "Color communicates energy, information, reward, and danger",
+        ],
+        media: [
+          {
+            src: "/apps/mazer/detail/planned-precision-arcade.webp",
+            width: 870,
+            height: 578,
+            alt: "Planned Mazer Precision Arcade concept board with topology, gameplay, and interface studies",
+            caption: "Planned concept · Not current gameplay",
+            sha256: "EBDA0E36667ADE6EB7217ADF48C0E3D93643F98C720082FD621CCE4D9D2D726A",
+            source:
+              "Purpose-built crop of the planned Precision Arcade direction catalog governed by visual-direction.md and explicitly not implemented",
+          },
+        ],
+      },
       statusSummary:
         "Available now at its current product home. Fawxzzy opens Mazer there without copying game state into this site.",
     },
@@ -158,6 +302,18 @@ export const apps: CatalogApp[] = [
       sha256: "91764E546B8C1488B3D48BAEDA927AE18600B088178E190244FB9D8CE35E2440",
       source:
         "Exact public readback of the current Mazer production app icon at /icons/mazer-app-icon.png on July 16, 2026",
+    },
+    display: {
+      icon: {
+        src: "/apps/mazer/storefront-icon.webp",
+        sha256: "D369527A7CF096CC16DC701EF8986B70875A78EFF17A3E5016D27E0BEEC00826",
+        source: "Responsive WebP derivative of the canonical Mazer icon for storefront display",
+      },
+      poster: {
+        src: "/apps/mazer/storefront-poster.webp",
+        sha256: "F6470BEAD6DFB1FEB38A4C637683A6B047F61EFFC9AB04F2FEDF2F47C441D7AA",
+        source: "Responsive WebP derivative of the grounded Mazer walkthrough poster",
+      },
     },
     latestUpdate: "New 60-second live product walkthrough",
     accent: {

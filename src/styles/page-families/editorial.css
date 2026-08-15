@@ -714,7 +714,8 @@ a.editorial-directory__item:hover {
 @media (prefers-reduced-motion: reduce) {
   .discover-tiktok .catalog-button,
   .editorial-text-link,
-  .editorial-directory__item {
+  .editorial-directory__item,
+  .storefront-social [data-destination-id="tiktok"] {
     animation: none;
     transition: none;
   }

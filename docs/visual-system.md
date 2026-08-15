@@ -15,13 +15,14 @@ page families:
 1. Brand and marketing: the Home route.
 2. Product catalog: the Apps and Trove compatibility routes.
 3. Product detail: Fitness, Mazer, and future product routes.
-4. Editorial and directory: Discover, the build log, and Newsletter.
+4. Compatibility and provenance: the Discover fallback and retired editorial history.
 5. Utility: Login, confirmation, callback, reset, and Account.
 
-Wave 1 implements the first two families. Wave 2A implements the product-detail
-family. Wave 2B implements the editorial family. The secure utility shell gives
-Login, confirmation, callback, and reset a focused task layout; the Account
-dashboard remains the operational branch of the same family.
+Wave 1 established the first two families. Wave 2A established the product-detail
+family. The retired Wave 2B editorial family remains historical provenance only.
+The secure utility shell gives Login, confirmation, callback, and reset a focused
+task layout; the Account dashboard remains the operational branch of the same
+family.
 
 ## Utility and Auth template
 
@@ -49,7 +50,9 @@ styles belong to the narrowest established owner:
   product-detail composition.
 - `src/styles/page-families/studio-public.css` owns the Home/catalog studio
   frame and its current shared footer/navigation refinements.
-- `src/styles/page-families/editorial.css` owns Discover and Newsletter.
+- `src/styles/page-families/editorial.css` retains historical Discover and
+  Newsletter styling as provenance only; it does not authorize an active
+  newsletter or editorial route.
 - `src/styles/page-families/legacy-public.css` retains the earlier public rules
   in their original cascade position while later lanes retire or migrate them.
 
@@ -58,33 +61,33 @@ rules intentionally refine earlier foundations. Do not reorder the manifest to
 solve a one-page styling issue. Extend the canonical owner or perform a bounded,
 screenshot-proven migration instead.
 
-## Editorial template
+## Historical editorial template
 
-Discover and Newsletter share editorial typography, spacing, ruled lists,
-compact metadata, and restrained callouts, but they do not share one generic
-card layout.
+This section records the retired Wave 2B editorial design for provenance only.
+It is not current route or product authority: `/newsletter` is intentionally
+absent and returns 404, while `/discover` is a lightweight compatibility entry
+for canonical Home.
 
-- Discover is the ecosystem hub: orient, choose Build/Train/Create, inspect
-  current catalog-backed work, browse verified profiles, then join the community
-  or read the build log.
-- Newsletter is the publication home: explain the editorial value, show the
-  truthful archive state, then disclose email-delivery readiness as secondary
-  operational status.
-- Current-work rows derive their product name, status, update, poster, and route
-  from `src/data/apps.ts`. They must not imply scraped activity or invent dates,
-  metrics, readership, releases, or social proof.
-- The issue archive renders an explicit empty state until a real issue has a
-  stable URL and verified publication metadata. Draft issue titles do not count
-  as published proof.
-- Verified profile targets remain centralized in `src/data/discovery.ts`. The
-  editorial layout may recompose them, but it must not duplicate or silently
-  replace their routing contract.
+- Historical Discover oriented visitors around Build/Train/Create,
+  catalog-backed work, verified profiles, community, and the build log.
+- The retired Newsletter surface explained editorial value, showed the truthful
+  archive state, and disclosed email-delivery readiness as secondary operational
+  status. Those behaviors must not return to active navigation or routing.
+- Historical current-work rows derived product name, status, update, poster, and
+  route from `src/data/apps.ts`; they did not imply scraped activity or invent
+  dates, metrics, readership, releases, or social proof.
+- The historical issue archive used an explicit empty state until a real issue
+  had a stable URL and verified publication metadata.
+- Verified profile targets were centralized in `src/data/discovery.ts`. This
+  provenance does not authorize restoring retired destinations.
 
-The production-before contact sheet for Wave 2B is stored at
+The historical production-before contact sheet for Wave 2B is stored at
 `docs/visual-baselines/2026-07-20-wave2b-production-before.png`. It captures
 Discover and Newsletter from production main `9d892a73` in desktop Chromium at
 1440 by 900 and mobile WebKit at 390 by 844. Its SHA-256 is
 `D7D11DCC07F47AF48D7A1143CBEBFD9FE30B1A4C0861421ABF942A66A0B9B8E1`.
+It is immutable comparison evidence, not current Newsletter route or lifecycle
+authority.
 
 ## Surface hierarchy
 
@@ -129,9 +132,10 @@ Product pages are proof-led rather than card-led. The shared template uses:
   action;
 - one canonical trailer player with captions and loading/error handling rather
   than a poster plus duplicate disclosure;
-- three numbered capability statements sourced from `src/data/apps.ts`;
-- a truthful current-build panel, a restrained future-reviews contract, and a
-  final action section;
+- app-specific product stories sourced from `src/data/apps.ts`, each paired with
+  small purpose-built public media derived from approved implementation truth;
+- a clear current-product boundary, with any planned visual direction isolated
+  in its own labeled section beside the imagery;
 - a product accent constrained to borders, status text, media glow, and small
   section details rather than a separate visual theme.
 
@@ -142,6 +146,11 @@ canvas, global typography, navigation, footer, and interaction rules.
 Product-detail copy must describe current product behavior. It must not invent
 roadmap dates, usage metrics, ratings, testimonials, or canonical-origin
 cutovers. Launch links continue to use the centralized current-origin contract.
+Whole internal screenshot catalogs are reference evidence, not public route
+media. Product-route derivatives retain their source commit or design-authority
+provenance and explicit dimensions in `src/data/apps.ts`. All story images load
+below the fold; planned Mazer imagery must say `Preview`, `In development`, and
+`Not current gameplay` next to the image.
 
 ## Navigation and footer
 
@@ -149,9 +158,10 @@ The shared primary navigation is sticky, preserves one active destination, and
 keeps 44px targets at 320px and wider. Account entry points live in the footer
 during this wave so the narrow primary navigation remains uncluttered.
 
-The footer uses only routes that already exist: Apps, Fitness, Mazer, Discover,
-Newsletter/build log, Login, and Account. Do not invent legal, support, or
-social destinations.
+The current footer uses only Home, Apps, the centralized TikTok destination, and
+Account. Newsletter, build-log, Discover, and retired social destinations must
+not return to the footer without a new current owner decision. Do not invent
+legal, support, or social destinations.
 
 ## Accessibility and motion
 

@@ -10,13 +10,21 @@ container build therefore bind to the same reviewable 40-character source commit
 
 ## Artifact contents
 
-- 12 governed routes in desktop Chromium at 1440×900.
-- The same 12 routes in iPhone-class WebKit at 390×844.
-- `visual-manifest.json` with route, family, engine, viewport, byte size, image
+- 12 governed pages, including the real 404 surface, in a Windows-class desktop
+  Chromium emulation at 1440×900.
+- The same 12 pages in a macOS-class desktop WebKit emulation at 1440×900.
+- The same 12 pages in an iPhone 14-class WebKit emulation at 390×844.
+- The same 12 pages in a Pixel 7-class Android Chromium emulation at 412×839.
+- `visual-manifest.json` with the actual capture host, emulation mode, target
+  class, route, family, engine, viewport, byte size, image
   dimensions, SHA-256, observed LCP/CLS, initial transfer bytes, route JavaScript,
   and pre-interaction MP4 requests for every capture.
 - A labelled `contact-sheet.png` plus its standalone HTML source.
 - `release-receipt.json` with exact source commit/tree and CI-run provenance.
+
+These Playwright profiles are portable UI-design evidence. They do not claim
+native Windows or macOS browser execution, native iOS Safari or Android Chrome,
+physical-device behavior, platform fonts, or OS rendering certification.
 
 The source receipt deliberately leaves review, merge, deployment, alias, smoke,
 and rollback fields empty. CI evidence is not authorization to merge or deploy,
@@ -33,7 +41,7 @@ ignored by Git and Docker.
 
 Playwright WebKit 26.5 can emit one exact exception from its native modern-media-
 controls implementation: `Temporal.Duration properties must be finite and of
-consistent sign`. The existing mobile-WebKit suite documents the same runner-only
+consistent sign`. The existing WebKit suites document the same runner-only
 behavior and separately verifies real trailer playback. The evidence manifest
 records every occurrence under `knownRunnerExceptions`; all other page and console
 errors fail the capture.

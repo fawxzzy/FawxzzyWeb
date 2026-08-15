@@ -49,6 +49,8 @@ inside the optional technical-details disclosure.
   service records; partial or malformed readback never implies active services.
 - `/trove` is a lightweight `unavailable` compatibility surface with canonical
   metadata pointing to `/apps`; it does not render the catalog or load trailers.
+- `/discover` uses the same lightweight compatibility treatment with canonical
+  metadata pointing to `/`; it does not duplicate Home or load product media.
 
 ## Static-export decision
 
@@ -65,11 +67,16 @@ static output while keeping browser work visible.
   Auth states are exercised with local test adapters only.
 - The built static 404 is checked at 320 and 390 pixels and receives an automated
   WCAG A/AA scan.
-- `/trove` must contain no product showcase or video element.
+- `/discover` and `/trove` must contain no product showcase or video element.
 - Route and global error files must use the shared recovery variants and must not
   render `error.message`.
 - Full repository verification remains `npm run verify` across Chromium and
   iPhone-class WebKit.
+- UI-design evidence always covers Windows-class desktop Chromium, macOS-class
+  desktop WebKit, iPhone 14-class WebKit, and Pixel 7-class Android Chromium
+  Playwright emulations across every governed page. The manifest and contact
+  sheet disclose the actual capture host; this is not native-platform or
+  physical-device certification.
 
 ## Reusable captures
 

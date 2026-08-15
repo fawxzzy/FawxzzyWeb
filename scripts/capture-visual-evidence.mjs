@@ -23,6 +23,7 @@ const port = Number.parseInt(process.env.VISUAL_EVIDENCE_PORT ?? "4312", 10);
 const baseUrl = `http://127.0.0.1:${port}`;
 const launchers = { chromium, webkit };
 const knownWebKitMediaControlsError = "Temporal.Duration properties must be finite and of consistent sign";
+const knownNavigation404ConsoleError = "Failed to load resource: the server responded with a status of 404 (Not Found)";
 
 function sha256(buffer) {
   return crypto.createHash("sha256").update(buffer).digest("hex");
@@ -75,14 +76,17 @@ try {
     console.log(`[visual-evidence] starting ${browserContract.label}`);
     const launcher = launchers[browserContract.engine];
     const browser = await launcher.launch();
-    const iphone = devices["iPhone 14"];
+    const device = devices[browserContract.deviceName];
+    if (!device) {
+      throw new Error(`Unknown Playwright device descriptor: ${browserContract.deviceName}`);
+    }
     const context = await browser.newContext({
+      ...device,
       viewport: browserContract.viewport,
       reducedMotion: "reduce",
       deviceScaleFactor: 1,
       isMobile: browserContract.isMobile,
       hasTouch: browserContract.hasTouch,
-      userAgent: browserContract.isMobile ? iphone.userAgent : undefined,
     });
 
     for (const route of visualEvidenceRoutes) {
@@ -91,6 +95,7 @@ try {
       const browserErrors = [];
       const knownRunnerExceptions = [];
       const requestedMedia = [];
+      let expectedNavigation404Console = route.expectedStatus === 404;
       await page.addInitScript(() => {
         globalThis.__fawxzzyEvidenceVitals = { cls: 0, lcpMs: 0 };
 
@@ -127,11 +132,18 @@ try {
         browserErrors.push(`pageerror: ${error.message}`);
       });
       page.on("console", (message) => {
-        if (message.type() === "error") browserErrors.push(`console: ${message.text()}`);
+        if (message.type() !== "error") return;
+        if (expectedNavigation404Console && message.text() === knownNavigation404ConsoleError) {
+          knownRunnerExceptions.push(`console: ${message.text()}`);
+          expectedNavigation404Console = false;
+          return;
+        }
+        browserErrors.push(`console: ${message.text()}`);
       });
       const response = await page.goto(`${baseUrl}${route.path}`, { waitUntil: "networkidle" });
-      if (!response?.ok()) {
-        throw new Error(`${route.path} returned ${response?.status() ?? "no response"}.`);
+      const expectedStatus = route.expectedStatus ?? 200;
+      if (response?.status() !== expectedStatus) {
+        throw new Error(`${route.path} returned ${response?.status() ?? "no response"}; expected ${expectedStatus}.`);
       }
       await page.evaluate(() => document.fonts.ready);
       const performance = await page.evaluate(() => {
@@ -180,8 +192,12 @@ try {
         throw new Error(`${browserContract.label} ${route.path} emitted errors during capture: ${browserErrors.join(" | ")}`);
       }
       captures.push({
+        target: browserContract.id,
+        targetClass: browserContract.targetClass,
+        evidenceMode: browserContract.evidenceMode,
         browser: browserContract.label,
         engine: browserContract.engine,
+        device: browserContract.deviceName,
         viewport: browserContract.viewport,
         route: route.path,
         routeId: route.id,
@@ -208,7 +224,7 @@ try {
       <img src="${escapeHtml(capture.file)}" alt="${escapeHtml(`${capture.browser} capture of ${capture.route}`)}">
     </article>`).join("");
   const contactSheetHtml = `<!doctype html><html><head><meta charset="utf-8"><title>FawxzzyWeb ${commitSha} visual evidence</title><style>
-    :root{color-scheme:dark;font-family:system-ui,sans-serif;background:#070c0a;color:#d6dfd6}body{margin:0;padding:32px}h1{font-size:28px;margin:0 0 8px}p{color:#adbcaf;margin:0 0 28px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;align-items:start}article{background:#0b110e;border:1px solid #304036;border-radius:16px;overflow:hidden}header{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:12px 14px}header small{grid-column:1/-1;color:#7f9782}img{display:block;width:100%;height:520px;object-fit:cover;object-position:top;background:#050806}@media(max-width:1200px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:800px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}</style></head><body><h1>FawxzzyWeb exact-head visual evidence</h1><p>Commit ${commitSha} · ${captures.length} route/browser captures · reduced motion</p><main class="grid">${cards}</main></body></html>`;
+    :root{color-scheme:dark;font-family:system-ui,sans-serif;background:#070c0a;color:#d6dfd6}body{margin:0;padding:32px}h1{font-size:28px;margin:0 0 8px}p{color:#adbcaf;margin:0 0 28px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;align-items:start}article{background:#0b110e;border:1px solid #304036;border-radius:16px;overflow:hidden}header{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:12px 14px}header small{grid-column:1/-1;color:#7f9782}img{display:block;width:100%;height:520px;object-fit:cover;object-position:top;background:#050806}@media(max-width:1200px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:800px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}</style></head><body><h1>FawxzzyWeb exact-head visual evidence</h1><p>Commit ${commitSha} · ${captures.length} route/browser captures · Playwright device-profile emulation on ${escapeHtml(process.platform)}/${escapeHtml(process.arch)} · reduced motion</p><main class="grid">${cards}</main></body></html>`;
   const contactSheetHtmlPath = path.join(outputDirectory, "contact-sheet.html");
   await writeFile(contactSheetHtmlPath, contactSheetHtml, "utf8");
   const contactBrowser = await chromium.launch();
@@ -224,6 +240,12 @@ try {
     commit: commitSha,
     generatedAt: new Date().toISOString(),
     reducedMotion: true,
+    captureHost: {
+      runner: "playwright",
+      platform: process.platform,
+      architecture: process.arch,
+      evidenceMode: "device-profile-emulation",
+    },
     captureCount: captures.length,
     captures,
     contactSheet: {

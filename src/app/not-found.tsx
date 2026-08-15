@@ -14,16 +14,16 @@ export default function NotFound() {
         <SystemState
           actions={
             <>
-              <StaticLink className="catalog-button catalog-button--primary" href="/apps">
-                Explore apps
-              </StaticLink>
-              <StaticLink className="catalog-button catalog-button--secondary" href="/">
-                Return home
+              <StaticLink
+                className="catalog-button catalog-button--primary"
+                href={productIdentity.appsPath}
+              >
+                Browse apps
               </StaticLink>
             </>
           }
           description={
-            <>The address does not match a current {productIdentity.publicName} page.</>
+            <>We could not find that {productIdentity.publicName} page.</>
           }
           eyebrow="Page not found"
           headingLevel={1}
