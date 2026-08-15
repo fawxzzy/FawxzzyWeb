@@ -7,7 +7,7 @@ export function SiteFooter() {
     <footer className="site-footer">
       <nav aria-label="Footer" className="site-footer__nav">
         <StaticLink href="/">Home</StaticLink>
-        <StaticLink href="/apps">Apps</StaticLink>
+        <StaticLink href={productIdentity.appsPath}>Apps</StaticLink>
         <a
           data-analytics-event="tiktok_open"
           href={tiktokDestination.href}

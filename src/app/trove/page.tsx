@@ -20,7 +20,7 @@ export default function TroveCompatibilityPage() {
       actionLabel="Browse apps"
       current="apps"
       description="The app catalog has a shorter name and a clearer home."
-      destination="/apps"
+      destination={productIdentity.appsPath}
       identity="trove"
       label={productIdentity.legacyCatalogName}
       title="Trove is now Apps."

@@ -34,7 +34,7 @@ export function SiteNav({ current }: SiteNavProps) {
         </StaticLink>
         <StaticLink
           aria-current={current === "apps" ? "page" : undefined}
-          href="/apps"
+          href={productIdentity.appsPath}
         >
           Apps
         </StaticLink>

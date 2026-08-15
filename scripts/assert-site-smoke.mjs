@@ -1,27 +1,14 @@
-const catalogApps = [
-  {
-    name: "Fitness",
-    origin: "https://fawxzzy-fitness-local.vercel.app",
-    path: "/apps/fitness",
-    storyAssets: [
-      "/apps/fitness/detail/today.webp",
-      "/apps/fitness/detail/session.webp",
-      "/apps/fitness/detail/routines.webp",
-      "/apps/fitness/detail/history.webp",
-    ],
-  },
-  {
-    name: "Mazer",
-    origin: "https://fawxzzy-mazer.vercel.app",
-    path: "/apps/mazer",
-    storyAssets: [
-      "/apps/mazer/detail/current-menu.webp",
-      "/apps/mazer/detail/current-play.webp",
-      "/apps/mazer/detail/current-options.webp",
-      "/apps/mazer/detail/planned-precision-arcade.webp",
-    ],
-  },
-];
+import { apps, getAppDetailPath } from "../src/data/apps.ts";
+
+const catalogApps = apps.map((app) => ({
+  name: app.name,
+  origin: app.origin.current,
+  path: getAppDetailPath(app),
+  storyAssets: [
+    ...app.detail.stories,
+    ...(app.detail.plannedDirection ? [app.detail.plannedDirection] : []),
+  ].flatMap((story) => story.media.map((media) => media.src)),
+}));
 
 async function assertRoute(baseUrl, path, expectedText) {
   const response = await fetch(`${baseUrl}${path}`);
