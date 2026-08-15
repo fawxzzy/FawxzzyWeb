@@ -50,7 +50,7 @@ export async function assertSiteSmoke(baseUrl) {
   const appsHtml = await assertRoute(
     baseUrl,
     "/apps",
-    "Choose what you want to do.",
+    "Pick your app.",
   );
   for (const app of catalogApps) {
     if (!appsHtml.includes(`href="${app.path}"`)) {

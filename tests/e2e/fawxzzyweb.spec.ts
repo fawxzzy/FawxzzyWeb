@@ -13,10 +13,9 @@ async function sha256ForPublicAsset(src: string) {
 }
 
 test("visual-system documentation keeps Newsletter historical only", async () => {
-  const visualSystem = await readFile(
-    resolve(process.cwd(), "docs", "visual-system.md"),
-    "utf8",
-  );
+  const visualSystem = (
+    await readFile(resolve(process.cwd(), "docs", "visual-system.md"), "utf8")
+  ).replace(/\r\n/g, "\n");
 
   expect(visualSystem).toContain("## Historical editorial template");
   expect(visualSystem).toContain("`/newsletter` is intentionally\nabsent and returns 404");
@@ -49,7 +48,7 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
   await expect(page.locator('a[aria-current="page"]')).toHaveCount(1);
   await expect(page.locator(".site-nav__links a")).toHaveCount(2);
   await expect(page.getByRole("navigation", { name: "Primary" })).not.toContainText("Account");
-  await expect(page.getByRole("link", { name: "Browse all apps" })).toHaveAttribute("href", "/apps");
+  await expect(page.getByRole("link", { name: "Choose an app" })).toHaveAttribute("href", "#apps");
   await expect(page.getByRole("navigation", { name: "Primary" })).not.toContainText("Discover");
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
@@ -238,7 +237,7 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
   await page.goto("/apps");
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Choose what you want to do.",
+    "Pick your app.",
   );
 
   for (const app of apps) {
@@ -888,14 +887,15 @@ test("primary navigation adapts without clipping from 320px through desktop", as
         };
       });
 
-      expect(geometry.brandBottom, `${route} at ${width}px`).toBeLessThanOrEqual(
-        geometry.linksTop + 1,
+      expect(geometry.linksTop, `${route} at ${width}px`).toBeLessThan(
+        geometry.brandBottom,
       );
       expect(geometry.linksLeft).toBeGreaterThanOrEqual(geometry.navLeft);
       expect(geometry.linksRight).toBeLessThanOrEqual(geometry.navRight);
       expect(geometry.linksScrollWidth).toBeLessThanOrEqual(geometry.linksClientWidth);
       expect(geometry.targetsInsideNav).toBe(true);
       expect(geometry.minimumTargetHeight).toBeGreaterThanOrEqual(44);
+      await expect(primaryNav.locator(".site-nav__brand-label")).toBeVisible();
       await expect(primaryNav.locator('a[aria-current="page"]')).toHaveCount(1);
     }
   }
@@ -923,6 +923,40 @@ test("primary navigation adapts without clipping from 320px through desktop", as
   expect(desktopGeometry.brandTop).toBeLessThan(desktopGeometry.linksBottom);
   expect(desktopGeometry.linksTop).toBeLessThan(desktopGeometry.brandBottom);
   await expect(primaryNav.locator('a[aria-current="page"]')).toHaveCount(1);
+});
+
+test("storefront keeps the first choice close and catalog titles inside their cards", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+
+  const mobileGeometry = await page.evaluate(() => ({
+    appsTop: document.querySelector("#apps")?.getBoundingClientRect().top ?? Number.POSITIVE_INFINITY,
+    heroHeight: document.querySelector(".storefront-hero")?.getBoundingClientRect().height ?? 0,
+  }));
+  expect(mobileGeometry.heroHeight).toBeLessThanOrEqual(500);
+  expect(mobileGeometry.appsTop).toBeLessThanOrEqual(760);
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/apps");
+  const cardGeometry = await page.locator("[data-product-showcase]").evaluateAll((cards) =>
+    cards.map((card) => {
+      const cardRect = card.getBoundingClientRect();
+      const headingRect = card.querySelector("h2")?.getBoundingClientRect();
+      return {
+        cardLeft: cardRect.left,
+        cardRight: cardRect.right,
+        headingLeft: headingRect?.left ?? 0,
+        headingRight: headingRect?.right ?? Number.POSITIVE_INFINITY,
+      };
+    }),
+  );
+
+  for (const geometry of cardGeometry) {
+    expect(geometry.headingLeft).toBeGreaterThanOrEqual(geometry.cardLeft);
+    expect(geometry.headingRight).toBeLessThanOrEqual(geometry.cardRight);
+  }
 });
 
 test("primary navigation stays viewport-sticky while the document owns scrolling", async ({

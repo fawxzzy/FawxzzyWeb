@@ -4,7 +4,6 @@ import { ProductShowcase } from "@/components/catalog/product-showcase";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
 import { StaticLink } from "@/components/site/static-link";
-import { productIdentity } from "@/config/product";
 import { apps } from "@/data/apps";
 import { tiktokDestination } from "@/data/discovery";
 
@@ -38,9 +37,9 @@ export function StorefrontExperience() {
             <div className="storefront-hero__actions">
               <StaticLink
                 className="catalog-button catalog-button--primary"
-                href={productIdentity.appsPath}
+                href="#apps"
               >
-                Browse all apps <span aria-hidden="true">&rarr;</span>
+                Choose an app <span aria-hidden="true">&darr;</span>
               </StaticLink>
               <a
                 className="catalog-button catalog-button--ghost"
@@ -71,9 +70,6 @@ export function StorefrontExperience() {
               <p className="eyebrow">Choose your app</p>
               <h2 id="storefront-apps-title">Built for momentum and play.</h2>
             </div>
-            <StaticLink href={productIdentity.appsPath}>
-              View the catalog <span aria-hidden="true">&rarr;</span>
-            </StaticLink>
           </header>
 
           <div className="storefront-app-grid">
