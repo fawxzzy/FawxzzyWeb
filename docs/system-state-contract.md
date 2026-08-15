@@ -72,8 +72,11 @@ static output while keeping browser work visible.
   render `error.message`.
 - Full repository verification remains `npm run verify` across Chromium and
   iPhone-class WebKit.
-- UI-design evidence always covers Windows desktop Chromium, macOS desktop
-  WebKit, iPhone WebKit, and Android Chromium across every governed page.
+- UI-design evidence always covers Windows-class desktop Chromium, macOS-class
+  desktop WebKit, iPhone 14-class WebKit, and Pixel 7-class Android Chromium
+  Playwright emulations across every governed page. The manifest and contact
+  sheet disclose the actual capture host; this is not native-platform or
+  physical-device certification.
 
 ## Reusable captures
 

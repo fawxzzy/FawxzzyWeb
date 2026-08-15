@@ -193,6 +193,8 @@ try {
       }
       captures.push({
         target: browserContract.id,
+        targetClass: browserContract.targetClass,
+        evidenceMode: browserContract.evidenceMode,
         browser: browserContract.label,
         engine: browserContract.engine,
         device: browserContract.deviceName,
@@ -222,7 +224,7 @@ try {
       <img src="${escapeHtml(capture.file)}" alt="${escapeHtml(`${capture.browser} capture of ${capture.route}`)}">
     </article>`).join("");
   const contactSheetHtml = `<!doctype html><html><head><meta charset="utf-8"><title>FawxzzyWeb ${commitSha} visual evidence</title><style>
-    :root{color-scheme:dark;font-family:system-ui,sans-serif;background:#070c0a;color:#d6dfd6}body{margin:0;padding:32px}h1{font-size:28px;margin:0 0 8px}p{color:#adbcaf;margin:0 0 28px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;align-items:start}article{background:#0b110e;border:1px solid #304036;border-radius:16px;overflow:hidden}header{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:12px 14px}header small{grid-column:1/-1;color:#7f9782}img{display:block;width:100%;height:520px;object-fit:cover;object-position:top;background:#050806}@media(max-width:1200px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:800px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}</style></head><body><h1>FawxzzyWeb exact-head visual evidence</h1><p>Commit ${commitSha} · ${captures.length} route/browser captures · reduced motion</p><main class="grid">${cards}</main></body></html>`;
+    :root{color-scheme:dark;font-family:system-ui,sans-serif;background:#070c0a;color:#d6dfd6}body{margin:0;padding:32px}h1{font-size:28px;margin:0 0 8px}p{color:#adbcaf;margin:0 0 28px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;align-items:start}article{background:#0b110e;border:1px solid #304036;border-radius:16px;overflow:hidden}header{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:12px 14px}header small{grid-column:1/-1;color:#7f9782}img{display:block;width:100%;height:520px;object-fit:cover;object-position:top;background:#050806}@media(max-width:1200px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:800px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}</style></head><body><h1>FawxzzyWeb exact-head visual evidence</h1><p>Commit ${commitSha} · ${captures.length} route/browser captures · Playwright device-profile emulation on ${escapeHtml(process.platform)}/${escapeHtml(process.arch)} · reduced motion</p><main class="grid">${cards}</main></body></html>`;
   const contactSheetHtmlPath = path.join(outputDirectory, "contact-sheet.html");
   await writeFile(contactSheetHtmlPath, contactSheetHtml, "utf8");
   const contactBrowser = await chromium.launch();
@@ -238,6 +240,12 @@ try {
     commit: commitSha,
     generatedAt: new Date().toISOString(),
     reducedMotion: true,
+    captureHost: {
+      runner: "playwright",
+      platform: process.platform,
+      architecture: process.arch,
+      evidenceMode: "device-profile-emulation",
+    },
     captureCount: captures.length,
     captures,
     contactSheet: {

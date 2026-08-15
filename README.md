@@ -33,10 +33,12 @@ npm run verify
 
 Verification covers lint, static export, route and identity smoke checks, source and deployment guards, accessibility, responsive layout, media provenance, discovery truth, account boundaries, and compatibility rollback.
 
-Portable UI evidence covers every governed page in Windows desktop Chromium,
-macOS desktop WebKit, iPhone WebKit, and Android Chromium. Run
-`npm run evidence:visual` after a successful build to create the four-target
-contact sheet and individual screenshots.
+Portable UI evidence covers every governed page with four Playwright target
+profiles: Windows-class desktop Chromium, macOS-class desktop WebKit, iPhone
+14-class WebKit, and Pixel 7-class Android Chromium. These are browser/device
+emulations on the actual capture host, not native OS or physical-device
+certification. Run `npm run evidence:visual` after a successful build to create
+the four-target contact sheet, manifest, and individual screenshots.
 
 ## Catalog contract
 
