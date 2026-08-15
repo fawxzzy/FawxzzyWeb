@@ -29,8 +29,8 @@ export function CatalogExperience() {
         <header className="catalog-editorial-hero catalog-editorial-hero--store">
           <div>
             <p className="eyebrow">App catalog</p>
-            <h1 id="apps-title">Choose what you want to do.</h1>
-            <p>Compare the apps, open the details, and start when you are ready.</p>
+            <h1 id="apps-title">Pick your app.</h1>
+            <p>Fitness for training. Mazer for play. Open one to see the full experience.</p>
           </div>
         </header>
 

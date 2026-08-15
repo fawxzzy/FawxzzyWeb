@@ -794,7 +794,7 @@
 
 .storefront-hero {
   position: relative;
-  min-height: clamp(31rem, 68vw, 46rem);
+  min-height: clamp(28rem, 52vw, 38rem);
   display: grid;
   align-items: end;
   overflow: clip;
@@ -826,7 +826,7 @@
   max-width: 10ch;
   margin: 0.45rem 0 0;
   color: #fff;
-  font-size: clamp(3.3rem, 8.4vw, 7.4rem);
+  font-size: clamp(3.15rem, 7vw, 6.2rem);
   font-weight: 670;
   line-height: 0.92;
   letter-spacing: -0.075em;
@@ -963,7 +963,7 @@
 .catalog-editorial-hero--store {
   display: block;
   max-width: 48rem;
-  margin: clamp(2rem, 6vw, 5rem) 0 0;
+  margin: clamp(1.5rem, 4vw, 3rem) 0 0;
   border: 0;
   background: transparent;
   padding: 0;
@@ -972,7 +972,7 @@
 .catalog-editorial-hero--store h1 {
   max-width: 12ch;
   margin: 0.4rem 0 0;
-  font-size: clamp(3.2rem, 8vw, 6.8rem);
+  font-size: clamp(3rem, 7vw, 5.6rem);
   font-weight: 650;
   line-height: 0.93;
   letter-spacing: -0.075em;
@@ -987,6 +987,10 @@
 
 .catalog-stack {
   gap: 1rem;
+}
+
+.catalog-page .catalog-stack {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .product-showcase {
@@ -1055,6 +1059,7 @@
 }
 
 .product-showcase__content {
+  min-width: 0;
   align-self: center;
   padding: clamp(1.4rem, 4vw, 2.6rem);
 }
@@ -1063,6 +1068,7 @@
 .product-showcase__identity h3 {
   font-size: clamp(2.2rem, 4.5vw, 4.2rem);
   font-weight: 650;
+  overflow-wrap: anywhere;
 }
 
 .product-showcase__promise {
@@ -1146,11 +1152,11 @@
 
   .storefront-shell,
   .catalog-page .shell-container {
-    gap: 3.4rem;
+    gap: 2.6rem;
   }
 
   .storefront-hero {
-    min-height: 35rem;
+    min-height: 30rem;
     border-radius: 22px;
   }
 
@@ -1163,7 +1169,7 @@
   }
 
   .storefront-hero__copy h1 {
-    font-size: clamp(3.15rem, 17vw, 4.6rem);
+    font-size: clamp(2.85rem, 15vw, 3.65rem);
   }
 
   .storefront-hero__actions,
@@ -1181,12 +1187,47 @@
   }
 
   .catalog-editorial-hero--store h1 {
-    font-size: clamp(3rem, 16vw, 4.7rem);
+    font-size: clamp(2.75rem, 14vw, 3.8rem);
   }
 
   .site-footer__closing {
     width: 100%;
     justify-content: space-between;
+  }
+}
+
+@media (max-width: 640px) {
+  .site-nav {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    gap: 0.35rem;
+    margin-bottom: 1.5rem;
+    padding: 0.45rem 0.5rem;
+  }
+
+  .site-nav__brand {
+    align-self: auto;
+    flex: none;
+    min-width: 0;
+    padding-inline: 0.2rem 0.35rem;
+  }
+
+  .site-nav__brand-label {
+    display: inline;
+    font-size: 0.78rem;
+  }
+
+  .site-nav__links {
+    display: flex;
+    grid-template-columns: none;
+    width: auto;
+    margin-left: auto;
+  }
+
+  .site-nav__links a {
+    width: auto;
+    padding-inline: 0.68rem;
   }
 }
 

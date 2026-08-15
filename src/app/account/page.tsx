@@ -4,7 +4,7 @@ import { accountPageMetadata } from "@/lib/account-metadata";
 
 export const metadata = accountPageMetadata(
   "Account",
-  "Manage your Fawxzzy sign-in and connected apps.",
+  "Sign in and manage your Fawxzzy apps.",
   "/account",
 );
 
@@ -12,7 +12,7 @@ export default function AccountPage() {
   return (
     <AccountPageShell
       eyebrow="Account"
-      intro="Manage your sign-in and connected apps."
+      intro="Sign in and manage your apps in one place."
       title="Your account."
     >
       <AccountPortal mode="account" />

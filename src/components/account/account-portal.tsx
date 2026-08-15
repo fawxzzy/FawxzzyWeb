@@ -112,9 +112,9 @@ function SetupState({ resolution }: { resolution: AdapterResolution | null }) {
       <SystemState
         className="account-notice"
         compact
-        description="Preparing the browser-only account boundary. No account request has started."
+        description="Getting the account page ready."
         framed={false}
-        title="Loading the account surface…"
+        title="Loading your account…"
         variant="loading"
       />
     );
@@ -125,10 +125,10 @@ function SetupState({ resolution }: { resolution: AdapterResolution | null }) {
     <SystemState
       className="account-notice"
       compact
-      description="This page stays read-only until the approved account origin and public configuration are available."
-      details={<p>{resolution.reason} No credentials or account data were sent.</p>}
+      description="Account access is not available yet. You can still open Fitness and Mazer."
+      details={<p>{resolution.reason}</p>}
       framed={false}
-      title="Account setup is pending."
+      title="Account access is coming soon."
       variant="unavailable"
     />
   );
@@ -139,7 +139,7 @@ function RuntimeNote() {
   if (!hydrated) return null;
 
   const kind = classifyRuntimeOrigin(window.location.origin);
-  if (kind === "account") return null;
+  if (kind === "account" || kind === "hub") return null;
 
   return (
     <p className="account-runtime-note" data-runtime-origin={kind}>
@@ -362,15 +362,13 @@ function ServiceRegistrationPanel() {
       ? null
       : snapshot.capability === "unknown"
         ? {
-            description:
-              "The platform did not provide one complete authoritative service readback, so no service is treated as active.",
-            title: "Service status could not be verified.",
+            description: "App connections could not be loaded. You can still open each app directly.",
+            title: "Connections are unavailable.",
             variant: "terminal-error" as const,
           }
         : {
-            description:
-              "Authoritative service registration is not connected here. Product links remain available without claiming activation.",
-            title: "Service registration is unavailable.",
+            description: "Connected-app status is not available yet. You can still open each app directly.",
+            title: "Connections are coming soon.",
             variant: "unavailable" as const,
           };
 
@@ -381,9 +379,9 @@ function ServiceRegistrationPanel() {
       data-service-capability={snapshot.capability}
     >
       <div className="account-card__heading">
-        <p className="field-label">Connected apps</p>
-        <h2 id="shared-services-title">Your apps.</h2>
-        <p>See where your Fawxzzy account can be used.</p>
+        <p className="field-label">Apps</p>
+        <h2 id="shared-services-title">Open your apps.</h2>
+        <p>Jump straight to Fitness or Mazer.</p>
       </div>
       {unresolvedState ? (
         <SystemState
@@ -503,12 +501,9 @@ function AccountPanel({ resolution }: { resolution: AdapterResolution | null }) 
     <section aria-labelledby="account-status-title" className="account-card surface-panel">
       <RuntimeNote />
       <div className="account-card__heading">
-        <p className="field-label">Origin-scoped session</p>
-        <h2 id="account-status-title">Your account, on this origin.</h2>
-        <p>
-          Phase one shares credentials across products, not browser sessions. No parent-domain
-          cookie or refresh token is shared.
-        </p>
+        <p className="field-label">Account access</p>
+        <h2 id="account-status-title">Sign in when you are ready.</h2>
+        <p>Manage your profile and connected apps from one place.</p>
       </div>
       <SetupState resolution={resolution} />
       {error ? <StatusNotice notice={{ kind: "error", text: safeAuthError("session") }} /> : null}
@@ -603,33 +598,6 @@ function AccountPanel({ resolution }: { resolution: AdapterResolution | null }) 
         </div>
       ) : null}
       <ServiceRegistrationPanel />
-      <div className="account-capability" data-username-capability="gated">
-        <div>
-          <p className="field-label">Canonical global username</p>
-          <h3>Reserved for the governed profile contract.</h3>
-          <p>
-            Username reads, availability, and writes stay disabled until the platform schema and
-            capability are deployed. No availability is guessed here.
-          </p>
-        </div>
-        <button className="catalog-button catalog-button--disabled" disabled type="button">
-          Not connected yet
-        </button>
-      </div>
-      <div className="account-capability" data-user-number-capability="gated">
-        <div>
-          <p className="field-label">Immutable global user number</p>
-          <h3>Authoritative readback only.</h3>
-          <p>
-            The central allocator owns unique, never-reused human user numbers. This client does
-            not allocate, infer, or renumber them while the platform capability is unavailable.
-          </p>
-          <span data-user-number-state="unavailable">User number unavailable</span>
-        </div>
-        <button className="catalog-button catalog-button--disabled" disabled type="button">
-          Platform-gated
-        </button>
-      </div>
     </section>
   );
 }

@@ -720,7 +720,7 @@ test("every settled provider signup outcome has one non-enumerating result", asy
   expect(await context.cookies()).toEqual([]);
 });
 
-test("account settings stay session-scoped and username remains capability-gated", async ({
+test("account settings stay session-scoped without exposing future platform internals", async ({
   browserName,
   context,
   page,
@@ -728,12 +728,10 @@ test("account settings stay session-scoped and username remains capability-gated
   test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
   await page.goto("/account?auth_test=session");
   await expect(page.getByText("preview.user@example.test")).toBeVisible();
-  await expect(page.locator('[data-username-capability="gated"] button')).toBeDisabled();
-  await expect(page.locator('[data-user-number-capability="gated"] button')).toBeDisabled();
-  await expect(page.locator('[data-user-number-state="unavailable"]')).toHaveText(
-    "User number unavailable",
-  );
   await expect(page.locator('input[name="username"], input[name="user_number"]')).toHaveCount(0);
+  await expect(page.locator("body")).not.toContainText("Canonical global username");
+  await expect(page.locator("body")).not.toContainText("Immutable global user number");
+  await expect(page.getByRole("heading", { name: "Open your apps." })).toBeVisible();
   expect(await context.cookies()).toEqual([]);
 
   const emailForm = page.locator("form").filter({ has: page.getByLabel("Update email") });
