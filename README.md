@@ -8,7 +8,7 @@ FawxzzyWeb is the public app-distribution surface owned by the Socials OS progra
 - `/apps` — canonical full app catalog sourced from `src/data/apps.ts`
 - `/apps/[slug]` — canonical product detail and direct launch surface
 - `/discover` — permanent provider redirect to `/` with a lightweight no-index static fallback
-- `/trove` — permanent provider redirect to `/apps` with a reversible no-index static fallback
+- `/trove` — temporary provider redirect to `/apps` with a reversible no-index static fallback
 - `/apps/fitness/preview` — permanent redirect to the Fitness trailer
 - `/login`, `/account`, `/auth/*`, `/reset-password` — product-account capability
 - `/healthz.json` — static health and compatibility identity
@@ -68,7 +68,7 @@ Stable `data-analytics-event` attributes define the future website measurement v
 
 ## Static export
 
-FawxzzyWeb remains a Next.js static export. Keep routes build-time deterministic. Vercel owns permanent compatibility redirects, while real static fallback pages preserve useful behavior on local and non-Vercel hosts because Next.js config redirects are not supported with `output: "export"`.
+FawxzzyWeb remains a Next.js static export. Keep routes build-time deterministic. Vercel owns explicit compatibility redirects: `/discover` and the retired Fitness preview are permanent, while `/trove` stays temporary so the compatibility handoff remains reversible. Real static fallback pages preserve useful behavior on local and non-Vercel hosts because Next.js config redirects are not supported with `output: "export"`.
 
 Internal route links render through `src/components/site/static-link.tsx` so the exported site does not depend on speculative route-data requests.
 

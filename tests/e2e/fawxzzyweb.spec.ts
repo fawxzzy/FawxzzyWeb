@@ -44,6 +44,7 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     "Train. Play. Keep moving.",
   );
+  await expect(page.getByText(`${apps.length} focused apps.`)).toBeVisible();
   await expect(page.getByRole("link", { name: "Fawxzzy home" })).toHaveAttribute("href", "/");
   await expect(page.locator('a[aria-current="page"]')).toHaveCount(1);
   await expect(page.locator(".site-nav__links a")).toHaveCount(2);
@@ -672,6 +673,14 @@ test("vendored media matches its centralized provenance hashes", async () => {
     expect(await sha256ForPublicAsset(app.trailer.poster.src)).toBe(
       app.trailer.poster.sha256,
     );
+    for (const story of app.detail.stories) {
+      for (const media of story.media) {
+        expect(await sha256ForPublicAsset(media.src)).toBe(media.sha256);
+      }
+    }
+    for (const media of app.detail.plannedDirection?.media ?? []) {
+      expect(await sha256ForPublicAsset(media.src)).toBe(media.sha256);
+    }
   }
 });
 
@@ -736,7 +745,7 @@ test("route and root error boundaries use explicit shared recovery states", asyn
   expect(globalError).not.toContain("error.message");
 });
 
-test("the retired Fitness screenshot-board URL has a permanent trailer redirect", async () => {
+test("provider redirects preserve permanent and reversible compatibility boundaries", async () => {
   const vercelConfig = JSON.parse(await readFile(resolve(process.cwd(), "vercel.json"), "utf8"));
 
   expect(vercelConfig.redirects).toContainEqual({
@@ -752,7 +761,7 @@ test("the retired Fitness screenshot-board URL has a permanent trailer redirect"
   expect(vercelConfig.redirects).toContainEqual({
     source: "/trove",
     destination: "/apps",
-    permanent: true,
+    permanent: false,
   });
 });
 

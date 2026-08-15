@@ -33,7 +33,7 @@ export function StorefrontExperience() {
           <div className="storefront-hero__copy">
             <p className="eyebrow">Fawxzzy apps</p>
             <h1>Train. Play. Keep moving.</h1>
-            <p>Two focused apps. One simple place to choose what comes next.</p>
+            <p>{apps.length} focused apps. One simple place to choose what comes next.</p>
             <div className="storefront-hero__actions">
               <StaticLink className="catalog-button catalog-button--primary" href="/apps">
                 Browse all apps <span aria-hidden="true">&rarr;</span>
