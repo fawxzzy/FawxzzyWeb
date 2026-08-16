@@ -48,17 +48,18 @@ pages retain a restrained setup note with no fabricated rating, count, or testim
 read model is not admitted. Home and Apps prioritize current product proof rather than empty social
 proof.
 
-## Planned owner-lane origins
+## Current owner-lane origins
 
-| App | Current verified origin | Planned canonical origin |
+| App | Current branded origin | Preserved compatibility origin |
 | --- | --- | --- |
-| Fitness | `https://fawxzzy-fitness-local.vercel.app` | `https://fitness.fawxzzy.com` |
-| Mazer | `https://fawxzzy-mazer.vercel.app` | `https://mazer.fawxzzy.com` |
+| Fitness | `https://fitness.fawxzzy.com` | `https://fawxzzy-fitness-local.vercel.app` |
+| Mazer | `https://mazer.fawxzzy.com` | `https://fawxzzy-mazer.vercel.app` |
 
-The planned origins are declarations, not proof that a domain is attached or authority to perform
-a cutover. Fitness and Mazer remain separate owner lanes and deployments.
+The branded origins are provider-verified launch homes. The compatibility origins remain separate
+owner-lane redirect and rollback surfaces; they are not active storefront destinations. Fitness and
+Mazer remain independently owned and deployed.
 
-## Future cutover sequence
+## Completed cutover contract
 
 Each owner lane must execute the following independently:
 
