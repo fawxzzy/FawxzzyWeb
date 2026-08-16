@@ -48,15 +48,15 @@ Home is the only discovery storefront. Apps is the comparison catalog, and each 
 
 The storefront uses small WebP derivatives for listing and detail media while preserving canonical icons, posters, trailers, approved implementation references, and their hashes as source provenance. Rebuild a derivative only from its declared canonical source and update the centralized derivative hash in `src/data/apps.ts`. Never publish a whole internal visual-reference catalog as route media; planned imagery requires an adjacent status label.
 
-Current grounded origins:
-
-- Fitness: `https://fawxzzy-fitness-local.vercel.app`
-- Mazer: `https://fawxzzy-mazer.vercel.app`
-
-Planned canonical origins are not live and are not authorized by this repository change:
+Current branded origins:
 
 - Fitness: `https://fitness.fawxzzy.com`
 - Mazer: `https://mazer.fawxzzy.com`
+
+Legacy compatibility origins remain redirect and rollback entrypoints only:
+
+- Fitness: `https://fawxzzy-fitness-local.vercel.app`
+- Mazer: `https://fawxzzy-mazer.vercel.app`
 
 Do not guess app domains or synthesize cross-origin install behavior.
 

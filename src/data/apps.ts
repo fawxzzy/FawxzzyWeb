@@ -157,7 +157,7 @@ export const apps: CatalogApp[] = [
         "Available now at its current product home. Fawxzzy opens Fitness there without copying training data into this site.",
     },
     origin: {
-      current: "https://fawxzzy-fitness-local.vercel.app",
+      current: "https://fitness.fawxzzy.com",
       plannedCanonical: "https://fitness.fawxzzy.com",
       preserveOnCutover: ["https://fawxzzy-fitness-local.vercel.app"],
     },
@@ -293,7 +293,7 @@ export const apps: CatalogApp[] = [
         "Available now at its current product home. Fawxzzy opens Mazer there without copying game state into this site.",
     },
     origin: {
-      current: "https://fawxzzy-mazer.vercel.app",
+      current: "https://mazer.fawxzzy.com",
       plannedCanonical: "https://mazer.fawxzzy.com",
       preserveOnCutover: ["https://fawxzzy-mazer.vercel.app"],
     },
