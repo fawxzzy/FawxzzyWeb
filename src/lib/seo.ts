@@ -3,12 +3,7 @@ import { productIdentity } from "@/config/product";
 import type { CatalogApp } from "@/data/apps";
 import { getAppDetailPath } from "@/data/apps";
 
-const defaultSocialImage = {
-  alt: "Fawxzzy — creator, builder, fitness, and gaming",
-  height: 500,
-  url: "/brand/fawxzzy-banner-v2.png",
-  width: 1500,
-} as const;
+const defaultSocialImage = productIdentity.linkPreview;
 
 export const publicIndexableRoutes = [
   "/",

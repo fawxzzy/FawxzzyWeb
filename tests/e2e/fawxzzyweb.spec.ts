@@ -108,9 +108,9 @@ test("public routes carry social metadata and grounded structured data", async (
   page,
 }) => {
   const publicRoutes = [
-    { path: "/", image: "/brand/fawxzzy-banner-v2.png" },
-    { path: "/apps", image: "/brand/fawxzzy-banner-v2.png" },
-    { path: "/discover", image: "/brand/fawxzzy-banner-v2.png" },
+    { path: "/", image: productIdentity.linkPreview.url },
+    { path: "/apps", image: productIdentity.linkPreview.url },
+    { path: "/discover", image: productIdentity.linkPreview.url },
   ];
 
   for (const route of publicRoutes) {
@@ -122,9 +122,25 @@ test("public routes carry social metadata and grounded structured data", async (
       "content",
       new URL(route.image, productIdentity.canonicalOrigin).href,
     );
+    await expect(page.locator('meta[property="og:image:width"]')).toHaveAttribute(
+      "content",
+      String(productIdentity.linkPreview.width),
+    );
+    await expect(page.locator('meta[property="og:image:height"]')).toHaveAttribute(
+      "content",
+      String(productIdentity.linkPreview.height),
+    );
+    await expect(page.locator('meta[property="og:image:alt"]')).toHaveAttribute(
+      "content",
+      productIdentity.linkPreview.alt,
+    );
     await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
       "content",
       "summary_large_image",
+    );
+    await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute(
+      "content",
+      new URL(route.image, productIdentity.canonicalOrigin).href,
     );
   }
 
@@ -285,7 +301,7 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
   await expect(page.locator('img[src="/brand/trove-foxmark.png"]')).toHaveCount(0);
   await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
     "content",
-    `${productIdentity.canonicalOrigin}/brand/fawxzzy-banner-v2.png`,
+    new URL(productIdentity.linkPreview.url, productIdentity.canonicalOrigin).href,
   );
   await expect(page).toHaveTitle("Apps | Fawxzzy");
   await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
