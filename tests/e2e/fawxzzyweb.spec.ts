@@ -6,6 +6,12 @@ import { resolve } from "node:path";
 import { productIdentity } from "../../src/config/product";
 import { apps } from "../../src/data/apps";
 import { discoveryDestinations } from "../../src/data/discovery";
+import {
+  analyticsApps,
+  analyticsEvents,
+  compatibilitySources,
+  normalizeAnalyticsRoute,
+} from "../../src/lib/analytics/contract";
 
 async function sha256ForPublicAsset(src: string) {
   const asset = await readFile(resolve(process.cwd(), "public", src.replace(/^\//, "")));
@@ -28,6 +34,53 @@ test("visual-system documentation keeps Newsletter historical only", async () =>
   expect(visualSystem).not.toContain("Discover and Newsletter share");
   expect(visualSystem).not.toContain("Wave 2B implements the editorial family");
   expect(visualSystem).not.toContain("Newsletter/build log, Login, and Account");
+});
+
+test("first-party analytics stays closed, anonymous, and provider-gated", async () => {
+  expect(analyticsEvents).toEqual([
+    "page_view",
+    "tiktok_open",
+    "catalog_app_view",
+    "app_launch",
+    "compatibility_visit",
+  ]);
+  expect(analyticsApps).toEqual(["fitness", "mazer"]);
+  expect(compatibilitySources).toEqual([
+    "discover",
+    "trove",
+    "fitness_legacy_origin",
+    "mazer_legacy_origin",
+  ]);
+  expect(normalizeAnalyticsRoute("/apps/fitness")).toBe("/apps/fitness");
+  expect(normalizeAnalyticsRoute("/private/free-form-path")).toBe("/");
+
+  const migration = await readFile(
+    resolve(process.cwd(), "supabase/migrations/202608200001_first_party_analytics.sql"),
+    "utf8",
+  );
+  const collector = await readFile(
+    resolve(process.cwd(), "supabase/functions/first-party-analytics/index.ts"),
+    "utf8",
+  );
+  const client = await readFile(
+    resolve(process.cwd(), "src/components/analytics/first-party-analytics.tsx"),
+    "utf8",
+  );
+
+  expect(migration).toContain("revoke all on table fawxzzy_analytics.events from public, anon, authenticated");
+  expect(migration).not.toMatch(
+    /\b(ip_address|user_agent|referrer|account_id|user_id)\s+(text|uuid|inet)\b/i,
+  );
+  expect(collector).toContain("allowedOrigins");
+  expect(collector).toContain("hasValidProductShape");
+  expect(migration).toContain("product = 'fitness'");
+  expect(migration).toContain("product = 'mazer'");
+  expect(collector).toContain("SUPABASE_SERVICE_ROLE_KEY");
+  expect(collector).not.toMatch(/request\.headers\.get\(["']user-agent|x-forwarded-for|referer/i);
+  expect(client).toContain("NEXT_PUBLIC_FAWXZZY_ANALYTICS_URL");
+  expect(client).toContain('product: "web"');
+  expect(client).toContain('credentials: "omit"');
+  expect(client).not.toContain("document.cookie");
 });
 
 test("root is the canonical Fawxzzy experience", async ({ page }) => {
@@ -777,12 +830,12 @@ test("provider redirects preserve permanent and reversible compatibility boundar
   });
   expect(vercelConfig.redirects).toContainEqual({
     source: "/discover",
-    destination: "/",
+    destination: "/?compatibility=discover",
     permanent: true,
   });
   expect(vercelConfig.redirects).toContainEqual({
     source: "/trove",
-    destination: "/apps",
+    destination: "/apps?compatibility=trove",
     permanent: false,
   });
 });

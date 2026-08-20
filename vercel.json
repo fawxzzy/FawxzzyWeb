@@ -29,12 +29,12 @@
   "redirects": [
     {
       "source": "/discover",
-      "destination": "/",
+      "destination": "/?compatibility=discover",
       "permanent": true
     },
     {
       "source": "/trove",
-      "destination": "/apps",
+      "destination": "/apps?compatibility=trove",
       "permanent": false
     },
     {
