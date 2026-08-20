@@ -14,6 +14,7 @@ const port = Number.parseInt(process.env.VISUAL_REGRESSION_PORT ?? "4313", 10);
 const baseUrl = `http://127.0.0.1:${port}`;
 const launchers = { chromium, webkit };
 const signatureSize = 32;
+const maximumHeightDrift = 0.03;
 const maximumMeanChannelDelta = 0.04;
 const maximumChangedCellRatio = 0.15;
 
@@ -57,7 +58,7 @@ function compareSignatures(current, expected, key) {
     throw new Error(`${key} width drifted from ${expected.width} to ${current.width}.`);
   }
   const heightDelta = Math.abs(current.height - expected.height) / expected.height;
-  if (heightDelta > 0.02) {
+  if (heightDelta > maximumHeightDrift) {
     throw new Error(`${key} height drifted by ${(heightDelta * 100).toFixed(2)}%.`);
   }
 

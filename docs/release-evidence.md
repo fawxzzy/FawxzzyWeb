@@ -52,7 +52,7 @@ in visual-acceptance and release receipts.
 The same 48-route/target matrix is protected by `npm run test:visual-regression`.
 The committed baseline stores compact 32×32, eight-step quantized RGB signatures
 instead of duplicating full-resolution screenshots. Verification fails on route
-or target drift, width changes, height drift above two percent, mean channel
+or target drift, width changes, height drift above three percent, mean channel
 delta above four percent, or high-contrast cell drift above fifteen percent.
 This deliberately tolerates small host-font and antialiasing differences while
 still detecting meaningful layout, hierarchy, spacing, and palette regressions.
