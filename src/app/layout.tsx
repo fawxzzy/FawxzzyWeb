@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { FirstPartyAnalytics } from "@/components/analytics/first-party-analytics";
 import { productIdentity } from "@/config/product";
 import "./globals.css";
 
@@ -93,6 +94,7 @@ export default function RootLayout({
           Skip to content
         </a>
         <div className="safe-area-main">{children}</div>
+        <FirstPartyAnalytics />
       </body>
     </html>
   );
