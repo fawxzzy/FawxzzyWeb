@@ -59,19 +59,14 @@ export const metadata: Metadata = {
     url: productIdentity.canonicalOrigin,
     type: "website",
     images: [
-      {
-        alt: "Fawxzzy — creator, builder, fitness, and gaming",
-        height: 500,
-        url: "/brand/fawxzzy-banner-v2.png",
-        width: 1500,
-      },
+      productIdentity.linkPreview,
     ],
   },
   twitter: {
     card: "summary_large_image",
     title: productIdentity.publicName,
     description: productIdentity.description,
-    images: ["/brand/fawxzzy-banner-v2.png"],
+    images: [productIdentity.linkPreview.url],
   },
 };
 

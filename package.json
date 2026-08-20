@@ -20,9 +20,10 @@
     "test:release-evidence": "node scripts/assert-release-evidence.mjs",
     "test:runtime-hygiene": "node scripts/assert-runtime-hygiene.mjs",
     "test:style-architecture": "node scripts/assert-style-architecture.mjs",
+    "test:visual-regression": "node scripts/assert-visual-regression.mjs",
     "smoke:lifeline": "node scripts/smoke-lifeline.mjs",
     "deploy:production": "node scripts/deploy-production.mjs",
-    "verify": "npm run lint && npm run test:auth-key-guard && npm run test:deployment-binding && npm run test:runtime-hygiene && npm run test:style-architecture && npm run test:release-evidence && npm run build && npm run test:discovery-performance && npm run smoke:lifeline && npm run test:e2e"
+    "verify": "npm run lint && npm run test:auth-key-guard && npm run test:deployment-binding && npm run test:runtime-hygiene && npm run test:style-architecture && npm run test:release-evidence && npm run build && npm run test:discovery-performance && npm run smoke:lifeline && npm run test:visual-regression && npm run test:e2e"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.109.0",
@@ -40,6 +41,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.11",
+    "sharp": "0.34.5",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
