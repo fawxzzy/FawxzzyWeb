@@ -15,11 +15,6 @@ function emit(payload: AnalyticsEnvelope) {
   if (!endpoint) return;
 
   const body = JSON.stringify(payload);
-  if (navigator.sendBeacon) {
-    navigator.sendBeacon(endpoint, new Blob([body], { type: "application/json" }));
-    return;
-  }
-
   void fetch(endpoint, {
     body,
     credentials: "omit",

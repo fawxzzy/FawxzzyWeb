@@ -73,6 +73,8 @@ test("first-party analytics stays closed, anonymous, and provider-gated", async 
   );
   expect(collector).toContain("allowedOrigins");
   expect(collector).toContain("hasValidProductShape");
+  expect(collector).toContain("isClosedPayload");
+  expect(collector).toContain("Object.keys(value).every");
   expect(migration).toContain("product = 'fitness'");
   expect(migration).toContain("product = 'mazer'");
   expect(collector).toContain("SUPABASE_SERVICE_ROLE_KEY");
@@ -80,6 +82,7 @@ test("first-party analytics stays closed, anonymous, and provider-gated", async 
   expect(client).toContain("NEXT_PUBLIC_FAWXZZY_ANALYTICS_URL");
   expect(client).toContain('product: "web"');
   expect(client).toContain('credentials: "omit"');
+  expect(client).not.toContain("sendBeacon");
   expect(client).not.toContain("document.cookie");
 });
 

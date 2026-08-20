@@ -23,6 +23,7 @@ const compatibilitySources = new Set([
   "fitness_legacy_origin",
   "mazer_legacy_origin",
 ]);
+const payloadKeys = new Set(["app", "compatibility", "event", "product", "route"]);
 
 type Payload = {
   app?: unknown;
@@ -61,6 +62,15 @@ function hasValidProductShape(payload: Payload) {
   return false;
 }
 
+function isClosedPayload(value: unknown): value is Payload {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    Object.keys(value).every((key) => payloadKeys.has(key))
+  );
+}
+
 function headers(origin: string) {
   return {
     "Access-Control-Allow-Headers": "content-type",
@@ -88,12 +98,15 @@ Deno.serve(async (request) => {
   const contentLength = Number(request.headers.get("content-length") ?? "0");
   if (contentLength > 1024) return response(origin, 413);
 
-  let payload: Payload;
+  let candidate: unknown;
   try {
-    payload = await request.json();
+    candidate = await request.json();
   } catch {
     return response(origin, 400);
   }
+
+  if (!isClosedPayload(candidate)) return response(origin, 400);
+  const payload = candidate;
 
   if (
     typeof payload.event !== "string" ||
