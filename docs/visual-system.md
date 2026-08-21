@@ -129,6 +129,8 @@ preview, and truthful feedback state into one screen family. The shared template
 
 - installation help at the top for iPhone/iPad, Android, Windows, and macOS;
 - one phone-style app icon and name that opens the branded app origin directly;
+- one explicit primary `Open` control followed by the secondary `Preview` and
+  `Feedback` controls;
 - a separate `Preview` dialog for one current, source-bound product image;
 - a separate `Feedback` dialog that fails closed to an unavailable state until
   the governed public review read model exists;

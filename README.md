@@ -43,7 +43,7 @@ the four-target contact sheet, manifest, and individual screenshots.
 
 Update `src/data/apps.ts` when the catalog changes. Each entry owns its current launch origin, planned canonical subdomain, rollback origins, active storefront icon and preview, provenance hashes, and product copy.
 
-Home is the concise discovery storefront. Apps is the single installation and app-launch surface. Both use the same product identity and responsive-media contract. On Apps, each phone-style icon opens the independently owned branded app origin without an intermediate detail page; current preview media and the truthful feedback state open separately on request.
+Home is the concise discovery storefront. Apps is the single installation and app-launch surface. Both use the same product identity and responsive-media contract. On Apps, each phone-style icon and its primary `Open` control launch the independently owned branded app origin without an intermediate detail page; `Preview` and the truthful `Feedback` state remain separate secondary actions in that order.
 
 The storefront uses compact WebP derivatives of current product evidence. Rebuild a derivative only from its declared canonical source and update the centralized derivative hash in `src/data/apps.ts`. Historical detail images and trailers remain repository provenance only; they are not active route media. Never publish a whole internal visual-reference catalog as route media.
 

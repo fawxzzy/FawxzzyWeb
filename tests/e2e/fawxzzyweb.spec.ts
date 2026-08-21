@@ -349,6 +349,18 @@ test("apps route presents install help first and a direct-launch app grid", asyn
     await expect(launchLink).toHaveAttribute("rel", "noreferrer");
     await expect(launchLink).toHaveAttribute("data-analytics-event", "app_launch");
     await expect(launchLink).toContainText(app.name);
+    const launcherControls = entry.locator(":scope > .app-launcher__actions > *");
+    await expect(launcherControls).toHaveCount(3);
+    await expect(launcherControls.nth(0)).toHaveText(/Open/);
+    await expect(launcherControls.nth(1)).toHaveText("Preview");
+    await expect(launcherControls.nth(2)).toHaveText("Feedback");
+    const openControl = entry.getByRole("link", {
+      name: `Open ${app.name} app from launcher controls`,
+    });
+    await expect(openControl).toHaveAttribute("href", app.origin.current);
+    await expect(openControl).toHaveAttribute("target", "_blank");
+    await expect(openControl).toHaveAttribute("rel", "noreferrer");
+    await expect(openControl).toHaveAttribute("data-analytics-event", "app_launch");
     await expect(entry.locator(":scope > .app-launcher__launch img")).toHaveCount(1);
     await expect(entry.locator(":scope > .app-launcher__launch img")).not.toHaveAttribute(
       "src",

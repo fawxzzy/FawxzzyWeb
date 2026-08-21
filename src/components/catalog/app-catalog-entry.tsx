@@ -52,6 +52,18 @@ export function AppCatalogEntry({
       </StaticLink>
 
       <div className="app-launcher__actions">
+        <StaticLink
+          aria-label={`Open ${name} app from launcher controls`}
+          className="app-launcher__action app-launcher__action--open"
+          data-analytics-app={slug}
+          data-analytics-event="app_launch"
+          href={origin}
+          rel="noreferrer"
+          target="_blank"
+        >
+          Open
+          <span aria-hidden="true">↗</span>
+        </StaticLink>
         <button
           aria-haspopup="dialog"
           className="app-launcher__action"
