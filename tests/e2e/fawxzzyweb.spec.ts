@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Request } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -28,7 +28,7 @@ test("visual-system documentation keeps Newsletter historical only", async () =>
   expect(visualSystem).toContain("immutable comparison evidence");
   expect(visualSystem).toContain("The current footer uses only Home, Apps");
   expect(visualSystem).toContain(
-    "The retired Wave 2B editorial family remains historical provenance only",
+    "Wave 2B editorial families remain historical provenance only",
   );
   expect(visualSystem).not.toContain("Newsletter is the publication home");
   expect(visualSystem).not.toContain("Discover and Newsletter share");
@@ -51,7 +51,7 @@ test("first-party analytics stays closed, anonymous, and provider-gated", async 
     "fitness_legacy_origin",
     "mazer_legacy_origin",
   ]);
-  expect(normalizeAnalyticsRoute("/apps/fitness")).toBe("/apps/fitness");
+  expect(normalizeAnalyticsRoute("/apps/fitness")).toBe("/apps");
   expect(normalizeAnalyticsRoute("/private/free-form-path")).toBe("/");
 
   const migration = await readFile(
@@ -136,7 +136,7 @@ test("public discovery files expose only canonical indexable routes", async ({
   expect(sitemapResponse.ok()).toBe(true);
   expect(sitemapResponse.headers()["content-type"]).toContain("application/xml");
   const sitemap = await sitemapResponse.text();
-  const expectedRoutes = ["/", "/apps", "/apps/fitness", "/apps/mazer"];
+  const expectedRoutes = ["/", "/apps"];
 
   for (const route of expectedRoutes) {
     const canonical =
@@ -145,7 +145,17 @@ test("public discovery files expose only canonical indexable routes", async ({
         : new URL(route, productIdentity.canonicalOrigin).href;
     expect(sitemap).toContain(`<loc>${canonical}</loc>`);
   }
-  for (const excluded of ["/discover", "/trove", "/newsletter", "/account", "/login", "/auth/confirm", "/reset-password"]) {
+  for (const excluded of [
+    "/discover",
+    "/trove",
+    "/apps/fitness",
+    "/apps/mazer",
+    "/newsletter",
+    "/account",
+    "/login",
+    "/auth/confirm",
+    "/reset-password",
+  ]) {
     expect(sitemap).not.toContain(`<loc>${new URL(excluded, productIdentity.canonicalOrigin).href}</loc>`);
   }
 
@@ -210,32 +220,37 @@ test("public routes carry social metadata and grounded structured data", async (
     "WebSite",
   ]);
 
-  for (const app of apps) {
-    await page.goto(`/apps/${app.slug}`);
-    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
-      "content",
-      new URL(app.trailer.poster.src, productIdentity.canonicalOrigin).href,
-    );
-    const graph = JSON.parse(
-      (await page.locator(`#${app.slug}-application-structured-data`).textContent()) ?? "{}",
-    );
-    const application = graph["@graph"].find(
-      (entry: { "@type": string }) => entry["@type"] === "SoftwareApplication",
-    );
-    const breadcrumb = graph["@graph"].find(
-      (entry: { "@type": string }) => entry["@type"] === "BreadcrumbList",
-    );
+  await page.goto("/apps");
+  const catalogGraph = JSON.parse(
+    (await page.locator("#fawxzzy-app-catalog-structured-data").textContent()) ?? "{}",
+  );
+  const applicationList = catalogGraph["@graph"].find(
+    (entry: { "@type": string }) => entry["@type"] === "ItemList",
+  );
+  const applications = catalogGraph["@graph"].filter(
+    (entry: { "@type": string }) => entry["@type"] === "SoftwareApplication",
+  );
 
-    expect(application.name).toBe(app.name);
-    expect(application.url).toBe(`${productIdentity.canonicalOrigin}/apps/${app.slug}`);
+  expect(applicationList.itemListElement).toHaveLength(apps.length);
+  expect(applications).toHaveLength(apps.length);
+  for (const app of apps) {
+    const application = applications.find(
+      (entry: { name: string }) => entry.name === app.name,
+    );
+    expect(application.url).toBe(app.origin.current);
     expect(application.sameAs).toBe(app.origin.current);
+    expect(application.mainEntityOfPage).toBe(
+      `${productIdentity.canonicalOrigin}/apps`,
+    );
+    expect(application.screenshot).toBe(
+      new URL(app.display.poster.src, productIdentity.canonicalOrigin).href,
+    );
     expect(application.featureList).toEqual(
       app.detail.stories.map(({ title }) => title),
     );
     expect(application).not.toHaveProperty("aggregateRating");
     expect(application).not.toHaveProperty("offers");
     expect(application).not.toHaveProperty("review");
-    expect(breadcrumb.itemListElement).toHaveLength(2);
   }
 });
 
@@ -309,7 +324,7 @@ test("editorial pages keep clear mobile hierarchy and interaction contracts", as
   expect(motion.transition).toBe("0s");
 });
 
-test("apps route reflects centralized icon and trailer truth", async ({ page, request }) => {
+test("apps route reflects centralized icon, current preview, and launch truth", async ({ page, request }) => {
   test.setTimeout(60_000);
   await page.goto("/apps");
 
@@ -329,10 +344,12 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
     ).toHaveAttribute("src", app.display.poster.src);
     await expect(entry).toContainText(app.description);
     await expect(entry).toContainText(app.category);
-    await expect(entry.getByRole("link", { name: `View ${app.name}` })).toHaveAttribute(
-      "href",
-      `/apps/${app.slug}`,
-    );
+    const launchLink = entry.getByRole("link", { name: `View ${app.name} app` });
+    await expect(launchLink).toHaveAttribute("href", app.origin.current);
+    await expect(launchLink).toHaveAttribute("target", "_blank");
+    await expect(launchLink).toHaveAttribute("rel", "noreferrer");
+    await expect(launchLink).toHaveAttribute("data-analytics-event", "app_launch");
+    await expect(entry.locator(`a[href="/apps/${app.slug}"]`)).toHaveCount(0);
     await expect(entry.locator("[data-review-placeholder]")).toHaveCount(0);
 
     await expect(entry).toContainText(app.status);
@@ -342,8 +359,6 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
     for (const asset of [
       app.display.icon.src,
       app.display.poster.src,
-      app.trailer.video.src,
-      app.trailer.captionsSrc,
     ]) {
       const response = await request.get(asset);
       expect(response.ok(), `${asset} should be served`).toBe(true);
@@ -355,6 +370,14 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
   await expect(page.locator(".app-store-card__category")).toHaveCount(0);
   await expect(page.locator("[data-review-placeholder]")).toHaveCount(0);
   await expect(page.locator('img[src="/brand/trove-foxmark.png"]')).toHaveCount(0);
+  const installGuide = page.getByRole("region", { name: "How to install my apps" });
+  await expect(installGuide).toBeVisible();
+  await expect(installGuide.getByRole("listitem")).toHaveCount(3);
+  await expect(installGuide).toContainText("Tap Share, then Add to Home Screen.");
+  await expect(installGuide).toContainText("Open the browser menu, then tap Install app.");
+  await expect(installGuide).toContainText(
+    "Use the install icon in the address bar or browser menu.",
+  );
   await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
     "content",
     new URL(productIdentity.linkPreview.url, productIdentity.canonicalOrigin).href,
@@ -364,7 +387,7 @@ test("apps route reflects centralized icon and trailer truth", async ({ page, re
   await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
 });
 
-test("Home stays concise, Apps owns comparison, and detail routes own trailers", async ({ page }) => {
+test("Home stays concise and Apps launches each product without an extra detail page", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
 
   await page.goto("/");
@@ -379,10 +402,10 @@ test("Home stays concise, Apps owns comparison, and detail routes own trailers",
     await expect(card.getByRole("img", { name: `${app.name} app preview` })).toBeVisible();
     await expect(card.locator("video")).toHaveCount(0);
     await expect(card.locator("details")).toHaveCount(0);
-
-    await page.goto(`/apps/${app.slug}`);
-    await expect(page.getByLabel(`${app.name} trailer`)).toBeVisible();
-    await page.goto("/apps");
+    await expect(card.getByRole("link", { name: `View ${app.name} app` })).toHaveAttribute(
+      "href",
+      app.origin.current,
+    );
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -421,275 +444,6 @@ test("Wave 1 interactions retain 44px targets and reduced-motion restraint", asy
   expect(motion.animation).toBe("none");
   expect(motion.transition).toBe("0s");
 });
-
-test("each app-detail trailer exposes its one-minute master from its explicit action", async ({ page }) => {
-  test.setTimeout(60_000);
-
-  for (const app of apps) {
-    await page.goto(`/apps/${app.slug}`);
-    const entry = page.locator(`[data-app-detail="${app.slug}"]`);
-    const trailer = entry.getByLabel(`${app.name} trailer`);
-    await entry.getByRole("button", { name: `Play ${app.name} trailer` }).click();
-    await expect(trailer.locator("source")).toHaveAttribute("src", app.trailer.video.src);
-    await expect.poll(
-      () => trailer.evaluate((video: HTMLVideoElement) => video.duration),
-      { message: `${app.name} trailer should remain a one-minute master`, timeout: 10_000 },
-    ).toBeGreaterThanOrEqual(59.9);
-    await expect.poll(
-      () => trailer.evaluate((video: HTMLVideoElement) => video.duration),
-      { message: `${app.name} trailer should not exceed the one-minute master`, timeout: 10_000 },
-    ).toBeLessThanOrEqual(60.1);
-    await expect(entry.locator('[data-playback-state="playing"]')).toBeVisible();
-
-    await trailer.evaluate((video: HTMLVideoElement) => video.pause());
-    await expect(entry.getByRole("button", { name: `Resume ${app.name} trailer` })).toBeVisible();
-  }
-});
-
-for (const app of apps) {
-  test(`${app.name} interrupted trailer attempts stay retryable without hiding genuine errors`, async ({
-    page,
-  }) => {
-    test.setTimeout(60_000);
-    await page.goto(`/apps/${app.slug}`);
-
-    const entry = page.locator(`[data-app-detail="${app.slug}"]`);
-    const player = entry.locator(".trailer-player");
-    const trailer = entry.getByLabel(`${app.name} trailer`);
-    await trailer.evaluate((video: HTMLVideoElement) => {
-      type ControlledVideo = HTMLVideoElement & { playbackMode?: "abort" | "success" | "error" };
-
-      const controlledVideo = video as ControlledVideo;
-      controlledVideo.playbackMode = "abort";
-      controlledVideo.play = () => {
-        if (controlledVideo.playbackMode === "error") {
-          return Promise.reject(new DOMException("Media decode failed", "NotSupportedError"));
-        }
-
-        if (controlledVideo.playbackMode === "abort") {
-          return Promise.reject(new DOMException("Playback was interrupted", "AbortError"));
-        }
-
-        return Promise.resolve();
-      };
-    });
-
-    const playAction = entry.getByRole("button", { name: `Play ${app.name} trailer` });
-    await playAction.click({ force: true });
-    await expect(player).toHaveAttribute("data-playback-state", /^(idle|paused)$/);
-    await expect(playAction).toBeVisible();
-    await expect(entry).not.toContainText("This trailer could not play here.");
-
-    await trailer.evaluate((video: HTMLVideoElement) => {
-      (video as HTMLVideoElement & { playbackMode?: string }).playbackMode = "success";
-    });
-    await playAction.click({ force: true });
-    await expect(player).toHaveAttribute("data-playback-state", "playing");
-
-    await trailer.evaluate((video: HTMLVideoElement) => {
-      video.dispatchEvent(new Event("pause"));
-    });
-    const resumeAction = entry.getByRole("button", { name: `Resume ${app.name} trailer` });
-    await expect(resumeAction).toBeVisible();
-    await trailer.evaluate((video: HTMLVideoElement) => {
-      (video as HTMLVideoElement & { playbackMode?: string }).playbackMode = "error";
-    });
-    await resumeAction.click({ force: true });
-    await expect(player).toHaveAttribute("data-playback-state", "error");
-    await expect(entry).toContainText("This trailer could not play here.");
-    const retryAction = entry.getByRole("button", { name: `Retry ${app.name} trailer` });
-    await expect(retryAction).toBeVisible();
-
-    await trailer.evaluate((video: HTMLVideoElement) => {
-      (video as HTMLVideoElement & { playbackMode?: string }).playbackMode = "success";
-    });
-    await retryAction.click({ force: true });
-    await expect(player).toHaveAttribute("data-playback-state", "playing");
-  });
-}
-
-for (const app of apps) {
-  test(`${app.name} has a dedicated public app-detail route`, async ({ page }) => {
-    test.setTimeout(60_000);
-    await page.goto(`/apps/${app.slug}`);
-
-    await expect(page).toHaveTitle(`${app.name} | Fawxzzy`);
-    await expect(page.locator(`[data-app-detail="${app.slug}"]`)).toBeVisible();
-    await expect(page.getByRole("heading", { level: 1, name: app.name })).toBeVisible();
-    await expect(page.getByRole("img", { name: `${app.name} icon` })).toHaveAttribute(
-      "src",
-      app.icon.src,
-    );
-    await expect(
-      page.getByRole("img", { name: `${app.name} interaction walkthrough poster` }),
-    ).toHaveCount(0);
-    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
-      "href",
-      `${productIdentity.canonicalOrigin}/apps/${app.slug}`,
-    );
-    await expect(page.getByText(app.description)).toBeVisible();
-    await expect(page.getByRole("link", { name: "Back home" })).toHaveAttribute("href", "/");
-    await expect(page.getByText(app.status, { exact: true })).toBeVisible();
-
-    for (const story of app.detail.stories) {
-      const storySection = page.locator(`[data-product-story="${story.id}"]`);
-      await expect(storySection).toBeVisible();
-      await expect(storySection.getByRole("heading", { level: 2, name: story.title })).toBeVisible();
-      await expect(storySection.getByText(story.description)).toBeVisible();
-      for (const media of story.media) {
-        const image = storySection.getByRole("img", { name: media.alt });
-        await expect(image).toHaveAttribute("src", media.src);
-        await expect(image).toHaveAttribute("loading", "lazy");
-        await expect(storySection.getByText(media.caption)).toBeVisible();
-      }
-      if (story.media.length > 1) {
-        const gallery = storySection.getByRole("region", { name: `${story.title} media gallery` });
-        await expect(gallery).toHaveAttribute("tabindex", "0");
-      }
-    }
-
-    if (app.detail.plannedDirection) {
-      const planned = app.detail.plannedDirection;
-      const plannedSection = page.locator(`[data-product-story="${planned.id}"]`);
-      await expect(plannedSection).toBeVisible();
-      await expect(plannedSection.getByText(planned.statusLabel)).toBeVisible();
-      await expect(plannedSection.getByText("Planned concept · Not current gameplay")).toBeVisible();
-    } else {
-      await expect(page.locator(".app-detail-planned")).toHaveCount(0);
-    }
-
-    const openApp = page.getByRole("link", { name: `Open ${app.name}` });
-    await expect(openApp).toHaveAttribute("href", app.origin.current);
-    await expect(openApp).toHaveAttribute("target", "_blank");
-    await expect(openApp).toHaveAttribute("rel", "noreferrer");
-    await expect(openApp).toHaveAttribute("data-analytics-event", "app_launch");
-    await expect(openApp).toHaveAttribute("data-analytics-app", app.slug);
-    await expect(page.locator("body")).not.toContainText("&nearr;");
-
-    await expect(page.locator(".app-screenshots-section")).toHaveCount(0);
-
-    await expect(page.locator(`a[href="${app.origin.current}"]`)).toHaveCount(1);
-    await expect(page.locator(".app-detail-cta, [data-review-placeholder]")).toHaveCount(0);
-
-    const accent = await page.locator(`[data-app-detail="${app.slug}"]`).evaluate((element) =>
-      getComputedStyle(element).getPropertyValue("--product-from").trim(),
-    );
-    expect(accent).toBe(app.accent.from);
-
-    const [copyBox, mediaBox] = await Promise.all([
-      page.locator(".app-detail-hero__copy").boundingBox(),
-      page.locator(".app-detail-hero__media").boundingBox(),
-    ]);
-    expect(copyBox).not.toBeNull();
-    expect(mediaBox).not.toBeNull();
-
-    if (copyBox && mediaBox) {
-      if ((page.viewportSize()?.width ?? 0) > 880) {
-        expect(mediaBox.x).toBeGreaterThan(copyBox.x + copyBox.width);
-      } else {
-        expect(mediaBox.y).toBeGreaterThan(copyBox.y + copyBox.height);
-      }
-    }
-
-    const geometry = await page.evaluate(() => ({
-      clientWidth: document.documentElement.clientWidth,
-      scrollWidth: document.documentElement.scrollWidth,
-    }));
-    expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth);
-
-    const primaryMedia = page.locator(`#${app.slug}-trailer`);
-    const trailer = primaryMedia.getByLabel(`${app.name} trailer`);
-    await expect(primaryMedia.locator("details")).toHaveCount(0);
-    await expect(trailer).toHaveAttribute("poster", app.trailer.poster.src);
-    await expect(trailer.locator("source")).not.toHaveAttribute("src", /.+/);
-    await expect(trailer.locator("track")).toHaveAttribute("src", app.trailer.captionsSrc);
-    await page.getByRole("button", { name: `Play ${app.name} trailer` }).click();
-    await expect(trailer.locator("source")).toHaveAttribute("src", app.trailer.video.src);
-    await expect.poll(
-      () => trailer.evaluate((video: HTMLVideoElement) => video.currentTime),
-      { message: `${app.name} detail trailer should advance`, timeout: 10_000 },
-    ).toBeGreaterThan(0.1);
-    await trailer.evaluate((video: HTMLVideoElement) => video.pause());
-    await expect(page.locator("body")).not.toContainText("No rating or count is implied today.");
-    await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
-    await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
-  });
-}
-
-test("primary trailer playback is keyboard operable without a disclosure", async ({ page }) => {
-  test.setTimeout(60_000);
-  await page.goto("/apps/fitness");
-
-  const playButton = page.getByRole("button", { name: "Play Fitness trailer" });
-  await playButton.focus();
-  await expect(playButton).toBeFocused();
-  await page.keyboard.press("Enter");
-
-  const trailer = page.getByLabel("Fitness trailer");
-  await expect.poll(
-    () => trailer.evaluate((video: HTMLVideoElement) => video.currentTime),
-    { message: "keyboard-activated trailer should advance", timeout: 10_000 },
-  ).toBeGreaterThan(0.1);
-  await expect(page.locator("details")).toHaveCount(0);
-});
-
-for (const app of apps) {
-  test(`${app.name} trailer defers media and isolates its byte-range request`, async ({
-    page,
-  }, testInfo) => {
-    test.setTimeout(90_000);
-    const mediaRequests: string[] = [];
-    const recordMediaRequest = (request: Request) => {
-      const pathname = new URL(request.url()).pathname;
-      if (pathname.endsWith(".mp4")) mediaRequests.push(pathname);
-    };
-    page.on("request", recordMediaRequest);
-
-    await page.goto(`/apps/${app.slug}`, { waitUntil: "networkidle" });
-    expect(mediaRequests, `${app.name} initial media requests`).toEqual([]);
-    const trailer = page.getByLabel(`${app.name} trailer`);
-    await expect(trailer.locator("source")).not.toHaveAttribute("src", /.+/);
-    await expect(trailer).toHaveJSProperty("controls", false);
-
-    await page.getByRole("button", { name: `Play ${app.name} trailer` }).click();
-    await expect.poll(
-      () => trailer.evaluate((video: HTMLVideoElement) => video.currentTime),
-      { timeout: 10_000 },
-    ).toBeGreaterThan(0.1);
-    await expect(trailer.locator("source")).toHaveAttribute("src", app.trailer.video.src);
-    await expect(trailer).toHaveJSProperty("controls", true);
-
-    const activeSource = await trailer.evaluate(
-      (video: HTMLVideoElement) => new URL(video.currentSrc).pathname,
-    );
-    expect(activeSource).toBe(app.trailer.video.src);
-    await expect(page.locator("video")).toHaveCount(1);
-
-    // Chromium reports native media requests through Playwright's page event.
-    // WebKit still proves real playback and source isolation above; its native
-    // media loader is intentionally verified through the explicit range probe.
-    if (testInfo.project.name === "chromium") {
-      expect(new Set(mediaRequests)).toEqual(new Set([app.trailer.video.src]));
-      expect(
-        mediaRequests.some((requestPath) =>
-          apps.some(
-            (candidate) =>
-              candidate.slug !== app.slug && requestPath === candidate.trailer.video.src,
-          ),
-        ),
-      ).toBe(false);
-    }
-
-    await trailer.evaluate((video: HTMLVideoElement) => video.pause());
-    const rangeResponse = await page.request.get(app.trailer.video.src, {
-      headers: { Range: "bytes=0-2047" },
-    });
-    expect(rangeResponse.status()).toBe(206);
-    expect(rangeResponse.headers()["content-type"]).toContain("video/mp4");
-    expect(rangeResponse.headers()["content-range"]).toMatch(/^bytes 0-2047\//);
-    page.off("request", recordMediaRequest);
-  });
-}
 
 test("public branding stays separate from repository and provider identity", async ({ request }) => {
   expect(productIdentity.publicName).toBe("Fawxzzy");
@@ -747,18 +501,6 @@ test("vendored media matches its centralized provenance hashes", async () => {
     expect(await sha256ForPublicAsset(app.icon.src)).toBe(app.icon.sha256);
     expect(await sha256ForPublicAsset(app.display.icon.src)).toBe(app.display.icon.sha256);
     expect(await sha256ForPublicAsset(app.display.poster.src)).toBe(app.display.poster.sha256);
-    expect(await sha256ForPublicAsset(app.trailer.video.src)).toBe(app.trailer.video.sha256);
-    expect(await sha256ForPublicAsset(app.trailer.poster.src)).toBe(
-      app.trailer.poster.sha256,
-    );
-    for (const story of app.detail.stories) {
-      for (const media of story.media) {
-        expect(await sha256ForPublicAsset(media.src)).toBe(media.sha256);
-      }
-    }
-    for (const media of app.detail.plannedDirection?.media ?? []) {
-      expect(await sha256ForPublicAsset(media.src)).toBe(media.sha256);
-    }
   }
 });
 
@@ -828,7 +570,17 @@ test("provider redirects preserve permanent and reversible compatibility boundar
 
   expect(vercelConfig.redirects).toContainEqual({
     source: "/apps/fitness/preview",
-    destination: "/apps/fitness#fitness-trailer",
+    destination: "https://fitness.fawxzzy.com",
+    permanent: true,
+  });
+  expect(vercelConfig.redirects).toContainEqual({
+    source: "/apps/fitness",
+    destination: "https://fitness.fawxzzy.com",
+    permanent: true,
+  });
+  expect(vercelConfig.redirects).toContainEqual({
+    source: "/apps/mazer",
+    destination: "https://mazer.fawxzzy.com",
     permanent: true,
   });
   expect(vercelConfig.redirects).toContainEqual({
@@ -847,8 +599,6 @@ test("public routes load without browser errors or framework overlays", async ({
   for (const route of [
     "/",
     "/apps",
-    "/apps/fitness",
-    "/apps/mazer",
     "/discover",
     "/trove",
   ]) {
@@ -883,8 +633,6 @@ test("public routes load without browser errors or framework overlays", async ({
 for (const route of [
   "/",
   "/apps",
-  "/apps/fitness",
-  "/apps/mazer",
   "/discover",
   "/trove",
 ]) {
@@ -902,8 +650,6 @@ test("primary navigation adapts without clipping from 320px through desktop", as
   const routes = [
     "/",
     "/apps",
-    "/apps/fitness",
-    "/apps/mazer",
     "/discover",
     "/trove",
   ];
@@ -1046,8 +792,6 @@ test("primary navigation stays viewport-sticky while the document owns scrolling
   for (const route of [
     "/",
     "/apps",
-    "/apps/fitness",
-    "/apps/mazer",
     "/discover",
     "/account",
   ]) {

@@ -38,6 +38,35 @@ export function CatalogExperience() {
           {apps.map((app) => <AppCatalogEntry app={app} key={app.slug} />)}
         </section>
 
+        <section
+          aria-labelledby="install-apps-title"
+          className="catalog-install surface-panel"
+        >
+          <div className="catalog-install__intro">
+            <p className="eyebrow">Install</p>
+            <h2 id="install-apps-title">How to install my apps</h2>
+            <p>
+              Open Fitness or Mazer first, then add it from your browser for quick
+              access from your device.
+            </p>
+          </div>
+
+          <ol className="catalog-install__steps">
+            <li>
+              <strong>iPhone or iPad</strong>
+              <span>Tap Share, then Add to Home Screen.</span>
+            </li>
+            <li>
+              <strong>Android</strong>
+              <span>Open the browser menu, then tap Install app.</span>
+            </li>
+            <li>
+              <strong>Windows or Mac</strong>
+              <span>Use the install icon in the address bar or browser menu.</span>
+            </li>
+          </ol>
+        </section>
+
         <SiteFooter />
       </div>
     </main>

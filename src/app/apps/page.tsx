@@ -1,15 +1,25 @@
 import type { Metadata } from "next";
 import { CatalogExperience } from "@/components/catalog/catalog-experience";
+import { StructuredData } from "@/components/seo/structured-data";
 import { productIdentity } from "@/config/product";
-import { publicPageMetadata } from "@/lib/seo";
+import { apps } from "@/data/apps";
+import { catalogAppsStructuredData, publicPageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = publicPageMetadata({
   title: "Apps",
   description:
-    "Browse the Fawxzzy app catalog with grounded links to Fitness and Mazer on their independently owned origins.",
+    "Browse the Fawxzzy app catalog and learn how to install Fitness or Mazer from your browser.",
   path: productIdentity.appsPath,
 });
 
 export default function AppsPage() {
-  return <CatalogExperience />;
+  return (
+    <>
+      <StructuredData
+        data={catalogAppsStructuredData(apps)}
+        id="fawxzzy-app-catalog-structured-data"
+      />
+      <CatalogExperience />
+    </>
+  );
 }

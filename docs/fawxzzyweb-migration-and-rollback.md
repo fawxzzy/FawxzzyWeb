@@ -29,8 +29,8 @@ migration reuses draft PR #5 instead of creating a duplicate.
 
 1. Keep the canonical root at `/` and move the shared catalog implementation to `/apps`.
 2. Keep `/trove` as a static, no-index compatibility surface backed by the same component.
-3. Preserve `/apps/fitness/preview` only as a permanent redirect to the Fitness trailer; preserve all
-   external Fitness/Mazer origins.
+3. Preserve `/apps/fitness`, `/apps/fitness/preview`, and `/apps/mazer` only as permanent redirects
+   to the branded app origins.
 4. Normalize live package, health, metadata, manifest, and docs identity.
 5. Keep the static-export constraint; use a narrowly scoped Vercel redirect only where a retired
    public route needs a stable destination.

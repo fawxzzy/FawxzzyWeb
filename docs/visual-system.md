@@ -9,17 +9,16 @@ decoration—to establish hierarchy.
 
 ## Page families
 
-Shared identity does not require identical composition. Public routes use five
+Shared identity does not require identical composition. Active public routes use four
 page families:
 
 1. Brand and marketing: the Home route.
 2. Product catalog: the Apps and Trove compatibility routes.
-3. Product detail: Fitness, Mazer, and future product routes.
-4. Compatibility and provenance: the Discover fallback and retired editorial history.
-5. Utility: Login, confirmation, callback, reset, and Account.
+3. Compatibility and provenance: the Discover fallback and retired editorial history.
+4. Utility and system: Login, confirmation, callback, reset, Account, and 404 recovery.
 
-Wave 1 established the first two families. Wave 2A established the product-detail
-family. The retired Wave 2B editorial family remains historical provenance only.
+Wave 1 established the first two families. The retired Wave 2A product-detail and
+Wave 2B editorial families remain historical provenance only.
 The secure utility shell gives Login, confirmation, callback, and reset a focused
 task layout; the Account dashboard remains the operational branch of the same
 family.
@@ -46,8 +45,8 @@ styles belong to the narrowest established owner:
 - `src/styles/components/` owns cross-family site-shell and catalog primitives.
 - `src/styles/page-families/utility.css` owns Login, Auth handoff, recovery, and
   Account presentation until the utility-family refinement lands.
-- `src/styles/page-families/product-detail.css` owns Fitness, Mazer, and future
-  product-detail composition.
+- `src/styles/page-families/product-detail.css` retains historical Fitness and Mazer
+  detail styling for provenance and ordered-cascade compatibility; it does not authorize active detail routes.
 - `src/styles/page-families/studio-public.css` owns the Home/catalog studio
   frame and its current shared footer/navigation refinements.
 - `src/styles/page-families/editorial.css` retains historical Discover and
@@ -112,30 +111,23 @@ the canvas unless a panel communicates a real section boundary.
 ## Product media
 
 The product showcase is the canonical Home and Apps product primitive. It reads
-icons, trailer media, status, current updates, and routes from `src/data/apps.ts`.
-The real trailer player occupies the primary media frame; there is no duplicate
-poster-only image or secondary disclosure. Its poster remains the lightweight
-pre-play fallback. Video keeps native controls, captions, explicit user-start
-behavior, and `preload="none"` so the MP4 payload is not an initial-page
-requirement.
+icons, current storefront previews, status, app origins, and copy from
+`src/data/apps.ts`. The active preview is one source-bound WebP per app; no
+secondary detail route, screenshot gallery, or trailer disclosure competes with
+the launch action. Each `View app` action opens the branded app origin directly.
 
 Product accents occupy a small part of the composition and remain subordinate
 to the shared black-green canvas. Fitness and Mazer continue to own their
 origins and their canonical branding assets.
 
-## Product-detail template
+## Single-screen app catalog
 
-Product pages are proof-led rather than card-led. The shared template uses:
+The Apps page consolidates product choice, current preview, direct launch, and
+brief installation help into one screen family. The shared template uses:
 
-- an editorial split hero with the current app icon, the playable walkthrough
-  in the primary media position, one launch action, and one in-page walkthrough
-  action;
-- one canonical trailer player with captions and loading/error handling rather
-  than a poster plus duplicate disclosure;
-- app-specific product stories sourced from `src/data/apps.ts`, each paired with
-  small purpose-built public media derived from approved implementation truth;
-- a clear current-product boundary, with any planned visual direction isolated
-  in its own labeled section beside the imagery;
+- one current, source-bound preview and one app icon per product;
+- one direct `View app` action with no intermediate website detail page;
+- a brief installation section for iPhone/iPad, Android, Windows, and macOS;
 - a product accent constrained to borders, status text, media glow, and small
   section details rather than a separate visual theme.
 
@@ -143,9 +135,9 @@ Fitness uses a training-derived yellow-green accent. Mazer uses a restrained
 teal/cyan accent derived from its current icon. Both keep the shared black-green
 canvas, global typography, navigation, footer, and interaction rules.
 
-Product-detail copy must describe current product behavior. It must not invent
-roadmap dates, usage metrics, ratings, testimonials, or canonical-origin
-cutovers. Launch links continue to use the centralized current-origin contract.
+Catalog copy must describe current product behavior. It must not invent roadmap
+dates, usage metrics, ratings, testimonials, or canonical-origin cutovers.
+Launch links continue to use the centralized current-origin contract.
 Whole internal screenshot catalogs are reference evidence, not public route
 media. Product-route derivatives retain their source commit or design-authority
 provenance and explicit dimensions in `src/data/apps.ts`. All story images load

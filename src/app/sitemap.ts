@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { productIdentity } from "@/config/product";
-import { apps, getAppDetailPath } from "@/data/apps";
+import { apps } from "@/data/apps";
 import { absolutePublicUrl } from "@/lib/seo";
 
 export const dynamic = "force-static";
@@ -17,12 +17,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: absolutePublicUrl(productIdentity.appsPath),
       changeFrequency: "weekly",
       priority: 0.9,
+      images: apps.map((app) => absolutePublicUrl(app.display.poster.src)),
     },
-    ...apps.map((app) => ({
-      url: absolutePublicUrl(getAppDetailPath(app)),
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
-      images: [absolutePublicUrl(app.trailer.poster.src)],
-    })),
   ];
 }

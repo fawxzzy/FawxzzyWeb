@@ -2,7 +2,6 @@ import type { CSSProperties } from "react";
 import Image from "next/image";
 import { StaticLink } from "@/components/site/static-link";
 import type { CatalogApp } from "@/data/apps";
-import { getAppDetailPath } from "@/data/apps";
 
 type ProductShowcaseProps = {
   app: CatalogApp;
@@ -41,11 +40,13 @@ export function ProductShowcase({
       style={accentStyle}
     >
       <StaticLink
-        aria-label={`Open ${app.name} details`}
+        aria-label={`Open ${app.name}`}
         className="product-showcase__media"
         data-analytics-app={app.slug}
-        data-analytics-event="catalog_app_view"
-        href={getAppDetailPath(app)}
+        data-analytics-event="app_launch"
+        href={app.origin.current}
+        rel="noreferrer"
+        target="_blank"
       >
         <Image
           alt={`${app.name} app preview`}
@@ -80,14 +81,16 @@ export function ProductShowcase({
 
         <div className="product-showcase__actions">
           <StaticLink
-            aria-label={`View ${app.name}`}
+            aria-label={`View ${app.name} app`}
             className="catalog-button catalog-button--primary"
             data-analytics-app={app.slug}
-            data-analytics-event="catalog_app_view"
-            href={getAppDetailPath(app)}
+            data-analytics-event="app_launch"
+            href={app.origin.current}
+            rel="noreferrer"
+            target="_blank"
           >
-            {compact ? "View app" : `View ${app.name}`}
-            <span aria-hidden="true">&rarr;</span>
+            View app
+            <span aria-hidden="true">↗</span>
           </StaticLink>
         </div>
 
