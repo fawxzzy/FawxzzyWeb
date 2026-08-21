@@ -43,6 +43,8 @@ styles belong to the narrowest established owner:
 
 - `src/styles/foundations/` owns tokens, reset rules, and document primitives.
 - `src/styles/components/` owns cross-family site-shell and catalog primitives.
+- `src/styles/components/app-launcher.css` owns the Apps icon grid and its
+  opt-in Preview and Feedback dialogs.
 - `src/styles/page-families/utility.css` owns Login, Auth handoff, recovery, and
   Account presentation until the utility-family refinement lands.
 - `src/styles/page-families/product-detail.css` retains historical Fitness and Mazer
@@ -110,11 +112,11 @@ the canvas unless a panel communicates a real section boundary.
 
 ## Product media
 
-The product showcase is the canonical Home and Apps product primitive. It reads
-icons, current storefront previews, status, app origins, and copy from
-`src/data/apps.ts`. The active preview is one source-bound WebP per app; no
-secondary detail route, screenshot gallery, or trailer disclosure competes with
-the launch action. Each `View app` action opens the branded app origin directly.
+Home uses the compact product card while Apps uses a phone-home-screen launcher.
+Both read icons, current storefront previews, status, app origins, and copy from
+`src/data/apps.ts`. On Apps, only the app icon and name form the primary launch
+action. The current source-bound WebP appears only after the visitor selects
+`Preview`; no secondary detail route or screenshot gallery competes with launch.
 
 Product accents occupy a small part of the composition and remain subordinate
 to the shared black-green canvas. Fitness and Mazer continue to own their
@@ -122,12 +124,14 @@ origins and their canonical branding assets.
 
 ## Single-screen app catalog
 
-The Apps page consolidates product choice, current preview, direct launch, and
-brief installation help into one screen family. The shared template uses:
+The Apps page consolidates installation help, direct launch, an optional current
+preview, and truthful feedback state into one screen family. The shared template uses:
 
-- one current, source-bound preview and one app icon per product;
-- one direct `View app` action with no intermediate website detail page;
-- a brief installation section for iPhone/iPad, Android, Windows, and macOS;
+- installation help at the top for iPhone/iPad, Android, Windows, and macOS;
+- one phone-style app icon and name that opens the branded app origin directly;
+- a separate `Preview` dialog for one current, source-bound product image;
+- a separate `Feedback` dialog that fails closed to an unavailable state until
+  the governed public review read model exists;
 - a product accent constrained to borders, status text, media glow, and small
   section details rather than a separate visual theme.
 

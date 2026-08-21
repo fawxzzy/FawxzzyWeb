@@ -45,14 +45,14 @@ export async function assertSiteSmoke(baseUrl) {
   const appsHtml = await assertRoute(
     baseUrl,
     "/apps",
-    "Pick your app.",
+    "How to install my apps",
   );
   for (const app of catalogApps) {
     if (!appsHtml.includes(`href="${app.origin}"`)) {
       throw new Error(`/apps did not link ${app.name} directly to ${app.origin}.`);
     }
-    if (!appsHtml.includes(`aria-label="View ${app.name} app"`)) {
-      throw new Error(`/apps did not render the direct View app action for ${app.name}.`);
+    if (!appsHtml.includes(`aria-label="Open ${app.name} app"`)) {
+      throw new Error(`/apps did not render the direct app-icon launch action for ${app.name}.`);
     }
     if (appsHtml.includes(`href="/apps/${app.name.toLowerCase()}"`)) {
       throw new Error(`/apps still rendered the retired ${app.name} detail route.`);
@@ -79,14 +79,17 @@ export async function assertSiteSmoke(baseUrl) {
   if (appsHtml.includes('/brand/trove-foxmark.png')) {
     throw new Error("The retired Trove hero image is still present on /apps.");
   }
-  if ((appsHtml.match(/data-product-showcase=/g) ?? []).length !== catalogApps.length) {
-    throw new Error("The app catalog did not render one visual showcase per app.");
+  if ((appsHtml.match(/data-app-launcher=/g) ?? []).length !== catalogApps.length) {
+    throw new Error("The Apps page did not render one launcher tile per app.");
   }
   if ((appsHtml.match(/data-review-placeholder=/g) ?? []).length !== 0) {
     throw new Error("The app catalog still advertises reviews that do not exist.");
   }
   if (!appsHtml.includes("How to install my apps")) {
     throw new Error("The app catalog did not render the brief installation guide.");
+  }
+  if (appsHtml.includes("Pick your app.") || appsHtml.includes("App catalog")) {
+    throw new Error("The Apps page rendered retired catalog-introduction copy.");
   }
   if (!appsHtml.includes('aria-label="Footer"')) {
     throw new Error("The app catalog did not render the shared site footer.");

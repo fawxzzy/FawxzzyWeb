@@ -8,7 +8,7 @@ import { catalogAppsStructuredData, publicPageMetadata } from "@/lib/seo";
 export const metadata: Metadata = publicPageMetadata({
   title: "Apps",
   description:
-    "Browse the Fawxzzy app catalog and learn how to install Fitness or Mazer from your browser.",
+    "Install or open Fitness and Mazer from one simple Fawxzzy apps page.",
   path: productIdentity.appsPath,
 });
 

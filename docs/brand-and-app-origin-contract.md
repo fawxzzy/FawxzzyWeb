@@ -38,14 +38,14 @@ independently deployed applications. Each entry in `src/data/apps.ts` owns one s
 - trailer, poster, captions, and provenance hashes.
 
 Home, Apps, and Discover must read this contract rather than hard-code an app URL or icon.
-The Apps cards launch the verified current origins directly; `/apps/fitness` and `/apps/mazer`
-remain compatibility redirects rather than a second website detail step. Active catalog preview
-material is limited to each app's current storefront artwork; historical detail galleries and
-trailers remain provenance assets and are not rendered by the current catalog.
+The Apps launcher icons open the verified current origins directly; `/apps/fitness` and
+`/apps/mazer` remain compatibility redirects rather than a second website detail step. Current
+storefront artwork appears only in the selected app's `Preview` dialog. Historical detail
+galleries and trailers remain provenance assets and are not rendered by the current Apps page.
 
-Future public reviews are governed separately by `docs/public-app-reviews-contract.md`. Home and
-Apps prioritize current product proof rather than empty social proof, fabricated ratings, counts,
-or testimonials.
+Future public reviews are governed separately by `docs/public-app-reviews-contract.md`. The Apps
+`Feedback` dialog reports that verified public feedback is unavailable; it must not render empty
+social proof, fabricated ratings, counts, or testimonials.
 
 ## Current owner-lane origins
 

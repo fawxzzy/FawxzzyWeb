@@ -324,37 +324,55 @@ test("editorial pages keep clear mobile hierarchy and interaction contracts", as
   expect(motion.transition).toBe("0s");
 });
 
-test("apps route reflects centralized icon, current preview, and launch truth", async ({ page, request }) => {
-  test.setTimeout(60_000);
+test("apps route presents install help first and a direct-launch app grid", async ({ page, request }) => {
+  test.setTimeout(120_000);
   await page.goto("/apps");
 
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Pick your app.",
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("How to install my apps");
+  await expect(page.locator("body")).not.toContainText("App catalog");
+  await expect(page.locator("body")).not.toContainText("Pick your app.");
+  const sectionOrder = await page.locator(".catalog-install, .catalog-launcher").evaluateAll(
+    (sections) => sections.map((section) => section.className),
   );
+  expect(sectionOrder).toEqual(["catalog-install surface-panel", "catalog-launcher"]);
 
   for (const app of apps) {
     const entry = page.locator(`#${app.slug}`);
-    await expect(entry).toHaveAttribute("data-product-showcase", app.slug);
-    await expect(entry.getByRole("img", { name: `${app.name} icon` })).toHaveAttribute(
+    await expect(entry).toHaveAttribute("data-app-launcher", app.slug);
+    const launchLink = entry.getByRole("link", { name: `Open ${app.name} app`, exact: true });
+    await expect(launchLink.locator("img")).toHaveAttribute(
       "src",
       app.display.icon.src,
     );
-    await expect(
-      entry.getByRole("img", { name: `${app.name} app preview` }),
-    ).toHaveAttribute("src", app.display.poster.src);
-    await expect(entry).toContainText(app.description);
-    await expect(entry).toContainText(app.category);
-    const launchLink = entry.getByRole("link", { name: `View ${app.name} app` });
     await expect(launchLink).toHaveAttribute("href", app.origin.current);
     await expect(launchLink).toHaveAttribute("target", "_blank");
     await expect(launchLink).toHaveAttribute("rel", "noreferrer");
     await expect(launchLink).toHaveAttribute("data-analytics-event", "app_launch");
+    await expect(launchLink).toContainText(app.name);
+    await expect(entry.locator(":scope > .app-launcher__launch img")).toHaveCount(1);
+    await expect(entry.locator(":scope > .app-launcher__launch img")).not.toHaveAttribute(
+      "src",
+      app.display.poster.src,
+    );
+    await expect(entry).not.toContainText(app.description);
+    await expect(entry).not.toContainText(app.category);
+    await expect(entry).not.toContainText(app.status);
     await expect(entry.locator(`a[href="/apps/${app.slug}"]`)).toHaveCount(0);
     await expect(entry.locator("[data-review-placeholder]")).toHaveCount(0);
-
-    await expect(entry).toContainText(app.status);
     await expect(entry.locator("video")).toHaveCount(0);
     await expect(entry.locator("details")).toHaveCount(0);
+
+    const previewDialog = entry.locator(`dialog[data-app-preview="${app.slug}"]`);
+    await expect(
+      previewDialog.locator(`img[alt="${app.name} current app preview"]`),
+    ).toHaveAttribute("src", app.display.poster.src);
+    await expect(
+      previewDialog.locator(`a[aria-label="Open ${app.name} app from preview"]`),
+    ).toHaveAttribute("href", app.origin.current);
+    const feedbackDialog = entry.locator(`dialog[data-app-feedback="${app.slug}"]`);
+    await expect(feedbackDialog.locator('[data-feedback-state="unavailable"]')).toContainText(
+      "No verified public feedback yet.",
+    );
 
     for (const asset of [
       app.display.icon.src,
@@ -364,6 +382,20 @@ test("apps route reflects centralized icon, current preview, and launch truth", 
       expect(response.ok(), `${asset} should be served`).toBe(true);
     }
   }
+
+  const fitnessEntry = page.locator("#fitness");
+  await fitnessEntry.getByRole("button", { name: "Preview" }).click();
+  const fitnessPreview = fitnessEntry.locator('dialog[data-app-preview="fitness"]');
+  await expect(fitnessPreview).toBeVisible();
+  await fitnessPreview.getByRole("button", { name: "Close Fitness preview" }).click();
+  await expect(fitnessPreview).not.toBeVisible();
+
+  const mazerEntry = page.locator("#mazer");
+  await mazerEntry.getByRole("button", { name: "Feedback" }).click();
+  const mazerFeedback = mazerEntry.locator('dialog[data-app-feedback="mazer"]');
+  await expect(mazerFeedback).toBeVisible();
+  await mazerFeedback.getByRole("button", { name: "Close Mazer feedback" }).click();
+  await expect(mazerFeedback).not.toBeVisible();
 
   await expect(page.locator("details")).toHaveCount(0);
   await expect(page.locator(".meta-chip")).toHaveCount(0);
@@ -395,37 +427,40 @@ test("Home stays concise and Apps launches each product without an extra detail 
   await expect(page.locator("[data-product-showcase], video")).toHaveCount(0);
 
   await page.goto("/apps");
-  const cards = page.locator("[data-product-showcase]");
+  const cards = page.locator("[data-app-launcher]");
   await expect(cards).toHaveCount(apps.length);
   for (const app of apps) {
     const card = page.locator(`#${app.slug}`);
-    await expect(card.getByRole("img", { name: `${app.name} app preview` })).toBeVisible();
+    await expect(card.locator(":scope > .app-launcher__launch img")).toBeVisible();
     await expect(card.locator("video")).toHaveCount(0);
     await expect(card.locator("details")).toHaveCount(0);
-    await expect(card.getByRole("link", { name: `View ${app.name} app` })).toHaveAttribute(
+    await expect(card.getByRole("link", { name: `Open ${app.name} app`, exact: true })).toHaveAttribute(
       "href",
       app.origin.current,
     );
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const [route, selector] of [["/", "[data-app-card]"], ["/apps", "[data-product-showcase]"]] as const) {
-    await page.goto(route);
-    const routeCards = page.locator(selector);
-    const mobileRects = await routeCards.evaluateAll((elements) =>
-      elements.map((element) => {
-        const rect = element.getBoundingClientRect();
-        return { left: rect.left, right: rect.right, top: rect.top };
-      }),
-    );
-    expect(mobileRects[1].top).toBeGreaterThan(mobileRects[0].top);
-    expect(mobileRects.every((rect) => rect.left >= 0 && rect.right <= 390)).toBe(true);
-    const geometry = await page.evaluate(() => ({
-      clientWidth: document.documentElement.clientWidth,
-      scrollWidth: document.documentElement.scrollWidth,
-    }));
-    expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth);
-  }
+  await page.goto("/");
+  const homeRects = await page.locator("[data-app-card]").evaluateAll((elements) =>
+    elements.map((element) => element.getBoundingClientRect().top),
+  );
+  expect(homeRects[1]).toBeGreaterThan(homeRects[0]);
+
+  await page.goto("/apps");
+  const launcherRects = await page.locator("[data-app-launcher]").evaluateAll((elements) =>
+    elements.map((element) => {
+      const rect = element.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, top: rect.top };
+    }),
+  );
+  expect(launcherRects[1].top).toBe(launcherRects[0].top);
+  expect(launcherRects.every((rect) => rect.left >= 0 && rect.right <= 390)).toBe(true);
+  const geometry = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth);
 });
 
 test("Wave 1 interactions retain 44px targets and reduced-motion restraint", async ({ page }) => {
@@ -433,11 +468,11 @@ test("Wave 1 interactions retain 44px targets and reduced-motion restraint", asy
   await page.goto("/apps");
 
   const targetHeights = await page
-    .locator(".catalog-button, .site-footer a")
+    .locator(".app-launcher__launch, .app-launcher__action, .site-footer a")
     .evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().height));
   expect(Math.min(...targetHeights)).toBeGreaterThanOrEqual(44);
 
-  const motion = await page.locator("[data-product-showcase]").first().evaluate((element) => {
+  const motion = await page.locator(".app-launcher__icon").first().evaluate((element) => {
     const styles = getComputedStyle(element);
     return { animation: styles.animationName, transition: styles.transitionDuration };
   });
@@ -750,7 +785,7 @@ test("primary navigation adapts without clipping from 320px through desktop", as
   await expect(primaryNav.locator('a[aria-current="page"]')).toHaveCount(1);
 });
 
-test("storefront keeps the first choice close and catalog titles inside their cards", async ({
+test("storefront keeps the first choice close and app names inside launcher tiles", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -765,10 +800,10 @@ test("storefront keeps the first choice close and catalog titles inside their ca
 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/apps");
-  const cardGeometry = await page.locator("[data-product-showcase]").evaluateAll((cards) =>
+  const cardGeometry = await page.locator("[data-app-launcher]").evaluateAll((cards) =>
     cards.map((card) => {
       const cardRect = card.getBoundingClientRect();
-      const headingRect = card.querySelector("h2")?.getBoundingClientRect();
+      const headingRect = card.querySelector(".app-launcher__launch strong")?.getBoundingClientRect();
       return {
         cardLeft: cardRect.left,
         cardRight: cardRect.right,
