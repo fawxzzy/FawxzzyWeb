@@ -1,15 +1,12 @@
 import type { Metadata } from "next";
 import { productIdentity } from "@/config/product";
 import type { CatalogApp } from "@/data/apps";
-import { getAppDetailPath } from "@/data/apps";
 
 const defaultSocialImage = productIdentity.linkPreview;
 
 export const publicIndexableRoutes = [
   "/",
   productIdentity.appsPath,
-  "/apps/fitness",
-  "/apps/mazer",
 ] as const;
 
 export function absolutePublicUrl(path: string) {
@@ -87,45 +84,37 @@ export function siteStructuredData() {
   };
 }
 
-export function appStructuredData(app: CatalogApp) {
-  const detailPath = getAppDetailPath(app);
-  const detailUrl = absolutePublicUrl(detailPath);
+export function catalogAppsStructuredData(catalog: CatalogApp[]) {
+  const catalogUrl = absolutePublicUrl(productIdentity.appsPath);
 
   return {
     "@context": "https://schema.org",
     "@graph": [
       {
-        "@id": `${detailUrl}#application`,
+        "@id": `${catalogUrl}#app-list`,
+        "@type": "ItemList",
+        itemListElement: catalog.map((app, index) => ({
+            "@type": "ListItem",
+            item: app.origin.current,
+            name: app.name,
+            position: index + 1,
+        })),
+      },
+      ...catalog.map((app) => ({
+        "@id": `${app.origin.current}/#application`,
         "@type": "SoftwareApplication",
         applicationCategory: app.category,
         description: app.description,
         featureList: app.detail.stories.map(({ title }) => title),
-        image: absolutePublicUrl(app.trailer.poster.src),
-        mainEntityOfPage: detailUrl,
+        image: absolutePublicUrl(app.display.poster.src),
+        mainEntityOfPage: catalogUrl,
         name: app.name,
         operatingSystem: "Web browser",
         publisher: { "@id": `${productIdentity.canonicalOrigin}/#organization` },
         sameAs: app.origin.current,
-        screenshot: absolutePublicUrl(app.trailer.poster.src),
-        url: detailUrl,
-      },
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          {
-            "@type": "ListItem",
-            item: absolutePublicUrl(productIdentity.appsPath),
-            name: "Apps",
-            position: 1,
-          },
-          {
-            "@type": "ListItem",
-            item: detailUrl,
-            name: app.name,
-            position: 2,
-          },
-        ],
-      },
+        screenshot: absolutePublicUrl(app.display.poster.src),
+        url: app.origin.current,
+      })),
     ],
   };
 }

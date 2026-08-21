@@ -1,8 +1,6 @@
 export const visualEvidenceRoutes = Object.freeze([
   { id: "home", path: "/", family: "marketing" },
   { id: "apps", path: "/apps", family: "catalog" },
-  { id: "fitness", path: "/apps/fitness", family: "product-detail" },
-  { id: "mazer", path: "/apps/mazer", family: "product-detail" },
   { id: "discover", path: "/discover", family: "marketing-compatibility" },
   { id: "trove", path: "/trove", family: "compatibility" },
   { id: "login", path: "/login", family: "utility" },

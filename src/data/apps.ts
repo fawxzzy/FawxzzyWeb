@@ -311,8 +311,9 @@ export const apps: CatalogApp[] = [
       },
       poster: {
         src: "/apps/mazer/storefront-poster.webp",
-        sha256: "F6470BEAD6DFB1FEB38A4C637683A6B047F61EFFC9AB04F2FEDF2F47C441D7AA",
-        source: "Responsive WebP derivative of the grounded Mazer walkthrough poster",
+        sha256: "45AAF61D982F7FE144E021C958ECB40A5F98E5A97B2CD6D10D36C2CD389D40AC",
+        source:
+          "Responsive WebP derivative of the current Mazer production installed-app view captured from https://mazer.fawxzzy.com on August 21, 2026",
       },
     },
     latestUpdate: "New 60-second live product walkthrough",
@@ -341,11 +342,3 @@ export const apps: CatalogApp[] = [
     },
   },
 ];
-
-export function getAppBySlug(slug: string) {
-  return apps.find((app) => app.slug === slug);
-}
-
-export function getAppDetailPath(app: Pick<CatalogApp, "slug">) {
-  return `/apps/${app.slug}`;
-}

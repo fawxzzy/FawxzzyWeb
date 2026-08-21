@@ -4,6 +4,7 @@
 @import "../styles/page-families/legacy-public.css";
 @import "../styles/page-families/utility.css";
 @import "../styles/components/catalog-foundations.css";
+@import "../styles/components/app-launcher.css";
 @import "../styles/page-families/product-detail.css";
 @import "../styles/page-families/studio-public.css";
 @import "../styles/page-families/editorial.css";

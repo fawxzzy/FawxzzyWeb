@@ -28,7 +28,7 @@ remains a separate, human-led profile-image option; it is not replaced by this i
 
 ## Catalog boundary
 
-`fawxzzy.com/apps` is the catalog and trailer surface. It does not become the runtime origin for
+`fawxzzy.com/apps` is the single catalog and install-guidance surface. It does not become the runtime origin for
 independently deployed applications. Each entry in `src/data/apps.ts` owns one shared contract:
 
 - public product name and current icon;
@@ -38,15 +38,14 @@ independently deployed applications. Each entry in `src/data/apps.ts` owns one s
 - trailer, poster, captions, and provenance hashes.
 
 Home, Apps, and Discover must read this contract rather than hard-code an app URL or icon.
-Dedicated public detail routes at `/apps/fitness` and `/apps/mazer` read the same contract. Their
-launch actions continue to use the verified current origin; the detail routes do not cut over or
-proxy either owner application. Catalog preview material is trailer-only: static screenshot galleries
-and the retired Fitness screenshot board are not part of the public catalog experience.
+The Apps launcher icons open the verified current origins directly; `/apps/fitness` and
+`/apps/mazer` remain compatibility redirects rather than a second website detail step. Current
+storefront artwork appears only in the selected app's `Preview` dialog. Historical detail
+galleries and trailers remain provenance assets and are not rendered by the current Apps page.
 
-Future public reviews are governed separately by `docs/public-app-reviews-contract.md`. App-detail
-pages retain a restrained setup note with no fabricated rating, count, or testimonial while that
-read model is not admitted. Home and Apps prioritize current product proof rather than empty social
-proof.
+Future public reviews are governed separately by `docs/public-app-reviews-contract.md`. The Apps
+`Feedback` dialog reports that verified public feedback is unavailable; it must not render empty
+social proof, fabricated ratings, counts, or testimonials.
 
 ## Current owner-lane origins
 

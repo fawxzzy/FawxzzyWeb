@@ -1,15 +1,14 @@
 # FawxzzyWeb
 
-FawxzzyWeb is the public app-distribution surface owned by the Socials OS program. Its active public scope is the app catalog, app detail, focused discovery, and product-account capability. TikTok is the only active external discovery destination. Retired channel and newsletter history remains repository knowledge, not active navigation or routing. The provider and package slug remains `fawxzzyweb`.
+FawxzzyWeb is the public app-distribution surface owned by the Socials OS program. Its active public scope is the app catalog, focused discovery, and product-account capability. TikTok is the only active external discovery destination. Retired channel and newsletter history remains repository knowledge, not active navigation or routing. The provider and package slug remains `fawxzzyweb`.
 
 ## Route contract
 
 - `/` — canonical Fawxzzy storefront, app directory, and TikTok discovery surface
-- `/apps` — canonical full app catalog sourced from `src/data/apps.ts`
-- `/apps/[slug]` — canonical product detail and direct launch surface
+- `/apps` — canonical full app catalog, installation guide, and direct app-launch surface sourced from `src/data/apps.ts`
 - `/discover` — permanent provider redirect to `/` with a lightweight no-index static fallback
 - `/trove` — temporary provider redirect to `/apps` with a reversible no-index static fallback
-- `/apps/fitness/preview` — permanent redirect to the Fitness trailer
+- `/apps/fitness`, `/apps/fitness/preview`, `/apps/mazer` — permanent compatibility redirects to the branded app origins
 - `/login`, `/account`, `/auth/*`, `/reset-password` — product-account capability
 - `/healthz.json` — static health and compatibility identity
 - `/manifest.webmanifest` — Fawxzzy install metadata
@@ -42,11 +41,11 @@ the four-target contact sheet, manifest, and individual screenshots.
 
 ## Catalog contract
 
-Update `src/data/apps.ts` when the catalog changes. Each entry owns its current launch origin, planned canonical subdomain, rollback origins, icon, trailer, poster, captions, product-story media, provenance hashes, and product copy.
+Update `src/data/apps.ts` when the catalog changes. Each entry owns its current launch origin, planned canonical subdomain, rollback origins, active storefront icon and preview, provenance hashes, and product copy.
 
-Home is the only discovery storefront. Apps is the comparison catalog, and each detail route owns its trailer and complete product explanation. Home and Apps share one product identity, status, and responsive-media contract without repeating the full detail experience.
+Home is the concise discovery storefront. Apps is the single installation and app-launch surface. Both use the same product identity and responsive-media contract. On Apps, each phone-style icon and its primary `Open` control launch the independently owned branded app origin without an intermediate detail page; `Preview` and the truthful `Feedback` state remain separate secondary actions in that order.
 
-The storefront uses small WebP derivatives for listing and detail media while preserving canonical icons, posters, trailers, approved implementation references, and their hashes as source provenance. Rebuild a derivative only from its declared canonical source and update the centralized derivative hash in `src/data/apps.ts`. Never publish a whole internal visual-reference catalog as route media; planned imagery requires an adjacent status label.
+The storefront uses compact WebP derivatives of current product evidence. Rebuild a derivative only from its declared canonical source and update the centralized derivative hash in `src/data/apps.ts`. Historical detail images and trailers remain repository provenance only; they are not active route media. Never publish a whole internal visual-reference catalog as route media.
 
 Current branded origins:
 
@@ -68,7 +67,7 @@ Stable `data-analytics-event` attributes define the future website measurement v
 
 ## Static export
 
-FawxzzyWeb remains a Next.js static export. Keep routes build-time deterministic. Vercel owns explicit compatibility redirects: `/discover` and the retired Fitness preview are permanent, while `/trove` stays temporary so the compatibility handoff remains reversible. Real static fallback pages preserve useful behavior on local and non-Vercel hosts because Next.js config redirects are not supported with `output: "export"`.
+FawxzzyWeb remains a Next.js static export. Keep routes build-time deterministic. Vercel owns explicit compatibility redirects: `/discover` and the retired app-detail paths are permanent, while `/trove` stays temporary so the compatibility handoff remains reversible. Real static fallback pages exist only for `/discover` and `/trove` because Next.js config redirects are not supported with `output: "export"`. The retired `/apps/fitness`, `/apps/fitness/preview`, and `/apps/mazer` paths are provider-only redirects; local and non-Vercel static hosts intentionally return 404 for them.
 
 Internal route links render through `src/components/site/static-link.tsx` so the exported site does not depend on speculative route-data requests.
 

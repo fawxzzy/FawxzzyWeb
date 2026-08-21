@@ -26,16 +26,45 @@ export function CatalogExperience() {
       <div className="shell-container">
         <SiteNav current="apps" />
 
-        <header className="catalog-editorial-hero catalog-editorial-hero--store">
-          <div>
-            <p className="eyebrow">App catalog</p>
-            <h1 id="apps-title">Pick your app.</h1>
-            <p>Fitness for training. Mazer for play. Open one to see the full experience.</p>
+        <section
+          aria-labelledby="install-apps-title"
+          className="catalog-install surface-panel"
+        >
+          <div className="catalog-install__intro">
+            <h1 id="install-apps-title">How to install my apps</h1>
+            <p>
+              Open Fitness or Mazer first, then add it from your browser for quick
+              access from your device.
+            </p>
           </div>
-        </header>
 
-        <section aria-labelledby="apps-title" className="catalog-stack" id="catalog">
-          {apps.map((app) => <AppCatalogEntry app={app} key={app.slug} />)}
+          <ol className="catalog-install__steps">
+            <li>
+              <strong>iPhone or iPad</strong>
+              <span>Tap Share, then Add to Home Screen.</span>
+            </li>
+            <li>
+              <strong>Android</strong>
+              <span>Open the browser menu, then tap Install app.</span>
+            </li>
+            <li>
+              <strong>Windows or Mac</strong>
+              <span>Use the install icon in the address bar or browser menu.</span>
+            </li>
+          </ol>
+        </section>
+
+        <section aria-label="Apps" className="catalog-launcher" id="catalog">
+          {apps.map((app) => (
+            <AppCatalogEntry
+              iconSrc={app.display.icon.src}
+              key={app.slug}
+              name={app.name}
+              origin={app.origin.current}
+              posterSrc={app.display.poster.src}
+              slug={app.slug}
+            />
+          ))}
         </section>
 
         <SiteFooter />

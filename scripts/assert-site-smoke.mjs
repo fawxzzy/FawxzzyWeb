@@ -1,13 +1,8 @@
-import { apps, getAppDetailPath } from "../src/data/apps.ts";
+import { apps } from "../src/data/apps.ts";
 
 const catalogApps = apps.map((app) => ({
   name: app.name,
   origin: app.origin.current,
-  path: getAppDetailPath(app),
-  storyAssets: [
-    ...app.detail.stories,
-    ...(app.detail.plannedDirection ? [app.detail.plannedDirection] : []),
-  ].flatMap((story) => story.media.map((media) => media.src)),
 }));
 
 async function assertRoute(baseUrl, path, expectedText) {
@@ -50,27 +45,17 @@ export async function assertSiteSmoke(baseUrl) {
   const appsHtml = await assertRoute(
     baseUrl,
     "/apps",
-    "Pick your app.",
+    "How to install my apps",
   );
   for (const app of catalogApps) {
-    if (!appsHtml.includes(`href="${app.path}"`)) {
-      throw new Error(`/apps did not link ${app.name} to ${app.path}.`);
+    if (!appsHtml.includes(`href="${app.origin}"`)) {
+      throw new Error(`/apps did not link ${app.name} directly to ${app.origin}.`);
     }
-    if (appsHtml.includes(app.origin)) {
-      throw new Error(`/apps bypassed the ${app.name} detail route with a direct origin link.`);
+    if (!appsHtml.includes(`aria-label="Open ${app.name} app"`)) {
+      throw new Error(`/apps did not render the direct app-icon launch action for ${app.name}.`);
     }
-
-    const detailHtml = await assertRoute(baseUrl, app.path, app.name);
-    if (!detailHtml.includes(app.origin)) {
-      throw new Error(`${app.path} did not include grounded app origin ${app.origin}.`);
-    }
-    if (!detailHtml.includes('class="trailer-player"') || detailHtml.includes("<details")) {
-      throw new Error(`${app.path} did not render one primary trailer without a disclosure.`);
-    }
-    for (const asset of app.storyAssets) {
-      if (!detailHtml.includes(asset)) {
-        throw new Error(`${app.path} did not render grounded product media ${asset}.`);
-      }
+    if (appsHtml.includes(`href="/apps/${app.name.toLowerCase()}"`)) {
+      throw new Error(`/apps still rendered the retired ${app.name} detail route.`);
     }
   }
   for (const asset of [
@@ -94,11 +79,17 @@ export async function assertSiteSmoke(baseUrl) {
   if (appsHtml.includes('/brand/trove-foxmark.png')) {
     throw new Error("The retired Trove hero image is still present on /apps.");
   }
-  if ((appsHtml.match(/data-product-showcase=/g) ?? []).length !== catalogApps.length) {
-    throw new Error("The app catalog did not render one visual showcase per app.");
+  if ((appsHtml.match(/data-app-launcher=/g) ?? []).length !== catalogApps.length) {
+    throw new Error("The Apps page did not render one launcher tile per app.");
   }
   if ((appsHtml.match(/data-review-placeholder=/g) ?? []).length !== 0) {
     throw new Error("The app catalog still advertises reviews that do not exist.");
+  }
+  if (!appsHtml.includes("How to install my apps")) {
+    throw new Error("The app catalog did not render the brief installation guide.");
+  }
+  if (appsHtml.includes("Pick your app.") || appsHtml.includes("App catalog")) {
+    throw new Error("The Apps page rendered retired catalog-introduction copy.");
   }
   if (!appsHtml.includes('aria-label="Footer"')) {
     throw new Error("The app catalog did not render the shared site footer.");

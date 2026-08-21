@@ -39,7 +39,17 @@
     },
     {
       "source": "/apps/fitness/preview",
-      "destination": "/apps/fitness#fitness-trailer",
+      "destination": "https://fitness.fawxzzy.com",
+      "permanent": true
+    },
+    {
+      "source": "/apps/fitness",
+      "destination": "https://fitness.fawxzzy.com",
+      "permanent": true
+    },
+    {
+      "source": "/apps/mazer",
+      "destination": "https://mazer.fawxzzy.com",
       "permanent": true
     }
   ]

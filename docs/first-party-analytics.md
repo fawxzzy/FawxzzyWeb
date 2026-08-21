@@ -10,7 +10,7 @@ The client may send only:
 
 - event: `page_view`, `tiktok_open`, `catalog_app_view`, `app_launch`, or `compatibility_visit`
 - product: `web`, `fitness`, or `mazer`
-- canonical route: `/`, `/apps`, `/apps/fitness`, `/apps/mazer`, or the fixed app route `app`
+- canonical route: `/`, `/apps`, or the fixed app route `app`; retired website detail paths normalize to `/apps`
 - optional app: `fitness` or `mazer`
 - optional compatibility source: `discover`, `trove`, `fitness_legacy_origin`, or
   `mazer_legacy_origin`
