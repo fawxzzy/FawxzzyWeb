@@ -1,15 +1,15 @@
-.app-theme-sage {
+.app-theme-fawxzzy {
   min-height: 100vh;
   overflow: clip;
   background: linear-gradient(180deg, rgb(var(--canvas)) 0%, rgb(var(--canvas-deep)) 54%, rgb(3 5 3) 100%);
 }
 
-.app-theme-sage .shell-container {
+.app-theme-fawxzzy .shell-container {
   position: relative;
   z-index: 1;
 }
 
-.ambient-fitness-background {
+.ambient-brand-background {
   position: absolute;
   inset: 0;
   overflow: hidden;
@@ -17,16 +17,16 @@
   z-index: 0;
 }
 
-.ambient-fitness-background__base,
-.ambient-fitness-background__blob,
-.ambient-fitness-background__wisp,
-.ambient-fitness-background__pulse,
-.ambient-fitness-background__particles {
+.ambient-brand-background__base,
+.ambient-brand-background__blob,
+.ambient-brand-background__wisp,
+.ambient-brand-background__pulse,
+.ambient-brand-background__particles {
   position: absolute;
   inset: 0;
 }
 
-.ambient-fitness-background__base {
+.ambient-brand-background__base {
   background:
     radial-gradient(circle at 50% 18%, color-mix(in srgb, var(--ambient-glow) 12%, transparent), transparent 28%),
     radial-gradient(circle at 82% 12%, color-mix(in srgb, var(--ambient-warm) 18%, transparent), transparent 24%),
@@ -34,14 +34,14 @@
     linear-gradient(180deg, var(--ambient-base) 0%, color-mix(in srgb, var(--ambient-base) 88%, black 12%) 100%);
 }
 
-.ambient-fitness-background__blob {
+.ambient-brand-background__blob {
   border-radius: 999px;
   filter: blur(calc(92px * var(--ambient-intensity)));
   opacity: 0.48;
   will-change: transform, opacity;
 }
 
-.ambient-fitness-background__blob--one {
+.ambient-brand-background__blob--one {
   top: -8rem;
   left: -10rem;
   width: 34rem;
@@ -50,7 +50,7 @@
   animation: ambient-blob-float 17s ease-in-out infinite alternate;
 }
 
-.ambient-fitness-background__blob--two {
+.ambient-brand-background__blob--two {
   top: 28%;
   right: -8rem;
   width: 32rem;
@@ -59,7 +59,7 @@
   animation: ambient-blob-float-reverse 21s ease-in-out infinite alternate;
 }
 
-.ambient-fitness-background__blob--three {
+.ambient-brand-background__blob--three {
   bottom: -10rem;
   left: 20%;
   width: 38rem;
@@ -68,14 +68,14 @@
   animation: ambient-blob-sweep 24s ease-in-out infinite alternate;
 }
 
-.ambient-fitness-background__wisp {
+.ambient-brand-background__wisp {
   border-radius: 999px;
   filter: blur(26px);
   opacity: 0.34;
   will-change: transform, opacity;
 }
 
-.ambient-fitness-background__wisp--one {
+.ambient-brand-background__wisp--one {
   top: 8%;
   left: -8%;
   width: 58%;
@@ -86,7 +86,7 @@
   animation: ambient-wisp-drift 26s ease-in-out infinite alternate;
 }
 
-.ambient-fitness-background__wisp--two {
+.ambient-brand-background__wisp--two {
   top: 44%;
   right: -12%;
   width: 54%;
@@ -97,7 +97,7 @@
   animation: ambient-wisp-drift-reverse 24s ease-in-out infinite alternate;
 }
 
-.ambient-fitness-background__wisp--three {
+.ambient-brand-background__wisp--three {
   bottom: 2%;
   left: 18%;
   width: 48%;
@@ -108,7 +108,7 @@
   animation: ambient-wisp-rise 28s ease-in-out infinite alternate;
 }
 
-.ambient-fitness-background__pulse {
+.ambient-brand-background__pulse {
   inset: auto;
   top: 14%;
   left: 50%;
@@ -122,11 +122,11 @@
   animation: ambient-breathe 9.5s ease-in-out infinite;
 }
 
-.ambient-fitness-background[data-pulse-enabled="false"] .ambient-fitness-background__pulse {
+.ambient-brand-background[data-pulse-enabled="false"] .ambient-brand-background__pulse {
   display: none;
 }
 
-.ambient-fitness-background__particle {
+.ambient-brand-background__particle {
   position: absolute;
   left: var(--particle-left);
   top: var(--particle-top);

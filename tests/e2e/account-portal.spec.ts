@@ -567,7 +567,25 @@ test("utility Auth routes use one focused task shell", async ({ page }) => {
     );
     await expect(page.locator(".account-utility-layout > .account-card")).toHaveCount(1);
     await expect(page.locator(".account-hero--utility")).toBeVisible();
+    await expect(page.locator('main[data-auth-family="fawxzzy"]')).toHaveAttribute(
+      "data-auth-product",
+      "website",
+    );
+    await expect(page.locator('main[data-auth-layout="focused-split"]')).toBeVisible();
   }
+});
+
+test("login follows the shared Fawxzzy auth anatomy without overstating availability", async ({
+  page,
+}) => {
+  await page.goto("/login");
+  await expect(page.getByText("Fawxzzy account", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Welcome back." })).toBeVisible();
+  await expect(page.locator('[data-auth-surface="credentials"]')).toBeVisible();
+  await expect(page.getByLabel("Email")).toBeVisible();
+  await expect(page.getByLabel("Password")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in" }).last()).toBeDisabled();
+  await expect(page.getByText("Account access is coming soon.")).toBeVisible();
 });
 
 test("utility forms preserve password-manager and autofill semantics", async ({ page }) => {
@@ -650,7 +668,11 @@ test("login accepts a legacy short password and maps adapter errors safely", asy
 test("signup enforces ten characters and accepts long passwords", async ({ browserName, page }) => {
   test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
   await page.goto("/login?auth_test=success");
-  await page.getByRole("button", { name: "Create account" }).click();
+  const createAccountMode = page
+    .locator(".account-segmented")
+    .getByRole("button", { name: "Create account" });
+  await createAccountMode.click();
+  await expect(createAccountMode).toHaveAttribute("aria-pressed", "true");
   const form = page.locator("form");
   await expect(form.getByLabel("Password")).toHaveAttribute("minlength", "10");
   await form.getByLabel("Email").fill("new@example.test");

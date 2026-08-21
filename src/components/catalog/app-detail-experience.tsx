@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import Image from "next/image";
 import type { CatalogApp, CatalogProductStory } from "@/data/apps";
-import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
+import { AmbientBrandBackground } from "@/components/ambient/ambient-brand-background";
 import { TrailerPlayer } from "@/components/catalog/trailer-player";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
@@ -89,12 +89,12 @@ export function AppDetailExperience({ app }: AppDetailExperienceProps) {
 
   return (
     <main
-      className="app-detail-page app-theme-sage"
+      className="app-detail-page app-theme-fawxzzy"
       data-app-detail={app.slug}
       id="main-content"
       style={accentStyle}
     >
-      <AmbientFitnessBackground
+      <AmbientBrandBackground
         intensity="soft"
         particleCount={6}
         palette={{

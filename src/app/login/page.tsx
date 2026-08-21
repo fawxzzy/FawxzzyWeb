@@ -11,8 +11,8 @@ export const metadata = accountPageMetadata(
 export default function LoginPage() {
   return (
     <AccountPageShell
-      eyebrow="Account"
-      intro="Sign in or create your Fawxzzy account."
+      eyebrow="Fawxzzy account"
+      intro="One secure place for your Fawxzzy apps."
       title="Welcome back."
       variant="utility"
     >

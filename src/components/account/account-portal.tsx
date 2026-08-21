@@ -250,7 +250,11 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
   }
 
   return (
-    <section aria-labelledby="login-panel-title" className="account-card surface-panel">
+    <section
+      aria-labelledby="login-panel-title"
+      className="account-card surface-panel"
+      data-auth-surface="credentials"
+    >
       <RuntimeNote />
       <div aria-label="Account action" className="account-segmented" role="group">
         <button
@@ -498,7 +502,11 @@ function AccountPanel({ resolution }: { resolution: AdapterResolution | null }) 
   }
 
   return (
-    <section aria-labelledby="account-status-title" className="account-card surface-panel">
+    <section
+      aria-labelledby="account-status-title"
+      className="account-card surface-panel"
+      data-auth-surface="account-status"
+    >
       <RuntimeNote />
       <div className="account-card__heading">
         <p className="field-label">Account access</p>

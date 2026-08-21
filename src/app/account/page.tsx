@@ -11,8 +11,8 @@ export const metadata = accountPageMetadata(
 export default function AccountPage() {
   return (
     <AccountPageShell
-      eyebrow="Account"
-      intro="Sign in and manage your apps in one place."
+      eyebrow="Fawxzzy account"
+      intro="Your apps and account status in one place."
       title="Your account."
     >
       <AccountPortal mode="account" />

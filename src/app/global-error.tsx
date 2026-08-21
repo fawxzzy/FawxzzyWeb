@@ -22,7 +22,7 @@ export default function GlobalError({ error, unstable_retry }: GlobalErrorProps)
         <a className="skip-link" href="#main-content">
           Skip to content
         </a>
-        <main className="system-page system-page--global app-theme-sage" id="main-content">
+        <main className="system-page system-page--global app-theme-fawxzzy" id="main-content">
           <div className="shell-container system-shell system-shell--global">
             <SystemState
               actions={
