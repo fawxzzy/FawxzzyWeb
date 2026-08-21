@@ -67,7 +67,7 @@ Stable `data-analytics-event` attributes define the future website measurement v
 
 ## Static export
 
-FawxzzyWeb remains a Next.js static export. Keep routes build-time deterministic. Vercel owns explicit compatibility redirects: `/discover` and the retired app-detail paths are permanent, while `/trove` stays temporary so the compatibility handoff remains reversible. Real static fallback pages preserve useful behavior on local and non-Vercel hosts because Next.js config redirects are not supported with `output: "export"`.
+FawxzzyWeb remains a Next.js static export. Keep routes build-time deterministic. Vercel owns explicit compatibility redirects: `/discover` and the retired app-detail paths are permanent, while `/trove` stays temporary so the compatibility handoff remains reversible. Real static fallback pages exist only for `/discover` and `/trove` because Next.js config redirects are not supported with `output: "export"`. The retired `/apps/fitness`, `/apps/fitness/preview`, and `/apps/mazer` paths are provider-only redirects; local and non-Vercel static hosts intentionally return 404 for them.
 
 Internal route links render through `src/components/site/static-link.tsx` so the exported site does not depend on speculative route-data requests.
 

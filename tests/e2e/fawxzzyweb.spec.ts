@@ -614,6 +614,11 @@ test("route and root error boundaries use explicit shared recovery states", asyn
 
 test("provider redirects preserve permanent and reversible compatibility boundaries", async () => {
   const vercelConfig = JSON.parse(await readFile(resolve(process.cwd(), "vercel.json"), "utf8"));
+  const readme = await readFile(resolve(process.cwd(), "README.md"), "utf8");
+
+  expect(readme).toContain("Real static fallback pages exist only for `/discover` and `/trove`");
+  expect(readme).toContain("paths are provider-only redirects");
+  expect(readme).toContain("local and non-Vercel static hosts intentionally return 404");
 
   expect(vercelConfig.redirects).toContainEqual({
     source: "/apps/fitness/preview",
