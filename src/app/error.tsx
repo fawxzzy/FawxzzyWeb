@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
+import { AmbientBrandBackground } from "@/components/ambient/ambient-brand-background";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
 import { SystemState } from "@/components/system/system-state";
@@ -18,8 +18,8 @@ export default function RouteError({ error, unstable_retry }: RouteErrorProps) {
   }, [error]);
 
   return (
-    <main className="system-page app-theme-sage" id="main-content">
-      <AmbientFitnessBackground intensity="soft" particleCount={8} pulseEnabled={false} />
+    <main className="system-page app-theme-fawxzzy" id="main-content">
+      <AmbientBrandBackground intensity="soft" particleCount={8} pulseEnabled={false} />
       <div className="shell-container system-shell">
         <SiteNav current="home" />
         <SystemState

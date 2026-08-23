@@ -1,4 +1,4 @@
-import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
+import { AmbientBrandBackground } from "@/components/ambient/ambient-brand-background";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
 import { StaticLink } from "@/components/site/static-link";
@@ -25,11 +25,11 @@ export function CompatibilityRoute({
 }: CompatibilityRouteProps) {
   return (
     <main
-      className="system-page app-theme-sage"
+      className="system-page app-theme-fawxzzy"
       data-compatibility-identity={identity}
       id="main-content"
     >
-      <AmbientFitnessBackground intensity="soft" particleCount={6} pulseEnabled={false} />
+      <AmbientBrandBackground intensity="soft" particleCount={6} pulseEnabled={false} />
       <div className="shell-container system-shell">
         <SiteNav current={current} />
         <SystemState

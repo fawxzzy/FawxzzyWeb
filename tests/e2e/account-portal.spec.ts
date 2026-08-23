@@ -1,5 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import {
   resolveSystemStateSemantics,
   systemStateVariants,
@@ -36,14 +38,31 @@ import {
   sourceOnlyServiceRegistrationCapability,
 } from "../../src/lib/account/service-registration";
 import { apps } from "../../src/data/apps";
+import { productIdentity } from "../../src/config/product";
 
 const accountRoutes = [
-  ["/login", "Sign in | Fawxzzy"],
-  ["/account", "Account | Fawxzzy"],
-  ["/auth/confirm", "Confirm account | Fawxzzy"],
-  ["/auth/callback", "Account handoff | Fawxzzy"],
-  ["/reset-password", "Reset password | Fawxzzy"],
+  ["/login", `Sign in | ${productIdentity.publicName}`],
+  ["/account", `Account | ${productIdentity.publicName}`],
+  ["/auth/confirm", `Confirm account | ${productIdentity.publicName}`],
+  ["/auth/callback", `Account handoff | ${productIdentity.publicName}`],
+  ["/reset-password", `Reset password | ${productIdentity.publicName}`],
 ] as const;
+
+test("auth surfaces derive public branding from product identity", () => {
+  const sources = [
+    "../../src/app/login/page.tsx",
+    "../../src/app/account/page.tsx",
+    "../../src/app/auth/callback/page.tsx",
+    "../../src/app/auth/confirm/page.tsx",
+    "../../src/components/account/account-portal.tsx",
+  ];
+
+  for (const sourcePath of sources) {
+    const source = readFileSync(path.resolve(process.cwd(), "tests/e2e", sourcePath), "utf8");
+    expect(source).toContain("productIdentity.publicName");
+    expect(source).not.toMatch(/["'`]Fawxzzy(?: account| apps)?[."'`<]/);
+  }
+});
 
 const utilityRoutes = accountRoutes.filter(([route]) => route !== "/account");
 
@@ -540,6 +559,11 @@ test("all account routes carry account canonical metadata and setup-pending stat
     if (route === "/auth/confirm" || route === "/auth/callback") {
       await expect(page.locator('[data-auth-state="invalid"]')).toBeVisible();
       await expect(page.locator('[data-system-state="unavailable"]')).toHaveCount(0);
+    } else if (route === "/login" || route === "/reset-password") {
+      await expect(page.locator('[data-system-state="unavailable"]')).toHaveCount(0);
+      await expect(page.locator(".account-capability-note")).toHaveText(
+        "Account service unavailable on this origin.",
+      );
     } else {
       await expect(page.locator('[data-system-state="unavailable"]').first()).toBeVisible();
     }
@@ -547,7 +571,7 @@ test("all account routes carry account canonical metadata and setup-pending stat
     if (route === "/account") {
       await expect(page.getByRole("navigation", { name: "Primary" })).not.toContainText("Account");
     } else {
-      await expect(page.getByRole("navigation", { name: "Account" })).toBeVisible();
+      await expect(page.getByRole("navigation", { name: "Account" })).toHaveCount(0);
       await expect(page.getByRole("navigation", { name: "Primary" })).toHaveCount(0);
     }
   }
@@ -556,31 +580,46 @@ test("all account routes carry account canonical metadata and setup-pending stat
 test("utility Auth routes use one focused task shell", async ({ page }) => {
   for (const [route] of utilityRoutes) {
     await page.goto(route);
-    const navigation = page.getByRole("navigation", { name: "Account" });
-    await expect(navigation.getByRole("link", { name: "Fawxzzy home" })).toHaveAttribute(
-      "href",
-      "/",
-    );
-    await expect(navigation.getByRole("link", { name: "Back home" })).toHaveAttribute(
-      "href",
-      "/",
-    );
+    await expect(page.getByRole("navigation", { name: "Account" })).toHaveCount(0);
     await expect(page.locator(".account-utility-layout > .account-card")).toHaveCount(1);
-    await expect(page.locator(".account-hero--utility")).toBeVisible();
+    await expect(page.locator(".account-hero--utility")).toHaveCount(0);
+    await expect(page.locator('main[data-auth-family="fawxzzy"]')).toHaveAttribute(
+      "data-auth-product",
+      "website",
+    );
+    await expect(page.locator('main[data-auth-layout="focused-split"]')).toBeVisible();
   }
+});
+
+test("login follows the shared Fawxzzy auth anatomy without overstating availability", async ({
+  page,
+}) => {
+  await page.goto("/login");
+  await expect(page.getByRole("heading", { name: "Welcome" })).toBeVisible();
+  await expect(page.locator('[data-auth-surface="credentials"]')).toBeVisible();
+  await expect(page.getByLabel("Email or username")).toBeVisible();
+  await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Show password" })).toBeVisible();
+  await page.getByLabel("Password", { exact: true }).fill("preview-me");
+  await page.getByRole("button", { name: "Show password" }).click();
+  await expect(page.getByLabel("Password", { exact: true })).toHaveAttribute("type", "text");
+  await expect(page.getByRole("button", { name: "Hide password" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Log in" }).last()).toBeDisabled();
+  await expect(page.getByText("Account service unavailable on this origin.")).toBeAttached();
 });
 
 test("utility forms preserve password-manager and autofill semantics", async ({ page }) => {
   await page.goto("/login?auth_test=success");
   const loginForm = page.locator("form");
-  await expect(loginForm.getByLabel("Email")).toHaveAttribute("autocomplete", "email");
-  await expect(loginForm.getByLabel("Password")).toHaveAttribute(
+  await expect(loginForm.getByLabel("Email or username")).toHaveAttribute("autocomplete", "username");
+  await expect(loginForm.getByLabel("Password", { exact: true })).toHaveAttribute(
     "autocomplete",
     "current-password",
   );
 
   await page.getByRole("button", { name: "Create account" }).click();
-  await expect(loginForm.getByLabel("Password")).toHaveAttribute(
+  await expect(loginForm.getByLabel("Username")).toHaveAttribute("autocomplete", "username");
+  await expect(loginForm.getByLabel("Password", { exact: true })).toHaveAttribute(
     "autocomplete",
     "new-password",
   );
@@ -596,18 +635,10 @@ test("utility shell stays usable without overflow at 320px and 360px", async ({ 
       await page.goto(route);
       const geometry = await page.evaluate(() => ({
         clientWidth: document.documentElement.clientWidth,
-        minimumNavigationTarget: Math.min(
-          ...[...document.querySelectorAll<HTMLElement>(".account-utility-nav a")].map(
-            (element) => Math.round(element.getBoundingClientRect().height),
-          ),
-        ),
         scrollWidth: document.documentElement.scrollWidth,
       }));
       expect(geometry.scrollWidth, `${route} at ${width}px`).toBeLessThanOrEqual(
         geometry.clientWidth,
-      );
-      expect(geometry.minimumNavigationTarget, `${route} utility navigation`).toBeGreaterThanOrEqual(
-        44,
       );
     }
   }
@@ -634,28 +665,64 @@ test("login accepts a legacy short password and maps adapter errors safely", asy
   test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
   await page.goto("/login?auth_test=success");
   const form = page.locator("form");
-  await form.getByLabel("Email").fill("legacy@example.test");
-  await form.getByLabel("Password").fill("short");
-  await form.getByRole("button", { name: "Sign in" }).click();
+  await form.getByLabel("Email or username").fill("legacy@example.test");
+  await form.getByLabel("Password", { exact: true }).fill("short");
+  const loginSubmit = page.locator(".account-auth-dock").getByRole("button", { name: "Log in" });
+  await loginSubmit.click();
   await expect(page.getByRole("status")).toContainText("Signed in on this account origin");
-  await expect(form.getByRole("button")).toBeDisabled();
+  await expect(page.locator(".account-auth-dock button")).toBeDisabled();
 
   await page.goto("/login?auth_test=error");
-  await page.locator("form").getByLabel("Email").fill("unknown@example.test");
-  await page.locator("form").getByLabel("Password").fill("short");
-  await page.locator("form").getByRole("button", { name: "Sign in" }).click();
+  await page.locator("form").getByLabel("Email or username").fill("unknown@example.test");
+  await page.locator("form").getByLabel("Password", { exact: true }).fill("short");
+  await page.locator(".account-auth-dock").getByRole("button", { name: "Log in" }).click();
   await expect(page.locator('.account-notice[role="alert"]')).toContainText(safeAuthError("login"));
+});
+
+test("auth footer uses the shared nested signature pipe and compact dock spacing", async ({ page }) => {
+  await page.goto("/login?auth_test=success");
+
+  const separator = page.locator(".account-link-separator");
+  const passwordIcon = page.locator(".account-password-toggle svg");
+  await expect(separator).toHaveCount(1);
+  await expect(separator.locator(":scope > span")).toHaveCount(1);
+  await expect(passwordIcon).toHaveCSS("width", "20px");
+  await expect(passwordIcon).toHaveCSS("height", "20px");
+  await expect(page.locator(".account-text-action")).toHaveCSS("padding", "0px");
+  await expect(page.locator(".account-card__links")).toContainText("Create account");
+  await expect(page.locator(".account-card__links")).toContainText("Reset password");
+
+  const footerBox = await page.locator(".account-card__links").boundingBox();
+  const dockBox = await page.locator(".account-auth-dock .catalog-button").boundingBox();
+  expect(footerBox).not.toBeNull();
+  expect(dockBox).not.toBeNull();
+  expect(footerBox!.y + footerBox!.height).toBeLessThanOrEqual(dockBox!.y + 1);
+});
+
+test("auth fields use the canonical Fitness text and spacing contract", async ({ page }) => {
+  await page.goto("/login?auth_test=success");
+
+  const identifier = page.locator("form").getByLabel("Email or username");
+  const password = page.locator("form").getByLabel("Password", { exact: true });
+  for (const field of [identifier, password]) {
+    await expect(field).toHaveCSS("font-size", "14px");
+    await expect(field).toHaveCSS("line-height", "20px");
+    await expect(field).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(field).toHaveCSS("padding-left", "18px");
+  }
 });
 
 test("signup enforces ten characters and accepts long passwords", async ({ browserName, page }) => {
   test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
   await page.goto("/login?auth_test=success");
-  await page.getByRole("button", { name: "Create account" }).click();
+  const createAccountMode = page.getByRole("button", { name: "Create account" });
+  await createAccountMode.click();
   const form = page.locator("form");
-  await expect(form.getByLabel("Password")).toHaveAttribute("minlength", "10");
+  await expect(form.getByLabel("Password", { exact: true })).toHaveAttribute("minlength", "10");
+  await form.getByLabel("Username").fill("new-player");
   await form.getByLabel("Email").fill("new@example.test");
-  await form.getByLabel("Password").fill("x".repeat(129));
-  await form.getByRole("button", { name: "Create account" }).click();
+  await form.getByLabel("Password", { exact: true }).fill("x".repeat(129));
+  await page.locator(".account-auth-dock").getByRole("button", { name: "Create account" }).click();
   await expect(page.getByRole("status")).toContainText("account request is complete");
 });
 
@@ -664,8 +731,9 @@ test("signup validation stops before the provider call", async ({ browserName, p
   await page.goto("/login?auth_test=signup-existing");
   await page.getByRole("button", { name: "Create account" }).click();
   const form = page.locator("form");
-  const password = form.getByLabel("Password");
-  const submit = form.getByRole("button", { name: "Create account" });
+  const password = form.getByLabel("Password", { exact: true });
+  const submit = page.locator(".account-auth-dock").getByRole("button", { name: "Create account" });
+  await form.getByLabel("Username").fill("existing-player");
   await form.getByLabel("Email").fill("existing@example.test");
   await password.fill("too-short");
   await submit.click();
@@ -701,9 +769,10 @@ test("every settled provider signup outcome has one non-enumerating result", asy
     await page.goto(`/login?auth_test=${scenario}`);
     await page.getByRole("button", { name: "Create account" }).click();
     const form = page.locator("form");
-    const submit = form.locator('button[type="submit"]');
+    const submit = page.locator('.account-auth-dock button[type="submit"]');
+    await form.getByLabel("Username").fill("test-player");
     await form.getByLabel("Email").fill(`${scenario}@example.test`);
-    await form.getByLabel("Password").fill("long-enough-password");
+    await form.getByLabel("Password", { exact: true }).fill("long-enough-password");
     await submit.click();
 
     await expect(submit).toHaveText(/^Working/);

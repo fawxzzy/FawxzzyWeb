@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
+import { AmbientBrandBackground } from "@/components/ambient/ambient-brand-background";
 import { ProductShowcase } from "@/components/catalog/product-showcase";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
@@ -10,10 +10,10 @@ import { tiktokDestination } from "@/data/discovery";
 export function StorefrontExperience() {
   return (
     <main
-      className="home-page storefront-page app-theme-sage"
+      className="home-page storefront-page app-theme-fawxzzy"
       id="main-content"
     >
-      <AmbientFitnessBackground
+      <AmbientBrandBackground
         intensity="soft"
         particleCount={6}
         palette={{

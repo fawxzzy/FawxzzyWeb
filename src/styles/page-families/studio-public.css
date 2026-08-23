@@ -728,10 +728,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ambient-fitness-background__blob,
-  .ambient-fitness-background__wisp,
-  .ambient-fitness-background__pulse,
-  .ambient-fitness-background__particle,
+  .ambient-brand-background__blob,
+  .ambient-brand-background__wisp,
+  .ambient-brand-background__pulse,
+  .ambient-brand-background__particle,
   .catalog-button,
   .app-store-card,
   .product-showcase,
@@ -740,14 +740,14 @@
     transition: none;
   }
 
-  .ambient-fitness-background__blob,
-  .ambient-fitness-background__wisp,
-  .ambient-fitness-background__pulse {
+  .ambient-brand-background__blob,
+  .ambient-brand-background__wisp,
+  .ambient-brand-background__pulse {
     opacity: 0.3;
     transform: none;
   }
 
-  .ambient-fitness-background__particle {
+  .ambient-brand-background__particle {
     opacity: 0.22;
   }
 

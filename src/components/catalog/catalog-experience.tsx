@@ -1,4 +1,4 @@
-import { AmbientFitnessBackground } from "@/components/ambient/ambient-fitness-background";
+import { AmbientBrandBackground } from "@/components/ambient/ambient-brand-background";
 import { AppCatalogEntry } from "@/components/catalog/app-catalog-entry";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
@@ -7,10 +7,10 @@ import { apps } from "@/data/apps";
 export function CatalogExperience() {
   return (
     <main
-      className="catalog-page app-theme-sage"
+      className="catalog-page app-theme-fawxzzy"
       id="main-content"
     >
-      <AmbientFitnessBackground
+      <AmbientBrandBackground
         intensity="soft"
         particleCount={8}
         palette={{

@@ -9,7 +9,7 @@ type AmbientPalette = {
   warm: string;
 };
 
-export type AmbientFitnessBackgroundProps = {
+export type AmbientBrandBackgroundProps = {
   intensity?: "soft" | "medium" | "high" | number;
   particleCount?: number;
   palette?: Partial<AmbientPalette>;
@@ -25,7 +25,7 @@ const DEFAULT_PALETTE: AmbientPalette = {
   warm: "#2F281E",
 };
 
-function resolveIntensity(intensity: AmbientFitnessBackgroundProps["intensity"]) {
+function resolveIntensity(intensity: AmbientBrandBackgroundProps["intensity"]) {
   if (typeof intensity === "number") {
     return Math.min(Math.max(intensity, 0.45), 2.2);
   }
@@ -55,12 +55,12 @@ function createParticles(count: number) {
   }));
 }
 
-export function AmbientFitnessBackground({
+export function AmbientBrandBackground({
   intensity = "high",
   particleCount = 18,
   palette,
   pulseEnabled = true,
-}: AmbientFitnessBackgroundProps) {
+}: AmbientBrandBackgroundProps) {
   const resolvedPalette = {
     ...DEFAULT_PALETTE,
     ...palette,
@@ -81,22 +81,23 @@ export function AmbientFitnessBackground({
   return (
     <div
       aria-hidden="true"
-      className="ambient-fitness-background"
+      className="ambient-brand-background"
+      data-brand="fawxzzy"
       data-pulse-enabled={pulseEnabled ? "true" : "false"}
       style={style}
     >
-      <div className="ambient-fitness-background__base" />
-      <div className="ambient-fitness-background__blob ambient-fitness-background__blob--one" />
-      <div className="ambient-fitness-background__blob ambient-fitness-background__blob--two" />
-      <div className="ambient-fitness-background__blob ambient-fitness-background__blob--three" />
-      <div className="ambient-fitness-background__wisp ambient-fitness-background__wisp--one" />
-      <div className="ambient-fitness-background__wisp ambient-fitness-background__wisp--two" />
-      <div className="ambient-fitness-background__wisp ambient-fitness-background__wisp--three" />
-      {pulseEnabled ? <div className="ambient-fitness-background__pulse" /> : null}
-      <div className="ambient-fitness-background__particles">
+      <div className="ambient-brand-background__base" />
+      <div className="ambient-brand-background__blob ambient-brand-background__blob--one" />
+      <div className="ambient-brand-background__blob ambient-brand-background__blob--two" />
+      <div className="ambient-brand-background__blob ambient-brand-background__blob--three" />
+      <div className="ambient-brand-background__wisp ambient-brand-background__wisp--one" />
+      <div className="ambient-brand-background__wisp ambient-brand-background__wisp--two" />
+      <div className="ambient-brand-background__wisp ambient-brand-background__wisp--three" />
+      {pulseEnabled ? <div className="ambient-brand-background__pulse" /> : null}
+      <div className="ambient-brand-background__particles">
         {particles.map((particle) => (
           <span
-            className="ambient-fitness-background__particle"
+            className="ambient-brand-background__particle"
             key={particle.key}
             style={
               {

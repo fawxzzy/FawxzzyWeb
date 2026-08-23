@@ -5,7 +5,7 @@ const ownership = [
   ["../styles/components/site-shell.css", ".site-nav"],
   ["../styles/page-families/legacy-public.css", ".compatibility-note"],
   ["../styles/page-families/utility.css", ".account-page"],
-  ["../styles/components/catalog-foundations.css", ".app-theme-sage"],
+  ["../styles/components/catalog-foundations.css", ".app-theme-fawxzzy"],
   ["../styles/components/app-launcher.css", ".catalog-launcher"],
   ["../styles/page-families/product-detail.css", "Wave 2A"],
   ["../styles/page-families/studio-public.css", "Wave 1"],
