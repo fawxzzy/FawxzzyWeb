@@ -127,9 +127,9 @@ export async function assertSiteSmoke(baseUrl) {
   const accountRoutes = [
     ["/login", ">Welcome<"],
     ["/account", "Your account."],
-    ["/auth/confirm", "Confirm your account."],
-    ["/auth/callback", "Signing you in."],
-    ["/reset-password", "Reset your password."],
+    ["/auth/confirm", "Account confirmation"],
+    ["/auth/callback", "Secure sign-in"],
+    ["/reset-password", "Password recovery"],
   ];
   for (const [path, expectedText] of accountRoutes) {
     const html = await assertRoute(baseUrl, path, expectedText);
