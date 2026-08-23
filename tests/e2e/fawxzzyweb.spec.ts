@@ -97,14 +97,17 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
   );
   await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Train. Play. Keep moving.",
+    "Built by Fawxzzy.",
   );
-  await expect(page.getByText(`${apps.length} focused apps.`)).toBeVisible();
   await expect(page.getByRole("link", { name: "Fawxzzy home" })).toHaveAttribute("href", "/");
   await expect(page.locator('a[aria-current="page"]')).toHaveCount(1);
   await expect(page.locator(".site-nav__links a")).toHaveCount(2);
   await expect(page.getByRole("navigation", { name: "Primary" })).not.toContainText("Account");
-  await expect(page.getByRole("link", { name: "Choose an app" })).toHaveAttribute("href", "#apps");
+  await expect(page.getByRole("link", { name: "Explore apps" })).toHaveAttribute("href", "/apps");
+  await expect(page.getByRole("link", { name: "Sign in", exact: true })).toHaveAttribute(
+    "href",
+    "https://account.fawxzzy.com/login",
+  );
   await expect(page.getByRole("navigation", { name: "Primary" })).not.toContainText("Discover");
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
@@ -115,17 +118,18 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
     /Fawxzzy/,
   );
 
-  await expect(page.getByRole("heading", { name: "Built for momentum and play." })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "See the next build." })).toBeVisible();
-  await expect(page.locator("[data-app-card]")).toHaveCount(apps.length);
+  await expect(page.getByRole("heading", { name: "Creator. Builder. Fitness. Gamer." })).toBeVisible();
+  await expect(page.locator("[data-app-card], [data-app-launcher]")).toHaveCount(0);
   await expect(page.locator("[data-product-showcase], video")).toHaveCount(0);
-  await expect(page.locator('.storefront-social [data-analytics-event="tiktok_open"]')).toHaveCount(1);
+  await expect(page.locator('.creator-profile [data-analytics-event="tiktok_open"]')).toHaveCount(1);
   await expect(page.locator('.site-footer [data-analytics-event="tiktok_open"]')).toHaveCount(1);
   await expect(page.locator("body")).not.toContainText("&nearr;");
   await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Account" })).toHaveAttribute(
+  await expect(
+    page.getByRole("navigation", { name: "Footer" }).getByRole("link", { name: "Account" }),
+  ).toHaveAttribute(
     "href",
-    "/account",
+    "https://account.fawxzzy.com/account",
   );
 });
 
@@ -431,11 +435,11 @@ test("apps route presents install help first and a direct-launch app grid", asyn
   await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
 });
 
-test("Home stays concise and Apps launches each product without an extra detail page", async ({ page }) => {
+test("Home stays creator-focused and Apps launches each product without an extra detail page", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
 
   await page.goto("/");
-  await expect(page.locator("[data-app-card]")).toHaveCount(apps.length);
+  await expect(page.locator("[data-app-card], [data-app-launcher]")).toHaveCount(0);
   await expect(page.locator("[data-product-showcase], video")).toHaveCount(0);
 
   await page.goto("/apps");
@@ -454,10 +458,8 @@ test("Home stays concise and Apps launches each product without an extra detail 
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  const homeRects = await page.locator("[data-app-card]").evaluateAll((elements) =>
-    elements.map((element) => element.getBoundingClientRect().top),
-  );
-  expect(homeRects[1]).toBeGreaterThan(homeRects[0]);
+  await expect(page.getByRole("heading", { name: "Built by Fawxzzy." })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Explore apps" })).toBeVisible();
 
   await page.goto("/apps");
   const launcherRects = await page.locator("[data-app-launcher]").evaluateAll((elements) =>
@@ -802,18 +804,20 @@ test("primary navigation adapts without clipping from 320px through desktop", as
   await expect(primaryNav.locator('a[aria-current="page"]')).toHaveCount(1);
 });
 
-test("storefront keeps the first choice close and app names inside launcher tiles", async ({
+test("creator home keeps its primary actions close and app names inside launcher tiles", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
 
   const mobileGeometry = await page.evaluate(() => ({
-    appsTop: document.querySelector("#apps")?.getBoundingClientRect().top ?? Number.POSITIVE_INFINITY,
+    actionsBottom:
+      document.querySelector(".storefront-hero__actions")?.getBoundingClientRect().bottom ??
+      Number.POSITIVE_INFINITY,
     heroHeight: document.querySelector(".storefront-hero")?.getBoundingClientRect().height ?? 0,
   }));
   expect(mobileGeometry.heroHeight).toBeLessThanOrEqual(500);
-  expect(mobileGeometry.appsTop).toBeLessThanOrEqual(760);
+  expect(mobileGeometry.actionsBottom).toBeLessThanOrEqual(760);
 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/apps");

@@ -4,7 +4,7 @@ FawxzzyWeb is the public app-distribution surface owned by the Socials OS progra
 
 ## Route contract
 
-- `/` — canonical Fawxzzy storefront, app directory, and TikTok discovery surface
+- `/` — canonical Fawxzzy creator home with direct Apps, Account, and TikTok entry points
 - `/apps` — canonical full app catalog, installation guide, and direct app-launch surface sourced from `src/data/apps.ts`
 - `/discover` — permanent provider redirect to `/` with a lightweight no-index static fallback
 - `/trove` — temporary provider redirect to `/apps` with a reversible no-index static fallback
@@ -43,7 +43,7 @@ the four-target contact sheet, manifest, and individual screenshots.
 
 Update `src/data/apps.ts` when the catalog changes. Each entry owns its current launch origin, planned canonical subdomain, rollback origins, active storefront icon and preview, provenance hashes, and product copy.
 
-Home is the concise discovery storefront. Apps is the single installation and app-launch surface. Both use the same product identity and responsive-media contract. On Apps, each phone-style icon and its primary `Open` control launch the independently owned branded app origin without an intermediate detail page; `Preview` and the truthful `Feedback` state remain separate secondary actions in that order.
+Home is the concise Fawxzzy creator surface and does not duplicate the catalog. Apps is the single installation and app-launch surface. Both use the same product identity and responsive-media contract. On Apps, each phone-style icon and its primary `Open` control launch the independently owned branded app origin without an intermediate detail page; `Preview` and the truthful `Feedback` state remain separate secondary actions in that order.
 
 The storefront uses compact WebP derivatives of current product evidence. Rebuild a derivative only from its declared canonical source and update the centralized derivative hash in `src/data/apps.ts`. Historical detail images and trailers remain repository provenance only; they are not active route media. Never publish a whole internal visual-reference catalog as route media.
 
@@ -61,7 +61,7 @@ Do not guess app domains or synthesize cross-origin install behavior.
 
 ## Discovery and analytics contract
 
-Update `src/data/discovery.ts` when the canonical TikTok destination changes. `/` renders the centralized app shelf and that exact TikTok destination; `/discover` is routing compatibility only. YouTube, X, Discord, Snapchat, newsletters, custom intake, support links, gaming identities, and other retired surfaces must not re-enter active navigation without a new current owner decision.
+Update `src/data/discovery.ts` when the canonical TikTok destination changes. `/` introduces Fawxzzy and links to the centralized Apps surface, canonical Account origin, and exact TikTok destination; `/discover` is routing compatibility only. YouTube, X, Discord, Snapchat, newsletters, custom intake, support links, gaming identities, and other retired surfaces must not re-enter active navigation without a new current owner decision.
 
 Stable `data-analytics-event` attributes define the future website measurement vocabulary for catalog views, app launches, and TikTok exits. No analytics collector or provider is installed; website analytics remain explicitly unmeasured until a separate privacy-safe implementation.
 

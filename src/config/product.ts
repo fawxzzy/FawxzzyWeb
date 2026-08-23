@@ -3,7 +3,7 @@ export const productIdentity = {
   repositoryName: "FawxzzyWeb",
   providerSlug: "fawxzzyweb",
   description:
-    "Discover focused Fawxzzy apps for training, play, and everyday momentum.",
+    "Fawxzzy is an independent creator building focused software for training, play, and everyday momentum.",
   canonicalOrigin: "https://fawxzzy.com",
   linkPreview: {
     alt: "Fawxzzy wolf app icon",
