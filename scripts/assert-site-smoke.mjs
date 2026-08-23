@@ -22,13 +22,16 @@ export async function assertSiteSmoke(baseUrl) {
   const homeHtml = await assertRoute(
     baseUrl,
     "/",
-    "Train. Play. Keep moving.",
+    "Built by Fawxzzy.",
   );
   if (homeHtml.includes("&amp;nearr;") || homeHtml.includes("&nearr;")) {
     throw new Error("Home route rendered a literal named entity in external action text.");
   }
   if (!homeHtml.includes('href="/apps"')) {
     throw new Error("Home route did not link directly to the canonical Apps page.");
+  }
+  if (!homeHtml.includes('href="https://account.fawxzzy.com/account"')) {
+    throw new Error("Home route did not link to the canonical Fawxzzy account.");
   }
   if (!homeHtml.includes('/brand/fawxzzy-banner-v2-hero.webp')) {
     throw new Error("Home route did not render the optimized Fawxzzy hero derivative.");
@@ -41,6 +44,9 @@ export async function assertSiteSmoke(baseUrl) {
   }
   if (!homeHtml.includes('aria-label="Footer"')) {
     throw new Error("Home route did not render the shared site footer.");
+  }
+  if (homeHtml.includes("data-app-card") || homeHtml.includes("data-app-launcher")) {
+    throw new Error("Home route duplicated the app catalog instead of remaining creator-focused.");
   }
   const appsHtml = await assertRoute(
     baseUrl,

@@ -1,4 +1,5 @@
 import { StaticLink } from "@/components/site/static-link";
+import { accountUrls } from "@/config/account";
 import { productIdentity } from "@/config/product";
 import { tiktokDestination } from "@/data/discovery";
 
@@ -16,7 +17,7 @@ export function SiteFooter() {
         >
           TikTok
         </a>
-        <StaticLink href="/account">Account</StaticLink>
+        <StaticLink href={accountUrls.account}>Account</StaticLink>
       </nav>
 
       <div className="site-footer__closing">
