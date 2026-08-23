@@ -1,5 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import {
   resolveSystemStateSemantics,
   systemStateVariants,
@@ -36,14 +38,31 @@ import {
   sourceOnlyServiceRegistrationCapability,
 } from "../../src/lib/account/service-registration";
 import { apps } from "../../src/data/apps";
+import { productIdentity } from "../../src/config/product";
 
 const accountRoutes = [
-  ["/login", "Sign in | Fawxzzy"],
-  ["/account", "Account | Fawxzzy"],
-  ["/auth/confirm", "Confirm account | Fawxzzy"],
-  ["/auth/callback", "Account handoff | Fawxzzy"],
-  ["/reset-password", "Reset password | Fawxzzy"],
+  ["/login", `Sign in | ${productIdentity.publicName}`],
+  ["/account", `Account | ${productIdentity.publicName}`],
+  ["/auth/confirm", `Confirm account | ${productIdentity.publicName}`],
+  ["/auth/callback", `Account handoff | ${productIdentity.publicName}`],
+  ["/reset-password", `Reset password | ${productIdentity.publicName}`],
 ] as const;
+
+test("auth surfaces derive public branding from product identity", () => {
+  const sources = [
+    "../../src/app/login/page.tsx",
+    "../../src/app/account/page.tsx",
+    "../../src/app/auth/callback/page.tsx",
+    "../../src/app/auth/confirm/page.tsx",
+    "../../src/components/account/account-portal.tsx",
+  ];
+
+  for (const sourcePath of sources) {
+    const source = readFileSync(path.resolve(process.cwd(), "tests/e2e", sourcePath), "utf8");
+    expect(source).toContain("productIdentity.publicName");
+    expect(source).not.toMatch(/["'`]Fawxzzy(?: account| apps)?[."'`<]/);
+  }
+});
 
 const utilityRoutes = accountRoutes.filter(([route]) => route !== "/account");
 

@@ -6,6 +6,7 @@ import {
   classifyRuntimeOrigin,
   sanitizeReturnTarget,
 } from "@/config/account";
+import { productIdentity } from "@/config/product";
 import {
   callbackReceiptKey,
   callbackStateMatches,
@@ -250,7 +251,7 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
     >
       <RuntimeNote />
       <header className="account-auth-intro">
-        <p>Fawxzzy</p>
+        <p>{productIdentity.publicName}</p>
         <h1 id="login-panel-title">{intent === "login" ? "Welcome" : "Create account"}</h1>
       </header>
       <SetupState resolution={resolution} />
@@ -544,7 +545,7 @@ function AccountPanel({ resolution }: { resolution: AdapterResolution | null }) 
             </a>
           }
           compact
-          description="This browser has no Fawxzzy account session on the current origin."
+          description={`This browser has no ${productIdentity.publicName} account session on the current origin.`}
           framed={false}
           title="You are signed out here."
           variant="unauthorized"
@@ -1001,7 +1002,7 @@ function LinkHandler({
         details={
           <p>
             One-time details are processed once, removed from the address bar, and allowed to
-            continue only to an approved Fawxzzy destination.
+            continue only to an approved {productIdentity.publicName} destination.
           </p>
         }
         eyebrow={mode === "confirm" ? "Account confirmation" : "Secure sign-in"}
