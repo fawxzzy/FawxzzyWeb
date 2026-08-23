@@ -48,14 +48,16 @@ type Notice = {
 
 const emptySubscribe = () => () => undefined;
 const SIGNUP_SETTLEMENT_MINIMUM_MS = 500;
+const USERNAME_PATTERN = /^[A-Za-z0-9._-]{2,15}$/;
 
 async function settleSignupAttempt(
   adapter: PortalAuthAdapter,
   email: string,
   password: string,
+  username: string,
 ) {
   await Promise.allSettled([
-    adapter.signUp(email, password),
+    adapter.signUp(email, password, username),
     new Promise((resolve) => window.setTimeout(resolve, SIGNUP_SETTLEMENT_MINIMUM_MS)),
   ]);
 }
@@ -108,30 +110,11 @@ function useCooldown(seconds = 5) {
 
 function SetupState({ resolution }: { resolution: AdapterResolution | null }) {
   if (!resolution) {
-    return (
-      <SystemState
-        className="account-notice"
-        compact
-        description="Getting the account page ready."
-        framed={false}
-        title="Loading your account…"
-        variant="loading"
-      />
-    );
+    return <p className="account-capability-note" role="status">Preparing account service.</p>;
   }
   if (resolution.status === "ready") return null;
 
-  return (
-    <SystemState
-      className="account-notice"
-      compact
-      description="Account access is not available yet. You can still open Fitness and Mazer."
-      details={<p>{resolution.reason}</p>}
-      framed={false}
-      title="Account access is coming soon."
-      variant="unavailable"
-    />
-  );
+  return <p className="account-capability-note" role="status">Account service unavailable on this origin.</p>;
 }
 
 function RuntimeNote() {
@@ -206,8 +189,10 @@ function adapterFrom(resolution: AdapterResolution | null): PortalAuthAdapter | 
 
 function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
   const [intent, setIntent] = useState<"login" | "signup">("login");
+  const [username, setUsername] = useState("");
   const [notice, setNotice] = useState<Notice | null>(null);
   const [busy, setBusy] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const cooldown = useCooldown();
   const adapter = adapterFrom(resolution);
 
@@ -218,6 +203,14 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
     const form = new FormData(event.currentTarget);
     const email = String(form.get("email") ?? "").trim();
     const password = String(form.get("password") ?? "");
+    const submittedUsername = String(form.get("username") ?? "").trim();
+    if (intent === "signup" && !USERNAME_PATTERN.test(submittedUsername)) {
+      setNotice({
+        kind: "error",
+        text: "Use 2-15 letters, numbers, periods, underscores, or hyphens for your username.",
+      });
+      return;
+    }
     const validation = validatePassword(password, intent);
     if (!validation.valid) {
       setNotice({ kind: "error", text: validation.message });
@@ -231,7 +224,7 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
       if (intent === "signup") {
         // The adapter persists and publishes a real returned session. The notice intentionally
         // makes no claim about whether the provider created an account or returned a session.
-        await settleSignupAttempt(adapter, email, password);
+        await settleSignupAttempt(adapter, email, password, submittedUsername);
         setNotice({ kind: "success", text: safeAuthSuccess("signup") });
         return;
       }
@@ -252,63 +245,94 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
   return (
     <section
       aria-labelledby="login-panel-title"
-      className="account-card surface-panel"
+      className="account-card account-card--auth"
       data-auth-surface="credentials"
     >
       <RuntimeNote />
-      <div aria-label="Account action" className="account-segmented" role="group">
-        <button
-          aria-pressed={intent === "login"}
-          onClick={() => {
-            setIntent("login");
-            setNotice(null);
-          }}
-          type="button"
-        >
-          Sign in
-        </button>
-        <button
-          aria-pressed={intent === "signup"}
-          onClick={() => {
-            setIntent("signup");
-            setNotice(null);
-          }}
-          type="button"
-        >
-          Create account
-        </button>
-      </div>
-      <div className="account-card__heading">
-        <p className="field-label">{intent === "login" ? "Sign in" : "New account"}</p>
-        <h2 id="login-panel-title">
-          {intent === "login" ? "Enter your details." : "Create your account."}
-        </h2>
-        <p>
-          {intent === "login"
-            ? "Use the email and password connected to your account."
-            : `Use ${PASSWORD_MINIMUM} or more characters.`}
-        </p>
-      </div>
+      <header className="account-auth-intro">
+        <p>Fawxzzy</p>
+        <h1 id="login-panel-title">{intent === "login" ? "Welcome" : "Create account"}</h1>
+      </header>
       <SetupState resolution={resolution} />
       <StatusNotice notice={notice} />
-      <form className="account-form" onSubmit={submit}>
-        <label>
-          <span>Email</span>
-          <input autoComplete="email" inputMode="email" name="email" required type="email" />
-        </label>
-        <label>
-          <span>Password</span>
+      <form className="account-form account-form--auth" id="account-auth-form" onSubmit={submit}>
+        {intent === "signup" ? (
+          <fieldset>
+            <legend><label htmlFor="account-username">Username</label></legend>
+            <input
+              id="account-username"
+              autoComplete="username"
+              maxLength={15}
+              minLength={2}
+              name="username"
+              onChange={(event) => setUsername(event.target.value)}
+              pattern="[A-Za-z0-9._-]{2,15}"
+              required
+              type="text"
+              value={username}
+            />
+          </fieldset>
+        ) : null}
+        <fieldset>
+          <legend><label htmlFor="account-email">{intent === "login" ? "Email or username" : "Email"}</label></legend>
           <input
+            id="account-email"
+            autoComplete={intent === "login" ? "username" : "email"}
+            inputMode={intent === "login" ? "text" : "email"}
+            name="email"
+            required
+            type={intent === "login" ? "text" : "email"}
+          />
+        </fieldset>
+        <fieldset>
+          <legend><label htmlFor="account-password">Password</label></legend>
+          <input
+            id="account-password"
             autoComplete={intent === "login" ? "current-password" : "new-password"}
             minLength={intent === "signup" ? PASSWORD_MINIMUM : undefined}
             name="password"
             required
-            type="password"
+            type={passwordVisible ? "text" : "password"}
           />
-        </label>
+          <button
+            aria-label={passwordVisible ? "Hide password" : "Show password"}
+            className="account-password-toggle"
+            onClick={() => setPasswordVisible((visible) => !visible)}
+            type="button"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M2 12c2.5-4 5.8-6 10-6s7.5 2 10 6c-2.5 4-5.8 6-10 6s-7.5-2-10-6Z" />
+              <circle cx="12" cy="12" r="3" />
+              {passwordVisible ? null : <path d="M4 4l16 16" />}
+            </svg>
+          </button>
+        </fieldset>
+      </form>
+      <div className="account-card__links">
+        <button
+          className="account-text-action"
+          onClick={() => {
+            setIntent(intent === "login" ? "signup" : "login");
+            setNotice(null);
+          }}
+          type="button"
+        >
+          {intent === "login" ? "Create account" : "Log in"}
+        </button>
+        {intent === "login" ? (
+          <>
+            <span aria-hidden="true" className="account-link-separator">
+              <span />
+            </span>
+            <a href="/reset-password">Reset password</a>
+          </>
+        ) : null}
+      </div>
+      <div className="account-auth-dock">
         <button
           className="catalog-button catalog-button--primary"
           disabled={!adapter || busy || cooldown.remaining > 0}
+          form="account-auth-form"
           type="submit"
         >
           {busy
@@ -316,13 +340,9 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
             : cooldown.remaining
               ? `Try again in ${cooldown.remaining}s`
               : intent === "login"
-                ? "Sign in"
+                ? "Log in"
                 : "Create account"}
         </button>
-      </form>
-      <div className="account-card__links">
-        <a href="/reset-password">Forgot password?</a>
-        <a href="/account">View account status</a>
       </div>
     </section>
   );

@@ -19,7 +19,7 @@ export type PortalAuthAdapter = {
   getSession(): Promise<PortalSession | null>;
   onSessionChange(listener: (session: PortalSession | null) => void): () => void;
   signIn(email: string, password: string): Promise<PortalSession | null>;
-  signUp(email: string, password: string): Promise<PortalSession | null>;
+  signUp(email: string, password: string, username: string): Promise<PortalSession | null>;
   signOut(): Promise<void>;
   requestPasswordReset(email: string): Promise<void>;
   updateEmail(email: string): Promise<void>;
@@ -82,11 +82,14 @@ function createSupabaseAdapter(url: string, publishableKey: string): PortalAuthA
       if (error) throw error;
       return toPortalSession(data.session);
     },
-    async signUp(email, password) {
+    async signUp(email, password, username) {
       const { data, error } = await client.auth.signUp({
         email,
         password,
-        options: { emailRedirectTo: accountUrls.confirm },
+        options: {
+          data: { display_name: username, username },
+          emailRedirectTo: accountUrls.confirm,
+        },
       });
       if (error) throw error;
       return toPortalSession(data.session);
