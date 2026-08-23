@@ -10,6 +10,7 @@ import {
 import { isBrowserSafeSupabasePublicKey } from "@/lib/auth/supabase-public-key.mjs";
 
 export type PortalSession = {
+  displayName: string | null;
   email: string | null;
   userId: string;
 };
@@ -46,7 +47,11 @@ let supabaseAdapter: PortalAuthAdapter | null = null;
 
 function toPortalSession(session: Session | null): PortalSession | null {
   if (!session?.user) return null;
-  return { email: session.user.email ?? null, userId: session.user.id };
+  const metadata = session.user.user_metadata;
+  const displayName = [metadata?.username, metadata?.display_name]
+    .find((candidate) => typeof candidate === "string" && candidate.trim())
+    ?.trim() ?? null;
+  return { displayName, email: session.user.email ?? null, userId: session.user.id };
 }
 
 function createSupabaseAdapter(url: string, publishableKey: string): PortalAuthAdapter {
@@ -128,7 +133,7 @@ function createSupabaseAdapter(url: string, publishableKey: string): PortalAuthA
 function createTestAdapter(scenario: string): PortalAuthAdapter {
   let session: PortalSession | null =
     scenario === "session"
-      ? { email: "preview.user@example.test", userId: "preview-user" }
+      ? { displayName: "fawxzzy", email: "preview.user@example.test", userId: "preview-user" }
       : null;
   const listeners = new Set<(value: PortalSession | null) => void>();
   const fail = () => {
@@ -165,13 +170,17 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
     },
     async signIn(email) {
       fail();
-      session = { email, userId: "preview-user" };
+      session = {
+        displayName: email.includes("@") ? email.split("@", 1)[0] : email,
+        email,
+        userId: "preview-user",
+      };
       publish();
       return session;
     },
-    async signUp(email) {
+    async signUp(email, _password, username) {
       failSignup();
-      session = { email, userId: "preview-user" };
+      session = { displayName: username, email, userId: "preview-user" };
       publish();
       return session;
     },
@@ -193,7 +202,11 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
     },
     async confirm() {
       fail();
-      session = { email: "confirmed.user@example.test", userId: "confirmed-user" };
+      session = {
+        displayName: "confirmed.user",
+        email: "confirmed.user@example.test",
+        userId: "confirmed-user",
+      };
       publish();
       return session;
     },
@@ -202,7 +215,11 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
         return new Promise<PortalSession | null>(() => undefined);
       }
       fail();
-      session = { email: "callback.user@example.test", userId: "callback-user" };
+      session = {
+        displayName: "callback.user",
+        email: "callback.user@example.test",
+        userId: "callback-user",
+      };
       publish();
       return session;
     },

@@ -4,24 +4,24 @@ Status: source contract for the shared Website, Fitness, and Mazer authenticatio
 
 ## Decision
 
-The three products use one recognizable authentication anatomy without becoming pixel-identical.
+The three products use one rigid authentication anatomy. Product theme may change; screen structure may not.
 
-- FawxzzyWeb owns the information hierarchy: branded shell, concise product context, one focused task surface, clear service status, and a simple route back home.
-- Fitness owns the interaction rhythm: centered fields, restrained copy, strong primary action, generous spacing, safe-area-aware mobile behavior, and minimal visual noise.
-- Each product owns its background, accent palette, iconography, and product-specific wording.
+- Fitness is the canonical structural reference: centered fields, no subtitle, a compact secondary-action row, one strong bottom-dock action, safe-area-aware spacing, and minimal visual noise.
+- FawxzzyWeb and Mazer reuse that structure rather than approximating it with product-specific positioning.
+- Each product owns only its background, accent palette, product wordmark, and destination-specific wording.
 - Capability truth wins over visual consistency. A product must never show an enabled action when its account adapter or service registration is unavailable.
 
 ## Required anatomy
 
 Every sign-in and create-account surface provides these elements in this order:
 
-1. Product identity and a clear home/back action.
-2. App-specific eyebrow, title, and one short supporting sentence.
-3. Sign-in/create-account mode control when both actions share a route.
-4. Explicit availability or recovery state before submission.
-5. Labeled identifier and password controls with password-manager semantics.
-6. One dominant submit action with a visible disabled and pending state.
-7. Secondary recovery, legal, or account-status actions after the primary task.
+1. Product identity.
+2. `Welcome` or `Create account`, with the remembered username directly below `Welcome` when available.
+3. Labeled identifier and password controls with password-manager semantics and the shared password-visibility icon.
+4. A compact sign-in/create-account/recovery action row.
+5. One full-width bottom-dock submit action with visible disabled and pending states.
+
+The forced first-run auth surface does not include a home/back action, subtitle, guest-play action, or separate display-name field. Username is the public display name.
 
 The family requires 44px minimum interactive targets, visible keyboard focus, no horizontal overflow at 320px, reduced-motion support, and safe-area-aware vertical spacing.
 
@@ -29,10 +29,10 @@ The family requires 44px minimum interactive targets, visible keyboard focus, no
 
 ### FawxzzyWeb
 
-- Product marker: `Fawxzzy account`.
+- Product marker: `Fawxzzy`.
 - Background: Fawxzzy wolf-brand charcoal, sage, and soft neutral light fields.
-- Desktop: split identity and credentials layout.
-- Mobile: one-column flow with the same task order.
+- Desktop and mobile: the same bounded one-column Fitness-shaped frame.
+- The remembered username is stored as optional local presentation state after a successful session and never becomes authentication authority.
 - Current service boundary: account actions remain visibly unavailable unless the approved adapter resolves at runtime.
 
 ### Fitness
@@ -44,8 +44,8 @@ The family requires 44px minimum interactive targets, visible keyboard focus, no
 ### Mazer
 
 - Implement the same anatomy inside the Phaser runtime rather than importing Website or Fitness components.
-- Background: Mazer's own game/menu scene, bounded by a dimmer and readable auth surface.
-- Preserve one overlay, current gameplay state, and recoverable input behavior.
+- Background: Mazer's own static auth background; gameplay, simulation, announcements, and ambient motion are halted while auth is visible.
+- Preserve one overlay and recoverable input behavior without guest-play access.
 - Do not change the auth/menu surface while another exact writer owns it. Reconcile that work first, then implement from a fresh exact parent.
 
 ## Mazer pattern intake
@@ -63,9 +63,10 @@ The family requires 44px minimum interactive targets, visible keyboard focus, no
 
 ## Sequencing and ownership
 
-1. FawxzzyWeb may adopt this contract from an isolated exact-main worktree.
-2. Fitness remains the visual anchor until its active login-route writer is reconciled.
-3. Mazer remains implementation-held until its active auth/menu writer is reconciled.
-4. Each product requires its own focused tests, responsive screenshots, exact-head review, and separately authorized release.
+1. Fitness remains the locked structural reference.
+2. FawxzzyWeb and Mazer implement their own rendering primitives against this exact anatomy.
+3. Each product requires focused tests, responsive screenshots, exact-head review, and a separately authorized release.
+
+Failure mode: visual mimicry without a shared structural contract drifts into absolute positioning, extra copy, inconsistent actions, and moving controls. Tests must assert the anatomy and layout behavior, not only the presence of labels.
 
 This contract grants no commit, push, pull-request, merge, provider, deployment, or production authority.

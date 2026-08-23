@@ -64,6 +64,20 @@ test("auth surfaces derive public branding from product identity", () => {
   }
 });
 
+test("auth-family documentation locks Fitness structure and product-owned theming", () => {
+  const contract = readFileSync(
+    path.resolve(process.cwd(), "docs/auth-surface-family.md"),
+    "utf8",
+  );
+
+  expect(contract).toContain("Fitness is the canonical structural reference");
+  expect(contract).toContain("Product theme may change; screen structure may not");
+  expect(contract).toContain("Username is the public display name");
+  expect(contract).toContain("gameplay, simulation, announcements, and ambient motion are halted");
+  expect(contract).not.toContain("Desktop: split identity and credentials layout");
+  expect(contract).not.toContain("one short supporting sentence");
+});
+
 const utilityRoutes = accountRoutes.filter(([route]) => route !== "/account");
 
 const syntheticPublishableKey = `sb_publishable_${"a-b_".repeat(5)}ab_${"c-d_".repeat(2)}`;
@@ -604,7 +618,7 @@ test("login follows the shared Fawxzzy auth anatomy without overstating availabi
   await page.getByRole("button", { name: "Show password" }).click();
   await expect(page.getByLabel("Password", { exact: true })).toHaveAttribute("type", "text");
   await expect(page.getByRole("button", { name: "Hide password" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Log in" }).last()).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Sign in" }).last()).toBeDisabled();
   await expect(page.getByText("Account service unavailable on this origin.")).toBeAttached();
 });
 
@@ -667,7 +681,7 @@ test("login accepts a legacy short password and maps adapter errors safely", asy
   const form = page.locator("form");
   await form.getByLabel("Email or username").fill("legacy@example.test");
   await form.getByLabel("Password", { exact: true }).fill("short");
-  const loginSubmit = page.locator(".account-auth-dock").getByRole("button", { name: "Log in" });
+  const loginSubmit = page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" });
   await loginSubmit.click();
   await expect(page.getByRole("status")).toContainText("Signed in on this account origin");
   await expect(page.locator(".account-auth-dock button")).toBeDisabled();
@@ -675,7 +689,7 @@ test("login accepts a legacy short password and maps adapter errors safely", asy
   await page.goto("/login?auth_test=error");
   await page.locator("form").getByLabel("Email or username").fill("unknown@example.test");
   await page.locator("form").getByLabel("Password", { exact: true }).fill("short");
-  await page.locator(".account-auth-dock").getByRole("button", { name: "Log in" }).click();
+  await page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" }).click();
   await expect(page.locator('.account-notice[role="alert"]')).toContainText(safeAuthError("login"));
 });
 
@@ -697,6 +711,31 @@ test("auth footer uses the shared nested signature pipe and compact dock spacing
   expect(footerBox).not.toBeNull();
   expect(dockBox).not.toBeNull();
   expect(footerBox!.y + footerBox!.height).toBeLessThanOrEqual(dockBox!.y + 1);
+});
+
+test("auth entry uses one stable Fitness-shaped frame and remembers the returning username", async ({ page }) => {
+  await page.goto("/login?auth_test=success");
+
+  const card = page.locator(".account-card--auth");
+  const body = page.locator(".account-auth-body");
+  const form = page.locator(".account-form--auth");
+  await expect(card).toHaveCSS("position", "relative");
+  await expect(card).toHaveCSS("display", "flex");
+  await expect(body).toHaveCSS("display", "flex");
+  await expect(form).toHaveCSS("position", "static");
+
+  await form.getByLabel("Email or username").fill("fawxzzy");
+  await form.getByLabel("Password", { exact: true }).fill("short");
+  await page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByTestId("remembered-identity")).toHaveText("fawxzzy");
+
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Welcome" })).toBeVisible();
+  await expect(page.getByTestId("remembered-identity")).toHaveText("fawxzzy");
+
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page.getByRole("heading", { name: "Create account" })).toBeVisible();
+  await expect(page.getByTestId("remembered-identity")).toHaveCount(0);
 });
 
 test("auth fields use the canonical Fitness text and spacing contract", async ({ page }) => {

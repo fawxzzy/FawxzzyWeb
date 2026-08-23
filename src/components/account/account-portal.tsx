@@ -57,10 +57,35 @@ async function settleSignupAttempt(
   password: string,
   username: string,
 ) {
-  await Promise.allSettled([
+  const [result] = await Promise.allSettled([
     adapter.signUp(email, password, username),
     new Promise((resolve) => window.setTimeout(resolve, SIGNUP_SETTLEMENT_MINIMUM_MS)),
   ]);
+  return result.status === "fulfilled" ? result.value : null;
+}
+
+function deriveIdentity(identifier: string) {
+  const normalized = identifier.trim();
+  return normalized.includes("@") ? normalized.split("@", 1)[0] : normalized;
+}
+
+function readRememberedIdentity() {
+  try {
+    const value = window.localStorage.getItem(accountContract.rememberedIdentityKey)?.trim();
+    return value || null;
+  } catch {
+    return null;
+  }
+}
+
+function writeRememberedIdentity(value: string | null | undefined) {
+  const normalized = value?.trim();
+  if (!normalized) return;
+  try {
+    window.localStorage.setItem(accountContract.rememberedIdentityKey, normalized);
+  } catch {
+    // Remembering a display label is optional; authentication must still proceed.
+  }
 }
 
 function useHydrated() {
@@ -194,8 +219,22 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [busy, setBusy] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [rememberedIdentity, setRememberedIdentity] = useState<string | null>(null);
+  const storedRememberedIdentity = useSyncExternalStore(
+    emptySubscribe,
+    readRememberedIdentity,
+    () => null,
+  );
   const cooldown = useCooldown();
   const adapter = adapterFrom(resolution);
+  const displayedIdentity = rememberedIdentity ?? storedRememberedIdentity;
+
+  function switchIntent(event: React.MouseEvent<HTMLButtonElement>) {
+    event.currentTarget.blur();
+    setIntent(intent === "login" ? "signup" : "login");
+    setNotice(null);
+    window.requestAnimationFrame(() => window.scrollTo(0, 0));
+  }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -225,12 +264,22 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
       if (intent === "signup") {
         // The adapter persists and publishes a real returned session. The notice intentionally
         // makes no claim about whether the provider created an account or returned a session.
-        await settleSignupAttempt(adapter, email, password, submittedUsername);
+        const session = await settleSignupAttempt(adapter, email, password, submittedUsername);
+        if (session) {
+          const identity = session.displayName || submittedUsername;
+          writeRememberedIdentity(identity);
+          setRememberedIdentity(identity);
+        }
         setNotice({ kind: "success", text: safeAuthSuccess("signup") });
         return;
       }
 
       const session = await adapter.signIn(email, password);
+      if (session) {
+        const identity = session.displayName || deriveIdentity(email);
+        writeRememberedIdentity(identity);
+        setRememberedIdentity(identity);
+      }
       setNotice(
         session
           ? { kind: "success", text: "Signed in on this account origin." }
@@ -252,11 +301,19 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
       <RuntimeNote />
       <header className="account-auth-intro">
         <p>{productIdentity.publicName}</p>
-        <h1 id="login-panel-title">{intent === "login" ? "Welcome" : "Create account"}</h1>
+        <h1 aria-live="polite" id="login-panel-title">
+          {intent === "login" ? "Welcome" : "Create account"}
+        </h1>
+        {intent === "login" && displayedIdentity ? (
+          <p className="account-auth-identity" data-testid="remembered-identity">
+            {displayedIdentity}
+          </p>
+        ) : null}
       </header>
-      <SetupState resolution={resolution} />
-      <StatusNotice notice={notice} />
-      <form className="account-form account-form--auth" id="account-auth-form" onSubmit={submit}>
+      <div className="account-auth-body">
+        <SetupState resolution={resolution} />
+        <StatusNotice notice={notice} />
+        <form className="account-form account-form--auth" id="account-auth-form" onSubmit={submit}>
         {intent === "signup" ? (
           <fieldset>
             <legend><label htmlFor="account-username">Username</label></legend>
@@ -308,14 +365,12 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
             </svg>
           </button>
         </fieldset>
-      </form>
+        </form>
+      </div>
       <div className="account-card__links">
         <button
           className="account-text-action"
-          onClick={() => {
-            setIntent(intent === "login" ? "signup" : "login");
-            setNotice(null);
-          }}
+          onClick={switchIntent}
           type="button"
         >
           {intent === "login" ? "Create account" : "Log in"}
@@ -341,7 +396,7 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
             : cooldown.remaining
               ? `Try again in ${cooldown.remaining}s`
               : intent === "login"
-                ? "Log in"
+                ? "Sign in"
                 : "Create account"}
         </button>
       </div>
