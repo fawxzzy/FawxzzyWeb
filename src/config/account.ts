@@ -1,4 +1,5 @@
 import { apps } from "@/data/apps";
+import { productIdentity } from "@/config/product";
 
 function requireAppOrigin(slug: "fitness" | "mazer") {
   const app = apps.find((candidate) => candidate.slug === slug);
@@ -10,6 +11,23 @@ function requireAppOrigin(slug: "fitness" | "mazer") {
 
 const fitnessOrigin = requireAppOrigin("fitness");
 const mazerOrigin = requireAppOrigin("mazer");
+
+export type AccountExperienceContextId = "website" | "fitness" | "mazer";
+
+export type AccountExperienceContext = {
+  accentRgb: string;
+  destinationOrigin: string;
+  id: AccountExperienceContextId;
+  integration: "active" | "preview-only";
+  legalLinks: ReadonlyArray<{
+    href: string;
+    label: string;
+  }>;
+  productName: string;
+  resetLabel: string;
+  signInLabel: string;
+  signUpLabel: string;
+};
 
 export const accountContract = {
   canonicalOrigin: "https://account.fawxzzy.com",
@@ -34,9 +52,81 @@ export const accountContract = {
     "http://127.0.0.1:3210",
   ],
   storageKey: "fawxzzy.account.auth.v1",
+  rememberedIdentityKey: "fawxzzy.account.remembered-identity.v1",
   callbackStateKey: "fawxzzy.account.callback.state.v1",
   callbackReceiptPrefix: "fawxzzy.account.callback.receipt.v1",
 } as const;
+
+/**
+ * Presentation-only account contexts. These values may change copy, color,
+ * legal destinations, and the eventual allowlisted return destination. They
+ * never select an Auth provider, callback, session, or credential boundary.
+ * Fitness and Mazer remain preview-only until their owner repositories adopt
+ * this contract from a reviewed exact head.
+ */
+export const accountExperienceContexts: Record<
+  AccountExperienceContextId,
+  AccountExperienceContext
+> = {
+  website: {
+    accentRgb: "147 184 148",
+    destinationOrigin: accountContract.publicHubOrigin,
+    id: "website",
+    integration: "active",
+    legalLinks: [],
+    productName: productIdentity.publicName,
+    resetLabel: "Send recovery link",
+    signInLabel: "Sign in",
+    signUpLabel: "Create account",
+  },
+  fitness: {
+    accentRgb: "160 223 56",
+    destinationOrigin: accountContract.productOrigins.fitness,
+    id: "fitness",
+    integration: "preview-only",
+    legalLinks: [
+      {
+        href: `${accountContract.productOrigins.fitness}/privacy`,
+        label: "Privacy Policy",
+      },
+      {
+        href: `${accountContract.productOrigins.fitness}/terms`,
+        label: "Terms of Service",
+      },
+    ],
+    productName: "Fitness",
+    resetLabel: "Send recovery link",
+    signInLabel: "Sign in",
+    signUpLabel: "Create account",
+  },
+  mazer: {
+    accentRgb: "53 238 224",
+    destinationOrigin: accountContract.productOrigins.mazer,
+    id: "mazer",
+    integration: "preview-only",
+    legalLinks: [],
+    productName: "Mazer",
+    resetLabel: "Send recovery link",
+    signInLabel: "Sign in",
+    signUpLabel: "Create account",
+  },
+};
+
+export function resolveAccountExperienceContext(
+  rawContext: unknown,
+  options: { allowPreviewContexts?: boolean } = {},
+) {
+  if (typeof rawContext !== "string") return accountExperienceContexts.website;
+  if (!Object.prototype.hasOwnProperty.call(accountExperienceContexts, rawContext)) {
+    return accountExperienceContexts.website;
+  }
+
+  const context = accountExperienceContexts[rawContext as AccountExperienceContextId];
+  if (context.integration === "preview-only" && !options.allowPreviewContexts) {
+    return accountExperienceContexts.website;
+  }
+  return context;
+}
 
 export const accountUrls = {
   login: `${accountContract.canonicalOrigin}${accountContract.loginPath}`,

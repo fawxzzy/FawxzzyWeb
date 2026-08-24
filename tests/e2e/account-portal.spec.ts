@@ -8,9 +8,11 @@ import {
 } from "../../src/components/system/system-state";
 import {
   accountContract,
+  accountExperienceContexts,
   accountUrls,
   classifyRuntimeOrigin,
   isLiveAccountAdapterOrigin,
+  resolveAccountExperienceContext,
   sanitizeReturnTarget,
 } from "../../src/config/account";
 import {
@@ -62,6 +64,36 @@ test("auth surfaces derive public branding from product identity", () => {
     expect(source).toContain("productIdentity.publicName");
     expect(source).not.toMatch(/["'`]Fawxzzy(?: account| apps)?[."'`<]/);
   }
+});
+
+test("auth-family documentation locks Fitness structure and product-owned theming", () => {
+  const contract = readFileSync(
+    path.resolve(process.cwd(), "docs/auth-surface-family.md"),
+    "utf8",
+  );
+
+  expect(contract).toContain("Fitness is the canonical structural reference");
+  expect(contract).toContain("Product theme may change; screen structure may not");
+  expect(contract).toContain("Username is the public display name");
+  expect(contract).toContain("gameplay, simulation, announcements, and ambient motion are halted");
+  expect(contract).not.toContain("Desktop: split identity and credentials layout");
+  expect(contract).not.toContain("one short supporting sentence");
+});
+
+test("one presentation registry keeps sibling products preview-only until adoption", () => {
+  expect(resolveAccountExperienceContext("website")).toEqual(accountExperienceContexts.website);
+  expect(resolveAccountExperienceContext("fitness")).toEqual(accountExperienceContexts.website);
+  expect(resolveAccountExperienceContext("mazer")).toEqual(accountExperienceContexts.website);
+  expect(
+    resolveAccountExperienceContext("fitness", { allowPreviewContexts: true }),
+  ).toEqual(accountExperienceContexts.fitness);
+  expect(resolveAccountExperienceContext("unknown", { allowPreviewContexts: true })).toEqual(
+    accountExperienceContexts.website,
+  );
+  expect(accountExperienceContexts.fitness.legalLinks.map(({ label }) => label)).toEqual([
+    "Privacy Policy",
+    "Terms of Service",
+  ]);
 });
 
 const utilityRoutes = accountRoutes.filter(([route]) => route !== "/account");
@@ -604,7 +636,7 @@ test("login follows the shared Fawxzzy auth anatomy without overstating availabi
   await page.getByRole("button", { name: "Show password" }).click();
   await expect(page.getByLabel("Password", { exact: true })).toHaveAttribute("type", "text");
   await expect(page.getByRole("button", { name: "Hide password" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Log in" }).last()).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Sign in" }).last()).toBeDisabled();
   await expect(page.getByText("Account service unavailable on this origin.")).toBeAttached();
 });
 
@@ -667,7 +699,7 @@ test("login accepts a legacy short password and maps adapter errors safely", asy
   const form = page.locator("form");
   await form.getByLabel("Email or username").fill("legacy@example.test");
   await form.getByLabel("Password", { exact: true }).fill("short");
-  const loginSubmit = page.locator(".account-auth-dock").getByRole("button", { name: "Log in" });
+  const loginSubmit = page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" });
   await loginSubmit.click();
   await expect(page.getByRole("status")).toContainText("Signed in on this account origin");
   await expect(page.locator(".account-auth-dock button")).toBeDisabled();
@@ -675,8 +707,11 @@ test("login accepts a legacy short password and maps adapter errors safely", asy
   await page.goto("/login?auth_test=error");
   await page.locator("form").getByLabel("Email or username").fill("unknown@example.test");
   await page.locator("form").getByLabel("Password", { exact: true }).fill("short");
-  await page.locator(".account-auth-dock").getByRole("button", { name: "Log in" }).click();
-  await expect(page.locator('.account-notice[role="alert"]')).toContainText(safeAuthError("login"));
+  await page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" }).click();
+  await expect(page.locator('.account-auth-live-notice[role="alert"]')).toContainText(
+    safeAuthError("login"),
+  );
+  await expect(page.locator(".account-auth-dock button")).toContainText(safeAuthError("login"));
 });
 
 test("auth footer uses the shared nested signature pipe and compact dock spacing", async ({ page }) => {
@@ -699,6 +734,31 @@ test("auth footer uses the shared nested signature pipe and compact dock spacing
   expect(footerBox!.y + footerBox!.height).toBeLessThanOrEqual(dockBox!.y + 1);
 });
 
+test("auth entry uses one stable Fitness-shaped frame and remembers the returning username", async ({ page }) => {
+  await page.goto("/login?auth_test=success");
+
+  const card = page.locator(".account-card--auth");
+  const body = page.locator(".account-auth-body");
+  const form = page.locator(".account-form--auth");
+  await expect(card).toHaveCSS("position", "relative");
+  await expect(card).toHaveCSS("display", "flex");
+  await expect(body).toHaveCSS("display", "flex");
+  await expect(form).toHaveCSS("position", "static");
+
+  await form.getByLabel("Email or username").fill("fawxzzy");
+  await form.getByLabel("Password", { exact: true }).fill("short");
+  await page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByTestId("remembered-identity")).toHaveText("fawxzzy");
+
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Welcome" })).toBeVisible();
+  await expect(page.getByTestId("remembered-identity")).toHaveText("fawxzzy");
+
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page.getByRole("heading", { name: "Create account" })).toBeVisible();
+  await expect(page.getByTestId("remembered-identity")).toHaveCount(0);
+});
+
 test("auth fields use the canonical Fitness text and spacing contract", async ({ page }) => {
   await page.goto("/login?auth_test=success");
 
@@ -710,6 +770,41 @@ test("auth fields use the canonical Fitness text and spacing contract", async ({
     await expect(field).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
     await expect(field).toHaveCSS("padding-left", "18px");
   }
+});
+
+test("required-field feedback is visual and does not add an error paragraph", async ({ page }) => {
+  await page.goto("/login?auth_test=success");
+  const submit = page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" });
+  await submit.click();
+
+  const identifierFrame = page.locator("fieldset").filter({ hasText: "Email or username" });
+  const passwordFrame = page.locator("fieldset").filter({ hasText: "Password" });
+  await expect(identifierFrame).toHaveAttribute("data-invalid", "true");
+  await expect(passwordFrame).toHaveAttribute("data-invalid", "true");
+  await expect(identifierFrame).toHaveCSS("border-color", "rgb(255, 77, 87)");
+  await expect(page.locator(".account-auth-live-notice")).toHaveCount(0);
+
+  await page.getByLabel("Email or username").fill("fawxzzy");
+  await expect(identifierFrame).not.toHaveAttribute("data-invalid", "true");
+});
+
+test("local context previews swap product text, accent, and legal row without changing auth", async ({ page }) => {
+  await page.goto("/login?auth_test=success&app=fitness");
+  const card = page.locator('.account-card--auth[data-auth-product="fitness"]');
+  await expect(card).toBeVisible();
+  await expect(page.locator(".account-auth-intro > p")).toHaveText("Fitness");
+  await expect(page.getByRole("navigation", { name: "Fitness legal" })).toHaveCount(0);
+  await expect(page.locator('.account-auth-legal[aria-label="Fitness legal"]')).toContainText(
+    "Privacy Policy",
+  );
+  await expect(page.getByRole("link", { name: "Reset password" })).toHaveAttribute(
+    "href",
+    "/reset-password?app=fitness",
+  );
+
+  await page.goto("/login?auth_test=success&app=unknown");
+  await expect(page.locator('.account-card--auth[data-auth-product="website"]')).toBeVisible();
+  await expect(page.locator(".account-auth-legal")).toHaveCount(0);
 });
 
 test("signup enforces ten characters and accepts long passwords", async ({ browserName, page }) => {
@@ -738,9 +833,9 @@ test("signup validation stops before the provider call", async ({ browserName, p
   await password.fill("too-short");
   await submit.click();
 
-  expect(await password.evaluate((input) => input.checkValidity())).toBe(false);
-  await expect(page.locator('.account-notice[role="status"]')).toHaveCount(0);
-  await expect(page.locator('.account-notice[role="alert"]')).toHaveCount(0);
+  await expect(password).toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator('.account-auth-live-notice[role="status"]')).toHaveCount(0);
+  await expect(page.locator('.account-auth-live-notice[role="alert"]')).toHaveCount(0);
   await expect(submit).toBeEnabled();
 });
 
@@ -777,11 +872,11 @@ test("every settled provider signup outcome has one non-enumerating result", asy
 
     await expect(submit).toHaveText(/^Working/);
     await expect(submit).toBeDisabled();
-    const notice = page.locator('.account-notice[role="status"]');
+    const notice = page.locator('.account-auth-live-notice[role="status"]');
     await expect(notice).toContainText(expectedNotice);
-    await expect(notice).toHaveAttribute("data-system-state", "success");
-    await expect(page.locator('.account-notice[role="alert"]')).toHaveCount(0);
-    await expect(submit).toHaveText(/Try again in [1-5]s/);
+    await expect(notice).toHaveAttribute("data-notice-kind", "success");
+    await expect(page.locator('.account-auth-live-notice[role="alert"]')).toHaveCount(0);
+    await expect(submit).toHaveText(expectedNotice);
     await expect(submit).toBeDisabled();
     if (diagnostic) await expect(page.locator("body")).not.toContainText(diagnostic);
   }
@@ -885,49 +980,41 @@ test("recovery exchanges PKCE before exposing the password form", async ({ brows
   await expect(page.getByRole("button")).toBeDisabled();
 
   await page.goto("/reset-password?recovery=1&auth_test=pending&code=pending-code");
-  await expect(page.getByText("Establishing your recovery session…")).toBeVisible();
+  await expect(page.locator(".account-auth-dock button")).toHaveText("Preparing recovery…");
   await expect(page.getByLabel("New password", { exact: true })).toHaveCount(0);
 
   await page.goto("/reset-password?recovery=1&auth_test=error&code=failed-code");
-  await expect(page.locator('.account-notice[role="alert"]')).toContainText(
+  await expect(page.locator('.account-auth-live-notice[role="alert"]')).toContainText(
     safeAuthError("reset-complete"),
   );
   await expect(page.getByLabel("New password", { exact: true })).toHaveCount(0);
   await expect(page).toHaveURL(/\/reset-password\?recovery=1$/);
 
   await page.goto("/reset-password?recovery=1&auth_test=success&token=blocked");
-  await expect(page.locator('.account-notice[data-system-state="invalid"]')).toContainText(
-    "missing a valid one-time handoff",
-  );
+  await expect(page.locator(".account-auth-dock button")).toHaveText("Recovery link invalid.");
   await expect(page.getByLabel("New password", { exact: true })).toHaveCount(0);
   await expect(page).toHaveURL(/\/reset-password\?recovery=1$/);
 
   await page.goto("/reset-password?recovery=1&auth_test=success");
-  await expect(page.locator('.account-notice[data-system-state="expired"]')).toContainText(
-    "did not establish a session",
-  );
+  await expect(page.locator(".account-auth-dock button")).toHaveText("Recovery link expired.");
   await expect(page.getByLabel("New password", { exact: true })).toHaveCount(0);
 
   await page.goto("/reset-password?recovery=1&auth_test=success&code=one-time-code");
-  await expect(page.getByRole("status")).toContainText("Recovery session established");
   await expect(page).toHaveURL(/\/reset-password\?recovery=1$/);
   const password = "x".repeat(129);
-  const submit = page.locator('form button[type="submit"]');
+  const submit = page.locator('.account-auth-dock button[type="submit"]');
   await page.getByLabel("New password", { exact: true }).fill(password);
-  await page.getByLabel("Confirm new password").fill("y".repeat(129));
+  await page.getByLabel("Confirm password").fill("y".repeat(129));
   await submit.click();
-  await expect(page.locator('.account-notice[role="alert"]')).toContainText(
-    "The passwords do not match.",
-  );
+  await expect(page.getByLabel("Confirm password")).toHaveAttribute("aria-invalid", "true");
   await expect(submit).toBeEnabled();
   await expect(submit).toHaveText("Save new password");
 
-  await page.getByLabel("Confirm new password").fill(password);
+  await page.getByLabel("Confirm password").fill(password);
   await submit.click();
   await expect(page.getByRole("status")).toContainText("password has been updated");
 
   await page.goto("/reset-password?recovery=1&auth_test=session");
-  await expect(page.getByRole("status")).toContainText("Recovery session established");
   await expect(page.getByLabel("New password", { exact: true })).toBeVisible();
 });
 
