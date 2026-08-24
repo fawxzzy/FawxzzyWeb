@@ -7,8 +7,9 @@ Status: source contract for the shared Website, Fitness, and Mazer authenticatio
 The three products use one rigid authentication anatomy. Product theme may change; screen structure may not.
 
 - Fitness is the canonical structural reference: centered fields, no subtitle, a compact secondary-action row, one strong bottom-dock action, safe-area-aware spacing, and minimal visual noise.
-- FawxzzyWeb and Mazer reuse that structure rather than approximating it with product-specific positioning.
-- Each product owns only its background, accent palette, product wordmark, and destination-specific wording.
+- The account host owns one declarative screen template and a closed presentation registry rather than three copied screen implementations.
+- Each product context may replace only its background/accent token, product wordmark, destination-specific wording, allowlisted return destination, and legal-link row.
+- Context selection is presentation-only. It never selects an Auth provider, callback, session, credential boundary, or arbitrary return URL.
 - Capability truth wins over visual consistency. A product must never show an enabled action when its account adapter or service registration is unavailable.
 
 ## Required anatomy
@@ -20,6 +21,8 @@ Every sign-in and create-account surface provides these elements in this order:
 3. Labeled identifier and password controls with password-manager semantics and the shared password-visibility icon.
 4. A compact sign-in/create-account/recovery action row.
 5. One full-width bottom-dock submit action with visible disabled and pending states.
+
+Required-field validation uses the same red field outline in every context without adding a floating error paragraph. Provider, recovery, and completion outcomes are announced accessibly and temporarily replace the bottom-dock label for five seconds before the normal action label returns.
 
 The forced first-run auth surface does not include a home/back action, subtitle, guest-play action, or separate display-name field. Username is the public display name.
 
@@ -34,6 +37,7 @@ The family requires 44px minimum interactive targets, visible keyboard focus, no
 - Desktop and mobile: the same bounded one-column Fitness-shaped frame.
 - The remembered username is stored as optional local presentation state after a successful session and never becomes authentication authority.
 - Current service boundary: account actions remain visibly unavailable unless the approved adapter resolves at runtime.
+- Current implementation status: active Website context and shared template source. Fitness and Mazer entries in the Website registry are local deterministic previews only until their owner repositories adopt the contract from reviewed exact heads.
 
 ### Fitness
 
@@ -64,8 +68,10 @@ The family requires 44px minimum interactive targets, visible keyboard focus, no
 ## Sequencing and ownership
 
 1. Fitness remains the locked structural reference.
-2. FawxzzyWeb and Mazer implement their own rendering primitives against this exact anatomy.
-3. Each product requires focused tests, responsive screenshots, exact-head review, and a separately authorized release.
+2. FawxzzyWeb proves the declarative template, presentation registry, field feedback, transient action messaging, reset flow, and optional legal row first.
+3. Fitness and Mazer remain unchanged until the Website contract and navigation/broker behavior are accepted.
+4. Each owner repository then adapts its rendering primitive to the same contract; it does not copy a second state machine.
+5. Each product requires focused tests, responsive screenshots, exact-head review, and a separately authorized release.
 
 Failure mode: visual mimicry without a shared structural contract drifts into absolute positioning, extra copy, inconsistent actions, and moving controls. Tests must assert the anatomy and layout behavior, not only the presence of labels.
 

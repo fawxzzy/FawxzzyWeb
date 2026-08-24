@@ -4,7 +4,10 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import {
   accountContract,
   classifyRuntimeOrigin,
+  isLocalAuthTestOrigin,
+  resolveAccountExperienceContext,
   sanitizeReturnTarget,
+  type AccountExperienceContext,
 } from "@/config/account";
 import { productIdentity } from "@/config/product";
 import {
@@ -100,6 +103,17 @@ function useAdapterResolution() {
   }, [hydrated]);
 }
 
+function useAccountExperienceContext() {
+  const hydrated = useHydrated();
+  return useMemo(() => {
+    if (!hydrated) return resolveAccountExperienceContext("website");
+    const query = new URLSearchParams(window.location.search);
+    const allowPreviewContexts =
+      isLocalAuthTestOrigin(window.location.origin) && query.has("auth_test");
+    return resolveAccountExperienceContext(query.get("app"), { allowPreviewContexts });
+  }, [hydrated]);
+}
+
 function useServiceRegistrationPresentation() {
   const hydrated = useHydrated();
   return useMemo(
@@ -132,6 +146,69 @@ function useCooldown(seconds = 5) {
       setClock(Date.now());
     },
   };
+}
+
+function useTransientNotice(duration = 5_000) {
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const timeoutRef = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
+    },
+    [],
+  );
+
+  return {
+    clear() {
+      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+      setNotice(null);
+    },
+    notice,
+    show(nextNotice: Notice) {
+      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
+      setNotice(nextNotice);
+      timeoutRef.current = window.setTimeout(() => {
+        timeoutRef.current = null;
+        setNotice(null);
+      }, duration);
+    },
+  };
+}
+
+function contextualPath(path: string, context: AccountExperienceContext) {
+  if (context.id === "website") return path;
+  const url = new URL(path, accountContract.canonicalOrigin);
+  url.searchParams.set("app", context.id);
+  return `${url.pathname}${url.search}`;
+}
+
+function AuthLiveNotice({ notice }: { notice: Notice | null }) {
+  if (!notice) return null;
+  return (
+    <p
+      className="account-auth-live-notice"
+      data-notice-kind={notice.kind}
+      role={notice.kind === "error" ? "alert" : "status"}
+    >
+      {notice.text}
+    </p>
+  );
+}
+
+function AccountLegalLinks({ context }: { context: AccountExperienceContext }) {
+  if (context.legalLinks.length === 0) return null;
+  return (
+    <div aria-label={`${context.productName} legal`} className="account-auth-legal">
+      {context.legalLinks.map((link, index) => (
+        <span key={link.href}>
+          {index > 0 ? <span aria-hidden="true" className="account-auth-legal__pipe">|</span> : null}
+          <a href={link.href}>{link.label}</a>
+        </span>
+      ))}
+    </div>
+  );
 }
 
 function SetupState({ resolution }: { resolution: AdapterResolution | null }) {
@@ -213,10 +290,27 @@ function adapterFrom(resolution: AdapterResolution | null): PortalAuthAdapter | 
   return resolution?.status === "ready" ? resolution.adapter : null;
 }
 
-function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
+function PasswordEye({ visible }: { visible: boolean }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M2 12c2.5-4 5.8-6 10-6s7.5 2 10 6c-2.5 4-5.8 6-10 6s-7.5-2-10-6Z" />
+      <circle cx="12" cy="12" r="3" />
+      {visible ? null : <path d="M4 4l16 16" />}
+    </svg>
+  );
+}
+
+function LoginPanel({
+  context,
+  resolution,
+}: {
+  context: AccountExperienceContext;
+  resolution: AdapterResolution | null;
+}) {
   const [intent, setIntent] = useState<"login" | "signup">("login");
   const [username, setUsername] = useState("");
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const [invalidFields, setInvalidFields] = useState<Set<string>>(() => new Set());
+  const transient = useTransientNotice();
   const [busy, setBusy] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [rememberedIdentity, setRememberedIdentity] = useState<string | null>(null);
@@ -232,7 +326,8 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
   function switchIntent(event: React.MouseEvent<HTMLButtonElement>) {
     event.currentTarget.blur();
     setIntent(intent === "login" ? "signup" : "login");
-    setNotice(null);
+    transient.clear();
+    setInvalidFields(new Set());
     window.requestAnimationFrame(() => window.scrollTo(0, 0));
   }
 
@@ -244,21 +339,23 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
     const email = String(form.get("email") ?? "").trim();
     const password = String(form.get("password") ?? "");
     const submittedUsername = String(form.get("username") ?? "").trim();
+    const nextInvalidFields = new Set<string>();
+    if (!email || (intent === "signup" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
+      nextInvalidFields.add("email");
+    }
     if (intent === "signup" && !USERNAME_PATTERN.test(submittedUsername)) {
-      setNotice({
-        kind: "error",
-        text: "Use 2-15 letters, numbers, periods, underscores, or hyphens for your username.",
-      });
-      return;
+      nextInvalidFields.add("username");
     }
     const validation = validatePassword(password, intent);
-    if (!validation.valid) {
-      setNotice({ kind: "error", text: validation.message });
+    if (!validation.valid) nextInvalidFields.add("password");
+    if (nextInvalidFields.size > 0) {
+      setInvalidFields(nextInvalidFields);
       return;
     }
 
     setBusy(true);
-    setNotice(null);
+    transient.clear();
+    setInvalidFields(new Set());
     cooldown.start();
     try {
       if (intent === "signup") {
@@ -270,7 +367,7 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
           writeRememberedIdentity(identity);
           setRememberedIdentity(identity);
         }
-        setNotice({ kind: "success", text: safeAuthSuccess("signup") });
+        transient.show({ kind: "success", text: safeAuthSuccess("signup") });
         return;
       }
 
@@ -280,13 +377,13 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
         writeRememberedIdentity(identity);
         setRememberedIdentity(identity);
       }
-      setNotice(
+      transient.show(
         session
           ? { kind: "success", text: "Signed in on this account origin." }
           : { kind: "error", text: safeAuthError("login") },
       );
     } catch {
-      setNotice({ kind: "error", text: safeAuthError(intent) });
+      transient.show({ kind: "error", text: safeAuthError(intent) });
     } finally {
       setBusy(false);
     }
@@ -296,11 +393,13 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
     <section
       aria-labelledby="login-panel-title"
       className="account-card account-card--auth"
+      data-auth-product={context.id}
       data-auth-surface="credentials"
+      style={{ "--auth-accent": context.accentRgb } as React.CSSProperties}
     >
       <RuntimeNote />
       <header className="account-auth-intro">
-        <p>{productIdentity.publicName}</p>
+        <p>{context.productName}</p>
         <h1 aria-live="polite" id="login-panel-title">
           {intent === "login" ? "Welcome" : "Create account"}
         </h1>
@@ -312,18 +411,26 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
       </header>
       <div className="account-auth-body">
         <SetupState resolution={resolution} />
-        <StatusNotice notice={notice} />
-        <form className="account-form account-form--auth" id="account-auth-form" onSubmit={submit}>
+        <AuthLiveNotice notice={transient.notice} />
+        <form className="account-form account-form--auth" id="account-auth-form" noValidate onSubmit={submit}>
         {intent === "signup" ? (
-          <fieldset>
+          <fieldset data-invalid={invalidFields.has("username") || undefined}>
             <legend><label htmlFor="account-username">Username</label></legend>
             <input
+              aria-invalid={invalidFields.has("username") || undefined}
               id="account-username"
               autoComplete="username"
               maxLength={15}
               minLength={2}
               name="username"
-              onChange={(event) => setUsername(event.target.value)}
+              onChange={(event) => {
+                setUsername(event.target.value);
+                setInvalidFields((current) => {
+                  const next = new Set(current);
+                  next.delete("username");
+                  return next;
+                });
+              }}
               pattern="[A-Za-z0-9._-]{2,15}"
               required
               type="text"
@@ -331,24 +438,36 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
             />
           </fieldset>
         ) : null}
-        <fieldset>
+        <fieldset data-invalid={invalidFields.has("email") || undefined}>
           <legend><label htmlFor="account-email">{intent === "login" ? "Email or username" : "Email"}</label></legend>
           <input
+            aria-invalid={invalidFields.has("email") || undefined}
             id="account-email"
             autoComplete={intent === "login" ? "username" : "email"}
             inputMode={intent === "login" ? "text" : "email"}
             name="email"
+            onChange={() => setInvalidFields((current) => {
+              const next = new Set(current);
+              next.delete("email");
+              return next;
+            })}
             required
             type={intent === "login" ? "text" : "email"}
           />
         </fieldset>
-        <fieldset>
+        <fieldset data-invalid={invalidFields.has("password") || undefined}>
           <legend><label htmlFor="account-password">Password</label></legend>
           <input
+            aria-invalid={invalidFields.has("password") || undefined}
             id="account-password"
             autoComplete={intent === "login" ? "current-password" : "new-password"}
             minLength={intent === "signup" ? PASSWORD_MINIMUM : undefined}
             name="password"
+            onChange={() => setInvalidFields((current) => {
+              const next = new Set(current);
+              next.delete("password");
+              return next;
+            })}
             required
             type={passwordVisible ? "text" : "password"}
           />
@@ -358,11 +477,7 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
             onClick={() => setPasswordVisible((visible) => !visible)}
             type="button"
           >
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path d="M2 12c2.5-4 5.8-6 10-6s7.5 2 10 6c-2.5 4-5.8 6-10 6s-7.5-2-10-6Z" />
-              <circle cx="12" cy="12" r="3" />
-              {passwordVisible ? null : <path d="M4 4l16 16" />}
-            </svg>
+            <PasswordEye visible={passwordVisible} />
           </button>
         </fieldset>
         </form>
@@ -380,10 +495,11 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
             <span aria-hidden="true" className="account-link-separator">
               <span />
             </span>
-            <a href="/reset-password">Reset password</a>
+            <a href={contextualPath("/reset-password", context)}>Reset password</a>
           </>
         ) : null}
       </div>
+      <AccountLegalLinks context={context} />
       <div className="account-auth-dock">
         <button
           className="catalog-button catalog-button--primary"
@@ -393,11 +509,11 @@ function LoginPanel({ resolution }: { resolution: AdapterResolution | null }) {
         >
           {busy
             ? "Working…"
-            : cooldown.remaining
-              ? `Try again in ${cooldown.remaining}s`
+            : transient.notice
+              ? transient.notice.text
               : intent === "login"
-                ? "Sign in"
-                : "Create account"}
+                ? context.signInLabel
+                : context.signUpLabel}
         </button>
       </div>
     </section>
@@ -743,164 +859,179 @@ function useRecoverySession(
   return state;
 }
 
-function ResetPanel({ resolution }: { resolution: AdapterResolution | null }) {
+function ResetPanel({
+  context,
+  resolution,
+}: {
+  context: AccountExperienceContext;
+  resolution: AdapterResolution | null;
+}) {
   const hydrated = useHydrated();
   const recovery = hydrated
     ? new URLSearchParams(window.location.search).get("recovery") === "1"
     : false;
   const adapter = adapterFrom(resolution);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const transient = useTransientNotice();
+  const [invalidFields, setInvalidFields] = useState<Set<string>>(() => new Set());
   const [busy, setBusy] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmationVisible, setConfirmationVisible] = useState(false);
   const cooldown = useCooldown();
   const recoveryState = useRecoverySession(hydrated, recovery, resolution);
   const recoveryReady = recovery && recoveryState === "ready";
+
+  const recoveryNotice: Notice | null = !recovery
+    ? null
+    : recoveryState === "invalid"
+      ? { kind: "error", text: "Recovery link invalid.", variant: "invalid" }
+      : recoveryState === "expired"
+        ? { kind: "error", text: "Recovery link expired.", variant: "expired" }
+        : recoveryState === "recoverable-error"
+          ? { kind: "error", text: safeAuthError("reset-complete") }
+          : recoveryState === "setup-pending"
+            ? { kind: "info", text: "Account service unavailable." }
+            : recoveryState === "ready"
+              ? null
+              : { kind: "info", text: "Preparing recovery…" };
+  const actionNotice = transient.notice ?? recoveryNotice;
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!adapter || busy || cooldown.remaining || (recovery && !recoveryReady)) return;
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
-    setBusy(true);
-    setNotice(null);
+    const nextInvalidFields = new Set<string>();
 
     if (recovery) {
       const password = String(form.get("password") ?? "");
       const confirmation = String(form.get("confirmation") ?? "");
       const validation = validatePassword(password, "reset");
-      if (!validation.valid || password !== confirmation) {
-        setNotice({
-          kind: "error",
-          text: validation.valid ? "The passwords do not match." : validation.message,
-        });
-        setBusy(false);
+      if (!validation.valid) nextInvalidFields.add("password");
+      if (!confirmation || password !== confirmation) nextInvalidFields.add("confirmation");
+      if (nextInvalidFields.size > 0) {
+        setInvalidFields(nextInvalidFields);
         return;
       }
+      setBusy(true);
+      transient.clear();
+      setInvalidFields(new Set());
       cooldown.start();
       try {
         await adapter.updatePassword(password);
         formElement.reset();
-        setNotice({ kind: "success", text: safeAuthSuccess("reset-complete") });
+        transient.show({ kind: "success", text: safeAuthSuccess("reset-complete") });
       } catch {
-        setNotice({ kind: "error", text: safeAuthError("reset-complete") });
+        transient.show({ kind: "error", text: safeAuthError("reset-complete") });
       } finally {
         setBusy(false);
       }
       return;
     }
 
+    const email = String(form.get("email") ?? "").trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setInvalidFields(new Set(["email"]));
+      return;
+    }
+    setBusy(true);
+    transient.clear();
+    setInvalidFields(new Set());
     cooldown.start();
     try {
-      await adapter.requestPasswordReset(String(form.get("email") ?? "").trim());
-      setNotice({ kind: "success", text: safeAuthSuccess("reset-request") });
+      await adapter.requestPasswordReset(email);
+      transient.show({ kind: "success", text: safeAuthSuccess("reset-request") });
     } catch {
-      setNotice({ kind: "success", text: safeAuthSuccess("reset-request") });
+      transient.show({ kind: "success", text: safeAuthSuccess("reset-request") });
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <section aria-labelledby="reset-panel-title" className="account-card surface-panel">
+    <section
+      aria-label="Password recovery"
+      className="account-card account-card--auth"
+      data-auth-product={context.id}
+      data-auth-surface="recovery"
+      style={{ "--auth-accent": context.accentRgb } as React.CSSProperties}
+    >
       <RuntimeNote />
-      <div className="account-card__heading">
-        <p className="field-label">{recovery ? "Recovery session" : "Password recovery"}</p>
-        <h2 id="reset-panel-title">
-          {recovery ? "Choose a new password." : "Request a recovery link."}
-        </h2>
-        <p>
-          {recovery
-            ? `Use at least ${PASSWORD_MINIMUM} characters. Long passphrases are accepted without truncation.`
-            : "The response stays the same whether or not an account exists."}
-        </p>
-      </div>
-      <SetupState resolution={resolution} />
-      {recovery && !notice ? (
-        <StatusNotice
-          notice={
-            recoveryState === "invalid"
-              ? {
-                  kind: "error",
-                  text: "This recovery address is missing a valid one-time handoff. Request a fresh link.",
-                  variant: "invalid",
-                }
-              : recoveryState === "expired"
-                ? {
-                    kind: "error",
-                    text: "This recovery handoff did not establish a session. Request a fresh link.",
-                    variant: "expired",
-                  }
-                : recoveryState === "recoverable-error"
-                  ? {
-                      kind: "error",
-                      text: safeAuthError("reset-complete"),
-                      variant: "recoverable-error",
-                    }
-              : recoveryState === "ready"
-                ? {
-                    kind: "success",
-                    text: "Recovery session established. Choose a new password.",
-                  }
-                : recoveryState === "setup-pending"
-                  ? {
-                      kind: "info",
-                      text: "Recovery is ready, but account setup is pending.",
-                      variant: "unavailable",
-                    }
-                  : {
-                      kind: "info",
-                      text: "Establishing your recovery session…",
-                      variant: "pending",
-                    }
-          }
-        />
-      ) : null}
-      <StatusNotice notice={notice} />
-      {!recovery || recoveryReady ? (
-        <form className="account-form" onSubmit={submit}>
+      <header className="account-auth-intro">
+        <p>{context.productName}</p>
+        <h1 id="reset-panel-title">{recovery ? "New password" : "Reset password"}</h1>
+      </header>
+      <div className="account-auth-body">
+        <SetupState resolution={resolution} />
+        <AuthLiveNotice notice={actionNotice} />
+        {!recovery || recoveryReady ? (
+          <form className="account-form account-form--auth" id="account-reset-form" noValidate onSubmit={submit}>
         {recovery ? (
           <>
-            <label>
-              <span>New password</span>
+            <fieldset data-invalid={invalidFields.has("password") || undefined}>
+              <legend><label htmlFor="account-new-password">New password</label></legend>
               <input
+                aria-invalid={invalidFields.has("password") || undefined}
                 autoComplete="new-password"
+                id="account-new-password"
                 minLength={PASSWORD_MINIMUM}
                 name="password"
+                onChange={() => setInvalidFields((current) => {
+                  const next = new Set(current);
+                  next.delete("password");
+                  return next;
+                })}
                 required
-                type="password"
+                type={passwordVisible ? "text" : "password"}
               />
-            </label>
-            <label>
-              <span>Confirm new password</span>
+              <button aria-label={passwordVisible ? "Hide password" : "Show password"} className="account-password-toggle" onClick={() => setPasswordVisible((visible) => !visible)} type="button">
+                <PasswordEye visible={passwordVisible} />
+              </button>
+            </fieldset>
+            <fieldset data-invalid={invalidFields.has("confirmation") || undefined}>
+              <legend><label htmlFor="account-confirm-password">Confirm password</label></legend>
               <input
+                aria-invalid={invalidFields.has("confirmation") || undefined}
                 autoComplete="new-password"
+                id="account-confirm-password"
                 minLength={PASSWORD_MINIMUM}
                 name="confirmation"
+                onChange={() => setInvalidFields((current) => {
+                  const next = new Set(current);
+                  next.delete("confirmation");
+                  return next;
+                })}
                 required
-                type="password"
+                type={confirmationVisible ? "text" : "password"}
               />
-            </label>
+              <button aria-label={confirmationVisible ? "Hide password" : "Show password"} className="account-password-toggle" onClick={() => setConfirmationVisible((visible) => !visible)} type="button">
+                <PasswordEye visible={confirmationVisible} />
+              </button>
+            </fieldset>
           </>
         ) : (
-          <label>
-            <span>Email</span>
-            <input autoComplete="email" inputMode="email" name="email" required type="email" />
-          </label>
+          <fieldset data-invalid={invalidFields.has("email") || undefined}>
+            <legend><label htmlFor="account-reset-email">Email</label></legend>
+            <input aria-invalid={invalidFields.has("email") || undefined} autoComplete="email" id="account-reset-email" inputMode="email" name="email" onChange={() => setInvalidFields(new Set())} required type="email" />
+          </fieldset>
         )}
-        <button
-          className="catalog-button catalog-button--primary"
-          disabled={!adapter || busy || cooldown.remaining > 0}
-          type="submit"
-        >
+          </form>
+        ) : null}
+      </div>
+      <div className="account-card__links">
+        <a href={contextualPath("/login", context)}>Log in</a>
+      </div>
+      <AccountLegalLinks context={context} />
+      <div className="account-auth-dock">
+        <button className="catalog-button catalog-button--primary" disabled={!adapter || busy || cooldown.remaining > 0 || (recovery && !recoveryReady)} form="account-reset-form" type="submit">
           {busy
             ? "Working…"
-            : cooldown.remaining
-              ? `Try again in ${cooldown.remaining}s`
+            : actionNotice
+              ? actionNotice.text
               : recovery
                 ? "Save new password"
-                : "Send recovery link"}
+                : context.resetLabel}
         </button>
-        </form>
-      ) : null}
+      </div>
     </section>
   );
 }
@@ -1071,14 +1202,15 @@ function LinkHandler({
 
 export function AccountPortal({ mode }: { mode: PortalMode }) {
   const resolution = useAdapterResolution();
+  const context = useAccountExperienceContext();
 
   switch (mode) {
     case "login":
-      return <LoginPanel resolution={resolution} />;
+      return <LoginPanel context={context} resolution={resolution} />;
     case "account":
       return <AccountPanel resolution={resolution} />;
     case "reset":
-      return <ResetPanel resolution={resolution} />;
+      return <ResetPanel context={context} resolution={resolution} />;
     case "confirm":
     case "callback":
       return <LinkHandler mode={mode} resolution={resolution} />;
