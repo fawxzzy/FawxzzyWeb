@@ -620,10 +620,14 @@ function AccountPanel({
           >
             {busy ? "Working…" : "Sign out"}
           </button>
-        ) : (
+        ) : loaded ? (
           <a className="catalog-button catalog-button--primary" href={contextualPath("/login", context)}>
             Sign in
           </a>
+        ) : (
+          <button className="catalog-button catalog-button--primary" disabled type="button">
+            Checking…
+          </button>
         )}
       </div>
     </section>
@@ -766,7 +770,7 @@ function ResetPanel({
     setInvalidFields(new Set());
     cooldown.start();
     try {
-      await adapter.requestPasswordReset(email);
+      await adapter.requestPasswordReset(email, context.id);
       transient.show({ kind: "success", text: safeAuthSuccess("reset-request") });
     } catch {
       transient.show({ kind: "success", text: safeAuthSuccess("reset-request") });

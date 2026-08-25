@@ -9,6 +9,7 @@ import {
 import {
   accountContract,
   accountExperienceContexts,
+  accountRecoveryUrl,
   accountUrls,
   classifyRuntimeOrigin,
   isLiveAccountAdapterOrigin,
@@ -88,10 +89,14 @@ test("one presentation registry renders every product without claiming consumer 
   expect(accountExperienceContexts.website.consumerIntegration).toBe("active");
   expect(accountExperienceContexts.fitness.consumerIntegration).toBe("pending");
   expect(accountExperienceContexts.mazer.consumerIntegration).toBe("pending");
-  expect(accountExperienceContexts.fitness.legalLinks.map(({ label }) => label)).toEqual([
-    "Privacy Policy",
-    "Terms of Service",
-  ]);
+  expect(accountExperienceContexts.fitness.legalLinks).toEqual([]);
+  expect(accountRecoveryUrl("website")).toBe(accountUrls.recovery);
+  expect(accountRecoveryUrl("fitness")).toBe(
+    "https://account.fawxzzy.com/reset-password?recovery=1&app=fitness",
+  );
+  expect(accountRecoveryUrl("mazer")).toBe(
+    "https://account.fawxzzy.com/reset-password?recovery=1&app=mazer",
+  );
 });
 
 const utilityRoutes = accountRoutes;
@@ -791,9 +796,7 @@ test("registered contexts swap product presentation without changing auth author
   await expect(card).toBeVisible();
   await expect(page.locator(".account-auth-intro > p")).toHaveText("Fitness");
   await expect(page.getByRole("navigation", { name: "Fitness legal" })).toHaveCount(0);
-  await expect(page.locator('.account-auth-legal[aria-label="Fitness legal"]')).toContainText(
-    "Privacy Policy",
-  );
+  await expect(page.locator('.account-auth-legal[aria-label="Fitness legal"]')).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Reset password" })).toHaveAttribute(
     "href",
     "/reset-password?app=fitness",
@@ -816,6 +819,12 @@ test("account status keeps the selected presentation context and safe login path
     "href",
     "/login?app=mazer",
   );
+});
+
+test("account status does not offer sign in before session loading settles", async ({ page }) => {
+  await page.goto("/account?auth_test=session-pending");
+  await expect(page.getByRole("button", { name: "Checking…" })).toBeDisabled();
+  await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
 });
 
 test("signup enforces ten characters and accepts long passwords", async ({ browserName, page }) => {

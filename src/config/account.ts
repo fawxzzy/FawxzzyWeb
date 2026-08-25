@@ -85,16 +85,7 @@ export const accountExperienceContexts: Record<
     consumerIntegration: "pending",
     destinationOrigin: accountContract.productOrigins.fitness,
     id: "fitness",
-    legalLinks: [
-      {
-        href: `${accountContract.productOrigins.fitness}/privacy`,
-        label: "Privacy Policy",
-      },
-      {
-        href: `${accountContract.productOrigins.fitness}/terms`,
-        label: "Terms of Service",
-      },
-    ],
+    legalLinks: [],
     productName: "Fitness",
     resetLabel: "Send recovery link",
     signInLabel: "Sign in",
@@ -129,6 +120,12 @@ export const accountUrls = {
   callback: `${accountContract.canonicalOrigin}${accountContract.callbackPath}`,
   recovery: `${accountContract.canonicalOrigin}${accountContract.recoveryPath}`,
 } as const;
+
+export function accountRecoveryUrl(contextId: AccountExperienceContextId) {
+  const url = new URL(accountContract.recoveryPath, accountContract.canonicalOrigin);
+  if (contextId !== "website") url.searchParams.set("app", contextId);
+  return url.href;
+}
 
 const TOKEN_QUERY_KEYS = new Set([
   "access_token",
