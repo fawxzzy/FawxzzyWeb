@@ -835,6 +835,20 @@ test("account status does not offer sign in before session loading settles", asy
   await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
 });
 
+test("short create-account viewports can scroll fields above the fixed action rails", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 600 });
+  await page.goto("/login?auth_test=success");
+  await page.getByRole("button", { name: "Create account" }).click();
+  const password = page.getByLabel("Password", { exact: true });
+  await password.focus();
+  await password.evaluate((element) => element.scrollIntoView({ block: "center" }));
+  const passwordBox = await password.boundingBox();
+  const secondaryBox = await page.locator(".account-auth-secondary").boundingBox();
+  expect(passwordBox).not.toBeNull();
+  expect(secondaryBox).not.toBeNull();
+  expect(passwordBox!.y + passwordBox!.height).toBeLessThanOrEqual(secondaryBox!.y);
+});
+
 test("signup enforces ten characters and accepts long passwords", async ({ browserName, page }) => {
   test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
   await page.goto("/login?auth_test=success");
@@ -998,6 +1012,15 @@ test("confirmation is one-time, sanitized, and preserves only an approved return
   await expect(page.getByRole("link", { name: "Continue safely" })).toHaveAttribute(
     "href",
     "https://fitness.fawxzzy.com/",
+  );
+});
+
+test("confirmation fallback actions preserve the selected product context", async ({ page }) => {
+  await page.goto("/auth/confirm?app=mazer");
+  await expect(page.locator('[data-auth-product="mazer"]')).toBeVisible();
+  await expect(page.getByRole("link", { name: "Start again" })).toHaveAttribute(
+    "href",
+    "/login?app=mazer",
   );
 });
 

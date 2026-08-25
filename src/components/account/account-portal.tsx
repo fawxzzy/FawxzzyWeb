@@ -878,9 +878,11 @@ function ResetPanel({
 }
 
 function LinkHandler({
+  context,
   mode,
   resolution,
 }: {
+  context: AccountExperienceContext;
   mode: "callback" | "confirm";
   resolution: AdapterResolution | null;
 }) {
@@ -1008,11 +1010,17 @@ function LinkHandler({
         Continue safely
       </a>
     ) : variant === "pending" ? null : variant === "unavailable" ? (
-      <a className="catalog-button catalog-button--primary" href="/account">
+      <a
+        className="catalog-button catalog-button--primary"
+        href={contextualPath("/account", context)}
+      >
         View account status
       </a>
     ) : (
-      <a className="catalog-button catalog-button--primary" href="/login">
+      <a
+        className="catalog-button catalog-button--primary"
+        href={contextualPath("/login", context)}
+      >
         Start again
       </a>
     );
@@ -1020,6 +1028,7 @@ function LinkHandler({
   return (
     <section
       className="account-card surface-panel"
+      data-auth-product={context.id}
       data-auth-state={variant}
     >
       <RuntimeNote />
@@ -1054,6 +1063,6 @@ export function AccountPortal({ mode }: { mode: PortalMode }) {
       return <ResetPanel context={context} resolution={resolution} />;
     case "confirm":
     case "callback":
-      return <LinkHandler mode={mode} resolution={resolution} />;
+      return <LinkHandler context={context} mode={mode} resolution={resolution} />;
   }
 }

@@ -1170,8 +1170,12 @@
   }
 
   .account-auth-body {
+    flex: 0 0 auto;
+    justify-content: flex-start;
+    overflow-y: auto;
     padding-top: 20px;
-    padding-bottom: 24px;
+    padding-bottom: 172px;
+    scroll-padding-bottom: 172px;
   }
 
 }
