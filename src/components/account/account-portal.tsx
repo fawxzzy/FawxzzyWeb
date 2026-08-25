@@ -618,7 +618,11 @@ function AccountPanel({
         <AccountLegalLinks context={context} />
       </div>
       <div className={`account-auth-dock${session ? " account-auth-dock--danger" : ""}`}>
-        {session ? (
+        {resolution && !adapter ? (
+          <button className="catalog-button catalog-button--primary" disabled type="button">
+            Unavailable
+          </button>
+        ) : session ? (
           <button
             className="catalog-button catalog-button--primary"
             disabled={busy}
