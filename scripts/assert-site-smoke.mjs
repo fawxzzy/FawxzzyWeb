@@ -132,7 +132,7 @@ export async function assertSiteSmoke(baseUrl) {
 
   const accountRoutes = [
     ["/login", ">Welcome<"],
-    ["/account", "Your account."],
+    ["/account", ">Account<"],
     ["/auth/confirm", "Account confirmation"],
     ["/auth/callback", "Secure sign-in"],
     ["/reset-password", "Password recovery"],
