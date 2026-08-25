@@ -16,9 +16,9 @@ export type AccountExperienceContextId = "website" | "fitness" | "mazer";
 
 export type AccountExperienceContext = {
   accentRgb: string;
+  consumerIntegration: "active" | "pending";
   destinationOrigin: string;
   id: AccountExperienceContextId;
-  integration: "active" | "preview-only";
   legalLinks: ReadonlyArray<{
     href: string;
     label: string;
@@ -61,8 +61,9 @@ export const accountContract = {
  * Presentation-only account contexts. These values may change copy, color,
  * legal destinations, and the eventual allowlisted return destination. They
  * never select an Auth provider, callback, session, or credential boundary.
- * Fitness and Mazer remain preview-only until their owner repositories adopt
- * this contract from a reviewed exact head.
+ * Every registered presentation is safe to render on the account host. Fitness
+ * and Mazer consumer integration remains pending until their owner repositories
+ * adopt the broker contract from reviewed exact heads.
  */
 export const accountExperienceContexts: Record<
   AccountExperienceContextId,
@@ -70,9 +71,9 @@ export const accountExperienceContexts: Record<
 > = {
   website: {
     accentRgb: "147 184 148",
+    consumerIntegration: "active",
     destinationOrigin: accountContract.publicHubOrigin,
     id: "website",
-    integration: "active",
     legalLinks: [],
     productName: productIdentity.publicName,
     resetLabel: "Send recovery link",
@@ -81,9 +82,9 @@ export const accountExperienceContexts: Record<
   },
   fitness: {
     accentRgb: "160 223 56",
+    consumerIntegration: "pending",
     destinationOrigin: accountContract.productOrigins.fitness,
     id: "fitness",
-    integration: "preview-only",
     legalLinks: [
       {
         href: `${accountContract.productOrigins.fitness}/privacy`,
@@ -101,9 +102,9 @@ export const accountExperienceContexts: Record<
   },
   mazer: {
     accentRgb: "53 238 224",
+    consumerIntegration: "pending",
     destinationOrigin: accountContract.productOrigins.mazer,
     id: "mazer",
-    integration: "preview-only",
     legalLinks: [],
     productName: "Mazer",
     resetLabel: "Send recovery link",
@@ -112,20 +113,13 @@ export const accountExperienceContexts: Record<
   },
 };
 
-export function resolveAccountExperienceContext(
-  rawContext: unknown,
-  options: { allowPreviewContexts?: boolean } = {},
-) {
+export function resolveAccountExperienceContext(rawContext: unknown) {
   if (typeof rawContext !== "string") return accountExperienceContexts.website;
   if (!Object.prototype.hasOwnProperty.call(accountExperienceContexts, rawContext)) {
     return accountExperienceContexts.website;
   }
 
-  const context = accountExperienceContexts[rawContext as AccountExperienceContextId];
-  if (context.integration === "preview-only" && !options.allowPreviewContexts) {
-    return accountExperienceContexts.website;
-  }
-  return context;
+  return accountExperienceContexts[rawContext as AccountExperienceContextId];
 }
 
 export const accountUrls = {

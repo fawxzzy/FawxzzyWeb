@@ -80,23 +80,21 @@ test("auth-family documentation locks Fitness structure and product-owned themin
   expect(contract).not.toContain("one short supporting sentence");
 });
 
-test("one presentation registry keeps sibling products preview-only until adoption", () => {
+test("one presentation registry renders every product without claiming consumer adoption", () => {
   expect(resolveAccountExperienceContext("website")).toEqual(accountExperienceContexts.website);
-  expect(resolveAccountExperienceContext("fitness")).toEqual(accountExperienceContexts.website);
-  expect(resolveAccountExperienceContext("mazer")).toEqual(accountExperienceContexts.website);
-  expect(
-    resolveAccountExperienceContext("fitness", { allowPreviewContexts: true }),
-  ).toEqual(accountExperienceContexts.fitness);
-  expect(resolveAccountExperienceContext("unknown", { allowPreviewContexts: true })).toEqual(
-    accountExperienceContexts.website,
-  );
+  expect(resolveAccountExperienceContext("fitness")).toEqual(accountExperienceContexts.fitness);
+  expect(resolveAccountExperienceContext("mazer")).toEqual(accountExperienceContexts.mazer);
+  expect(resolveAccountExperienceContext("unknown")).toEqual(accountExperienceContexts.website);
+  expect(accountExperienceContexts.website.consumerIntegration).toBe("active");
+  expect(accountExperienceContexts.fitness.consumerIntegration).toBe("pending");
+  expect(accountExperienceContexts.mazer.consumerIntegration).toBe("pending");
   expect(accountExperienceContexts.fitness.legalLinks.map(({ label }) => label)).toEqual([
     "Privacy Policy",
     "Terms of Service",
   ]);
 });
 
-const utilityRoutes = accountRoutes.filter(([route]) => route !== "/account");
+const utilityRoutes = accountRoutes;
 
 const syntheticPublishableKey = `sb_publishable_${"a-b_".repeat(5)}ab_${"c-d_".repeat(2)}`;
 
@@ -591,7 +589,7 @@ test("all account routes carry account canonical metadata and setup-pending stat
     if (route === "/auth/confirm" || route === "/auth/callback") {
       await expect(page.locator('[data-auth-state="invalid"]')).toBeVisible();
       await expect(page.locator('[data-system-state="unavailable"]')).toHaveCount(0);
-    } else if (route === "/login" || route === "/reset-password") {
+    } else if (route === "/login" || route === "/reset-password" || route === "/account") {
       await expect(page.locator('[data-system-state="unavailable"]')).toHaveCount(0);
       await expect(page.locator(".account-capability-note")).toHaveText(
         "Account service unavailable on this origin.",
@@ -600,12 +598,8 @@ test("all account routes carry account canonical metadata and setup-pending stat
       await expect(page.locator('[data-system-state="unavailable"]').first()).toBeVisible();
     }
     await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
-    if (route === "/account") {
-      await expect(page.getByRole("navigation", { name: "Primary" })).not.toContainText("Account");
-    } else {
-      await expect(page.getByRole("navigation", { name: "Account" })).toHaveCount(0);
-      await expect(page.getByRole("navigation", { name: "Primary" })).toHaveCount(0);
-    }
+    await expect(page.getByRole("navigation", { name: "Account" })).toHaveCount(0);
+    await expect(page.getByRole("navigation", { name: "Primary" })).toHaveCount(0);
   }
 });
 
@@ -676,7 +670,7 @@ test("utility shell stays usable without overflow at 320px and 360px", async ({ 
   }
 });
 
-test("public navigation stays focused on home and apps", async ({
+test("public navigation exposes the shared account host without duplicating auth", async ({
   page,
 }) => {
   await page.goto("/");
@@ -689,8 +683,11 @@ test("public navigation stays focused on home and apps", async ({
     "href",
     "/apps",
   );
-  await expect(navigation.locator("a")).toHaveCount(3);
-  await expect(navigation).not.toContainText("Account");
+  await expect(navigation.getByRole("link", { name: "Account", exact: true })).toHaveAttribute(
+    "href",
+    accountUrls.account,
+  );
+  await expect(navigation.locator("a")).toHaveCount(4);
 });
 
 test("login accepts a legacy short password and maps adapter errors safely", async ({ browserName, page }) => {
@@ -714,7 +711,7 @@ test("login accepts a legacy short password and maps adapter errors safely", asy
   await expect(page.locator(".account-auth-dock button")).toContainText(safeAuthError("login"));
 });
 
-test("auth footer uses the shared nested signature pipe and compact dock spacing", async ({ page }) => {
+test("auth footer uses the shared pipe and one geometry-owned secondary rail", async ({ page }) => {
   await page.goto("/login?auth_test=success");
 
   const separator = page.locator(".account-link-separator");
@@ -727,11 +724,11 @@ test("auth footer uses the shared nested signature pipe and compact dock spacing
   await expect(page.locator(".account-card__links")).toContainText("Create account");
   await expect(page.locator(".account-card__links")).toContainText("Reset password");
 
-  const footerBox = await page.locator(".account-card__links").boundingBox();
+  const footerBox = await page.locator(".account-auth-secondary").boundingBox();
   const dockBox = await page.locator(".account-auth-dock .catalog-button").boundingBox();
   expect(footerBox).not.toBeNull();
   expect(dockBox).not.toBeNull();
-  expect(footerBox!.y + footerBox!.height).toBeLessThanOrEqual(dockBox!.y + 1);
+  expect(Math.round(dockBox!.y - (footerBox!.y + footerBox!.height))).toBe(16);
 });
 
 test("auth entry uses one stable Fitness-shaped frame and remembers the returning username", async ({ page }) => {
@@ -788,7 +785,7 @@ test("required-field feedback is visual and does not add an error paragraph", as
   await expect(identifierFrame).not.toHaveAttribute("data-invalid", "true");
 });
 
-test("local context previews swap product text, accent, and legal row without changing auth", async ({ page }) => {
+test("registered contexts swap product presentation without changing auth authority", async ({ page }) => {
   await page.goto("/login?auth_test=success&app=fitness");
   const card = page.locator('.account-card--auth[data-auth-product="fitness"]');
   await expect(card).toBeVisible();
@@ -805,6 +802,20 @@ test("local context previews swap product text, accent, and legal row without ch
   await page.goto("/login?auth_test=success&app=unknown");
   await expect(page.locator('.account-card--auth[data-auth-product="website"]')).toBeVisible();
   await expect(page.locator(".account-auth-legal")).toHaveCount(0);
+
+  await page.goto("/login?auth_test=success&app=mazer&app=fitness");
+  await expect(page.locator('.account-card--auth[data-auth-product="website"]')).toBeVisible();
+});
+
+test("account status keeps the selected presentation context and safe login path", async ({ page }) => {
+  await page.goto("/account?auth_test=success&app=mazer");
+  const panel = page.locator('[data-auth-surface="account-status"][data-auth-product="mazer"]');
+  await expect(panel).toBeVisible();
+  await expect(panel.locator(".account-auth-intro > p")).toHaveText("Mazer");
+  await expect(panel.getByRole("link", { name: "Sign in" })).toHaveAttribute(
+    "href",
+    "/login?app=mazer",
+  );
 });
 
 test("signup enforces ten characters and accepts long passwords", async ({ browserName, page }) => {
@@ -884,91 +895,34 @@ test("every settled provider signup outcome has one non-enumerating result", asy
   expect(await context.cookies()).toEqual([]);
 });
 
-test("account settings stay session-scoped without exposing future platform internals", async ({
-  browserName,
+test("account status copies the compact Mazer hierarchy without unfinished service copy", async ({
   context,
   page,
 }) => {
-  test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
   await page.goto("/account?auth_test=session");
-  await expect(page.getByText("preview.user@example.test")).toBeVisible();
-  await expect(page.locator('input[name="username"], input[name="user_number"]')).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Account" })).toBeVisible();
+  await expect(page.getByLabel("Username")).toHaveValue("fawxzzy");
+  await expect(page.getByLabel("Username")).toHaveAttribute("readonly", "");
+  await expect(page.getByLabel("Email")).toHaveValue("preview.user@example.test");
+  await expect(page.getByLabel("Email")).toHaveAttribute("readonly", "");
   await expect(page.locator("body")).not.toContainText("Canonical global username");
   await expect(page.locator("body")).not.toContainText("Immutable global user number");
-  await expect(page.getByRole("heading", { name: "Open your apps." })).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("Connections are coming soon");
+  await expect(page.locator("body")).not.toContainText("Open your apps");
+  await expect(page.getByRole("link", { name: "Reset password" })).toHaveAttribute(
+    "href",
+    "/reset-password",
+  );
   expect(await context.cookies()).toEqual([]);
 
-  const emailForm = page.locator("form").filter({ has: page.getByLabel("Update email") });
-  await expect(emailForm.getByLabel("Current password")).toHaveAttribute("required", "");
-  await emailForm.getByLabel("Update email").fill("changed@example.test");
-  await emailForm.getByLabel("Current password").fill("current-account-password");
-  await emailForm.getByRole("button", { name: "Save email" }).click();
-  await expect(page.locator('.account-notice[role="status"]')).toContainText(
-    "email update was accepted",
-  );
+  const secondaryBox = await page.locator(".account-auth-secondary").boundingBox();
+  const dockBox = await page.locator(".account-auth-dock .catalog-button").boundingBox();
+  expect(secondaryBox).not.toBeNull();
+  expect(dockBox).not.toBeNull();
+  expect(Math.round(dockBox!.y - (secondaryBox!.y + secondaryBox!.height))).toBe(16);
 
-  const passwordForm = page.locator("form").filter({ has: page.getByLabel("New password") });
-  await expect(passwordForm.getByLabel("Current password")).toHaveAttribute("required", "");
-  await passwordForm.getByLabel("Current password").fill("current-account-password");
-  await passwordForm.getByLabel("New password").fill("x".repeat(129));
-  await passwordForm.getByRole("button", { name: "Save password" }).click();
-  await expect(page.locator('.account-notice[role="status"]')).toContainText(
-    "password has been updated",
-  );
-
-  await page.getByRole("button", { name: "Sign out here" }).click();
-  await expect(page.getByText("You are signed out here.")).toBeVisible();
-});
-
-test("service cards render every local-only disposition without enabling client activation", async ({
-  context,
-  page,
-}) => {
-  const scenarios = [
-    ["unavailable", "unavailable"],
-    ["not-registered", "not_registered"],
-    ["active", "active"],
-    ["action-required", "action_required"],
-    ["unknown", "unknown"],
-  ] as const;
-
-  for (const [scenario, disposition] of scenarios) {
-    await page.goto(`/account?auth_test=session&services_test=${scenario}`);
-    for (const service of humanAccountServices) {
-      const card = page.locator(`[data-service-id="${service.id}"]`);
-      await expect(card).toHaveAttribute("data-service-disposition", disposition);
-      await expect(card.locator('[data-service-activation="gated"]')).toBeDisabled();
-      await expect(card.locator("a")).toHaveAttribute("href", service.currentDestination);
-      await expect(card.locator("[data-service-canonical]")).toHaveAttribute(
-        "data-service-canonical",
-        service.canonicalDestination,
-      );
-    }
-    const capabilityState = page.locator("[data-service-capability] > [data-system-state]");
-    if (scenario === "unavailable") {
-      await expect(capabilityState).toHaveAttribute("data-system-state", "unavailable");
-    } else if (scenario === "unknown") {
-      await expect(capabilityState).toHaveAttribute("data-system-state", "terminal-error");
-    } else {
-      await expect(capabilityState).toHaveCount(0);
-    }
-  }
-
-  expect(await context.cookies()).toEqual([]);
-  expect(new URL(page.url()).searchParams.has("access_token")).toBe(false);
-  expect(new URL(page.url()).searchParams.has("refresh_token")).toBe(false);
-});
-
-test("default account presentation does not claim service registration without readback", async ({
-  page,
-}) => {
-  await page.goto("/account");
-  await expect(page.locator('[data-service-capability="unavailable"]')).toBeVisible();
-  await expect(
-    page.locator('[data-service-capability="unavailable"] > [data-system-state="unavailable"]'),
-  ).toBeVisible();
-  await expect(page.locator('[data-service-disposition="unavailable"]')).toHaveCount(2);
-  await expect(page.locator('[data-service-disposition="active"]')).toHaveCount(0);
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login");
 });
 
 test("recovery exchanges PKCE before exposing the password form", async ({ browserName, page }) => {

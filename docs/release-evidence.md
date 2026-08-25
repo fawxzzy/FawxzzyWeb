@@ -10,11 +10,12 @@ container build therefore bind to the same reviewable 40-character source commit
 
 ## Artifact contents
 
-- 10 governed pages, including the real 404 surface, in a Windows-class desktop
+- 11 governed page states, including reset-request, new-password recovery, and
+  the real 404 surface, in a Windows-class desktop
   Chromium emulation at 1440×900.
-- The same 10 pages in a macOS-class desktop WebKit emulation at 1440×900.
-- The same 10 pages in an iPhone 14-class WebKit emulation at 390×844.
-- The same 10 pages in a Pixel 7-class Android Chromium emulation at 412×839.
+- The same 11 states in a macOS-class desktop WebKit emulation at 1440×900.
+- The same 11 states in an iPhone 14-class WebKit emulation at 390×844.
+- The same 11 states in a Pixel 7-class Android Chromium emulation at 412×839.
 - `visual-manifest.json` with the actual capture host, emulation mode, target
   class, route, family, engine, viewport, byte size, image
   dimensions, SHA-256, observed LCP/CLS, initial transfer bytes, route JavaScript,
@@ -49,7 +50,7 @@ errors fail the capture.
 GitHub keeps the artifact for 30 days. The exact artifact URL and checksums belong
 in visual-acceptance and release receipts.
 
-The same 40-route/target matrix is protected by `npm run test:visual-regression`.
+The same 44-route/target matrix is protected by `npm run test:visual-regression`.
 The committed baseline stores compact 32×32, eight-step quantized RGB signatures
 instead of duplicating full-resolution screenshots. Verification fails on route
 or target drift, width changes, height drift above three percent, mean channel

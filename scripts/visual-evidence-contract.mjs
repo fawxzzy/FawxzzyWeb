@@ -8,6 +8,11 @@ export const visualEvidenceRoutes = Object.freeze([
   { id: "confirm", path: "/auth/confirm", family: "utility" },
   { id: "callback", path: "/auth/callback", family: "utility" },
   { id: "reset", path: "/reset-password", family: "utility" },
+  {
+    id: "new-password",
+    path: "/reset-password?recovery=1&auth_test=session",
+    family: "utility",
+  },
   { id: "not-found", path: "/visual-evidence-missing-page", family: "system", expectedStatus: 404 },
 ]);
 

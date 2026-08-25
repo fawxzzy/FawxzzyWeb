@@ -24,6 +24,10 @@ Every sign-in and create-account surface provides these elements in this order:
 
 Required-field validation uses the same red field outline in every context without adding a floating error paragraph. Provider, recovery, and completion outcomes are announced accessibly and temporarily replace the bottom-dock label for five seconds before the normal action label returns.
 
+The secondary-action rail is geometry-owned rather than flow-owned: it reserves one 44px text-action row and one 32px optional legal row, with its lower edge fixed 16px above the 56px bottom dock. Sign-in, create-account, recovery, and account-status modes therefore keep their text actions at the same viewport position regardless of field count or legal-link presence.
+
+The authenticated account surface follows the current Mazer account hierarchy: product marker, `Account` title, username and email identity fields, one compact recovery action in the shared secondary rail, and a full-width red `Sign out` dock action. It does not repeat the public app catalog, connection placeholders, or unfinished service-registration copy.
+
 The forced first-run auth surface does not include a home/back action, subtitle, guest-play action, or separate display-name field. Username is the public display name.
 
 The family requires 44px minimum interactive targets, visible keyboard focus, no horizontal overflow at 320px, reduced-motion support, and safe-area-aware vertical spacing.
@@ -37,7 +41,7 @@ The family requires 44px minimum interactive targets, visible keyboard focus, no
 - Desktop and mobile: the same bounded one-column Fitness-shaped frame.
 - The remembered username is stored as optional local presentation state after a successful session and never becomes authentication authority.
 - Current service boundary: account actions remain visibly unavailable unless the approved adapter resolves at runtime.
-- Current implementation status: active Website context and shared template source. Fitness and Mazer entries in the Website registry are local deterministic previews only until their owner repositories adopt the contract from reviewed exact heads.
+- Current implementation status: the account host renders Website, Fitness, and Mazer presentation contexts from one registry. Fitness and Mazer consumer integration remains pending until their owner repositories adopt the broker contract from reviewed exact heads.
 
 ### Fitness
 
@@ -69,7 +73,7 @@ The family requires 44px minimum interactive targets, visible keyboard focus, no
 
 1. Fitness remains the locked structural reference.
 2. FawxzzyWeb proves the declarative template, presentation registry, field feedback, transient action messaging, reset flow, and optional legal row first.
-3. Fitness and Mazer remain unchanged until the Website contract and navigation/broker behavior are accepted.
+3. Fitness and Mazer remain unchanged while the Website host proves every registered presentation. Consumer navigation, broker exchange, and app-owned session adoption remain separately gated.
 4. Each owner repository then adapts its rendering primitive to the same contract; it does not copy a second state machine.
 5. Each product requires focused tests, responsive screenshots, exact-head review, and a separately authorized release.
 
