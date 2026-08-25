@@ -53,9 +53,10 @@ async function settleSignupAttempt(
   email: string,
   password: string,
   username: string,
+  context: AccountExperienceContext,
 ) {
   const [result] = await Promise.allSettled([
-    adapter.signUp(email, password, username),
+    adapter.signUp(email, password, username, context.id),
     new Promise((resolve) => window.setTimeout(resolve, SIGNUP_SETTLEMENT_MINIMUM_MS)),
   ]);
   return result.status === "fulfilled" ? result.value : null;
@@ -343,7 +344,13 @@ function LoginPanel({
       if (intent === "signup") {
         // The adapter persists and publishes a real returned session. The notice intentionally
         // makes no claim about whether the provider created an account or returned a session.
-        const session = await settleSignupAttempt(adapter, email, password, submittedUsername);
+        const session = await settleSignupAttempt(
+          adapter,
+          email,
+          password,
+          submittedUsername,
+          context,
+        );
         if (session) {
           const identity = session.displayName || submittedUsername;
           writeRememberedIdentity(identity);

@@ -8,6 +8,7 @@ import {
 } from "../../src/components/system/system-state";
 import {
   accountContract,
+  accountConfirmUrl,
   accountExperienceContexts,
   accountRecoveryUrl,
   accountUrls,
@@ -96,6 +97,13 @@ test("one presentation registry renders every product without claiming consumer 
   );
   expect(accountRecoveryUrl("mazer")).toBe(
     "https://account.fawxzzy.com/reset-password?recovery=1&app=mazer",
+  );
+  expect(accountConfirmUrl("website")).toBe(accountUrls.confirm);
+  expect(accountConfirmUrl("fitness")).toBe(
+    "https://account.fawxzzy.com/auth/confirm?app=fitness&returnTo=https%3A%2F%2Ffitness.fawxzzy.com%2F",
+  );
+  expect(accountConfirmUrl("mazer")).toBe(
+    "https://account.fawxzzy.com/auth/confirm?app=mazer&returnTo=https%3A%2F%2Fmazer.fawxzzy.com%2F",
   );
 });
 

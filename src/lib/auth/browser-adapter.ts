@@ -3,8 +3,8 @@
 import { createClient, type EmailOtpType, type Session } from "@supabase/supabase-js";
 import {
   accountContract,
+  accountConfirmUrl,
   accountRecoveryUrl,
-  accountUrls,
   type AccountExperienceContextId,
   isLiveAccountAdapterOrigin,
   isLocalAuthTestOrigin,
@@ -22,7 +22,12 @@ export type PortalAuthAdapter = {
   getSession(): Promise<PortalSession | null>;
   onSessionChange(listener: (session: PortalSession | null) => void): () => void;
   signIn(email: string, password: string): Promise<PortalSession | null>;
-  signUp(email: string, password: string, username: string): Promise<PortalSession | null>;
+  signUp(
+    email: string,
+    password: string,
+    username: string,
+    contextId: AccountExperienceContextId,
+  ): Promise<PortalSession | null>;
   signOut(): Promise<void>;
   requestPasswordReset(email: string, contextId: AccountExperienceContextId): Promise<void>;
   updateEmail(email: string): Promise<void>;
@@ -89,13 +94,13 @@ function createSupabaseAdapter(url: string, publishableKey: string): PortalAuthA
       if (error) throw error;
       return toPortalSession(data.session);
     },
-    async signUp(email, password, username) {
+    async signUp(email, password, username, contextId) {
       const { data, error } = await client.auth.signUp({
         email,
         password,
         options: {
           data: { display_name: username, username },
-          emailRedirectTo: accountUrls.confirm,
+          emailRedirectTo: accountConfirmUrl(contextId),
         },
       });
       if (error) throw error;

@@ -50,6 +50,10 @@ export const accountContract = {
     "http://127.0.0.1:3000",
     "http://localhost:3210",
     "http://127.0.0.1:3210",
+    "http://localhost:4312",
+    "http://127.0.0.1:4312",
+    "http://localhost:4313",
+    "http://127.0.0.1:4313",
   ],
   storageKey: "fawxzzy.account.auth.v1",
   rememberedIdentityKey: "fawxzzy.account.remembered-identity.v1",
@@ -124,6 +128,15 @@ export const accountUrls = {
 export function accountRecoveryUrl(contextId: AccountExperienceContextId) {
   const url = new URL(accountContract.recoveryPath, accountContract.canonicalOrigin);
   if (contextId !== "website") url.searchParams.set("app", contextId);
+  return url.href;
+}
+
+export function accountConfirmUrl(contextId: AccountExperienceContextId) {
+  if (contextId === "website") return accountUrls.confirm;
+  const context = accountExperienceContexts[contextId];
+  const url = new URL(accountContract.confirmPath, accountContract.canonicalOrigin);
+  url.searchParams.set("app", contextId);
+  url.searchParams.set("returnTo", new URL("/", context.destinationOrigin).href);
   return url.href;
 }
 
