@@ -264,6 +264,7 @@ export function resolvePortalAuthAdapter(
       "error",
       "pending",
       "session",
+      "session-pending",
       "signup-existing",
       "signup-rate-limit",
       "signup-network",
