@@ -101,8 +101,10 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
   );
   await expect(page.getByRole("link", { name: "Fawxzzy home" })).toHaveAttribute("href", "/");
   await expect(page.locator('a[aria-current="page"]')).toHaveCount(1);
-  await expect(page.locator(".site-nav__links a")).toHaveCount(2);
-  await expect(page.getByRole("navigation", { name: "Primary" })).not.toContainText("Account");
+  await expect(page.locator(".site-nav__links a")).toHaveCount(3);
+  await expect(
+    page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Account" }),
+  ).toHaveAttribute("href", "https://account.fawxzzy.com/account");
   await expect(page.getByRole("link", { name: "Explore apps" })).toHaveAttribute("href", "/apps");
   await expect(page.getByRole("link", { name: "Sign in", exact: true })).toHaveAttribute(
     "href",
@@ -849,7 +851,6 @@ test("primary navigation stays viewport-sticky while the document owns scrolling
     "/",
     "/apps",
     "/discover",
-    "/account",
   ]) {
     await page.goto(route);
 

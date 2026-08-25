@@ -15,6 +15,7 @@ export default function AccountPage() {
       eyebrow={`${productIdentity.publicName} account`}
       intro="Your apps and account status in one place."
       title="Your account."
+      variant="utility"
     >
       <AccountPortal mode="account" />
     </AccountPageShell>

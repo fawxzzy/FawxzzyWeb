@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { StaticLink } from "@/components/site/static-link";
+import { accountUrls } from "@/config/account";
 import { productIdentity } from "@/config/product";
 
 type SiteNavProps = {
@@ -38,6 +39,7 @@ export function SiteNav({ current }: SiteNavProps) {
         >
           Apps
         </StaticLink>
+        <StaticLink href={accountUrls.account}>Account</StaticLink>
       </div>
     </nav>
   );

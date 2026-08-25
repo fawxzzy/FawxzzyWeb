@@ -994,7 +994,7 @@
   justify-content: center;
   gap: 8px;
   min-height: 44px;
-  margin: 0 0 72px;
+  margin: 0;
 }
 
 .account-form--auth fieldset[data-invalid="true"] {
@@ -1055,6 +1055,26 @@
   justify-content: center;
 }
 
+.account-auth-secondary {
+  position: fixed;
+  right: max(24px, env(safe-area-inset-right));
+  bottom: calc(max(24px, var(--app-safe-bottom)) + 72px);
+  left: max(24px, env(safe-area-inset-left));
+  z-index: 29;
+  display: grid;
+  height: 76px;
+  grid-template-rows: 44px 32px;
+  justify-items: center;
+}
+
+.account-auth-secondary > .account-card__links {
+  grid-row: 1;
+}
+
+.account-auth-secondary > .account-auth-legal {
+  grid-row: 2;
+}
+
 .account-auth-dock .catalog-button {
   width: min(100%, 342px);
   min-height: 56px;
@@ -1066,6 +1086,15 @@
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.82),
     0 10px 28px rgb(var(--auth-color) / 0.16);
+}
+
+.account-auth-dock--danger .catalog-button {
+  border-color: rgb(255 77 87 / 0.44);
+  color: #fff5f6;
+  background: linear-gradient(180deg, #d7444d 0%, #a9212c 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.2),
+    0 10px 28px rgb(255 77 87 / 0.2);
 }
 
 .account-auth-dock .catalog-button {
@@ -1091,9 +1120,14 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin: -64px 0 64px;
+  margin: 0;
   color: rgb(var(--muted));
   font-size: 0.75rem;
+}
+
+.account-card--account .account-form--auth input[readonly] {
+  color: rgb(var(--text));
+  cursor: default;
 }
 
 .account-auth-legal > span {
@@ -1136,11 +1170,12 @@
   }
 
   .account-auth-body {
+    flex: 0 0 auto;
+    justify-content: flex-start;
+    overflow-y: auto;
     padding-top: 20px;
-    padding-bottom: 24px;
+    padding-bottom: 172px;
+    scroll-padding-bottom: 172px;
   }
 
-  .account-card--auth .account-card__links {
-    margin-bottom: 64px;
-  }
 }

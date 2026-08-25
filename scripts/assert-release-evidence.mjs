@@ -11,10 +11,10 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-assert(visualEvidenceRoutes.length === 10, "Visual evidence must cover the 10 governed page routes, including the 404 surface.");
+assert(visualEvidenceRoutes.length === 11, "Visual evidence must cover the 11 governed page states, including password recovery and the 404 surface.");
 assert(new Set(visualEvidenceRoutes.map(({ path }) => path)).size === visualEvidenceRoutes.length, "Visual evidence routes must be unique.");
 assert(visualEvidenceBrowsers.length === 4, "Visual evidence must cover four declared UI target classes.");
-assert(visualEvidenceRoutes.length * visualEvidenceBrowsers.length === 40, "Visual evidence must produce exactly 40 page-target captures.");
+assert(visualEvidenceRoutes.length * visualEvidenceBrowsers.length === 44, "Visual evidence must produce exactly 44 page-target captures.");
 const evidenceTargets = new Map(visualEvidenceBrowsers.map((target) => [target.id, target]));
 assert(evidenceTargets.get("windows-chromium")?.deviceName === "Desktop Chrome", "Windows evidence must use Desktop Chrome.");
 assert(evidenceTargets.get("macos-webkit")?.deviceName === "Desktop Safari", "macOS evidence must use Desktop Safari.");

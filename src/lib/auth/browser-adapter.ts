@@ -3,7 +3,9 @@
 import { createClient, type EmailOtpType, type Session } from "@supabase/supabase-js";
 import {
   accountContract,
-  accountUrls,
+  accountConfirmUrl,
+  accountRecoveryUrl,
+  type AccountExperienceContextId,
   isLiveAccountAdapterOrigin,
   isLocalAuthTestOrigin,
 } from "@/config/account";
@@ -20,9 +22,14 @@ export type PortalAuthAdapter = {
   getSession(): Promise<PortalSession | null>;
   onSessionChange(listener: (session: PortalSession | null) => void): () => void;
   signIn(email: string, password: string): Promise<PortalSession | null>;
-  signUp(email: string, password: string, username: string): Promise<PortalSession | null>;
+  signUp(
+    email: string,
+    password: string,
+    username: string,
+    contextId: AccountExperienceContextId,
+  ): Promise<PortalSession | null>;
   signOut(): Promise<void>;
-  requestPasswordReset(email: string): Promise<void>;
+  requestPasswordReset(email: string, contextId: AccountExperienceContextId): Promise<void>;
   updateEmail(email: string): Promise<void>;
   updatePassword(password: string): Promise<void>;
   confirm(tokenHash: string, type: EmailOtpType): Promise<PortalSession | null>;
@@ -87,13 +94,13 @@ function createSupabaseAdapter(url: string, publishableKey: string): PortalAuthA
       if (error) throw error;
       return toPortalSession(data.session);
     },
-    async signUp(email, password, username) {
+    async signUp(email, password, username, contextId) {
       const { data, error } = await client.auth.signUp({
         email,
         password,
         options: {
           data: { display_name: username, username },
-          emailRedirectTo: accountUrls.confirm,
+          emailRedirectTo: accountConfirmUrl(contextId),
         },
       });
       if (error) throw error;
@@ -103,9 +110,9 @@ function createSupabaseAdapter(url: string, publishableKey: string): PortalAuthA
       const { error } = await client.auth.signOut({ scope: "local" });
       if (error) throw error;
     },
-    async requestPasswordReset(email) {
+    async requestPasswordReset(email, contextId) {
       const { error } = await client.auth.resetPasswordForEmail(email, {
-        redirectTo: accountUrls.recovery,
+        redirectTo: accountRecoveryUrl(contextId),
       });
       if (error) throw error;
     },
@@ -161,6 +168,9 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
   return {
     kind: "test",
     async getSession() {
+      if (scenario === "session-pending") {
+        return new Promise<PortalSession | null>(() => undefined);
+      }
       fail();
       return session;
     },
@@ -259,6 +269,7 @@ export function resolvePortalAuthAdapter(
       "error",
       "pending",
       "session",
+      "session-pending",
       "signup-existing",
       "signup-rate-limit",
       "signup-network",

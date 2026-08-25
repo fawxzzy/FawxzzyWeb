@@ -16,9 +16,9 @@ export type AccountExperienceContextId = "website" | "fitness" | "mazer";
 
 export type AccountExperienceContext = {
   accentRgb: string;
+  consumerIntegration: "active" | "pending";
   destinationOrigin: string;
   id: AccountExperienceContextId;
-  integration: "active" | "preview-only";
   legalLinks: ReadonlyArray<{
     href: string;
     label: string;
@@ -50,6 +50,10 @@ export const accountContract = {
     "http://127.0.0.1:3000",
     "http://localhost:3210",
     "http://127.0.0.1:3210",
+    "http://localhost:4312",
+    "http://127.0.0.1:4312",
+    "http://localhost:4313",
+    "http://127.0.0.1:4313",
   ],
   storageKey: "fawxzzy.account.auth.v1",
   rememberedIdentityKey: "fawxzzy.account.remembered-identity.v1",
@@ -61,8 +65,9 @@ export const accountContract = {
  * Presentation-only account contexts. These values may change copy, color,
  * legal destinations, and the eventual allowlisted return destination. They
  * never select an Auth provider, callback, session, or credential boundary.
- * Fitness and Mazer remain preview-only until their owner repositories adopt
- * this contract from a reviewed exact head.
+ * Every registered presentation is safe to render on the account host. Fitness
+ * and Mazer consumer integration remains pending until their owner repositories
+ * adopt the broker contract from reviewed exact heads.
  */
 export const accountExperienceContexts: Record<
   AccountExperienceContextId,
@@ -70,9 +75,9 @@ export const accountExperienceContexts: Record<
 > = {
   website: {
     accentRgb: "147 184 148",
+    consumerIntegration: "active",
     destinationOrigin: accountContract.publicHubOrigin,
     id: "website",
-    integration: "active",
     legalLinks: [],
     productName: productIdentity.publicName,
     resetLabel: "Send recovery link",
@@ -81,19 +86,10 @@ export const accountExperienceContexts: Record<
   },
   fitness: {
     accentRgb: "160 223 56",
+    consumerIntegration: "pending",
     destinationOrigin: accountContract.productOrigins.fitness,
     id: "fitness",
-    integration: "preview-only",
-    legalLinks: [
-      {
-        href: `${accountContract.productOrigins.fitness}/privacy`,
-        label: "Privacy Policy",
-      },
-      {
-        href: `${accountContract.productOrigins.fitness}/terms`,
-        label: "Terms of Service",
-      },
-    ],
+    legalLinks: [],
     productName: "Fitness",
     resetLabel: "Send recovery link",
     signInLabel: "Sign in",
@@ -101,9 +97,9 @@ export const accountExperienceContexts: Record<
   },
   mazer: {
     accentRgb: "53 238 224",
+    consumerIntegration: "pending",
     destinationOrigin: accountContract.productOrigins.mazer,
     id: "mazer",
-    integration: "preview-only",
     legalLinks: [],
     productName: "Mazer",
     resetLabel: "Send recovery link",
@@ -112,20 +108,13 @@ export const accountExperienceContexts: Record<
   },
 };
 
-export function resolveAccountExperienceContext(
-  rawContext: unknown,
-  options: { allowPreviewContexts?: boolean } = {},
-) {
+export function resolveAccountExperienceContext(rawContext: unknown) {
   if (typeof rawContext !== "string") return accountExperienceContexts.website;
   if (!Object.prototype.hasOwnProperty.call(accountExperienceContexts, rawContext)) {
     return accountExperienceContexts.website;
   }
 
-  const context = accountExperienceContexts[rawContext as AccountExperienceContextId];
-  if (context.integration === "preview-only" && !options.allowPreviewContexts) {
-    return accountExperienceContexts.website;
-  }
-  return context;
+  return accountExperienceContexts[rawContext as AccountExperienceContextId];
 }
 
 export const accountUrls = {
@@ -135,6 +124,21 @@ export const accountUrls = {
   callback: `${accountContract.canonicalOrigin}${accountContract.callbackPath}`,
   recovery: `${accountContract.canonicalOrigin}${accountContract.recoveryPath}`,
 } as const;
+
+export function accountRecoveryUrl(contextId: AccountExperienceContextId) {
+  const url = new URL(accountContract.recoveryPath, accountContract.canonicalOrigin);
+  if (contextId !== "website") url.searchParams.set("app", contextId);
+  return url.href;
+}
+
+export function accountConfirmUrl(contextId: AccountExperienceContextId) {
+  if (contextId === "website") return accountUrls.confirm;
+  const context = accountExperienceContexts[contextId];
+  const url = new URL(accountContract.confirmPath, accountContract.canonicalOrigin);
+  url.searchParams.set("app", contextId);
+  url.searchParams.set("returnTo", new URL("/", context.destinationOrigin).href);
+  return url.href;
+}
 
 const TOKEN_QUERY_KEYS = new Set([
   "access_token",

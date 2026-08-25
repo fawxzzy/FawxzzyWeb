@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import {
   accountContract,
   classifyRuntimeOrigin,
-  isLocalAuthTestOrigin,
   resolveAccountExperienceContext,
   sanitizeReturnTarget,
   type AccountExperienceContext,
@@ -24,7 +23,7 @@ import {
   scheduleDeferredAttempt,
   type OneShotAttemptState,
 } from "@/lib/auth/client-lifecycle";
-import { safeAuthError, safeAuthSuccess, type AuthAction } from "@/lib/auth/errors";
+import { safeAuthError, safeAuthSuccess } from "@/lib/auth/errors";
 import {
   resolvePortalAuthAdapter,
   type AdapterResolution,
@@ -36,11 +35,6 @@ import {
   SystemState,
   type SystemStateVariant,
 } from "@/components/system/system-state";
-import {
-  normalizeServiceRegistrationReadModel,
-  resolveServiceRegistrationPresentation,
-  serviceDispositionLabel,
-} from "@/lib/account/service-registration";
 
 type PortalMode = "login" | "account" | "confirm" | "callback" | "reset";
 
@@ -59,9 +53,10 @@ async function settleSignupAttempt(
   email: string,
   password: string,
   username: string,
+  context: AccountExperienceContext,
 ) {
   const [result] = await Promise.allSettled([
-    adapter.signUp(email, password, username),
+    adapter.signUp(email, password, username, context.id),
     new Promise((resolve) => window.setTimeout(resolve, SIGNUP_SETTLEMENT_MINIMUM_MS)),
   ]);
   return result.status === "fulfilled" ? result.value : null;
@@ -108,21 +103,9 @@ function useAccountExperienceContext() {
   return useMemo(() => {
     if (!hydrated) return resolveAccountExperienceContext("website");
     const query = new URLSearchParams(window.location.search);
-    const allowPreviewContexts =
-      isLocalAuthTestOrigin(window.location.origin) && query.has("auth_test");
-    return resolveAccountExperienceContext(query.get("app"), { allowPreviewContexts });
+    const contexts = query.getAll("app");
+    return resolveAccountExperienceContext(contexts.length === 1 ? contexts[0] : null);
   }, [hydrated]);
-}
-
-function useServiceRegistrationPresentation() {
-  const hydrated = useHydrated();
-  return useMemo(
-    () =>
-      hydrated
-        ? resolveServiceRegistrationPresentation(window.location)
-        : normalizeServiceRegistrationReadModel(null),
-    [hydrated],
-  );
 }
 
 function useCooldown(seconds = 5) {
@@ -361,7 +344,13 @@ function LoginPanel({
       if (intent === "signup") {
         // The adapter persists and publishes a real returned session. The notice intentionally
         // makes no claim about whether the provider created an account or returned a session.
-        const session = await settleSignupAttempt(adapter, email, password, submittedUsername);
+        const session = await settleSignupAttempt(
+          adapter,
+          email,
+          password,
+          submittedUsername,
+          context,
+        );
         if (session) {
           const identity = session.displayName || submittedUsername;
           writeRememberedIdentity(identity);
@@ -482,24 +471,26 @@ function LoginPanel({
         </fieldset>
         </form>
       </div>
-      <div className="account-card__links">
-        <button
-          className="account-text-action"
-          onClick={switchIntent}
-          type="button"
-        >
-          {intent === "login" ? "Create account" : "Log in"}
-        </button>
-        {intent === "login" ? (
-          <>
-            <span aria-hidden="true" className="account-link-separator">
-              <span />
-            </span>
-            <a href={contextualPath("/reset-password", context)}>Reset password</a>
-          </>
-        ) : null}
+      <div className="account-auth-secondary">
+        <div className="account-card__links">
+          <button
+            className="account-text-action"
+            onClick={switchIntent}
+            type="button"
+          >
+            {intent === "login" ? "Create account" : "Log in"}
+          </button>
+          {intent === "login" ? (
+            <>
+              <span aria-hidden="true" className="account-link-separator">
+                <span />
+              </span>
+              <a href={contextualPath("/reset-password", context)}>Reset password</a>
+            </>
+          ) : null}
+        </div>
+        <AccountLegalLinks context={context} />
       </div>
-      <AccountLegalLinks context={context} />
       <div className="account-auth-dock">
         <button
           className="catalog-button catalog-button--primary"
@@ -551,136 +542,21 @@ function usePortalSession(adapter: PortalAuthAdapter | null) {
   return { error, loaded, session, setSession };
 }
 
-function ServiceRegistrationPanel() {
-  const snapshot = useServiceRegistrationPresentation();
-  const unresolvedState =
-    snapshot.capability === "available"
-      ? null
-      : snapshot.capability === "unknown"
-        ? {
-            description: "App connections could not be loaded. You can still open each app directly.",
-            title: "Connections are unavailable.",
-            variant: "terminal-error" as const,
-          }
-        : {
-            description: "Connected-app status is not available yet. You can still open each app directly.",
-            title: "Connections are coming soon.",
-            variant: "unavailable" as const,
-          };
-
-  return (
-    <div
-      aria-labelledby="shared-services-title"
-      className="account-settings"
-      data-service-capability={snapshot.capability}
-    >
-      <div className="account-card__heading">
-        <p className="field-label">Apps</p>
-        <h2 id="shared-services-title">Open your apps.</h2>
-        <p>Jump straight to Fitness or Mazer.</p>
-      </div>
-      {unresolvedState ? (
-        <SystemState
-          compact
-          description={unresolvedState.description}
-          framed={false}
-          title={unresolvedState.title}
-          variant={unresolvedState.variant}
-        />
-      ) : null}
-      {snapshot.services.map((service) => (
-        <div
-          className="account-capability"
-          data-service-disposition={service.disposition}
-          data-service-id={service.id}
-          key={service.id}
-        >
-          <div>
-            <p className="field-label">{service.name}</p>
-            <h3>{serviceDispositionLabel(service.disposition)}</h3>
-            <p>{service.summary}</p>
-            <div className="account-card__links">
-              <a href={service.currentDestination} rel="noreferrer">
-                Open {service.name}
-              </a>
-              <span data-service-canonical={service.canonicalDestination} hidden>
-                {new URL(service.canonicalDestination).hostname}
-              </span>
-            </div>
-          </div>
-          <button
-            className="catalog-button catalog-button--disabled"
-            data-service-activation="gated"
-            disabled
-            type="button"
-          >
-            {service.disposition === "active"
-              ? "Connected"
-              : "Not connected"}
-          </button>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function AccountPanel({ resolution }: { resolution: AdapterResolution | null }) {
+function AccountPanel({
+  context,
+  resolution,
+}: {
+  context: AccountExperienceContext;
+  resolution: AdapterResolution | null;
+}) {
   const adapter = adapterFrom(resolution);
   const { error, loaded, session, setSession } = usePortalSession(adapter);
   const [notice, setNotice] = useState<Notice | null>(null);
-  const [busyAction, setBusyAction] = useState<AuthAction | null>(null);
-
-  async function updateEmail(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!adapter || !session?.email) return;
-    const form = new FormData(event.currentTarget);
-    const email = String(form.get("email") ?? "").trim();
-    const currentPassword = String(form.get("current-password") ?? "");
-    setBusyAction("update-email");
-    setNotice(null);
-    try {
-      const reauthenticated = await adapter.signIn(session.email, currentPassword);
-      if (reauthenticated?.userId !== session.userId) throw new Error("Reauthentication failed.");
-      await adapter.updateEmail(email);
-      setSession({ ...session, email });
-      setNotice({ kind: "success", text: safeAuthSuccess("update-email") });
-    } catch {
-      setNotice({ kind: "error", text: safeAuthError("update-email") });
-    } finally {
-      setBusyAction(null);
-    }
-  }
-
-  async function updatePassword(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!adapter || !session?.email) return;
-    const formElement = event.currentTarget;
-    const form = new FormData(formElement);
-    const currentPassword = String(form.get("current-password") ?? "");
-    const password = String(form.get("password") ?? "");
-    const validation = validatePassword(password, "change");
-    if (!validation.valid) {
-      setNotice({ kind: "error", text: validation.message });
-      return;
-    }
-    setBusyAction("update-password");
-    setNotice(null);
-    try {
-      const reauthenticated = await adapter.signIn(session.email, currentPassword);
-      if (reauthenticated?.userId !== session.userId) throw new Error("Reauthentication failed.");
-      await adapter.updatePassword(password);
-      formElement.reset();
-      setNotice({ kind: "success", text: safeAuthSuccess("update-password") });
-    } catch {
-      setNotice({ kind: "error", text: safeAuthError("update-password") });
-    } finally {
-      setBusyAction(null);
-    }
-  }
+  const [busy, setBusy] = useState(false);
 
   async function signOut() {
     if (!adapter) return;
-    setBusyAction("signout");
+    setBusy(true);
     setNotice(null);
     try {
       await adapter.signOut();
@@ -689,115 +565,78 @@ function AccountPanel({ resolution }: { resolution: AdapterResolution | null }) 
     } catch {
       setNotice({ kind: "error", text: safeAuthError("signout") });
     } finally {
-      setBusyAction(null);
+      setBusy(false);
     }
   }
 
   return (
     <section
       aria-labelledby="account-status-title"
-      className="account-card surface-panel"
+      className="account-card account-card--auth account-card--account"
+      data-auth-product={context.id}
       data-auth-surface="account-status"
+      style={{ "--auth-accent": context.accentRgb } as React.CSSProperties}
     >
       <RuntimeNote />
-      <div className="account-card__heading">
-        <p className="field-label">Account access</p>
-        <h2 id="account-status-title">Sign in when you are ready.</h2>
-        <p>Manage your profile and connected apps from one place.</p>
-      </div>
+      <header className="account-auth-intro">
+        <p>{context.productName}</p>
+        <h1 id="account-status-title">Account</h1>
+      </header>
       <SetupState resolution={resolution} />
       {error ? <StatusNotice notice={{ kind: "error", text: safeAuthError("session") }} /> : null}
       <StatusNotice notice={notice} />
-      {adapter && loaded && !session ? (
-        <SystemState
-          actions={
-            <a className="catalog-button catalog-button--primary" href="/login">
-              Sign in
-            </a>
-          }
-          compact
-          description={`This browser has no ${productIdentity.publicName} account session on the current origin.`}
-          framed={false}
-          title="You are signed out here."
-          variant="unauthorized"
-        />
-      ) : null}
-      {session ? (
-        <div className="account-settings">
-          <div className="account-session-row">
-            <div>
-              <span className="field-label">Signed in as</span>
-              <strong>{session.email ?? "Email unavailable"}</strong>
-            </div>
-            <button
-              className="catalog-button catalog-button--secondary"
-              disabled={busyAction !== null}
-              onClick={signOut}
-              type="button"
-            >
-              Sign out here
-            </button>
-          </div>
-          <form className="account-form account-form--compact" onSubmit={updateEmail}>
-            <label>
-              <span>Update email</span>
+      <div className="account-auth-body">
+        {adapter && loaded && session ? (
+          <div className="account-form account-form--auth account-account-fields">
+            <fieldset>
+              <legend><label htmlFor="account-current-username">Username</label></legend>
               <input
-                autoComplete="email"
-                defaultValue={session.email ?? ""}
-                inputMode="email"
+                id="account-current-username"
+                name="username"
+                readOnly
+                type="text"
+                value={session.displayName ?? deriveIdentity(session.email ?? "Account")}
+              />
+            </fieldset>
+            <fieldset>
+              <legend><label htmlFor="account-current-email">Email</label></legend>
+              <input
+                id="account-current-email"
                 name="email"
-                required
+                readOnly
                 type="email"
+                value={session.email ?? "Email unavailable"}
               />
-            </label>
-            <label>
-              <span>Current password</span>
-              <input
-                autoComplete="current-password"
-                name="current-password"
-                required
-                type="password"
-              />
-            </label>
-            <button
-              className="catalog-button catalog-button--secondary"
-              disabled={busyAction !== null}
-              type="submit"
-            >
-              Save email
-            </button>
-          </form>
-          <form className="account-form account-form--compact" onSubmit={updatePassword}>
-            <label>
-              <span>Current password</span>
-              <input
-                autoComplete="current-password"
-                name="current-password"
-                required
-                type="password"
-              />
-            </label>
-            <label>
-              <span>New password</span>
-              <input
-                autoComplete="new-password"
-                minLength={PASSWORD_MINIMUM}
-                name="password"
-                required
-                type="password"
-              />
-            </label>
-            <button
-              className="catalog-button catalog-button--secondary"
-              disabled={busyAction !== null}
-              type="submit"
-            >
-              Save password
-            </button>
-          </form>
+            </fieldset>
+          </div>
+        ) : null}
+      </div>
+      <div className="account-auth-secondary">
+        <div className="account-card__links">
+          <a href={contextualPath("/reset-password", context)}>Reset password</a>
         </div>
-      ) : null}
-      <ServiceRegistrationPanel />
+        <AccountLegalLinks context={context} />
+      </div>
+      <div className={`account-auth-dock${session ? " account-auth-dock--danger" : ""}`}>
+        {session ? (
+          <button
+            className="catalog-button catalog-button--primary"
+            disabled={busy}
+            onClick={signOut}
+            type="button"
+          >
+            {busy ? "Working…" : "Sign out"}
+          </button>
+        ) : loaded ? (
+          <a className="catalog-button catalog-button--primary" href={contextualPath("/login", context)}>
+            Sign in
+          </a>
+        ) : (
+          <button className="catalog-button catalog-button--primary" disabled type="button">
+            Checking…
+          </button>
+        )}
+      </div>
     </section>
   );
 }
@@ -938,7 +777,7 @@ function ResetPanel({
     setInvalidFields(new Set());
     cooldown.start();
     try {
-      await adapter.requestPasswordReset(email);
+      await adapter.requestPasswordReset(email, context.id);
       transient.show({ kind: "success", text: safeAuthSuccess("reset-request") });
     } catch {
       transient.show({ kind: "success", text: safeAuthSuccess("reset-request") });
@@ -1017,10 +856,12 @@ function ResetPanel({
           </form>
         ) : null}
       </div>
-      <div className="account-card__links">
-        <a href={contextualPath("/login", context)}>Log in</a>
+      <div className="account-auth-secondary">
+        <div className="account-card__links">
+          <a href={contextualPath("/login", context)}>Log in</a>
+        </div>
+        <AccountLegalLinks context={context} />
       </div>
-      <AccountLegalLinks context={context} />
       <div className="account-auth-dock">
         <button className="catalog-button catalog-button--primary" disabled={!adapter || busy || cooldown.remaining > 0 || (recovery && !recoveryReady)} form="account-reset-form" type="submit">
           {busy
@@ -1037,9 +878,11 @@ function ResetPanel({
 }
 
 function LinkHandler({
+  context,
   mode,
   resolution,
 }: {
+  context: AccountExperienceContext;
   mode: "callback" | "confirm";
   resolution: AdapterResolution | null;
 }) {
@@ -1167,11 +1010,17 @@ function LinkHandler({
         Continue safely
       </a>
     ) : variant === "pending" ? null : variant === "unavailable" ? (
-      <a className="catalog-button catalog-button--primary" href="/account">
+      <a
+        className="catalog-button catalog-button--primary"
+        href={contextualPath("/account", context)}
+      >
         View account status
       </a>
     ) : (
-      <a className="catalog-button catalog-button--primary" href="/login">
+      <a
+        className="catalog-button catalog-button--primary"
+        href={contextualPath("/login", context)}
+      >
         Start again
       </a>
     );
@@ -1179,6 +1028,7 @@ function LinkHandler({
   return (
     <section
       className="account-card surface-panel"
+      data-auth-product={context.id}
       data-auth-state={variant}
     >
       <RuntimeNote />
@@ -1208,11 +1058,11 @@ export function AccountPortal({ mode }: { mode: PortalMode }) {
     case "login":
       return <LoginPanel context={context} resolution={resolution} />;
     case "account":
-      return <AccountPanel resolution={resolution} />;
+      return <AccountPanel context={context} resolution={resolution} />;
     case "reset":
       return <ResetPanel context={context} resolution={resolution} />;
     case "confirm":
     case "callback":
-      return <LinkHandler mode={mode} resolution={resolution} />;
+      return <LinkHandler context={context} mode={mode} resolution={resolution} />;
   }
 }
