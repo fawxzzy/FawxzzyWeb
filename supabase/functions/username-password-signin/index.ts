@@ -13,12 +13,37 @@ const genericFailure = (origin = "") => new Response(JSON.stringify({ error: "In
   status: 401,
 });
 
+function acceptedPublicKeys() {
+  const keys = new Set<string>();
+  const legacy = Deno.env.get("SUPABASE_ANON_KEY");
+  if (legacy) keys.add(legacy);
+  try {
+    const configured = JSON.parse(Deno.env.get("SUPABASE_PUBLISHABLE_KEYS") ?? "{}");
+    if (Array.isArray(configured)) {
+      for (const value of configured) if (typeof value === "string") keys.add(value);
+    } else if (configured && typeof configured === "object") {
+      for (const value of Object.values(configured)) if (typeof value === "string") keys.add(value);
+    }
+  } catch {
+    // A malformed runtime key map fails closed below.
+  }
+  return keys;
+}
+
+async function sha256(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 Deno.serve(async (request) => {
   const origin = request.headers.get("origin") ?? "";
   if (request.method === "OPTIONS" && ALLOWED_ORIGINS.has(origin)) {
     return new Response(null, { headers: corsHeaders(origin), status: 204 });
   }
   if (request.method !== "POST" || !ALLOWED_ORIGINS.has(origin)) return genericFailure(origin);
+  const requestKey = request.headers.get("apikey") ?? "";
+  if (!requestKey || !acceptedPublicKeys().has(requestKey)) return genericFailure(origin);
   if (!(request.headers.get("content-type") ?? "").toLowerCase().startsWith("application/json")) {
     return genericFailure(origin);
   }
@@ -37,22 +62,18 @@ Deno.serve(async (request) => {
 
     const admin = createClient(url, serviceRole, { auth: { persistSession: false } });
     const normalized = identifier.toLowerCase();
-    const matches: string[] = [];
-    for (let page = 1; page <= 10 && matches.length < 2; page += 1) {
-      const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
-      if (error) return genericFailure(origin);
-      for (const user of data.users) {
-        const metadata = user.user_metadata ?? {};
-        const candidate = [metadata.username, metadata.display_name]
-          .find((value) => typeof value === "string" && value.trim())?.trim().toLowerCase();
-        if (candidate === normalized && user.email) matches.push(user.email);
-      }
-      if (data.users.length < 200) break;
-    }
-    if (matches.length !== 1) return genericFailure(origin);
+    const attemptKey = await sha256(`username:${normalized}`);
+    const { data: userId, error: lookupError } = await admin.rpc("account_resolve_username_signin", {
+      p_attempt_key: attemptKey,
+      p_normalized_username: normalized,
+    });
+    if (lookupError || typeof userId !== "string") return genericFailure(origin);
+    const { data: userResult, error: userError } = await admin.auth.admin.getUserById(userId);
+    const email = userResult?.user?.email;
+    if (userError || !email) return genericFailure(origin);
 
     const auth = createClient(url, anonKey, { auth: { persistSession: false } });
-    const { data, error } = await auth.auth.signInWithPassword({ email: matches[0], password });
+    const { data, error } = await auth.auth.signInWithPassword({ email, password });
     if (error || !data.session) return genericFailure(origin);
     return new Response(JSON.stringify({
       access_token: data.session.access_token,

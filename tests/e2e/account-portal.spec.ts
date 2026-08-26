@@ -973,11 +973,22 @@ test("successful website login records the canonical public destination", async 
 test("username login and autofill styling remain explicit source contracts", async () => {
   const adapterSource = readFileSync(path.resolve("src/lib/auth/browser-adapter.ts"), "utf8");
   const functionSource = readFileSync(path.resolve("supabase/functions/username-password-signin/index.ts"), "utf8");
+  const functionConfig = readFileSync(path.resolve("supabase/config.toml"), "utf8");
+  const migrationSource = readFileSync(
+    path.resolve("supabase/migrations/20260826163000_account_username_signin_index.sql"),
+    "utf8",
+  );
   const styleSource = readFileSync(path.resolve("src/styles/page-families/utility.css"), "utf8");
   expect(adapterSource).toContain('/functions/v1/username-password-signin');
   expect(adapterSource).toContain("client.auth.setSession");
-  expect(functionSource).toContain('matches.length !== 1');
+  expect(functionConfig).toContain("verify_jwt = false");
+  expect(functionSource).toContain('acceptedPublicKeys().has(requestKey)');
+  expect(functionSource).toContain('admin.rpc("account_resolve_username_signin"');
+  expect(functionSource).not.toContain("listUsers");
   expect(functionSource).toContain('Invalid credentials');
+  expect(migrationSource).toContain("normalized_username text not null unique");
+  expect(migrationSource).toContain("current_count > 10");
+  expect(migrationSource).toContain("grant execute on function public.account_resolve_username_signin");
   expect(styleSource).toContain('input:-webkit-autofill');
 });
 

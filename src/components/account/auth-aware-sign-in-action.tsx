@@ -4,8 +4,18 @@ import { useEffect, useSyncExternalStore } from "react";
 import { StaticLink } from "@/components/site/static-link";
 import { accountUrls } from "@/config/account";
 
-const DISPLAY_KEY = "fawxzzy.account.display-authenticated.v1";
+const DISPLAY_KEY = "fawxzzy.account.display-authenticated-until.v1";
 const DISPLAY_EVENT = "fawxzzy-account-display-auth-changed";
+const DISPLAY_TTL_MS = 5 * 60 * 1000;
+
+function hasFreshDisplayMarker() {
+  const expiresAt = Number(window.sessionStorage.getItem(DISPLAY_KEY));
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+    window.sessionStorage.removeItem(DISPLAY_KEY);
+    return false;
+  }
+  return true;
+}
 
 function subscribe(listener: () => void) {
   window.addEventListener(DISPLAY_EVENT, listener);
@@ -19,14 +29,16 @@ function subscribe(listener: () => void) {
 export function AuthAwareSignInAction() {
   const signedIn = useSyncExternalStore(
     subscribe,
-    () => window.localStorage.getItem(DISPLAY_KEY) === "1",
+    hasFreshDisplayMarker,
     () => false,
   );
 
   useEffect(() => {
     const url = new URL(window.location.href);
-    if (url.searchParams.get("signedIn") === "1") window.localStorage.setItem(DISPLAY_KEY, "1");
-    if (url.searchParams.get("signedOut") === "1") window.localStorage.removeItem(DISPLAY_KEY);
+    if (url.searchParams.get("signedIn") === "1") {
+      window.sessionStorage.setItem(DISPLAY_KEY, String(Date.now() + DISPLAY_TTL_MS));
+    }
+    if (url.searchParams.get("signedOut") === "1") window.sessionStorage.removeItem(DISPLAY_KEY);
     if (url.searchParams.has("signedIn") || url.searchParams.has("signedOut")) {
       url.searchParams.delete("signedIn");
       url.searchParams.delete("signedOut");
