@@ -988,6 +988,11 @@ test("username login and autofill styling remain explicit source contracts", asy
   expect(functionSource).toContain("00000000-0000-0000-0000-000000000000");
   expect(functionSource).toContain('Invalid credentials');
   expect(migrationSource).toContain("normalized_username text not null unique");
+  expect(migrationSource).toContain("refresh_username_signin_candidate");
+  expect(migrationSource).toContain("conflicting_user.id <> candidate_user.id");
+  expect(migrationSource).toContain("where claim_count = 1");
+  expect(migrationSource).toContain("after insert or update or delete on auth.users");
+  expect(migrationSource).not.toContain("select id, lower(trim(raw_user_meta_data ->> 'username'))\nfrom auth.users");
   expect(migrationSource).toContain("current_count > 10");
   expect(migrationSource).toContain("client_count > 30");
   expect(migrationSource).toContain("global_count > 500");
