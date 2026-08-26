@@ -95,6 +95,24 @@ redirects must be admitted individually in a future packet; do not add a broad p
   session, cleans the URL to the exact recovery path, and only then exposes password update. A
   missing, invalid, or expired code stays fail-closed unless an existing recovery session is
   already present on the account origin.
+- Email identifiers use Supabase password authentication directly. Username identifiers use the
+  `username-password-signin` Edge Function, which accepts only the canonical account origin,
+  requires the configured public client key, resolves one exact indexed case-insensitive username,
+  and applies durable global, client, and per-identifier attempt windows before calling Auth. Old
+  attempt rows are deleted before admission and the global window bounds storage cardinality. The
+  missing-username path performs the same Admin/Auth operation classes as a resolved username so
+  the response body, status, and downstream call shape remain non-enumerating. The index is maintained
+  from explicit username metadata by a database trigger and rejects duplicate normalized claims.
+  Missing, rate-limited, and incorrect credentials return the same categorical failure. The
+  resolved email never reaches the browser.
+- The public website receives only a one-time `signedIn` or `signedOut` presentation marker on the
+  post-auth return URL. It immediately removes that marker and retains only a five-minute
+  tab-session presentation marker, clearing expired or signed-out state deterministically.
+  No cookie, user identifier, access token, or refresh token crosses the origin boundary; this
+  boolean only hides the redundant home-page Sign in action.
+- Successful website-context login returns to `https://fawxzzy.com/`. A signed-out Account visit
+  routes to the contextual login screen. Successful password replacement clears the recovery
+  session and returns to login.
 
 ## Future target binding packet
 

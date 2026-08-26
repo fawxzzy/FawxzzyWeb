@@ -3,7 +3,7 @@ import { AmbientBrandBackground } from "@/components/ambient/ambient-brand-backg
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
 import { StaticLink } from "@/components/site/static-link";
-import { accountUrls } from "@/config/account";
+import { AuthAwareSignInAction } from "@/components/account/auth-aware-sign-in-action";
 import { productIdentity } from "@/config/product";
 import { tiktokDestination } from "@/data/discovery";
 
@@ -44,12 +44,7 @@ export function StorefrontExperience() {
               >
                 Explore apps
               </StaticLink>
-              <StaticLink
-                className="catalog-button catalog-button--ghost"
-                href={accountUrls.login}
-              >
-                Sign in
-              </StaticLink>
+              <AuthAwareSignInAction />
             </div>
           </div>
           <div className="storefront-hero__artwork">

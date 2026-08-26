@@ -89,8 +89,36 @@ function createSupabaseAdapter(url: string, publishableKey: string): PortalAuthA
       });
       return () => data.subscription.unsubscribe();
     },
-    async signIn(email, password) {
-      const { data, error } = await client.auth.signInWithPassword({ email, password });
+    async signIn(identifier, password) {
+      if (identifier.includes("@")) {
+        const { data, error } = await client.auth.signInWithPassword({ email: identifier, password });
+        if (error) throw error;
+        return toPortalSession(data.session);
+      }
+
+      const response = await fetch(`${url}/functions/v1/username-password-signin`, {
+        body: JSON.stringify({ identifier, password }),
+        headers: {
+          apikey: publishableKey,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+      const payload = await response.json().catch(() => null) as {
+        access_token?: unknown;
+        refresh_token?: unknown;
+      } | null;
+      if (
+        !response.ok
+        || typeof payload?.access_token !== "string"
+        || typeof payload.refresh_token !== "string"
+      ) {
+        throw new Error("Unable to sign in with those credentials.");
+      }
+      const { data, error } = await client.auth.setSession({
+        access_token: payload.access_token,
+        refresh_token: payload.refresh_token,
+      });
       if (error) throw error;
       return toPortalSession(data.session);
     },

@@ -964,6 +964,16 @@
   caret-color: rgb(var(--text));
 }
 
+.account-page--utility .account-form--auth input:-webkit-autofill,
+.account-page--utility .account-form--auth input:-webkit-autofill:hover,
+.account-page--utility .account-form--auth input:-webkit-autofill:focus,
+.account-page--utility .account-form--auth input:autofill {
+  -webkit-text-fill-color: rgb(var(--text));
+  caret-color: rgb(var(--text));
+  box-shadow: 0 0 0 1000px rgb(7 11 9) inset;
+  -webkit-box-shadow: 0 0 0 1000px rgb(7 11 9) inset;
+}
+
 .account-password-toggle {
   position: absolute;
   top: 50%;

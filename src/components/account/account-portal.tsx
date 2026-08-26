@@ -371,6 +371,16 @@ function LoginPanel({
           ? { kind: "success", text: "Signed in on this account origin." }
           : { kind: "error", text: safeAuthError("login") },
       );
+      if (session) {
+        const destinationUrl = new URL("/", context.destinationOrigin);
+        if (context.id === "website") destinationUrl.searchParams.set("signedIn", "1");
+        const destination = destinationUrl.href;
+        if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
+          document.documentElement.dataset.postAuthDestination = destination;
+        } else {
+          window.location.assign(destination);
+        }
+      }
     } catch {
       transient.show({ kind: "error", text: safeAuthError(intent) });
     } finally {
@@ -550,9 +560,15 @@ function AccountPanel({
   resolution: AdapterResolution | null;
 }) {
   const adapter = adapterFrom(resolution);
-  const { error, loaded, session, setSession } = usePortalSession(adapter);
+  const { error, loaded, session } = usePortalSession(adapter);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (adapter && loaded && !session && !error) {
+      window.location.replace(contextualPath("/login", context));
+    }
+  }, [adapter, context, error, loaded, session]);
 
   async function signOut() {
     if (!adapter) return;
@@ -560,8 +576,13 @@ function AccountPanel({
     setNotice(null);
     try {
       await adapter.signOut();
-      setSession(null);
-      setNotice({ kind: "success", text: safeAuthSuccess("signout") });
+      if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
+        window.location.assign(contextualPath("/login", context));
+        return;
+      }
+      const destination = new URL("/", context.destinationOrigin);
+      if (context.id === "website") destination.searchParams.set("signedOut", "1");
+      window.location.assign(destination.href);
     } catch {
       setNotice({ kind: "error", text: safeAuthError("signout") });
     } finally {
@@ -761,8 +782,12 @@ function ResetPanel({
       cooldown.start();
       try {
         await adapter.updatePassword(password);
+        await adapter.signOut();
         formElement.reset();
         transient.show({ kind: "success", text: safeAuthSuccess("reset-complete") });
+        window.setTimeout(() => {
+          window.location.replace(contextualPath("/login", context));
+        }, 700);
       } catch {
         transient.show({ kind: "error", text: safeAuthError("reset-complete") });
       } finally {

@@ -820,13 +820,8 @@ test("registered contexts swap product presentation without changing auth author
 
 test("account status keeps the selected presentation context and safe login path", async ({ page }) => {
   await page.goto("/account?auth_test=success&app=mazer");
-  const panel = page.locator('[data-auth-surface="account-status"][data-auth-product="mazer"]');
-  await expect(panel).toBeVisible();
-  await expect(panel.locator(".account-auth-intro > p")).toHaveText("Mazer");
-  await expect(panel.getByRole("link", { name: "Sign in" })).toHaveAttribute(
-    "href",
-    "/login?app=mazer",
-  );
+  await expect(page).toHaveURL(/\/login\?app=mazer$/);
+  await expect(page.locator('[data-auth-surface="credentials"][data-auth-product="mazer"]')).toBeVisible();
 });
 
 test("account status does not offer sign in before session loading settles", async ({ page }) => {
@@ -962,7 +957,61 @@ test("account status copies the compact Mazer hierarchy without unfinished servi
   expect(Math.round(dockBox!.y - (secondaryBox!.y + secondaryBox!.height))).toBe(16);
 
   await page.getByRole("button", { name: "Sign out" }).click();
-  await expect(page.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login");
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole("heading", { name: "Welcome" })).toBeVisible();
+});
+
+test("successful website login records the canonical public destination", async ({ page }) => {
+  await page.goto("/login?auth_test=success");
+  await page.getByLabel("Email or username").fill("fawxzzy");
+  await page.getByLabel("Password", { exact: true }).fill("short");
+  await page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" }).click();
+  await expect.poll(() => page.locator("html").getAttribute("data-post-auth-destination"))
+    .toBe("https://fawxzzy.com/?signedIn=1");
+});
+
+test("username login and autofill styling remain explicit source contracts", async () => {
+  const adapterSource = readFileSync(path.resolve("src/lib/auth/browser-adapter.ts"), "utf8");
+  const functionSource = readFileSync(path.resolve("supabase/functions/username-password-signin/index.ts"), "utf8");
+  const functionConfig = readFileSync(path.resolve("supabase/config.toml"), "utf8");
+  const migrationSource = readFileSync(
+    path.resolve("supabase/migrations/20260826163000_account_username_signin_index.sql"),
+    "utf8",
+  );
+  const styleSource = readFileSync(path.resolve("src/styles/page-families/utility.css"), "utf8");
+  expect(adapterSource).toContain('/functions/v1/username-password-signin');
+  expect(adapterSource).toContain("client.auth.setSession");
+  expect(functionConfig).toContain("verify_jwt = false");
+  expect(functionSource).toContain('acceptedPublicKeys().has(requestKey)');
+  expect(functionSource).toContain('admin.rpc("account_resolve_username_signin"');
+  expect(functionSource).not.toContain("listUsers");
+  expect(functionSource).toContain("00000000-0000-0000-0000-000000000000");
+  expect(functionSource).toContain('Invalid credentials');
+  expect(migrationSource).toContain("normalized_username text not null unique");
+  expect(migrationSource).toContain("current_count > 10");
+  expect(migrationSource).toContain("client_count > 30");
+  expect(migrationSource).toContain("global_count > 500");
+  expect(migrationSource).toContain("delete from account_private.username_signin_attempts");
+  expect(migrationSource).toContain("grant execute on function public.account_resolve_username_signin");
+  expect(styleSource).toContain('input:-webkit-autofill');
+});
+
+test("the website sign-in presentation marker expires while an idle tab remains open", async ({ page }) => {
+  await page.addInitScript(() => {
+    let now = 1_000;
+    Date.now = () => now;
+    Object.defineProperty(window, "__advanceDisplayClock", {
+      value: (milliseconds: number) => { now += milliseconds; },
+    });
+  });
+  await page.goto("/?signedIn=1");
+  await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
+  await page.evaluate(() => {
+    (window as typeof window & { __advanceDisplayClock(milliseconds: number): void })
+      .__advanceDisplayClock(5 * 60 * 1000 + 1);
+    window.dispatchEvent(new Event("focus"));
+  });
+  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
 });
 
 test("recovery exchanges PKCE before exposing the password form", async ({ browserName, page }) => {
