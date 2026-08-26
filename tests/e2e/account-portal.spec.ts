@@ -820,13 +820,8 @@ test("registered contexts swap product presentation without changing auth author
 
 test("account status keeps the selected presentation context and safe login path", async ({ page }) => {
   await page.goto("/account?auth_test=success&app=mazer");
-  const panel = page.locator('[data-auth-surface="account-status"][data-auth-product="mazer"]');
-  await expect(panel).toBeVisible();
-  await expect(panel.locator(".account-auth-intro > p")).toHaveText("Mazer");
-  await expect(panel.getByRole("link", { name: "Sign in" })).toHaveAttribute(
-    "href",
-    "/login?app=mazer",
-  );
+  await expect(page).toHaveURL(/\/login\?app=mazer$/);
+  await expect(page.locator('[data-auth-surface="credentials"][data-auth-product="mazer"]')).toBeVisible();
 });
 
 test("account status does not offer sign in before session loading settles", async ({ page }) => {
@@ -962,7 +957,28 @@ test("account status copies the compact Mazer hierarchy without unfinished servi
   expect(Math.round(dockBox!.y - (secondaryBox!.y + secondaryBox!.height))).toBe(16);
 
   await page.getByRole("button", { name: "Sign out" }).click();
-  await expect(page.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login");
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByRole("heading", { name: "Welcome" })).toBeVisible();
+});
+
+test("successful website login records the canonical public destination", async ({ page }) => {
+  await page.goto("/login?auth_test=success");
+  await page.getByLabel("Email or username").fill("fawxzzy");
+  await page.getByLabel("Password", { exact: true }).fill("short");
+  await page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" }).click();
+  await expect.poll(() => page.locator("html").getAttribute("data-post-auth-destination"))
+    .toBe("https://fawxzzy.com/?signedIn=1");
+});
+
+test("username login and autofill styling remain explicit source contracts", async () => {
+  const adapterSource = readFileSync(path.resolve("src/lib/auth/browser-adapter.ts"), "utf8");
+  const functionSource = readFileSync(path.resolve("supabase/functions/username-password-signin/index.ts"), "utf8");
+  const styleSource = readFileSync(path.resolve("src/styles/page-families/utility.css"), "utf8");
+  expect(adapterSource).toContain('/functions/v1/username-password-signin');
+  expect(adapterSource).toContain("client.auth.setSession");
+  expect(functionSource).toContain('matches.length !== 1');
+  expect(functionSource).toContain('Invalid credentials');
+  expect(styleSource).toContain('input:-webkit-autofill');
 });
 
 test("recovery exchanges PKCE before exposing the password form", async ({ browserName, page }) => {
