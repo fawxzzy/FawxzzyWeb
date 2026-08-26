@@ -62,19 +62,26 @@ Deno.serve(async (request) => {
 
     const admin = createClient(url, serviceRole, { auth: { persistSession: false } });
     const normalized = identifier.toLowerCase();
+    const clientAddress = request.headers.get("cf-connecting-ip")
+      ?? request.headers.get("x-forwarded-for")?.split(",", 1)[0]?.trim()
+      ?? "unknown";
     const attemptKey = await sha256(`username:${normalized}`);
+    const clientAttemptKey = await sha256(`client:${clientAddress}`);
     const { data: userId, error: lookupError } = await admin.rpc("account_resolve_username_signin", {
       p_attempt_key: attemptKey,
+      p_client_attempt_key: clientAttemptKey,
       p_normalized_username: normalized,
     });
-    if (lookupError || typeof userId !== "string") return genericFailure(origin);
-    const { data: userResult, error: userError } = await admin.auth.admin.getUserById(userId);
-    const email = userResult?.user?.email;
-    if (userError || !email) return genericFailure(origin);
+    const resolvedUserId = !lookupError && typeof userId === "string"
+      ? userId
+      : "00000000-0000-0000-0000-000000000000";
+    const { data: userResult } = await admin.auth.admin.getUserById(resolvedUserId);
+    const resolvedEmail = userResult?.user?.email;
+    const email = resolvedEmail ?? "invalid-login@invalid.fawxzzy.local";
 
     const auth = createClient(url, anonKey, { auth: { persistSession: false } });
     const { data, error } = await auth.auth.signInWithPassword({ email, password });
-    if (error || !data.session) return genericFailure(origin);
+    if (lookupError || !resolvedEmail || error || !data.session) return genericFailure(origin);
     return new Response(JSON.stringify({
       access_token: data.session.access_token,
       refresh_token: data.session.refresh_token,

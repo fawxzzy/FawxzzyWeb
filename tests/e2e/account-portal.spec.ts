@@ -985,11 +985,33 @@ test("username login and autofill styling remain explicit source contracts", asy
   expect(functionSource).toContain('acceptedPublicKeys().has(requestKey)');
   expect(functionSource).toContain('admin.rpc("account_resolve_username_signin"');
   expect(functionSource).not.toContain("listUsers");
+  expect(functionSource).toContain("00000000-0000-0000-0000-000000000000");
   expect(functionSource).toContain('Invalid credentials');
   expect(migrationSource).toContain("normalized_username text not null unique");
   expect(migrationSource).toContain("current_count > 10");
+  expect(migrationSource).toContain("client_count > 30");
+  expect(migrationSource).toContain("global_count > 500");
+  expect(migrationSource).toContain("delete from account_private.username_signin_attempts");
   expect(migrationSource).toContain("grant execute on function public.account_resolve_username_signin");
   expect(styleSource).toContain('input:-webkit-autofill');
+});
+
+test("the website sign-in presentation marker expires while an idle tab remains open", async ({ page }) => {
+  await page.addInitScript(() => {
+    let now = 1_000;
+    Date.now = () => now;
+    Object.defineProperty(window, "__advanceDisplayClock", {
+      value: (milliseconds: number) => { now += milliseconds; },
+    });
+  });
+  await page.goto("/?signedIn=1");
+  await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
+  await page.evaluate(() => {
+    (window as typeof window & { __advanceDisplayClock(milliseconds: number): void })
+      .__advanceDisplayClock(5 * 60 * 1000 + 1);
+    window.dispatchEvent(new Event("focus"));
+  });
+  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
 });
 
 test("recovery exchanges PKCE before exposing the password form", async ({ browserName, page }) => {

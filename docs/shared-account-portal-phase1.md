@@ -98,7 +98,10 @@ redirects must be admitted individually in a future packet; do not add a broad p
 - Email identifiers use Supabase password authentication directly. Username identifiers use the
   `username-password-signin` Edge Function, which accepts only the canonical account origin,
   requires the configured public client key, resolves one exact indexed case-insensitive username,
-  and applies a durable per-identifier attempt window before calling Auth. The index is maintained
+  and applies durable global, client, and per-identifier attempt windows before calling Auth. Old
+  attempt rows are deleted before admission and the global window bounds storage cardinality. The
+  missing-username path performs the same Admin/Auth operation classes as a resolved username so
+  the response body, status, and downstream call shape remain non-enumerating. The index is maintained
   from explicit username metadata by a database trigger and rejects duplicate normalized claims.
   Missing, rate-limited, and incorrect credentials return the same categorical failure. The
   resolved email never reaches the browser.

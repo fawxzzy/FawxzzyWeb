@@ -18,11 +18,38 @@ function hasFreshDisplayMarker() {
 }
 
 function subscribe(listener: () => void) {
-  window.addEventListener(DISPLAY_EVENT, listener);
-  window.addEventListener("storage", listener);
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const scheduleExpiry = () => {
+    if (timer) clearTimeout(timer);
+    const expiresAt = Number(window.sessionStorage.getItem(DISPLAY_KEY));
+    const remaining = Number.isFinite(expiresAt) ? expiresAt - Date.now() : 0;
+    if (remaining <= 0) {
+      window.sessionStorage.removeItem(DISPLAY_KEY);
+      return;
+    }
+    timer = setTimeout(() => {
+      window.sessionStorage.removeItem(DISPLAY_KEY);
+      listener();
+    }, remaining);
+  };
+  const handleChange = () => {
+    scheduleExpiry();
+    listener();
+  };
+  const handleVisibility = () => {
+    if (document.visibilityState === "visible") handleChange();
+  };
+  window.addEventListener(DISPLAY_EVENT, handleChange);
+  window.addEventListener("storage", handleChange);
+  window.addEventListener("focus", handleChange);
+  document.addEventListener("visibilitychange", handleVisibility);
+  scheduleExpiry();
   return () => {
-    window.removeEventListener(DISPLAY_EVENT, listener);
-    window.removeEventListener("storage", listener);
+    if (timer) clearTimeout(timer);
+    window.removeEventListener(DISPLAY_EVENT, handleChange);
+    window.removeEventListener("storage", handleChange);
+    window.removeEventListener("focus", handleChange);
+    document.removeEventListener("visibilitychange", handleVisibility);
   };
 }
 
