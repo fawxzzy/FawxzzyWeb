@@ -18,6 +18,10 @@ security definer
 set search_path = pg_catalog, account_private
 as $$
 begin
+  perform pg_advisory_xact_lock(
+    hashtextextended('account_username:' || candidate, 0)
+  );
+
   delete from account_private.username_signin_index
   where normalized_username = candidate;
 
@@ -46,6 +50,7 @@ as $$
 declare
   old_candidate text;
   new_candidate text;
+  lock_candidate text;
 begin
   if tg_op <> 'INSERT' then
     old_candidate := lower(trim(coalesce(old.raw_user_meta_data ->> 'username', '')));
@@ -53,6 +58,21 @@ begin
   if tg_op <> 'DELETE' then
     new_candidate := lower(trim(coalesce(new.raw_user_meta_data ->> 'username', '')));
   end if;
+
+  -- Acquire every candidate lock in lexical order before reconciliation. This
+  -- serializes identical claims and prevents old/new username swaps from
+  -- deadlocking while refresh_username_signin_candidate re-enters each lock.
+  for lock_candidate in
+    select candidate
+    from unnest(array[old_candidate, new_candidate]) candidate
+    where candidate ~ '^[a-z0-9._-]{2,15}$'
+    group by candidate
+    order by candidate
+  loop
+    perform pg_advisory_xact_lock(
+      hashtextextended('account_username:' || lock_candidate, 0)
+    );
+  end loop;
 
   if old_candidate ~ '^[a-z0-9._-]{2,15}$' then
     perform account_private.refresh_username_signin_candidate(old_candidate);

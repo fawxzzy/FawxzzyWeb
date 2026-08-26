@@ -105,6 +105,8 @@ redirects must be admitted individually in a future packet; do not add a broad p
   from explicit username metadata by a database trigger. A normalized username is indexed only
   while exactly one Auth user claims it; pre-existing or newly introduced ambiguous claims remain
   email-only until the metadata conflict is resolved, without silently changing or merging users.
+  Candidate-scoped transaction locks serialize concurrent claims, and multi-candidate updates take
+  those locks in lexical order so simultaneous claims cannot abort Auth writes or deadlock swaps.
   Missing, ambiguous, rate-limited, and incorrect credentials return the same categorical failure. The
   resolved email never reaches the browser.
 - The public website receives only a one-time `signedIn` or `signedOut` presentation marker on the
