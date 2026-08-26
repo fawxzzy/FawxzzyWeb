@@ -835,6 +835,15 @@ test("account status does not offer sign in before session loading settles", asy
   await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
 });
 
+test("account status exits checking when account service configuration is unavailable", async ({
+  page,
+}) => {
+  await page.goto("/account");
+  await expect(page.getByRole("button", { name: "Unavailable" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Checking…" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
+});
+
 test("short create-account viewports can scroll fields above the fixed action rails", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 600 });
   await page.goto("/login?auth_test=success");
