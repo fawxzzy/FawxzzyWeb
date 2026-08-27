@@ -988,12 +988,76 @@ test("username login and autofill styling remain explicit source contracts", asy
   expect(functionSource).toContain("00000000-0000-0000-0000-000000000000");
   expect(functionSource).toContain('Invalid credentials');
   expect(migrationSource).toContain("normalized_username text not null unique");
+  expect(migrationSource).toContain("refresh_username_signin_candidate");
+  expect(migrationSource).toContain("conflicting_user.id <> candidate_user.id");
+  expect(migrationSource).toContain("where claim_count = 1");
+  expect(migrationSource).toContain("pg_advisory_xact_lock");
+  expect(migrationSource).toContain("order by candidate");
+  expect(migrationSource.indexOf("pg_advisory_xact_lock")).toBeLessThan(
+    migrationSource.indexOf("delete from account_private.username_signin_index"),
+  );
+  expect(migrationSource).toContain("after insert or update or delete on auth.users");
+  expect(migrationSource).not.toContain("select id, lower(trim(raw_user_meta_data ->> 'username'))\nfrom auth.users");
   expect(migrationSource).toContain("current_count > 10");
   expect(migrationSource).toContain("client_count > 30");
   expect(migrationSource).toContain("global_count > 500");
   expect(migrationSource).toContain("delete from account_private.username_signin_attempts");
   expect(migrationSource).toContain("grant execute on function public.account_resolve_username_signin");
   expect(styleSource).toContain('input:-webkit-autofill');
+});
+
+test("serialized duplicate username reconciliation keeps both users and restores unique claims", async () => {
+  const claims = new Map<string, string>();
+  const index = new Map<string, string>();
+  const lockTails = new Map<string, Promise<void>>();
+
+  const withCandidateLock = async (candidate: string, operation: () => Promise<void>) => {
+    const previous = lockTails.get(candidate) ?? Promise.resolve();
+    let release = () => {};
+    const current = new Promise<void>((resolve) => { release = resolve; });
+    lockTails.set(candidate, previous.then(() => current));
+    await previous;
+    try {
+      await operation();
+    } finally {
+      release();
+    }
+  };
+  const reconcileWhileLocked = (candidate: string) => {
+    index.delete(candidate);
+    const owners = [...claims].filter(([, claim]) => claim === candidate);
+    if (owners.length === 1) index.set(candidate, owners[0][0]);
+  };
+  const withCandidateLocks = async (
+    candidates: string[],
+    operation: () => Promise<void>,
+    offset = 0,
+  ): Promise<void> => {
+    if (offset === candidates.length) return operation();
+    return withCandidateLock(
+      candidates[offset],
+      () => withCandidateLocks(candidates, operation, offset + 1),
+    );
+  };
+  const setClaim = async (userId: string, candidate: string) => {
+    const oldCandidate = claims.get(userId);
+    const candidates = [...new Set([oldCandidate, candidate].filter(Boolean) as string[])].sort();
+    await withCandidateLocks(candidates, async () => {
+      claims.set(userId, candidate);
+      for (const changedCandidate of candidates) reconcileWhileLocked(changedCandidate);
+    });
+  };
+
+  await Promise.all([
+    setClaim("user-a", "shared"),
+    setClaim("user-b", "shared"),
+  ]);
+  expect([...claims.keys()].sort()).toEqual(["user-a", "user-b"]);
+  expect(index.has("shared")).toBe(false);
+
+  await setClaim("user-b", "other");
+  expect(index.get("shared")).toBe("user-a");
+  expect(index.get("other")).toBe("user-b");
 });
 
 test("the website sign-in presentation marker expires while an idle tab remains open", async ({ page }) => {

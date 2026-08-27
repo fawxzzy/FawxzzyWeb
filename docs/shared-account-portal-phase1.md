@@ -102,8 +102,12 @@ redirects must be admitted individually in a future packet; do not add a broad p
   attempt rows are deleted before admission and the global window bounds storage cardinality. The
   missing-username path performs the same Admin/Auth operation classes as a resolved username so
   the response body, status, and downstream call shape remain non-enumerating. The index is maintained
-  from explicit username metadata by a database trigger and rejects duplicate normalized claims.
-  Missing, rate-limited, and incorrect credentials return the same categorical failure. The
+  from explicit username metadata by a database trigger. A normalized username is indexed only
+  while exactly one Auth user claims it; pre-existing or newly introduced ambiguous claims remain
+  email-only until the metadata conflict is resolved, without silently changing or merging users.
+  Candidate-scoped transaction locks serialize concurrent claims, and multi-candidate updates take
+  those locks in lexical order so simultaneous claims cannot abort Auth writes or deadlock swaps.
+  Missing, ambiguous, rate-limited, and incorrect credentials return the same categorical failure. The
   resolved email never reaches the browser.
 - The public website receives only a one-time `signedIn` or `signedOut` presentation marker on the
   post-auth return URL. It immediately removes that marker and retains only a five-minute

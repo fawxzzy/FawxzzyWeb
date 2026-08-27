@@ -11,6 +11,36 @@ create table if not exists account_private.username_signin_index (
 revoke all on table account_private.username_signin_index from public, anon, authenticated;
 grant select, insert, update, delete on table account_private.username_signin_index to service_role;
 
+create or replace function account_private.refresh_username_signin_candidate(candidate text)
+returns void
+language plpgsql
+security definer
+set search_path = pg_catalog, account_private
+as $$
+begin
+  perform pg_advisory_xact_lock(
+    hashtextextended('account_username:' || candidate, 0)
+  );
+
+  delete from account_private.username_signin_index
+  where normalized_username = candidate;
+
+  insert into account_private.username_signin_index (user_id, normalized_username, updated_at)
+  select candidate_user.id, candidate, now()
+  from auth.users candidate_user
+  where lower(trim(coalesce(candidate_user.raw_user_meta_data ->> 'username', ''))) = candidate
+    and not exists (
+      select 1
+      from auth.users conflicting_user
+      where conflicting_user.id <> candidate_user.id
+        and lower(trim(coalesce(conflicting_user.raw_user_meta_data ->> 'username', ''))) = candidate
+    );
+end;
+$$;
+
+revoke execute on function account_private.refresh_username_signin_candidate(text)
+  from public, anon, authenticated;
+
 create or replace function account_private.sync_username_signin_index()
 returns trigger
 language plpgsql
@@ -18,35 +48,64 @@ security definer
 set search_path = pg_catalog, account_private
 as $$
 declare
-  candidate text;
+  old_candidate text;
+  new_candidate text;
+  lock_candidate text;
 begin
-  candidate := lower(trim(coalesce(new.raw_user_meta_data ->> 'username', '')));
-  if candidate ~ '^[a-z0-9._-]{2,15}$' then
-    insert into account_private.username_signin_index (user_id, normalized_username, updated_at)
-    values (new.id, candidate, now())
-    on conflict (user_id) do update
-      set normalized_username = excluded.normalized_username,
-          updated_at = excluded.updated_at;
-  else
-    delete from account_private.username_signin_index where user_id = new.id;
+  if tg_op <> 'INSERT' then
+    old_candidate := lower(trim(coalesce(old.raw_user_meta_data ->> 'username', '')));
   end if;
-  return new;
+  if tg_op <> 'DELETE' then
+    new_candidate := lower(trim(coalesce(new.raw_user_meta_data ->> 'username', '')));
+  end if;
+
+  -- Acquire every candidate lock in lexical order before reconciliation. This
+  -- serializes identical claims and prevents old/new username swaps from
+  -- deadlocking while refresh_username_signin_candidate re-enters each lock.
+  for lock_candidate in
+    select candidate
+    from unnest(array[old_candidate, new_candidate]) candidate
+    where candidate ~ '^[a-z0-9._-]{2,15}$'
+    group by candidate
+    order by candidate
+  loop
+    perform pg_advisory_xact_lock(
+      hashtextextended('account_username:' || lock_candidate, 0)
+    );
+  end loop;
+
+  if old_candidate ~ '^[a-z0-9._-]{2,15}$' then
+    perform account_private.refresh_username_signin_candidate(old_candidate);
+  end if;
+  if new_candidate ~ '^[a-z0-9._-]{2,15}$'
+     and new_candidate is distinct from old_candidate then
+    perform account_private.refresh_username_signin_candidate(new_candidate);
+  end if;
+  return coalesce(new, old);
 end;
 $$;
 
 revoke execute on function account_private.sync_username_signin_index() from public, anon, authenticated;
 
 insert into account_private.username_signin_index (user_id, normalized_username)
-select id, lower(trim(raw_user_meta_data ->> 'username'))
-from auth.users
-where lower(trim(coalesce(raw_user_meta_data ->> 'username', ''))) ~ '^[a-z0-9._-]{2,15}$'
+select user_id, normalized_username
+from (
+  select id as user_id,
+         lower(trim(raw_user_meta_data ->> 'username')) as normalized_username,
+         count(*) over (
+           partition by lower(trim(raw_user_meta_data ->> 'username'))
+         ) as claim_count
+  from auth.users
+  where lower(trim(coalesce(raw_user_meta_data ->> 'username', ''))) ~ '^[a-z0-9._-]{2,15}$'
+) candidates
+where claim_count = 1
 on conflict (user_id) do update
   set normalized_username = excluded.normalized_username,
       updated_at = now();
 
 drop trigger if exists sync_username_signin_index on auth.users;
 create trigger sync_username_signin_index
-after insert or update of raw_user_meta_data on auth.users
+after insert or update or delete on auth.users
 for each row execute function account_private.sync_username_signin_index();
 
 create table if not exists account_private.username_signin_attempts (
