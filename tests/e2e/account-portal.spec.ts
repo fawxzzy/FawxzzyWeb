@@ -782,7 +782,55 @@ test("auth fields use the canonical Fitness text and spacing contract", async ({
     await expect(field).toHaveCSS("font-size", "14px");
     await expect(field).toHaveCSS("line-height", "20px");
     await expect(field).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-    await expect(field).toHaveCSS("padding-left", "18px");
+    await expect(field).toHaveCSS("padding-left", "54px");
+    await expect(field).toHaveCSS("padding-right", "54px");
+    await expect(field).toHaveCSS("text-align", "center");
+  }
+});
+
+test("every account surface shares the anchored intro, centered fields, and dock rail", async ({ page }) => {
+  const surfaces = [
+    { path: "/login?auth_test=success", surface: "credentials" },
+    { path: "/reset-password?auth_test=success", surface: "recovery" },
+    { path: "/account?auth_test=session", surface: "account-status" },
+  ] as const;
+
+  for (const { path, surface } of surfaces) {
+    await page.goto(path);
+    const card = page.locator(`[data-auth-surface="${surface}"]`);
+    const intro = card.locator(".account-auth-intro");
+    const secondary = card.locator(".account-auth-secondary");
+    const dock = card.locator(".account-auth-dock .catalog-button");
+
+    await expect(intro).toHaveCSS("flex-grow", "0");
+    await expect(intro).toHaveCSS("flex-shrink", "0");
+
+    const cardBox = await card.boundingBox();
+    const introBox = await intro.boundingBox();
+    const secondaryBox = await secondary.boundingBox();
+    const dockBox = await dock.boundingBox();
+    expect(cardBox).not.toBeNull();
+    expect(introBox).not.toBeNull();
+    expect(secondaryBox).not.toBeNull();
+    expect(dockBox).not.toBeNull();
+    expect(Math.round(introBox!.y - cardBox!.y)).toBe(0);
+    expect(Math.round(dockBox!.y - (secondaryBox!.y + secondaryBox!.height))).toBe(16);
+
+    for (const field of await card.locator("input").all()) {
+      await expect(field).toHaveCSS("padding-left", "54px");
+      await expect(field).toHaveCSS("padding-right", "54px");
+      await expect(field).toHaveCSS("text-align", "center");
+    }
+  }
+
+  await page.goto("/login?auth_test=success");
+  await page.getByRole("button", { name: "Create account" }).click();
+  const signupCard = page.locator('[data-auth-surface="credentials"]');
+  await expect(signupCard.getByRole("heading", { name: "Create account" })).toBeVisible();
+  for (const field of await signupCard.locator("input").all()) {
+    await expect(field).toHaveCSS("padding-left", "54px");
+    await expect(field).toHaveCSS("padding-right", "54px");
+    await expect(field).toHaveCSS("text-align", "center");
   }
 });
 
