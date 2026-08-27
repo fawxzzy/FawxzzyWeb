@@ -984,15 +984,6 @@
   height: 0;
 }
 
-.account-page--utility .account-form--auth input::-webkit-contacts-auto-fill-button,
-.account-page--utility .account-form--auth input::-webkit-credentials-auto-fill-button {
-  position: absolute;
-  right: 0;
-  display: none !important;
-  visibility: hidden;
-  pointer-events: none;
-}
-
 .account-page--utility .account-form--auth input:-webkit-autofill,
 .account-page--utility .account-form--auth input:-webkit-autofill:hover,
 .account-page--utility .account-form--auth input:-webkit-autofill:focus,

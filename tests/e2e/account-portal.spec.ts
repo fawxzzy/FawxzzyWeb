@@ -1268,6 +1268,8 @@ test("username login and autofill styling remain explicit source contracts", asy
     "existing exposed-schema setting before the Edge Function is activated",
   );
   expect(styleSource).toContain('input:-webkit-autofill');
+  expect(styleSource).not.toContain("::-webkit-credentials-auto-fill-button");
+  expect(styleSource).not.toContain("::-webkit-contacts-auto-fill-button");
 });
 
 test("username resolver transport requests a plural response and fails closed on malformed shapes", async () => {
