@@ -10,6 +10,7 @@ import {
 } from "@/lib/analytics/contract";
 
 const endpoint = process.env.NEXT_PUBLIC_FAWXZZY_ANALYTICS_URL;
+const analyticsOrigins = new Set(["https://fawxzzy.com", "https://www.fawxzzy.com"]);
 
 function emit(payload: AnalyticsEnvelope) {
   if (!endpoint) return;
@@ -41,7 +42,7 @@ function analyticsEnvelope(event: AnalyticsEnvelope["event"], target?: Element) 
 
 export function FirstPartyAnalytics() {
   useEffect(() => {
-    if (!endpoint) return;
+    if (!endpoint || !analyticsOrigins.has(window.location.origin)) return;
 
     const url = new URL(window.location.href);
     const compatibility = parseCompatibilitySource(url.searchParams.get("compatibility"));
