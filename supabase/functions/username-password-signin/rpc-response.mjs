@@ -6,11 +6,11 @@ export async function resolveUsernameSignInRpc({ args, fetchImpl, serviceRole, u
       body: JSON.stringify(args),
       headers: {
         Accept: "application/json",
-        "Accept-Profile": "account_private",
+        "Accept-Profile": "public",
         apikey: serviceRole,
         Authorization: `Bearer ${serviceRole}`,
         "Content-Type": "application/json",
-        "Content-Profile": "account_private",
+        "Content-Profile": "public",
       },
       method: "POST",
       redirect: "error",
