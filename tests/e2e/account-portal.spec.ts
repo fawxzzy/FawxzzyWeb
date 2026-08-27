@@ -982,6 +982,10 @@ test("username login and autofill styling remain explicit source contracts", asy
     path.resolve("supabase/migrations/20260826163000_account_username_signin_index.sql"),
     "utf8",
   );
+  const responseMigrationSource = readFileSync(
+    path.resolve("supabase/migrations/20260827053000_account_username_signin_rpc_response.sql"),
+    "utf8",
+  );
   const styleSource = readFileSync(path.resolve("src/styles/page-families/utility.css"), "utf8");
   expect(adapterSource).toContain('/functions/v1/username-password-signin');
   expect(adapterSource).toContain("client.auth.setSession");
@@ -990,7 +994,10 @@ test("username login and autofill styling remain explicit source contracts", asy
   expect(functionSource).toContain('/auth/v1/settings');
   expect(functionSource).toContain('headers: { apikey: candidate }');
   expect(functionSource).not.toContain('Authorization: `Bearer ${requestKey}`');
-  expect(functionSource).toContain('admin.rpc("account_resolve_username_signin"');
+  expect(functionSource).toContain('admin.rpc("account_resolve_username_signin_v2"');
+  expect(functionSource).toContain("Array.isArray(lookupRows)");
+  expect(functionSource).toContain("lookupRows.length === 1");
+  expect(functionSource).toContain("lookupRows[0]?.resolved_user_id");
   expect(functionSource).not.toContain("listUsers");
   expect(functionSource).toContain("00000000-0000-0000-0000-000000000000");
   expect(functionSource).toContain('Invalid credentials');
@@ -1010,6 +1017,10 @@ test("username login and autofill styling remain explicit source contracts", asy
   expect(migrationSource).toContain("global_count > 500");
   expect(migrationSource).toContain("delete from account_private.username_signin_attempts");
   expect(migrationSource).toContain("grant execute on function public.account_resolve_username_signin");
+  expect(responseMigrationSource).toContain("returns table (resolved_user_id uuid)");
+  expect(responseMigrationSource).toContain("return query");
+  expect(responseMigrationSource).toContain("grant execute on function public.account_resolve_username_signin_v2");
+  expect(responseMigrationSource).not.toContain("returns uuid");
   expect(styleSource).toContain('input:-webkit-autofill');
 });
 

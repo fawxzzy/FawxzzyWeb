@@ -81,13 +81,16 @@ Deno.serve(async (request) => {
       ?? "unknown";
     const attemptKey = await sha256(`username:${normalized}`);
     const clientAttemptKey = await sha256(`client:${clientAddress}`);
-    const { data: userId, error: lookupError } = await admin.rpc("account_resolve_username_signin", {
+    const { data: lookupRows, error: lookupError } = await admin.rpc("account_resolve_username_signin_v2", {
       p_attempt_key: attemptKey,
       p_client_attempt_key: clientAttemptKey,
       p_normalized_username: normalized,
     });
-    const resolvedUserId = !lookupError && typeof userId === "string"
-      ? userId
+    const resolvedUserId = !lookupError
+        && Array.isArray(lookupRows)
+        && lookupRows.length === 1
+        && typeof lookupRows[0]?.resolved_user_id === "string"
+      ? lookupRows[0].resolved_user_id
       : "00000000-0000-0000-0000-000000000000";
     const { data: userResult } = await admin.auth.admin.getUserById(resolvedUserId);
     const resolvedEmail = userResult?.user?.email;
