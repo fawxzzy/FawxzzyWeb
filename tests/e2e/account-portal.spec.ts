@@ -1094,9 +1094,18 @@ test("username resolver transport requests a plural response and fails closed on
     "Content-Type": "application/json",
   });
   expect(request.init?.body).toBe(JSON.stringify(args));
+  expect(request.init?.redirect).toBe("error");
 
   const respond = (body: unknown, status = 200) => async () =>
     new Response(JSON.stringify(body), { status });
+  const postgresCanonicalUuid = "01890f8a-7b3c-7def-f123-abcdefabcdef";
+  await expect(resolveUsernameSignInRpc({
+    args,
+    fetchImpl: respond([{ resolved_user_id: postgresCanonicalUuid }], 200),
+    serviceRole,
+    url,
+  })).resolves.toBe(postgresCanonicalUuid);
+
   for (const fetchResponse of [
     respond([], 200),
     respond([{ resolved_user_id: resolved }, { resolved_user_id: resolved }], 200),
