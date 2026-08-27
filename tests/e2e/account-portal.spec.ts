@@ -732,13 +732,17 @@ test("login accepts a legacy short password and maps adapter errors safely", asy
   await expect(page.locator(".account-auth-dock button")).toContainText(safeAuthError("login"));
 });
 
-test("auth footer uses the shared pipe and one geometry-owned secondary rail", async ({ page }) => {
+test("auth text-link rows use one fixed, vertically centered divider geometry", async ({ page }) => {
   await page.goto("/login?auth_test=success");
 
   const separator = page.locator(".account-link-separator");
   const passwordIcon = page.locator(".account-password-toggle svg");
   await expect(separator).toHaveCount(1);
   await expect(separator.locator(":scope > span")).toHaveCount(1);
+  await expect(separator).toHaveCSS("width", "8px");
+  await expect(separator).toHaveCSS("height", "14px");
+  await expect(separator.locator(":scope > span")).toHaveCSS("width", "2px");
+  await expect(separator.locator(":scope > span")).toHaveCSS("height", "14px");
   await expect(passwordIcon).toHaveCSS("width", "20px");
   await expect(passwordIcon).toHaveCSS("height", "20px");
   await expect(page.locator(".account-text-action")).toHaveCSS("padding", "0px");
@@ -892,6 +896,10 @@ test("registered contexts swap product presentation without changing auth author
     "href",
     "https://fitness.fawxzzy.com/terms",
   );
+  const legalSeparator = legal.locator(".account-link-separator");
+  await expect(legalSeparator).toHaveCount(1);
+  await expect(legalSeparator).toHaveCSS("width", "8px");
+  await expect(legalSeparator).toHaveCSS("height", "14px");
   await expect(page.getByRole("link", { name: "Reset password" })).toHaveAttribute(
     "href",
     "/reset-password?app=fitness",

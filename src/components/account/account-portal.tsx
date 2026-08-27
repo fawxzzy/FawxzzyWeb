@@ -180,13 +180,21 @@ function AuthLiveNotice({ notice }: { notice: Notice | null }) {
   );
 }
 
+function AccountTextDivider() {
+  return (
+    <span aria-hidden="true" className="account-link-separator">
+      <span />
+    </span>
+  );
+}
+
 function AccountLegalLinks({ context }: { context: AccountExperienceContext }) {
   if (context.legalLinks.length === 0) return null;
   return (
     <div aria-label={`${context.productName} legal`} className="account-auth-legal">
       {context.legalLinks.map((link, index) => (
         <span key={link.href}>
-          {index > 0 ? <span aria-hidden="true" className="account-auth-legal__pipe">|</span> : null}
+          {index > 0 ? <AccountTextDivider /> : null}
           <a href={link.href}>{link.label}</a>
         </span>
       ))}
@@ -492,9 +500,7 @@ function LoginPanel({
           </button>
           {intent === "login" ? (
             <>
-              <span aria-hidden="true" className="account-link-separator">
-                <span />
-              </span>
+              <AccountTextDivider />
               <a href={contextualPath("/reset-password", context)}>Reset password</a>
             </>
           ) : null}

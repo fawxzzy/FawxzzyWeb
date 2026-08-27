@@ -1022,8 +1022,8 @@
 
 .account-link-separator {
   display: inline-flex;
-  width: 0.465rem;
-  height: 0.94em;
+  width: 8px;
+  height: 14px;
   flex: 0 0 auto;
   align-items: center;
   align-self: center;
@@ -1033,8 +1033,8 @@
 
 .account-link-separator > span {
   display: block;
-  width: 3px;
-  height: 100%;
+  width: 2px;
+  height: 14px;
   border-radius: 999px;
   background: linear-gradient(180deg, rgb(var(--auth-color) / 0.96), rgb(var(--auth-color)), rgb(var(--auth-color) / 0.94));
   box-shadow: 0 0 14px rgb(var(--auth-color) / 0.58);
@@ -1157,10 +1157,6 @@
 .account-auth-legal a {
   color: inherit;
   text-decoration: none;
-}
-
-.account-auth-legal__pipe {
-  color: rgb(var(--auth-color));
 }
 
 .account-auth-dock .catalog-button:disabled {
