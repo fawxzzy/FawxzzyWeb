@@ -982,7 +982,10 @@ test("username login and autofill styling remain explicit source contracts", asy
   expect(adapterSource).toContain('/functions/v1/username-password-signin');
   expect(adapterSource).toContain("client.auth.setSession");
   expect(functionConfig).toContain("verify_jwt = false");
-  expect(functionSource).toContain('acceptedPublicKeys().has(requestKey)');
+  expect(functionSource).toContain('await isAcceptedPublicKey(requestKey)');
+  expect(functionSource).toContain('/auth/v1/settings');
+  expect(functionSource).toContain('headers: { apikey: requestKey }');
+  expect(functionSource).not.toContain('Authorization: `Bearer ${requestKey}`');
   expect(functionSource).toContain('admin.rpc("account_resolve_username_signin"');
   expect(functionSource).not.toContain("listUsers");
   expect(functionSource).toContain("00000000-0000-0000-0000-000000000000");

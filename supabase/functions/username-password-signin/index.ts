@@ -30,6 +30,21 @@ function acceptedPublicKeys() {
   return keys;
 }
 
+async function isAcceptedPublicKey(requestKey: string) {
+  if (acceptedPublicKeys().has(requestKey)) return true;
+  const url = Deno.env.get("SUPABASE_URL");
+  if (!url) return false;
+  try {
+    const response = await fetch(`${url}/auth/v1/settings`, {
+      headers: { apikey: requestKey },
+      method: "GET",
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function sha256(value: string) {
   const bytes = new TextEncoder().encode(value);
   const digest = await crypto.subtle.digest("SHA-256", bytes);
@@ -43,7 +58,7 @@ Deno.serve(async (request) => {
   }
   if (request.method !== "POST" || !ALLOWED_ORIGINS.has(origin)) return genericFailure(origin);
   const requestKey = request.headers.get("apikey") ?? "";
-  if (!requestKey || !acceptedPublicKeys().has(requestKey)) return genericFailure(origin);
+  if (!requestKey || !await isAcceptedPublicKey(requestKey)) return genericFailure(origin);
   if (!(request.headers.get("content-type") ?? "").toLowerCase().startsWith("application/json")) {
     return genericFailure(origin);
   }
