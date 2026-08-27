@@ -27,3 +27,47 @@ export async function validatePublicClientKey(requestKey, knownKeys, validateAga
     return false;
   }
 }
+
+export function createPublicKeyAdmission({
+  cacheTtlMs = 10 * 60 * 1000,
+  maxCacheEntries = 8,
+  maxRemoteValidations = 8,
+  now = () => Date.now(),
+  windowMs = 60 * 1000,
+} = {}) {
+  const validated = new Map();
+  let remoteWindowStartedAt = 0;
+  let remoteValidationCount = 0;
+
+  return async function admitPublicClientKey(requestKey, knownKeys, validateAgainstProject) {
+    if (!isPublicClientKeyShape(requestKey)) return false;
+    if (knownKeys.has(requestKey)) return true;
+
+    const currentTime = now();
+    const cachedUntil = validated.get(requestKey);
+    if (typeof cachedUntil === "number" && cachedUntil > currentTime) return true;
+    if (cachedUntil !== undefined) validated.delete(requestKey);
+
+    if (currentTime - remoteWindowStartedAt >= windowMs) {
+      remoteWindowStartedAt = currentTime;
+      remoteValidationCount = 0;
+    }
+    if (remoteValidationCount >= maxRemoteValidations) return false;
+    remoteValidationCount += 1;
+
+    let accepted = false;
+    try {
+      accepted = await validateAgainstProject(requestKey);
+    } catch {
+      return false;
+    }
+    if (!accepted) return false;
+
+    if (validated.size >= maxCacheEntries) {
+      const oldest = validated.keys().next().value;
+      if (oldest !== undefined) validated.delete(oldest);
+    }
+    validated.set(requestKey, currentTime + cacheTtlMs);
+    return true;
+  };
+}

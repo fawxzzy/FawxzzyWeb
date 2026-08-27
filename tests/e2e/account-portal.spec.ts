@@ -2,7 +2,10 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { validatePublicClientKey } from "../../supabase/functions/username-password-signin/public-key.mjs";
+import {
+  createPublicKeyAdmission,
+  validatePublicClientKey,
+} from "../../supabase/functions/username-password-signin/public-key.mjs";
 import {
   resolveSystemStateSemantics,
   systemStateVariants,
@@ -1032,6 +1035,38 @@ test("runtime key admission accepts only canonical public key classes", async ()
   await expect(validatePublicClientKey("sb_publishable_error", known, async () => {
     throw new Error("settings unavailable");
   })).resolves.toBe(false);
+});
+
+test("runtime key admission caches success and bounds pre-lookup project validation", async () => {
+  let currentTime = 1_000;
+  let validations = 0;
+  const admit = createPublicKeyAdmission({
+    cacheTtlMs: 100,
+    maxCacheEntries: 2,
+    maxRemoteValidations: 2,
+    now: () => currentTime,
+    windowMs: 1_000,
+  });
+  const validate = async (key: string) => {
+    validations += 1;
+    return key === "sb_publishable_active";
+  };
+
+  expect(await admit("sb_publishable_active", new Set(), validate)).toBe(true);
+  expect(await admit("sb_publishable_active", new Set(), validate)).toBe(true);
+  expect(validations).toBe(1);
+
+  expect(await admit("sb_publishable_invalid_one", new Set(), validate)).toBe(false);
+  expect(await admit("sb_publishable_invalid_two", new Set(), validate)).toBe(false);
+  expect(validations).toBe(2);
+
+  currentTime += 1_000;
+  expect(await admit("sb_publishable_invalid_two", new Set(), validate)).toBe(false);
+  expect(validations).toBe(3);
+
+  currentTime += 101;
+  expect(await admit("sb_publishable_active", new Set(), validate)).toBe(true);
+  expect(validations).toBe(4);
 });
 
 test("serialized duplicate username reconciliation keeps both users and restores unique claims", async () => {

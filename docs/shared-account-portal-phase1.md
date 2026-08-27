@@ -99,7 +99,9 @@ redirects must be admitted individually in a future packet; do not add a broad p
   `username-password-signin` Edge Function, which accepts only the canonical account origin,
   requires a public client key validated against the canonical project's Auth settings (with the
   function environment as the fast path), rejects secret and service-role key classes before that
-  validation, resolves one exact indexed case-insensitive username,
+  validation, caches successful remote validation for a bounded lifetime, and limits uncached
+  project-validation attempts per warm function instance before any privileged username lookup.
+  It resolves one exact indexed case-insensitive username,
   and applies durable global, client, and per-identifier attempt windows before calling Auth. Old
   attempt rows are deleted before admission and the global window bounds storage cardinality. The
   missing-username path performs the same Admin/Auth operation classes as a resolved username so
