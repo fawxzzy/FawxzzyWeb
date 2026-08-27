@@ -1035,6 +1035,10 @@ test("username login and autofill styling remain explicit source contracts", asy
     path.resolve("supabase/migrations/20260827053000_account_username_signin_rpc_response.sql"),
     "utf8",
   );
+  const apiSchemaMigrationSource = readFileSync(
+    path.resolve("supabase/migrations/20260827094500_account_username_signin_api_schema.sql"),
+    "utf8",
+  );
   const styleSource = readFileSync(path.resolve("src/styles/page-families/utility.css"), "utf8");
   expect(adapterSource).toContain('/functions/v1/username-password-signin');
   expect(adapterSource).toContain("client.auth.setSession");
@@ -1067,6 +1071,12 @@ test("username login and autofill styling remain explicit source contracts", asy
   expect(responseMigrationSource).toContain("return query");
   expect(responseMigrationSource).toContain("grant execute on function public.account_resolve_username_signin_v2");
   expect(responseMigrationSource).not.toContain("returns uuid");
+  expect(apiSchemaMigrationSource).toContain("create schema if not exists account_api");
+  expect(apiSchemaMigrationSource).toContain("function account_api.account_resolve_username_signin_v2");
+  expect(apiSchemaMigrationSource).toContain("from public.account_resolve_username_signin_v2");
+  expect(apiSchemaMigrationSource).toContain("grant execute on function account_api.account_resolve_username_signin_v2");
+  expect(apiSchemaMigrationSource).toContain("to service_role");
+  expect(apiSchemaMigrationSource).toContain("revoke all on schema account_api from public, anon, authenticated");
   expect(styleSource).toContain('input:-webkit-autofill');
 });
 
@@ -1096,8 +1106,8 @@ test("username resolver transport requests a plural response and fails closed on
   expect(request.init?.body).toBe(JSON.stringify(args));
   expect(request.init?.redirect).toBe("error");
   expect(request.init?.headers).toMatchObject({
-    "Accept-Profile": "public",
-    "Content-Profile": "public",
+    "Accept-Profile": "account_api",
+    "Content-Profile": "account_api",
   });
 
   const respond = (body: unknown, status = 200) => async () =>
