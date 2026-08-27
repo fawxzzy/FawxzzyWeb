@@ -6,7 +6,11 @@ function requireAppOrigin(slug: "fitness" | "mazer") {
   if (!app) throw new Error(`Missing ${slug} origin contract.`);
   const compatibility = app.origin.preserveOnCutover[0];
   if (!compatibility) throw new Error(`Missing ${slug} compatibility origin.`);
-  return { compatibility, planned: app.origin.plannedCanonical };
+  return {
+    compatibility,
+    current: app.origin.current,
+    planned: app.origin.plannedCanonical,
+  };
 }
 
 const fitnessOrigin = requireAppOrigin("fitness");
@@ -91,11 +95,11 @@ export const accountExperienceContexts: Record<
     id: "fitness",
     legalLinks: [
       {
-        href: new URL("/privacy", accountContract.productOrigins.fitness).href,
+        href: new URL("/privacy", fitnessOrigin.current).href,
         label: "Privacy Policy",
       },
       {
-        href: new URL("/terms", accountContract.productOrigins.fitness).href,
+        href: new URL("/terms", fitnessOrigin.current).href,
         label: "Terms of Service",
       },
     ],

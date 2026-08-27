@@ -28,7 +28,7 @@ Every editable credential field preserves native mobile caret placement, long-pr
 
 The secondary-action rail is geometry-owned rather than flow-owned: it reserves one 44px text-action row and one 32px optional legal row, with its lower edge fixed 16px above the 56px bottom dock. Sign-in, create-account, recovery, and account-status modes therefore keep their text actions at the same viewport position regardless of field count or legal-link presence.
 
-The Fitness presentation supplies its current public Privacy Policy and Terms of Service from `fitness.fawxzzy.com`; the account host renders those destinations without copying the legal documents or changing their product ownership.
+The Fitness presentation derives its public Privacy Policy and Terms of Service from the catalog's current Fitness origin; the account host renders those live destinations without copying the legal documents, switching early to a planned origin, or changing product ownership.
 
 The authenticated account surface follows the current Mazer account hierarchy: product marker, `Account` title, username and email identity fields, one compact recovery action in the shared secondary rail, and a full-width red `Sign out` dock action. It does not repeat the public app catalog, connection placeholders, or unfinished service-registration copy.
 
