@@ -95,7 +95,10 @@ test("one presentation registry renders every product without claiming consumer 
   expect(accountExperienceContexts.website.consumerIntegration).toBe("active");
   expect(accountExperienceContexts.fitness.consumerIntegration).toBe("pending");
   expect(accountExperienceContexts.mazer.consumerIntegration).toBe("pending");
-  expect(accountExperienceContexts.fitness.legalLinks).toEqual([]);
+  expect(accountExperienceContexts.fitness.legalLinks).toEqual([
+    { href: "https://fitness.fawxzzy.com/privacy", label: "Privacy Policy" },
+    { href: "https://fitness.fawxzzy.com/terms", label: "Terms of Service" },
+  ]);
   expect(accountRecoveryUrl("website")).toBe(accountUrls.recovery);
   expect(accountRecoveryUrl("fitness")).toBe(
     "https://account.fawxzzy.com/reset-password?recovery=1&app=fitness",
@@ -821,6 +824,7 @@ test("every account surface shares the anchored intro, centered fields, and dock
       await expect(field).toHaveCSS("padding-left", "54px");
       await expect(field).toHaveCSS("padding-right", "54px");
       await expect(field).toHaveCSS("text-align", "center");
+      await expect(field).toHaveCSS("touch-action", "auto");
     }
   }
 
@@ -832,7 +836,29 @@ test("every account surface shares the anchored intro, centered fields, and dock
     await expect(field).toHaveCSS("padding-left", "54px");
     await expect(field).toHaveCSS("padding-right", "54px");
     await expect(field).toHaveCSS("text-align", "center");
+    await expect(field).toHaveCSS("touch-action", "auto");
   }
+});
+
+test("auth inputs preserve native caret placement after editing", async ({ page }) => {
+  await page.goto("/login?auth_test=success&app=fitness");
+  const identifier = page.getByLabel("Email or username");
+  await identifier.fill("fawxzzy.user");
+
+  const selection = await identifier.evaluate((node) => {
+    const input = node as HTMLInputElement;
+    input.focus();
+    input.setSelectionRange(7, 7);
+    return {
+      end: input.selectionEnd,
+      start: input.selectionStart,
+      value: input.value,
+    };
+  });
+
+  expect(selection).toEqual({ end: 7, start: 7, value: "fawxzzy.user" });
+  await page.keyboard.insertText("-");
+  await expect(identifier).toHaveValue("fawxzzy-.user");
 });
 
 test("required-field feedback is visual and does not add an error paragraph", async ({ page }) => {
@@ -856,8 +882,16 @@ test("registered contexts swap product presentation without changing auth author
   const card = page.locator('.account-card--auth[data-auth-product="fitness"]');
   await expect(card).toBeVisible();
   await expect(page.locator(".account-auth-intro > p")).toHaveText("Fitness");
-  await expect(page.getByRole("navigation", { name: "Fitness legal" })).toHaveCount(0);
-  await expect(page.locator('.account-auth-legal[aria-label="Fitness legal"]')).toHaveCount(0);
+  const legal = page.locator('.account-auth-legal[aria-label="Fitness legal"]');
+  await expect(legal).toBeVisible();
+  await expect(legal.getByRole("link", { name: "Privacy Policy" })).toHaveAttribute(
+    "href",
+    "https://fitness.fawxzzy.com/privacy",
+  );
+  await expect(legal.getByRole("link", { name: "Terms of Service" })).toHaveAttribute(
+    "href",
+    "https://fitness.fawxzzy.com/terms",
+  );
   await expect(page.getByRole("link", { name: "Reset password" })).toHaveAttribute(
     "href",
     "/reset-password?app=fitness",

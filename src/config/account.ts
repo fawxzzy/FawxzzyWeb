@@ -89,7 +89,16 @@ export const accountExperienceContexts: Record<
     consumerIntegration: "pending",
     destinationOrigin: accountContract.productOrigins.fitness,
     id: "fitness",
-    legalLinks: [],
+    legalLinks: [
+      {
+        href: new URL("/privacy", accountContract.productOrigins.fitness).href,
+        label: "Privacy Policy",
+      },
+      {
+        href: new URL("/terms", accountContract.productOrigins.fitness).href,
+        label: "Terms of Service",
+      },
+    ],
     productName: "Fitness",
     resetLabel: "Send recovery link",
     signInLabel: "Sign in",
