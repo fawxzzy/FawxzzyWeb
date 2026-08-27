@@ -1,2 +1,5 @@
+[api]
+schemas = ["mazer", "fitness", "account_api"]
+
 [functions.username-password-signin]
 verify_jwt = false
