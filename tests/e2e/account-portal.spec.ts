@@ -777,9 +777,40 @@ test("auth text-link rows use one fixed, vertically centered divider geometry", 
 
   const footerBox = await page.locator(".account-auth-secondary").boundingBox();
   const dockBox = await page.locator(".account-auth-dock .catalog-button").boundingBox();
+  const websiteLinksBox = await page.locator(".account-card__links").boundingBox();
+  const websiteDividerBox = await separator.boundingBox();
+  const websiteFirstLinkBox = await page.getByRole("button", { name: "Create account" }).boundingBox();
   expect(footerBox).not.toBeNull();
   expect(dockBox).not.toBeNull();
+  expect(websiteLinksBox).not.toBeNull();
+  expect(websiteDividerBox).not.toBeNull();
+  expect(websiteFirstLinkBox).not.toBeNull();
   expect(Math.round(dockBox!.y - (footerBox!.y + footerBox!.height))).toBe(16);
+  expect(
+    Math.abs(
+      websiteDividerBox!.y + websiteDividerBox!.height / 2 -
+        (websiteFirstLinkBox!.y + websiteFirstLinkBox!.height / 2),
+    ),
+  ).toBeLessThanOrEqual(1);
+
+  await page.goto("/login?auth_test=success&app=fitness");
+  const legal = page.locator(".account-auth-legal");
+  const legalBox = await legal.boundingBox();
+  const legalDivider = legal.locator(".account-link-separator");
+  const legalDividerBox = await legalDivider.boundingBox();
+  const legalFirstLinkBox = await legal.getByRole("link", { name: "Privacy Policy" }).boundingBox();
+  expect(legalBox).not.toBeNull();
+  expect(legalDividerBox).not.toBeNull();
+  expect(legalFirstLinkBox).not.toBeNull();
+  expect(Math.round(legalBox!.y)).toBe(Math.round(websiteLinksBox!.y));
+  expect(
+    Math.abs(
+      legalDividerBox!.y + legalDividerBox!.height / 2 -
+        (legalFirstLinkBox!.y + legalFirstLinkBox!.height / 2),
+    ),
+  ).toBeLessThanOrEqual(1);
+  await expect(legalDivider).toHaveCSS("width", "8px");
+  await expect(legalDivider).toHaveCSS("height", "14px");
 });
 
 test("auth entry uses one stable Fitness-shaped frame and remembers the returning username", async ({ page }) => {
@@ -805,6 +836,10 @@ test("auth entry uses one stable Fitness-shaped frame and remembers the returnin
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page.getByRole("heading", { name: "Create account" })).toBeVisible();
   await expect(page.getByTestId("remembered-identity")).toHaveCount(0);
+
+  await page.goto("/login?auth_test=session&app=fitness");
+  await expect(page.getByRole("heading", { name: "Welcome" })).toBeVisible();
+  await expect(page.getByTestId("remembered-identity")).toHaveText("fawxzzy");
 });
 
 test("auth fields use the canonical Fitness text and spacing contract", async ({ page }) => {
@@ -841,13 +876,21 @@ test("every account surface shares the anchored intro, centered fields, and dock
 
     const cardBox = await card.boundingBox();
     const introBox = await intro.boundingBox();
+    const fieldGroupBox = await card.locator(".account-form--auth").boundingBox();
     const secondaryBox = await secondary.boundingBox();
     const dockBox = await dock.boundingBox();
+    const viewport = page.viewportSize();
     expect(cardBox).not.toBeNull();
     expect(introBox).not.toBeNull();
+    expect(fieldGroupBox).not.toBeNull();
     expect(secondaryBox).not.toBeNull();
     expect(dockBox).not.toBeNull();
+    expect(viewport).not.toBeNull();
     expect(Math.round(introBox!.y - cardBox!.y)).toBe(0);
+    expect(introBox!.y).toBeLessThanOrEqual(48);
+    expect(
+      Math.abs(fieldGroupBox!.y + fieldGroupBox!.height / 2 - viewport!.height / 2),
+    ).toBeLessThanOrEqual(1);
     expect(Math.round(dockBox!.y - (secondaryBox!.y + secondaryBox!.height))).toBe(16);
 
     for (const field of await card.locator("input").all()) {
@@ -862,11 +905,43 @@ test("every account surface shares the anchored intro, centered fields, and dock
   await page.getByRole("button", { name: "Create account" }).click();
   const signupCard = page.locator('[data-auth-surface="credentials"]');
   await expect(signupCard.getByRole("heading", { name: "Create account" })).toBeVisible();
+  const signupFieldsBox = await signupCard.locator(".account-form--auth").boundingBox();
+  const signupViewport = page.viewportSize();
+  expect(signupFieldsBox).not.toBeNull();
+  expect(signupViewport).not.toBeNull();
+  expect(
+    Math.abs(signupFieldsBox!.y + signupFieldsBox!.height / 2 - signupViewport!.height / 2),
+  ).toBeLessThanOrEqual(1);
   for (const field of await signupCard.locator("input").all()) {
     await expect(field).toHaveCSS("padding-left", "54px");
     await expect(field).toHaveCSS("padding-right", "54px");
     await expect(field).toHaveCSS("text-align", "center");
     await expect(field).toHaveCSS("touch-action", "auto");
+  }
+});
+
+test("password fields expose exactly one product reveal control", async ({ page }) => {
+  const surfaces = [
+    "/login?auth_test=success",
+    "/login?auth_test=success&app=fitness",
+    "/login?auth_test=success&app=mazer",
+    "/reset-password?recovery=1&auth_test=session",
+  ];
+
+  for (const path of surfaces) {
+    await page.goto(path);
+    await expect(page.getByRole("button", { name: "Show password" }).first()).toBeVisible();
+    const toggles = page.locator(".account-password-toggle");
+    const count = await toggles.count();
+    expect(count).toBeGreaterThan(0);
+    for (const toggle of await toggles.all()) {
+      const fieldset = toggle.locator("xpath=..");
+      await expect(fieldset.locator("input")).toHaveCount(1);
+      await expect(fieldset.locator(".account-password-toggle")).toHaveCount(1);
+      expect(await fieldset.locator("input").evaluate((input) => (input as HTMLInputElement).type)).toBe(
+        "password",
+      );
+    }
   }
 });
 
