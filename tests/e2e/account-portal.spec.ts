@@ -1095,6 +1095,10 @@ test("username resolver transport requests a plural response and fails closed on
   });
   expect(request.init?.body).toBe(JSON.stringify(args));
   expect(request.init?.redirect).toBe("error");
+  expect(request.init?.headers).toMatchObject({
+    "Accept-Profile": "account_private",
+    "Content-Profile": "account_private",
+  });
 
   const respond = (body: unknown, status = 200) => async () =>
     new Response(JSON.stringify(body), { status });
