@@ -6,6 +6,7 @@ import {
   createPublicKeyAdmission,
   validatePublicClientKey,
 } from "../../supabase/functions/username-password-signin/public-key.mjs";
+import { resolveUsernameSignInRpc } from "../../supabase/functions/username-password-signin/rpc-response.mjs";
 import {
   resolveSystemStateSemantics,
   systemStateVariants,
@@ -1042,10 +1043,7 @@ test("username login and autofill styling remain explicit source contracts", asy
   expect(functionSource).toContain('/auth/v1/settings');
   expect(functionSource).toContain('headers: { apikey: candidate }');
   expect(functionSource).not.toContain('Authorization: `Bearer ${requestKey}`');
-  expect(functionSource).toContain('admin.rpc("account_resolve_username_signin_v2"');
-  expect(functionSource).toContain("Array.isArray(lookupRows)");
-  expect(functionSource).toContain("lookupRows.length === 1");
-  expect(functionSource).toContain("lookupRows[0]?.resolved_user_id");
+  expect(functionSource).toContain("resolveUsernameSignInRpc");
   expect(functionSource).not.toContain("listUsers");
   expect(functionSource).toContain("00000000-0000-0000-0000-000000000000");
   expect(functionSource).toContain('Invalid credentials');
@@ -1070,6 +1068,46 @@ test("username login and autofill styling remain explicit source contracts", asy
   expect(responseMigrationSource).toContain("grant execute on function public.account_resolve_username_signin_v2");
   expect(responseMigrationSource).not.toContain("returns uuid");
   expect(styleSource).toContain('input:-webkit-autofill');
+});
+
+test("username resolver transport requests a plural response and fails closed on malformed shapes", async () => {
+  const serviceRole = "service-role-fixture";
+  const url = "https://project.example.test";
+  const args = {
+    p_attempt_key: "a".repeat(64),
+    p_client_attempt_key: "b".repeat(64),
+    p_normalized_username: "fawxzzy",
+  };
+  const resolved = "adc7ca28-7271-5599-826f-fd7e4477b542";
+  let request: { input?: string; init?: RequestInit } = {};
+  const fetchImpl = async (input: string, init?: RequestInit) => {
+    request = { input, init };
+    return new Response(JSON.stringify([{ resolved_user_id: resolved }]), { status: 200 });
+  };
+
+  await expect(resolveUsernameSignInRpc({ args, fetchImpl, serviceRole, url })).resolves.toBe(resolved);
+  expect(request.input).toBe(`${url}/rest/v1/rpc/account_resolve_username_signin_v2`);
+  expect(request.init?.headers).toMatchObject({
+    Accept: "application/json",
+    apikey: serviceRole,
+    Authorization: `Bearer ${serviceRole}`,
+    "Content-Type": "application/json",
+  });
+  expect(request.init?.body).toBe(JSON.stringify(args));
+
+  const respond = (body: unknown, status = 200) => async () =>
+    new Response(JSON.stringify(body), { status });
+  for (const fetchResponse of [
+    respond([], 200),
+    respond([{ resolved_user_id: resolved }, { resolved_user_id: resolved }], 200),
+    respond({ resolved_user_id: resolved }, 200),
+    respond([{ resolved_user_id: "not-a-uuid" }], 200),
+    respond({ message: "not acceptable" }, 406),
+    async () => { throw new Error("network detail must not escape"); },
+  ]) {
+    await expect(resolveUsernameSignInRpc({ args, fetchImpl: fetchResponse, serviceRole, url }))
+      .resolves.toBeNull();
+  }
 });
 
 test("runtime key admission accepts only canonical public key classes", async () => {

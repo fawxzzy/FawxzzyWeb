@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.109.0";
 import { createPublicKeyAdmission } from "./public-key.mjs";
+import { resolveUsernameSignInRpc } from "./rpc-response.mjs";
 
 const USERNAME = /^[A-Za-z0-9._-]{2,15}$/;
 const ALLOWED_ORIGINS = new Set(["https://account.fawxzzy.com"]);
@@ -81,24 +82,25 @@ Deno.serve(async (request) => {
       ?? "unknown";
     const attemptKey = await sha256(`username:${normalized}`);
     const clientAttemptKey = await sha256(`client:${clientAddress}`);
-    const { data: lookupRows, error: lookupError } = await admin.rpc("account_resolve_username_signin_v2", {
-      p_attempt_key: attemptKey,
-      p_client_attempt_key: clientAttemptKey,
-      p_normalized_username: normalized,
+    const resolvedUserId = await resolveUsernameSignInRpc({
+      args: {
+        p_attempt_key: attemptKey,
+        p_client_attempt_key: clientAttemptKey,
+        p_normalized_username: normalized,
+      },
+      fetchImpl: fetch,
+      serviceRole,
+      url,
     });
-    const resolvedUserId = !lookupError
-        && Array.isArray(lookupRows)
-        && lookupRows.length === 1
-        && typeof lookupRows[0]?.resolved_user_id === "string"
-      ? lookupRows[0].resolved_user_id
-      : "00000000-0000-0000-0000-000000000000";
-    const { data: userResult } = await admin.auth.admin.getUserById(resolvedUserId);
+    const { data: userResult } = await admin.auth.admin.getUserById(
+      resolvedUserId ?? "00000000-0000-0000-0000-000000000000",
+    );
     const resolvedEmail = userResult?.user?.email;
     const email = resolvedEmail ?? "invalid-login@invalid.fawxzzy.local";
 
     const auth = createClient(url, anonKey, { auth: { persistSession: false } });
     const { data, error } = await auth.auth.signInWithPassword({ email, password });
-    if (lookupError || !resolvedEmail || error || !data.session) return genericFailure(origin);
+    if (!resolvedUserId || !resolvedEmail || error || !data.session) return genericFailure(origin);
     return new Response(JSON.stringify({
       access_token: data.session.access_token,
       refresh_token: data.session.refresh_token,
