@@ -960,6 +960,11 @@
   border-radius: 22px;
   background: transparent;
   padding: 0 54px;
+  -webkit-touch-callout: default;
+  -webkit-user-select: text;
+  user-select: text;
+  touch-action: auto;
+  cursor: text;
   font-size: 14px;
   line-height: 20px;
   letter-spacing: normal;
