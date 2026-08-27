@@ -868,6 +868,8 @@
 }
 
 .account-auth-intro {
+  flex: 0 0 auto;
+  align-self: stretch;
   text-align: center;
 }
 
@@ -957,10 +959,11 @@
   border: 0;
   border-radius: 22px;
   background: transparent;
-  padding: 0 54px 0 18px;
+  padding: 0 54px;
   font-size: 14px;
   line-height: 20px;
   letter-spacing: normal;
+  text-align: center;
   caret-color: rgb(var(--text));
 }
 
