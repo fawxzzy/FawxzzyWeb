@@ -1028,12 +1028,36 @@
 }
 
 .account-card--auth .account-card__links {
-  display: flex;
+  display: grid;
+  width: min(420px, calc(100vw - 48px));
+  grid-template-columns: minmax(0, 1fr) 8px minmax(0, 1fr);
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  column-gap: 8px;
   min-height: 44px;
   margin: 0;
+}
+
+.account-card--auth .account-card__links > :first-child,
+.account-auth-legal > :first-child {
+  justify-self: end;
+}
+
+.account-card--auth .account-card__links > .account-link-separator,
+.account-auth-legal > .account-link-separator {
+  grid-column: 2;
+  justify-self: center;
+}
+
+.account-card--auth .account-card__links > :last-child:not(:first-child),
+.account-auth-legal > :last-child:not(:first-child) {
+  grid-column: 3;
+  justify-self: start;
+}
+
+.account-card--auth .account-card__links > :only-child,
+.account-auth-legal > :only-child {
+  grid-column: 1 / -1;
+  justify-self: center;
 }
 
 .account-form--auth fieldset[data-invalid="true"] {
@@ -1158,11 +1182,12 @@
 }
 
 .account-auth-legal {
-  display: flex;
+  display: grid;
+  width: min(420px, calc(100vw - 48px));
+  grid-template-columns: minmax(0, 1fr) 8px minmax(0, 1fr);
   min-height: 32px;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  column-gap: 8px;
   margin: 0;
   color: rgb(var(--muted));
   font-size: 0.75rem;

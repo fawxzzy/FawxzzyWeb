@@ -780,12 +780,16 @@ test("auth text-link rows use one fixed, vertically centered divider geometry", 
   const websiteLinksBox = await page.locator(".account-card__links").boundingBox();
   const websiteDividerBox = await separator.boundingBox();
   const websiteFirstLinkBox = await page.getByRole("button", { name: "Create account" }).boundingBox();
+  const usableViewportWidth = await page.evaluate(() => document.documentElement.clientWidth);
   expect(footerBox).not.toBeNull();
   expect(dockBox).not.toBeNull();
   expect(websiteLinksBox).not.toBeNull();
   expect(websiteDividerBox).not.toBeNull();
   expect(websiteFirstLinkBox).not.toBeNull();
   expect(Math.round(dockBox!.y - (footerBox!.y + footerBox!.height))).toBe(16);
+  expect(
+    Math.abs(websiteDividerBox!.x + websiteDividerBox!.width / 2 - usableViewportWidth / 2),
+  ).toBeLessThanOrEqual(1);
   expect(
     Math.abs(
       websiteDividerBox!.y + websiteDividerBox!.height / 2 -
@@ -803,6 +807,10 @@ test("auth text-link rows use one fixed, vertically centered divider geometry", 
   expect(legalDividerBox).not.toBeNull();
   expect(legalFirstLinkBox).not.toBeNull();
   expect(Math.round(legalBox!.y)).toBe(Math.round(websiteLinksBox!.y));
+  expect(
+    Math.abs(legalDividerBox!.x + legalDividerBox!.width / 2 - usableViewportWidth / 2),
+  ).toBeLessThanOrEqual(1);
+  expect(Math.abs(legalDividerBox!.x - websiteDividerBox!.x)).toBeLessThanOrEqual(1);
   expect(
     Math.abs(
       legalDividerBox!.y + legalDividerBox!.height / 2 -
