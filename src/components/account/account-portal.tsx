@@ -5,9 +5,12 @@ import {
   accountContract,
   classifyRuntimeOrigin,
   resolveAccountExperienceContext,
-  sanitizeReturnTarget,
   type AccountExperienceContext,
 } from "@/config/account";
+import {
+  sanitizeContextReturnTarget,
+  sanitizeReturnTarget,
+} from "@/config/account-return";
 import { productIdentity } from "@/config/product";
 import {
   callbackReceiptKey,
@@ -180,13 +183,21 @@ function AuthLiveNotice({ notice }: { notice: Notice | null }) {
   );
 }
 
+function AccountTextDivider() {
+  return (
+    <span aria-hidden="true" className="account-link-separator">
+      <span />
+    </span>
+  );
+}
+
 function AccountLegalLinks({ context }: { context: AccountExperienceContext }) {
   if (context.legalLinks.length === 0) return null;
   return (
     <div aria-label={`${context.productName} legal`} className="account-auth-legal">
       {context.legalLinks.map((link, index) => (
         <span key={link.href}>
-          {index > 0 ? <span aria-hidden="true" className="account-auth-legal__pipe">|</span> : null}
+          {index > 0 ? <AccountTextDivider /> : null}
           <a href={link.href}>{link.label}</a>
         </span>
       ))}
@@ -372,7 +383,12 @@ function LoginPanel({
           : { kind: "error", text: safeAuthError("login") },
       );
       if (session) {
-        const destinationUrl = new URL("/", context.destinationOrigin);
+        const destinationUrl = new URL(
+          sanitizeContextReturnTarget(
+            new URLSearchParams(window.location.search).get("returnTo"),
+            context,
+          ),
+        );
         if (context.id === "website") destinationUrl.searchParams.set("signedIn", "1");
         const destination = destinationUrl.href;
         if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
@@ -492,9 +508,7 @@ function LoginPanel({
           </button>
           {intent === "login" ? (
             <>
-              <span aria-hidden="true" className="account-link-separator">
-                <span />
-              </span>
+              <AccountTextDivider />
               <a href={contextualPath("/reset-password", context)}>Reset password</a>
             </>
           ) : null}

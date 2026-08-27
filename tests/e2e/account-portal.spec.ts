@@ -20,8 +20,11 @@ import {
   classifyRuntimeOrigin,
   isLiveAccountAdapterOrigin,
   resolveAccountExperienceContext,
-  sanitizeReturnTarget,
 } from "../../src/config/account";
+import {
+  sanitizeContextReturnTarget,
+  sanitizeReturnTarget,
+} from "../../src/config/account-return";
 import {
   callbackReceiptKey,
   callbackStateMatches,
@@ -383,6 +386,7 @@ test("return targets fail closed unless they exactly match the contract", () => 
     "https://mazer.fawxzzy.com/",
     "https://fawxzzy-fitness-local.vercel.app/",
     "https://fawxzzy-mazer.vercel.app/",
+    "https://fitness.fawxzzy.com/session/abc?returnTo=%2Ftoday",
   ]) {
     expect(sanitizeReturnTarget(allowed)).toBe(allowed);
   }
@@ -394,14 +398,36 @@ test("return targets fail closed unless they exactly match the contract", () => 
     "/login",
     "https://user@example.com/",
     "https://fitness.fawxzzy.com.evil.test/",
-    "https://fitness.fawxzzy.com/path",
     "https://fitness.fawxzzy.com/?code=secret",
     "https://fitness.fawxzzy.com/#access_token=secret",
+    "https://fitness.fawxzzy.com/session?id_token=secret",
+    "https://fitness.fawxzzy.com/session?session=secret",
+    "https://fitness.fawxzzy.com/session?jwt=secret",
+    "https://fitness.fawxzzy.com/session?api_key=secret",
+    "https://fitness.fawxzzy.com/session?ID_TOKEN=secret",
+    "https://fitness.fawxzzy.com/session?%69d_token=secret",
+    "https://fitness.fawxzzy.com/session?returnTo=%2Ftoday%3Fjwt%3Dsecret",
     "http://fitness.fawxzzy.com/",
     "https://evil.test/",
   ]) {
     expect(sanitizeReturnTarget(rejected), rejected).toBe("/account");
   }
+});
+
+test("context return targets stay on the selected product origin", () => {
+  const fitness = resolveAccountExperienceContext("fitness");
+  expect(
+    sanitizeContextReturnTarget(
+      "https://fitness.fawxzzy.com/session/abc?returnTo=%2Ftoday",
+      fitness,
+    ),
+  ).toBe("https://fitness.fawxzzy.com/session/abc?returnTo=%2Ftoday");
+  expect(sanitizeContextReturnTarget("https://mazer.fawxzzy.com/", fitness)).toBe(
+    "https://fitness.fawxzzy.com/",
+  );
+  expect(sanitizeContextReturnTarget("https://fitness.fawxzzy.com/?code=secret", fitness)).toBe(
+    "https://fitness.fawxzzy.com/",
+  );
 });
 
 test("password policy distinguishes login from account-changing actions without truncation", () => {
@@ -732,13 +758,17 @@ test("login accepts a legacy short password and maps adapter errors safely", asy
   await expect(page.locator(".account-auth-dock button")).toContainText(safeAuthError("login"));
 });
 
-test("auth footer uses the shared pipe and one geometry-owned secondary rail", async ({ page }) => {
+test("auth text-link rows use one fixed, vertically centered divider geometry", async ({ page }) => {
   await page.goto("/login?auth_test=success");
 
   const separator = page.locator(".account-link-separator");
   const passwordIcon = page.locator(".account-password-toggle svg");
   await expect(separator).toHaveCount(1);
   await expect(separator.locator(":scope > span")).toHaveCount(1);
+  await expect(separator).toHaveCSS("width", "8px");
+  await expect(separator).toHaveCSS("height", "14px");
+  await expect(separator.locator(":scope > span")).toHaveCSS("width", "2px");
+  await expect(separator.locator(":scope > span")).toHaveCSS("height", "14px");
   await expect(passwordIcon).toHaveCSS("width", "20px");
   await expect(passwordIcon).toHaveCSS("height", "20px");
   await expect(page.locator(".account-text-action")).toHaveCSS("padding", "0px");
@@ -892,6 +922,10 @@ test("registered contexts swap product presentation without changing auth author
     "href",
     "https://fitness.fawxzzy.com/terms",
   );
+  const legalSeparator = legal.locator(".account-link-separator");
+  await expect(legalSeparator).toHaveCount(1);
+  await expect(legalSeparator).toHaveCSS("width", "8px");
+  await expect(legalSeparator).toHaveCSS("height", "14px");
   await expect(page.getByRole("link", { name: "Reset password" })).toHaveAttribute(
     "href",
     "/reset-password?app=fitness",
@@ -1056,6 +1090,34 @@ test("successful website login records the canonical public destination", async 
   await expect.poll(() => page.locator("html").getAttribute("data-post-auth-destination"))
     .toBe("https://fawxzzy.com/?signedIn=1");
 });
+
+test("contextual login records only a closed product continuation", async ({ page }) => {
+  const accepted = encodeURIComponent(
+    "https://fitness.fawxzzy.com/session/abc?returnTo=%2Ftoday",
+  );
+  await page.goto(`/login?app=fitness&auth_test=success&returnTo=${accepted}`);
+  await page.getByLabel("Email or username").fill("fawxzzy");
+  await page.getByLabel("Password", { exact: true }).fill("short");
+  await page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" }).click();
+  await expect.poll(() => page.locator("html").getAttribute("data-post-auth-destination"))
+    .toBe("https://fitness.fawxzzy.com/session/abc?returnTo=%2Ftoday");
+});
+
+for (const [name, returnTo] of [
+  ["wrong-origin", "https://mazer.fawxzzy.com/"],
+  ["token-bearing", "https://fitness.fawxzzy.com/session?id_token=secret"],
+] as const) {
+  test(`contextual login fails ${name} continuation closed to the product root`, async ({ page }) => {
+    await page.goto(
+      `/login?app=fitness&auth_test=success&returnTo=${encodeURIComponent(returnTo)}`,
+    );
+    await page.getByLabel("Email or username").fill("fawxzzy");
+    await page.getByLabel("Password", { exact: true }).fill("short");
+    await page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" }).click();
+    await expect.poll(() => page.locator("html").getAttribute("data-post-auth-destination"))
+      .toBe("https://fitness.fawxzzy.com/");
+  });
+}
 
 test("username login and autofill styling remain explicit source contracts", async () => {
   const adapterSource = readFileSync(path.resolve("src/lib/auth/browser-adapter.ts"), "utf8");

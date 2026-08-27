@@ -153,44 +153,12 @@ export function accountConfirmUrl(contextId: AccountExperienceContextId) {
   return url.href;
 }
 
-const TOKEN_QUERY_KEYS = new Set([
-  "access_token",
-  "refresh_token",
-  "token",
-  "token_hash",
-  "code",
-  "state",
-]);
-
-const EXACT_EXTERNAL_RETURN_TARGETS = new Set([
-  `${accountContract.publicHubOrigin}/`,
-  `${accountContract.productOrigins.fitness}/`,
-  `${accountContract.productOrigins.mazer}/`,
-  `${accountContract.compatibilityOrigins.fitness}/`,
-  `${accountContract.compatibilityOrigins.mazer}/`,
-]);
-
-const EXACT_INTERNAL_RETURN_TARGETS = new Set<string>([
-  accountContract.accountPath,
-  accountContract.recoveryPath,
-]);
-
 export type RuntimeOriginKind =
   | "account"
   | "hub"
   | "local-test"
   | "preview"
   | "foreign";
-
-function hasTokenMaterial(url: URL) {
-  if (url.hash) {
-    return true;
-  }
-
-  return [...url.searchParams.keys()].some((key) =>
-    TOKEN_QUERY_KEYS.has(key.toLowerCase()),
-  );
-}
 
 export function classifyRuntimeOrigin(rawOrigin: string): RuntimeOriginKind {
   try {
@@ -221,56 +189,6 @@ export function isLiveAccountAdapterOrigin(rawOrigin: string) {
   return kind === "account" || kind === "local-test";
 }
 
-export function sanitizeReturnTarget(rawTarget: string | null | undefined) {
-  if (!rawTarget) return accountContract.accountPath;
-  if (rawTarget.startsWith("//") || rawTarget.includes("\\")) {
-    return accountContract.accountPath;
-  }
-
-  if (rawTarget.startsWith("/")) {
-    try {
-      const url = new URL(rawTarget, accountContract.canonicalOrigin);
-      const relativeTarget = `${url.pathname}${url.search}`;
-      if (
-        url.origin === accountContract.canonicalOrigin &&
-        EXACT_INTERNAL_RETURN_TARGETS.has(relativeTarget) &&
-        !url.username &&
-        !url.password &&
-        !hasTokenMaterial(url)
-      ) {
-        return relativeTarget;
-      }
-    } catch {
-      return accountContract.accountPath;
-    }
-
-    return accountContract.accountPath;
-  }
-
-  try {
-    const url = new URL(rawTarget);
-    if (
-      url.protocol !== "https:" ||
-      url.username ||
-      url.password ||
-      hasTokenMaterial(url) ||
-      url.search ||
-      url.pathname !== "/" ||
-      !EXACT_EXTERNAL_RETURN_TARGETS.has(url.href)
-    ) {
-      return accountContract.accountPath;
-    }
-
-    return url.href;
-  } catch {
-    return accountContract.accountPath;
-  }
-}
-
 export function accountCanonicalUrl(path: string) {
   return new URL(path, accountContract.canonicalOrigin).href;
-}
-
-export function containsUrlTokenMaterial(url: URL) {
-  return hasTokenMaterial(url);
 }
