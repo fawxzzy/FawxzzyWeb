@@ -21,6 +21,7 @@ import {
   isLiveAccountAdapterOrigin,
   resolveAccountExperienceContext,
   sanitizeReturnTarget,
+  sanitizeContextReturnTarget,
 } from "../../src/config/account";
 import {
   callbackReceiptKey,
@@ -383,6 +384,7 @@ test("return targets fail closed unless they exactly match the contract", () => 
     "https://mazer.fawxzzy.com/",
     "https://fawxzzy-fitness-local.vercel.app/",
     "https://fawxzzy-mazer.vercel.app/",
+    "https://fitness.fawxzzy.com/session/abc?returnTo=%2Ftoday",
   ]) {
     expect(sanitizeReturnTarget(allowed)).toBe(allowed);
   }
@@ -394,7 +396,6 @@ test("return targets fail closed unless they exactly match the contract", () => 
     "/login",
     "https://user@example.com/",
     "https://fitness.fawxzzy.com.evil.test/",
-    "https://fitness.fawxzzy.com/path",
     "https://fitness.fawxzzy.com/?code=secret",
     "https://fitness.fawxzzy.com/#access_token=secret",
     "http://fitness.fawxzzy.com/",
@@ -402,6 +403,22 @@ test("return targets fail closed unless they exactly match the contract", () => 
   ]) {
     expect(sanitizeReturnTarget(rejected), rejected).toBe("/account");
   }
+});
+
+test("context return targets stay on the selected product origin", () => {
+  const fitness = resolveAccountExperienceContext("fitness");
+  expect(
+    sanitizeContextReturnTarget(
+      "https://fitness.fawxzzy.com/session/abc?returnTo=%2Ftoday",
+      fitness,
+    ),
+  ).toBe("https://fitness.fawxzzy.com/session/abc?returnTo=%2Ftoday");
+  expect(sanitizeContextReturnTarget("https://mazer.fawxzzy.com/", fitness)).toBe(
+    "https://fitness.fawxzzy.com/",
+  );
+  expect(sanitizeContextReturnTarget("https://fitness.fawxzzy.com/?code=secret", fitness)).toBe(
+    "https://fitness.fawxzzy.com/",
+  );
 });
 
 test("password policy distinguishes login from account-changing actions without truncation", () => {

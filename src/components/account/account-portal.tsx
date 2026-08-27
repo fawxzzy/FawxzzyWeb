@@ -5,6 +5,7 @@ import {
   accountContract,
   classifyRuntimeOrigin,
   resolveAccountExperienceContext,
+  sanitizeContextReturnTarget,
   sanitizeReturnTarget,
   type AccountExperienceContext,
 } from "@/config/account";
@@ -380,7 +381,12 @@ function LoginPanel({
           : { kind: "error", text: safeAuthError("login") },
       );
       if (session) {
-        const destinationUrl = new URL("/", context.destinationOrigin);
+        const destinationUrl = new URL(
+          sanitizeContextReturnTarget(
+            new URLSearchParams(window.location.search).get("returnTo"),
+            context,
+          ),
+        );
         if (context.id === "website") destinationUrl.searchParams.set("signedIn", "1");
         const destination = destinationUrl.href;
         if (classifyRuntimeOrigin(window.location.origin) === "local-test") {

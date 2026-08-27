@@ -254,9 +254,7 @@ export function sanitizeReturnTarget(rawTarget: string | null | undefined) {
       url.username ||
       url.password ||
       hasTokenMaterial(url) ||
-      url.search ||
-      url.pathname !== "/" ||
-      !EXACT_EXTERNAL_RETURN_TARGETS.has(url.href)
+      !EXACT_EXTERNAL_RETURN_TARGETS.has(`${url.origin}/`)
     ) {
       return accountContract.accountPath;
     }
@@ -264,6 +262,23 @@ export function sanitizeReturnTarget(rawTarget: string | null | undefined) {
     return url.href;
   } catch {
     return accountContract.accountPath;
+  }
+}
+
+export function sanitizeContextReturnTarget(
+  rawTarget: string | null | undefined,
+  context: AccountExperienceContext,
+) {
+  const fallback = new URL("/", context.destinationOrigin).href;
+  const sanitized = sanitizeReturnTarget(rawTarget);
+
+  try {
+    const target = new URL(sanitized);
+    return target.origin === new URL(context.destinationOrigin).origin
+      ? target.href
+      : fallback;
+  } catch {
+    return fallback;
   }
 }
 
