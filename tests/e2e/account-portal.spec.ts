@@ -3,6 +3,10 @@ import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import {
+  createPublicKeyAdmission,
+  validatePublicClientKey,
+} from "../../supabase/functions/username-password-signin/public-key.mjs";
+import {
   resolveSystemStateSemantics,
   systemStateVariants,
 } from "../../src/components/system/system-state";
@@ -982,7 +986,10 @@ test("username login and autofill styling remain explicit source contracts", asy
   expect(adapterSource).toContain('/functions/v1/username-password-signin');
   expect(adapterSource).toContain("client.auth.setSession");
   expect(functionConfig).toContain("verify_jwt = false");
-  expect(functionSource).toContain('acceptedPublicKeys().has(requestKey)');
+  expect(functionSource).toContain('await isAcceptedPublicKey(requestKey)');
+  expect(functionSource).toContain('/auth/v1/settings');
+  expect(functionSource).toContain('headers: { apikey: candidate }');
+  expect(functionSource).not.toContain('Authorization: `Bearer ${requestKey}`');
   expect(functionSource).toContain('admin.rpc("account_resolve_username_signin"');
   expect(functionSource).not.toContain("listUsers");
   expect(functionSource).toContain("00000000-0000-0000-0000-000000000000");
@@ -1004,6 +1011,62 @@ test("username login and autofill styling remain explicit source contracts", asy
   expect(migrationSource).toContain("delete from account_private.username_signin_attempts");
   expect(migrationSource).toContain("grant execute on function public.account_resolve_username_signin");
   expect(styleSource).toContain('input:-webkit-autofill');
+});
+
+test("runtime key admission accepts only canonical public key classes", async () => {
+  const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  const legacyAnon = `${encode({ alg: "HS256" })}.${encode({ role: "anon" })}.signature`;
+  const legacyService = `${encode({ alg: "HS256" })}.${encode({ role: "service_role" })}.signature`;
+  const known = new Set(["sb_publishable_known", legacyAnon]);
+  let validations = 0;
+  const canonicalProject = async (key: string) => {
+    validations += 1;
+    return key === "sb_publishable_remote";
+  };
+
+  expect(await validatePublicClientKey("sb_publishable_known", known, canonicalProject)).toBe(true);
+  expect(await validatePublicClientKey(legacyAnon, known, canonicalProject)).toBe(true);
+  expect(await validatePublicClientKey("sb_publishable_remote", known, canonicalProject)).toBe(true);
+  expect(await validatePublicClientKey("sb_publishable_cross_project", known, canonicalProject)).toBe(false);
+  expect(await validatePublicClientKey("sb_secret_privileged", known, canonicalProject)).toBe(false);
+  expect(await validatePublicClientKey(legacyService, known, canonicalProject)).toBe(false);
+  expect(await validatePublicClientKey("not-a-key", known, canonicalProject)).toBe(false);
+  expect(validations).toBe(2);
+  await expect(validatePublicClientKey("sb_publishable_error", known, async () => {
+    throw new Error("settings unavailable");
+  })).resolves.toBe(false);
+});
+
+test("runtime key admission caches success and bounds pre-lookup project validation", async () => {
+  let currentTime = 1_000;
+  let validations = 0;
+  const admit = createPublicKeyAdmission({
+    cacheTtlMs: 100,
+    maxCacheEntries: 2,
+    maxRemoteValidations: 2,
+    now: () => currentTime,
+    windowMs: 1_000,
+  });
+  const validate = async (key: string) => {
+    validations += 1;
+    return key === "sb_publishable_active";
+  };
+
+  expect(await admit("sb_publishable_active", new Set(), validate)).toBe(true);
+  expect(await admit("sb_publishable_active", new Set(), validate)).toBe(true);
+  expect(validations).toBe(1);
+
+  expect(await admit("sb_publishable_invalid_one", new Set(), validate)).toBe(false);
+  expect(await admit("sb_publishable_invalid_two", new Set(), validate)).toBe(false);
+  expect(validations).toBe(2);
+
+  currentTime += 1_000;
+  expect(await admit("sb_publishable_invalid_two", new Set(), validate)).toBe(false);
+  expect(validations).toBe(3);
+
+  currentTime += 101;
+  expect(await admit("sb_publishable_active", new Set(), validate)).toBe(true);
+  expect(validations).toBe(4);
 });
 
 test("serialized duplicate username reconciliation keeps both users and restores unique claims", async () => {

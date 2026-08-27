@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.109.0";
+import { createPublicKeyAdmission } from "./public-key.mjs";
 
 const USERNAME = /^[A-Za-z0-9._-]{2,15}$/;
 const ALLOWED_ORIGINS = new Set(["https://account.fawxzzy.com"]);
@@ -12,6 +13,7 @@ const genericFailure = (origin = "") => new Response(JSON.stringify({ error: "In
   headers: { "Content-Type": "application/json", ...(ALLOWED_ORIGINS.has(origin) ? corsHeaders(origin) : {}) },
   status: 401,
 });
+const admitPublicClientKey = createPublicKeyAdmission();
 
 function acceptedPublicKeys() {
   const keys = new Set<string>();
@@ -30,6 +32,18 @@ function acceptedPublicKeys() {
   return keys;
 }
 
+async function isAcceptedPublicKey(requestKey: string) {
+  const url = Deno.env.get("SUPABASE_URL");
+  if (!url) return false;
+  return admitPublicClientKey(requestKey, acceptedPublicKeys(), async (candidate) => {
+    const response = await fetch(`${url}/auth/v1/settings`, {
+      headers: { apikey: candidate },
+      method: "GET",
+    });
+    return response.ok;
+  });
+}
+
 async function sha256(value: string) {
   const bytes = new TextEncoder().encode(value);
   const digest = await crypto.subtle.digest("SHA-256", bytes);
@@ -43,7 +57,7 @@ Deno.serve(async (request) => {
   }
   if (request.method !== "POST" || !ALLOWED_ORIGINS.has(origin)) return genericFailure(origin);
   const requestKey = request.headers.get("apikey") ?? "";
-  if (!requestKey || !acceptedPublicKeys().has(requestKey)) return genericFailure(origin);
+  if (!requestKey || !await isAcceptedPublicKey(requestKey)) return genericFailure(origin);
   if (!(request.headers.get("content-type") ?? "").toLowerCase().startsWith("application/json")) {
     return genericFailure(origin);
   }
