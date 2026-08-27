@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { validatePublicClientKey } from "../../supabase/functions/username-password-signin/public-key.mjs";
 import {
   resolveSystemStateSemantics,
   systemStateVariants,
@@ -984,7 +985,7 @@ test("username login and autofill styling remain explicit source contracts", asy
   expect(functionConfig).toContain("verify_jwt = false");
   expect(functionSource).toContain('await isAcceptedPublicKey(requestKey)');
   expect(functionSource).toContain('/auth/v1/settings');
-  expect(functionSource).toContain('headers: { apikey: requestKey }');
+  expect(functionSource).toContain('headers: { apikey: candidate }');
   expect(functionSource).not.toContain('Authorization: `Bearer ${requestKey}`');
   expect(functionSource).toContain('admin.rpc("account_resolve_username_signin"');
   expect(functionSource).not.toContain("listUsers");
@@ -1007,6 +1008,30 @@ test("username login and autofill styling remain explicit source contracts", asy
   expect(migrationSource).toContain("delete from account_private.username_signin_attempts");
   expect(migrationSource).toContain("grant execute on function public.account_resolve_username_signin");
   expect(styleSource).toContain('input:-webkit-autofill');
+});
+
+test("runtime key admission accepts only canonical public key classes", async () => {
+  const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  const legacyAnon = `${encode({ alg: "HS256" })}.${encode({ role: "anon" })}.signature`;
+  const legacyService = `${encode({ alg: "HS256" })}.${encode({ role: "service_role" })}.signature`;
+  const known = new Set(["sb_publishable_known", legacyAnon]);
+  let validations = 0;
+  const canonicalProject = async (key: string) => {
+    validations += 1;
+    return key === "sb_publishable_remote";
+  };
+
+  expect(await validatePublicClientKey("sb_publishable_known", known, canonicalProject)).toBe(true);
+  expect(await validatePublicClientKey(legacyAnon, known, canonicalProject)).toBe(true);
+  expect(await validatePublicClientKey("sb_publishable_remote", known, canonicalProject)).toBe(true);
+  expect(await validatePublicClientKey("sb_publishable_cross_project", known, canonicalProject)).toBe(false);
+  expect(await validatePublicClientKey("sb_secret_privileged", known, canonicalProject)).toBe(false);
+  expect(await validatePublicClientKey(legacyService, known, canonicalProject)).toBe(false);
+  expect(await validatePublicClientKey("not-a-key", known, canonicalProject)).toBe(false);
+  expect(validations).toBe(2);
+  await expect(validatePublicClientKey("sb_publishable_error", known, async () => {
+    throw new Error("settings unavailable");
+  })).resolves.toBe(false);
 });
 
 test("serialized duplicate username reconciliation keeps both users and restores unique claims", async () => {

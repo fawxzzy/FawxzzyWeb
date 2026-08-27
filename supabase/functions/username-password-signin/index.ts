@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.109.0";
+import { validatePublicClientKey } from "./public-key.mjs";
 
 const USERNAME = /^[A-Za-z0-9._-]{2,15}$/;
 const ALLOWED_ORIGINS = new Set(["https://account.fawxzzy.com"]);
@@ -31,18 +32,15 @@ function acceptedPublicKeys() {
 }
 
 async function isAcceptedPublicKey(requestKey: string) {
-  if (acceptedPublicKeys().has(requestKey)) return true;
   const url = Deno.env.get("SUPABASE_URL");
   if (!url) return false;
-  try {
+  return validatePublicClientKey(requestKey, acceptedPublicKeys(), async (candidate) => {
     const response = await fetch(`${url}/auth/v1/settings`, {
-      headers: { apikey: requestKey },
+      headers: { apikey: candidate },
       method: "GET",
     });
     return response.ok;
-  } catch {
-    return false;
-  }
+  });
 }
 
 async function sha256(value: string) {
