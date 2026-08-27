@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   accountContract,
   classifyRuntimeOrigin,
@@ -196,10 +196,10 @@ function AccountLegalLinks({ context }: { context: AccountExperienceContext }) {
   return (
     <div aria-label={`${context.productName} legal`} className="account-auth-legal">
       {context.legalLinks.map((link, index) => (
-        <span key={link.href}>
+        <Fragment key={link.href}>
           {index > 0 ? <AccountTextDivider /> : null}
           <a href={link.href}>{link.label}</a>
-        </span>
+        </Fragment>
       ))}
     </div>
   );
@@ -316,6 +316,24 @@ function LoginPanel({
   const cooldown = useCooldown();
   const adapter = adapterFrom(resolution);
   const displayedIdentity = rememberedIdentity ?? storedRememberedIdentity;
+
+  useEffect(() => {
+    if (!adapter || displayedIdentity) return;
+    let active = true;
+    adapter
+      .getSession()
+      .then((session) => {
+        if (!active || !session) return;
+        const identity = session.displayName || deriveIdentity(session.email ?? "");
+        if (!identity) return;
+        writeRememberedIdentity(identity);
+        setRememberedIdentity(identity);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [adapter, displayedIdentity]);
 
   function switchIntent(event: React.MouseEvent<HTMLButtonElement>) {
     event.currentTarget.blur();
@@ -497,7 +515,10 @@ function LoginPanel({
         </fieldset>
         </form>
       </div>
-      <div className="account-auth-secondary">
+      <div
+        className="account-auth-secondary"
+        data-has-legal={context.legalLinks.length > 0 || undefined}
+      >
         <div className="account-card__links">
           <button
             className="account-text-action"
@@ -646,7 +667,10 @@ function AccountPanel({
           </div>
         ) : null}
       </div>
-      <div className="account-auth-secondary">
+      <div
+        className="account-auth-secondary"
+        data-has-legal={context.legalLinks.length > 0 || undefined}
+      >
         <div className="account-card__links">
           <a href={contextualPath("/reset-password", context)}>Reset password</a>
         </div>
@@ -899,7 +923,10 @@ function ResetPanel({
           </form>
         ) : null}
       </div>
-      <div className="account-auth-secondary">
+      <div
+        className="account-auth-secondary"
+        data-has-legal={context.legalLinks.length > 0 || undefined}
+      >
         <div className="account-card__links">
           <a href={contextualPath("/login", context)}>Log in</a>
         </div>
