@@ -1,8 +1,8 @@
+import { accountContract } from "@/config/account";
 import {
-  accountContract,
   containsUrlTokenMaterial,
   sanitizeReturnTarget,
-} from "@/config/account";
+} from "@/config/account-return";
 
 const CONFIRM_TYPES = new Set([
   "email",

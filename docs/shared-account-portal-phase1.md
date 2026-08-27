@@ -31,11 +31,13 @@ Exact account destinations:
 - account home: `https://account.fawxzzy.com/account`
 
 Return targets use a closed exact allowlist. Internal paths are `/account` and the exact recovery
-completion path `/reset-password?recovery=1`; public/product
-handoffs are root URLs for the public hub, Fitness, and Mazer canonical origins plus their
-explicitly preserved current compatibility origins. Protocol-relative URLs, userinfo, foreign
-subdomains, backslashes, fragments, query strings, and token-bearing targets fail closed to
-`/account`.
+completion path `/reset-password?recovery=1`. Public/product handoffs may use paths on the public
+hub, Fitness, and Mazer canonical origins plus their explicitly preserved compatibility origins.
+The only permitted external query shape is one exact `returnTo` key whose value is a same-origin
+relative path without its own query or fragment; this preserves a bounded product deep-link return
+without admitting arbitrary query data. Protocol-relative URLs, userinfo, foreign subdomains,
+backslashes, fragments, every other query key, nested query/fragment data, and token-bearing
+targets fail closed to `/account` or the selected product root.
 
 Live Supabase adapter creation is limited to the exact canonical account origin and the bounded
 local development origins below. The public apex, `www`, every Vercel Preview, foreign host, and

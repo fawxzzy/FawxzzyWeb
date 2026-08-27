@@ -5,10 +5,12 @@ import {
   accountContract,
   classifyRuntimeOrigin,
   resolveAccountExperienceContext,
-  sanitizeContextReturnTarget,
-  sanitizeReturnTarget,
   type AccountExperienceContext,
 } from "@/config/account";
+import {
+  sanitizeContextReturnTarget,
+  sanitizeReturnTarget,
+} from "@/config/account-return";
 import { productIdentity } from "@/config/product";
 import {
   callbackReceiptKey,

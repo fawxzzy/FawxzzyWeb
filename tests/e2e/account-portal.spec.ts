@@ -20,9 +20,11 @@ import {
   classifyRuntimeOrigin,
   isLiveAccountAdapterOrigin,
   resolveAccountExperienceContext,
-  sanitizeReturnTarget,
-  sanitizeContextReturnTarget,
 } from "../../src/config/account";
+import {
+  sanitizeContextReturnTarget,
+  sanitizeReturnTarget,
+} from "../../src/config/account-return";
 import {
   callbackReceiptKey,
   callbackStateMatches,
@@ -398,6 +400,13 @@ test("return targets fail closed unless they exactly match the contract", () => 
     "https://fitness.fawxzzy.com.evil.test/",
     "https://fitness.fawxzzy.com/?code=secret",
     "https://fitness.fawxzzy.com/#access_token=secret",
+    "https://fitness.fawxzzy.com/session?id_token=secret",
+    "https://fitness.fawxzzy.com/session?session=secret",
+    "https://fitness.fawxzzy.com/session?jwt=secret",
+    "https://fitness.fawxzzy.com/session?api_key=secret",
+    "https://fitness.fawxzzy.com/session?ID_TOKEN=secret",
+    "https://fitness.fawxzzy.com/session?%69d_token=secret",
+    "https://fitness.fawxzzy.com/session?returnTo=%2Ftoday%3Fjwt%3Dsecret",
     "http://fitness.fawxzzy.com/",
     "https://evil.test/",
   ]) {
@@ -1081,6 +1090,34 @@ test("successful website login records the canonical public destination", async 
   await expect.poll(() => page.locator("html").getAttribute("data-post-auth-destination"))
     .toBe("https://fawxzzy.com/?signedIn=1");
 });
+
+test("contextual login records only a closed product continuation", async ({ page }) => {
+  const accepted = encodeURIComponent(
+    "https://fitness.fawxzzy.com/session/abc?returnTo=%2Ftoday",
+  );
+  await page.goto(`/login?app=fitness&auth_test=success&returnTo=${accepted}`);
+  await page.getByLabel("Email or username").fill("fawxzzy");
+  await page.getByLabel("Password", { exact: true }).fill("short");
+  await page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" }).click();
+  await expect.poll(() => page.locator("html").getAttribute("data-post-auth-destination"))
+    .toBe("https://fitness.fawxzzy.com/session/abc?returnTo=%2Ftoday");
+});
+
+for (const [name, returnTo] of [
+  ["wrong-origin", "https://mazer.fawxzzy.com/"],
+  ["token-bearing", "https://fitness.fawxzzy.com/session?id_token=secret"],
+] as const) {
+  test(`contextual login fails ${name} continuation closed to the product root`, async ({ page }) => {
+    await page.goto(
+      `/login?app=fitness&auth_test=success&returnTo=${encodeURIComponent(returnTo)}`,
+    );
+    await page.getByLabel("Email or username").fill("fawxzzy");
+    await page.getByLabel("Password", { exact: true }).fill("short");
+    await page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" }).click();
+    await expect.poll(() => page.locator("html").getAttribute("data-post-auth-destination"))
+      .toBe("https://fitness.fawxzzy.com/");
+  });
+}
 
 test("username login and autofill styling remain explicit source contracts", async () => {
   const adapterSource = readFileSync(path.resolve("src/lib/auth/browser-adapter.ts"), "utf8");
