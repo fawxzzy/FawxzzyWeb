@@ -101,8 +101,14 @@ redirects must be admitted individually in a future packet; do not add a broad p
   function environment as the fast path), rejects secret and service-role key classes before that
   validation, caches successful remote validation for a bounded lifetime, and limits uncached
   project-validation attempts per warm function instance before any privileged username lookup.
-  Its database RPC returns a named one-row relation rather than a scalar response. The Edge
-  transport explicitly requests plural JSON, accepts exactly one UUID row, and rejects HTTP
+  Its database RPC returns a named one-row relation rather than a scalar response. A narrow
+  `account_api` Data API schema exposes only the service-role resolver wrapper; it exposes no
+  account tables and delegates to the private implementation under a fixed search path. The local
+  Supabase contract preserves the existing `mazer` and `fitness` schemas while adding
+  `account_api` to `[api].schemas`. Production activation must likewise add `account_api` to the
+  existing exposed-schema setting before the Edge Function is activated; the database migration
+  alone does not change that provider setting. The Edge
+  transport explicitly selects that schema, requests plural JSON, accepts exactly one UUID row, and rejects HTTP
   errors, zero or multiple rows, scalar or object drift, malformed identifiers, and transport
   failures. This keeps PostgREST content negotiation explicit. It resolves one exact indexed case-insensitive username,
   and applies durable global, client, and per-identifier attempt windows before calling Auth. Old
