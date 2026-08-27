@@ -32,6 +32,8 @@ Source presence does not mean provider activation. Activation requires separatel
 4. new reviewed production deployments and live readback for every instrumented product.
 
 When the environment variable is absent, the client performs no network request.
+The website client also emits only from the canonical `fawxzzy.com` and `www.fawxzzy.com`
+origins. Account and other subdomains do not send storefront analytics.
 
 ## Compatibility retirement
 

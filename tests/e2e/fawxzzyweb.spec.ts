@@ -80,6 +80,8 @@ test("first-party analytics stays closed, anonymous, and provider-gated", async 
   expect(collector).toContain("SUPABASE_SERVICE_ROLE_KEY");
   expect(collector).not.toMatch(/request\.headers\.get\(["']user-agent|x-forwarded-for|referer/i);
   expect(client).toContain("NEXT_PUBLIC_FAWXZZY_ANALYTICS_URL");
+  expect(client).toContain('"https://fawxzzy.com", "https://www.fawxzzy.com"');
+  expect(client).toContain("analyticsOrigins.has(window.location.origin)");
   expect(client).toContain('product: "web"');
   expect(client).toContain('credentials: "omit"');
   expect(client).not.toContain("sendBeacon");
