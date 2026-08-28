@@ -554,6 +554,13 @@ test("vendored media matches its centralized provenance hashes", async () => {
     expect(await sha256ForPublicAsset(app.icon.src)).toBe(app.icon.sha256);
     expect(await sha256ForPublicAsset(app.display.icon.src)).toBe(app.display.icon.sha256);
     expect(await sha256ForPublicAsset(app.display.poster.src)).toBe(app.display.poster.sha256);
+    expect(await sha256ForPublicAsset(app.trailer.video.src)).toBe(app.trailer.video.sha256);
+    expect(await sha256ForPublicAsset(app.trailer.poster.src)).toBe(app.trailer.poster.sha256);
+    const captions = await readFile(
+      resolve(process.cwd(), "public", app.trailer.captionsSrc.replace(/^\//, "")),
+      "utf8",
+    );
+    expect(captions).toMatch(/^WEBVTT/);
   }
 });
 
