@@ -316,7 +316,7 @@ export const apps: CatalogApp[] = [
           "Responsive WebP derivative of the current Mazer production installed-app view captured from https://mazer.fawxzzy.com on August 21, 2026",
       },
     },
-    latestUpdate: "New 60-second live product walkthrough",
+    latestUpdate: "Current gameplay preview",
     accent: {
       from: "#4A99A8",
       glow: "rgba(74, 153, 168, 0.2)",
@@ -324,20 +324,20 @@ export const apps: CatalogApp[] = [
       to: "#82D5DC",
     },
     trailer: {
-      durationLabel: "1:00",
+      durationLabel: "0:25",
       description:
-        "A 60-second branded live walkthrough: enter the maze, make deliberate moves through a run, pause for the player guide, and return to play.",
+        "A 25-second current-gameplay preview showing the maze, player movement, and goal on the mobile play surface.",
       captionsSrc: "/apps/mazer/trailer-captions.vtt",
       video: {
         src: "/apps/mazer/trailer.mp4",
-        sha256: "711A5ED95B3527648F69BCF0A0E69761B4B84D87CE1C919FF34C88D880E28623",
+        sha256: "E8A17A70409527541229A4481933BCE2F91DB878B43F1DE47CCEA42EC4E1748C",
         source:
-          "July 20, 2026 60-second live production guest walkthrough with visible keyboard and cursor interaction",
+          "August 28, 2026 deterministic playback capture of the current Mazer production QA fixture at commit 6d9b78d7c144c2bca4a3843a6e9d4e3f83e745f6; no account or product data was used",
       },
       poster: {
         src: "/apps/mazer/trailer-poster.png",
-        sha256: "EB092F948FA617C8906BBF59795CD17FC9839CF873A440B8589E3223CAC8FD5F",
-        source: "July 20, 2026 60-second live Mazer production walkthrough poster derivative",
+        sha256: "0935FA738E49D2AE1E8BFAD496435641D42E01D2CE1C5A02C0409EF5BBFE4E60",
+        source: "August 28, 2026 poster frame from the deterministic current-production Mazer QA capture",
       },
     },
   },

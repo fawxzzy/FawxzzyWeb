@@ -550,10 +550,25 @@ test("app origins use branded launch homes and preserve legacy rollback entrypoi
 });
 
 test("vendored media matches its centralized provenance hashes", async () => {
+  const fitness = apps.find((app) => app.slug === "fitness");
+  const mazer = apps.find((app) => app.slug === "mazer");
+
+  expect(fitness?.latestUpdate).toBe("New 60-second live product walkthrough");
+  expect(fitness?.trailer.durationLabel).toBe("1:00");
+  expect(mazer?.latestUpdate).toBe("Current gameplay preview");
+  expect(mazer?.trailer.durationLabel).toBe("0:25");
+
   for (const app of apps) {
     expect(await sha256ForPublicAsset(app.icon.src)).toBe(app.icon.sha256);
     expect(await sha256ForPublicAsset(app.display.icon.src)).toBe(app.display.icon.sha256);
     expect(await sha256ForPublicAsset(app.display.poster.src)).toBe(app.display.poster.sha256);
+    expect(await sha256ForPublicAsset(app.trailer.video.src)).toBe(app.trailer.video.sha256);
+    expect(await sha256ForPublicAsset(app.trailer.poster.src)).toBe(app.trailer.poster.sha256);
+    const captions = await readFile(
+      resolve(process.cwd(), "public", app.trailer.captionsSrc.replace(/^\//, "")),
+      "utf8",
+    );
+    expect(captions).toMatch(/^WEBVTT/);
   }
 });
 
