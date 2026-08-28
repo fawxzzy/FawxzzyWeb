@@ -179,7 +179,7 @@ export const apps: CatalogApp[] = [
         source: "Responsive WebP derivative of the grounded Fitness walkthrough poster",
       },
     },
-    latestUpdate: "Current gameplay preview",
+    latestUpdate: "New 60-second live product walkthrough",
     accent: {
       from: "#9BAF61",
       glow: "rgba(155, 175, 97, 0.2)",
@@ -316,7 +316,7 @@ export const apps: CatalogApp[] = [
           "Responsive WebP derivative of the current Mazer production installed-app view captured from https://mazer.fawxzzy.com on August 21, 2026",
       },
     },
-    latestUpdate: "New 60-second live product walkthrough",
+    latestUpdate: "Current gameplay preview",
     accent: {
       from: "#4A99A8",
       glow: "rgba(74, 153, 168, 0.2)",
