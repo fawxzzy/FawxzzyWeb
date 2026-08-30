@@ -990,6 +990,18 @@ test("required-field feedback is visual and does not add an error paragraph", as
   await expect(identifierFrame).not.toHaveAttribute("data-invalid", "true");
 });
 
+test("field focus follows the notched frame without drawing a second input outline", async ({ page }) => {
+  await page.goto("/login?auth_test=success");
+  const identifier = page.getByLabel("Email or username");
+  const identifierFrame = page.locator("fieldset").filter({ hasText: "Email or username" });
+
+  await identifier.focus();
+
+  await expect(identifier).toHaveCSS("outline-style", "none");
+  await expect(identifierFrame).toHaveCSS("border-width", "1px");
+  await expect(identifierFrame).toHaveCSS("box-shadow", /rgba?\(/);
+});
+
 test("registered contexts swap product presentation without changing auth authority", async ({ page }) => {
   await page.goto("/login?auth_test=success&app=fitness");
   const card = page.locator('.account-card--auth[data-auth-product="fitness"]');

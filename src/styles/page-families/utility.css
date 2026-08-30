@@ -977,6 +977,16 @@
   caret-color: rgb(var(--text));
 }
 
+.account-page--utility .account-form--auth input:focus,
+.account-page--utility .account-form--auth input:focus-visible {
+  outline: none;
+}
+
+.account-form--auth fieldset:focus-within {
+  border-color: rgb(var(--auth-color) / 0.78);
+  box-shadow: 0 0 0 1px rgb(var(--auth-color) / 0.14);
+}
+
 .account-page--utility .account-form--auth input::-ms-clear,
 .account-page--utility .account-form--auth input::-ms-reveal {
   display: none;
