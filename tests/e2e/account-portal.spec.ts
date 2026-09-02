@@ -977,6 +977,7 @@ test("auth inputs preserve native caret placement after editing", async ({ page 
 test("required-field feedback is visual and does not add an error paragraph", async ({ page }) => {
   await page.goto("/login?auth_test=success");
   const submit = page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" });
+  const identifier = page.getByLabel("Email or username");
   await submit.click();
 
   const identifierFrame = page.locator("fieldset").filter({ hasText: "Email or username" });
@@ -986,7 +987,10 @@ test("required-field feedback is visual and does not add an error paragraph", as
   await expect(identifierFrame).toHaveCSS("border-color", "rgb(255, 77, 87)");
   await expect(page.locator(".account-auth-live-notice")).toHaveCount(0);
 
-  await page.getByLabel("Email or username").fill("fawxzzy");
+  await identifier.focus();
+  await expect(identifierFrame).toHaveCSS("border-color", "rgb(255, 77, 87)");
+
+  await identifier.fill("fawxzzy");
   await expect(identifierFrame).not.toHaveAttribute("data-invalid", "true");
 });
 
@@ -1000,6 +1004,11 @@ test("field focus follows the notched frame without drawing a second input outli
   await expect(identifier).toHaveCSS("outline-style", "none");
   await expect(identifierFrame).toHaveCSS("border-width", "1px");
   await expect(identifierFrame).toHaveCSS("box-shadow", /rgba?\(/);
+
+  await page.emulateMedia({ forcedColors: "active" });
+  await expect(identifierFrame).toHaveCSS("outline-style", "solid");
+  await expect(identifierFrame).toHaveCSS("outline-width", "2px");
+  await expect(identifierFrame).toHaveCSS("outline-offset", "2px");
 });
 
 test("registered contexts swap product presentation without changing auth authority", async ({ page }) => {

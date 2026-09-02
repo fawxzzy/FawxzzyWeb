@@ -987,6 +987,15 @@
   box-shadow: 0 0 0 1px rgb(var(--auth-color) / 0.14);
 }
 
+@media (forced-colors: active) {
+  .account-form--auth fieldset:focus-within {
+    border-color: Highlight;
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+    box-shadow: none;
+  }
+}
+
 .account-page--utility .account-form--auth input::-ms-clear,
 .account-page--utility .account-form--auth input::-ms-reveal {
   display: none;
