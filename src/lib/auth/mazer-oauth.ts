@@ -1,11 +1,20 @@
-import { accountContract, isLocalAuthTestOrigin } from "@/config/account";
-
 export const MAZER_OAUTH_AUTHORIZATION_PATH = "/oauth/authorize";
 export const MAZER_OAUTH_PENDING_API_PATH = "/api/account/mazer-oauth-pending";
 export const MAZER_OAUTH_PENDING_COOKIE = "__Host-fawxzzy-mazer-oauth-pending";
-export const MAZER_OAUTH_REDIRECT_URI = `${accountContract.productOrigins.mazer}/`;
+export const MAZER_OAUTH_REDIRECT_URI = "https://mazer.fawxzzy.com/";
 export const MAZER_OAUTH_SCOPE = "email";
 export const MAZER_OAUTH_PENDING_TTL_MS = 15 * 60 * 1000;
+
+const LOCAL_TEST_ORIGINS = new Set([
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "http://localhost:3210",
+  "http://127.0.0.1:3210",
+  "http://localhost:4312",
+  "http://127.0.0.1:4312",
+  "http://localhost:4313",
+  "http://127.0.0.1:4313",
+]);
 
 const AUTHORIZATION_ID_PATTERN = /^[A-Za-z0-9_-]{16,512}$/;
 const AUTH_GENERATION_PATTERN = /^[a-f0-9]{64}$/;
@@ -248,7 +257,7 @@ export function parseMazerOAuthGatewayResult(value: unknown): MazerOAuthAuthoriz
 }
 
 export function expectedMazerOAuthClientId(runtimeOrigin: string) {
-  if (isLocalAuthTestOrigin(runtimeOrigin)) return "local-mazer-oauth-client";
+  if (LOCAL_TEST_ORIGINS.has(runtimeOrigin)) return "local-mazer-oauth-client";
   const value = process.env.NEXT_PUBLIC_MAZER_OAUTH_CLIENT_ID?.trim();
   return value && /^[A-Za-z0-9_-]{8,256}$/.test(value) ? value : null;
 }

@@ -36,6 +36,11 @@ const accountRoutes = [
   "/auth/callback",
   "/auth/confirm",
   "/reset-password?recovery=1",
+  "/privacy",
+  "/terms",
+  "/legal/mazer/privacy",
+  "/legal/mazer/terms",
+  "/oauth/authorize",
 ];
 
 function runVercelJson(args) {
@@ -137,6 +142,33 @@ export async function verifyProductionRelease({ deploymentId, expectedCommit, so
     }
   }
 
+  const pendingEndpoint = "https://account.fawxzzy.com/api/account/mazer-oauth-pending";
+  const pendingMissing = await fetchWithTimeout(pendingEndpoint, { redirect: "manual" });
+  const pendingWrongOrigin = await fetchWithTimeout(pendingEndpoint, {
+    body: "{}",
+    headers: { "Content-Type": "application/json", Origin: "https://hostile.example" },
+    method: "POST",
+    redirect: "manual",
+  });
+  const pendingApi = [
+    {
+      case: "missing_host_only_cookie",
+      status: pendingMissing.status,
+      cacheControl: pendingMissing.headers.get("cache-control"),
+    },
+    {
+      case: "wrong_origin",
+      status: pendingWrongOrigin.status,
+      cacheControl: pendingWrongOrigin.headers.get("cache-control"),
+    },
+  ];
+  for (const proof of pendingApi) {
+    const expectedStatus = proof.case === "missing_host_only_cookie" ? 404 : 403;
+    if (proof.status !== expectedStatus || !proof.cacheControl?.includes("no-store")) {
+      throw new Error(`Mazer pending API contract failed for ${proof.case}.`);
+    }
+  }
+
   const www = await fetchWithTimeout("https://www.fawxzzy.com/", { redirect: "manual" });
   if (www.status !== 308 || www.headers.get("location") !== "https://fawxzzy.com/") {
     throw new Error("The www canonical redirect is not exact.");
@@ -184,7 +216,7 @@ export async function verifyProductionRelease({ deploymentId, expectedCommit, so
       rollbackDeploymentId,
       rollbackReadyState: rollbackDeployment.readyState,
     },
-    verification: { smoke, accountSmoke, wwwRedirect: 308, ranges, logs },
+    verification: { smoke, accountSmoke, pendingApi, wwwRedirect: 308, ranges, logs },
   };
 
   const targetPath = receiptPath ?? path.join(repoRoot, "visual-evidence", expectedCommit, "production-release-receipt.json");
