@@ -53,6 +53,23 @@ async function fetchWithTimeout(url, options = {}) {
   return fetch(url, { ...options, signal: AbortSignal.timeout(20_000) });
 }
 
+function readQuotedAttribute(tag, name) {
+  const match = tag.match(new RegExp(`(?:^|\\s)${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`, "i"));
+  return match ? (match[1] ?? match[2]) : null;
+}
+
+export function hasExactCanonicalLink(html, expectedCanonical) {
+  const withoutComments = html.replace(/<!--[\s\S]*?-->/g, "");
+  const linkTags = withoutComments.match(/<link\b[^>]*>/gi) ?? [];
+
+  return linkTags.some((tag) => {
+    const rel = readQuotedAttribute(tag, "rel");
+    const href = readQuotedAttribute(tag, "href");
+    return rel?.split(/\s+/).some((token) => token.toLowerCase() === "canonical")
+      && href === expectedCanonical;
+  });
+}
+
 function readLogCount(deploymentId, filterArgs) {
   const output = execFileSync(getCommand("vercel"), [
     "logs",
@@ -139,7 +156,7 @@ export async function verifyProductionRelease({ deploymentId, expectedCommit, so
     const html = await response.text();
     const expectedCanonical = `https://account.fawxzzy.com${route.split("?")[0]}`;
     accountSmoke.push({ route, status: response.status, url: response.url, expectedCanonical });
-    if (response.status !== 200 || !html.includes(`href="${expectedCanonical}"`)) {
+    if (response.status !== 200 || !hasExactCanonicalLink(html, expectedCanonical)) {
       throw new Error(`Account-origin smoke failed for ${route}.`);
     }
   }
@@ -152,7 +169,7 @@ export async function verifyProductionRelease({ deploymentId, expectedCommit, so
     const html = await response.text();
     const expectedCanonical = `https://fawxzzy.com${route}`;
     legalSmoke.push({ route, status: response.status, url: response.url, expectedCanonical });
-    if (response.status !== 200 || !html.includes(`href="${expectedCanonical}"`)) {
+    if (response.status !== 200 || !hasExactCanonicalLink(html, expectedCanonical)) {
       throw new Error(`Legal-route smoke failed for ${route}.`);
     }
   }
