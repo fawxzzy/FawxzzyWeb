@@ -4,6 +4,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import htmlParser from "next/dist/compiled/node-html-parser/index.js";
 import {
   VERCEL_PRODUCTION_CONTRACT,
   assertRemoteProject,
@@ -36,11 +37,13 @@ const accountRoutes = [
   "/auth/callback",
   "/auth/confirm",
   "/reset-password?recovery=1",
+  "/oauth/authorize",
+];
+const legalRoutes = [
   "/privacy",
   "/terms",
   "/legal/mazer/privacy",
   "/legal/mazer/terms",
-  "/oauth/authorize",
 ];
 
 function runVercelJson(args) {
@@ -49,6 +52,53 @@ function runVercelJson(args) {
 
 async function fetchWithTimeout(url, options = {}) {
   return fetch(url, { ...options, signal: AbortSignal.timeout(20_000) });
+}
+
+function hasDuplicateCanonicalAttribute(rawAttributes) {
+  const counts = new Map([["href", 0], ["rel", 0]]);
+  let cursor = 0;
+
+  while (cursor < rawAttributes.length) {
+    while (/\s/.test(rawAttributes[cursor] ?? "")) cursor += 1;
+    if (cursor >= rawAttributes.length || rawAttributes[cursor] === "/") break;
+
+    const nameStart = cursor;
+    while (cursor < rawAttributes.length && !/[\s=/>]/.test(rawAttributes[cursor])) cursor += 1;
+    const name = rawAttributes.slice(nameStart, cursor).toLowerCase();
+    if (!name) {
+      cursor += 1;
+      continue;
+    }
+    if (counts.has(name)) counts.set(name, counts.get(name) + 1);
+
+    while (/\s/.test(rawAttributes[cursor] ?? "")) cursor += 1;
+    if (rawAttributes[cursor] !== "=") continue;
+    cursor += 1;
+    while (/\s/.test(rawAttributes[cursor] ?? "")) cursor += 1;
+    const quote = rawAttributes[cursor];
+    if (quote === '"' || quote === "'") {
+      cursor += 1;
+      while (cursor < rawAttributes.length && rawAttributes[cursor] !== quote) cursor += 1;
+      if (rawAttributes[cursor] === quote) cursor += 1;
+    } else {
+      while (cursor < rawAttributes.length && !/\s/.test(rawAttributes[cursor])) cursor += 1;
+    }
+  }
+
+  return [...counts.values()].some((count) => count > 1);
+}
+
+export function hasExactCanonicalLink(html, expectedCanonical) {
+  const document = htmlParser.parse(html);
+  const links = document.querySelectorAll("head > link");
+  if (links.some((element) => hasDuplicateCanonicalAttribute(element.rawAttrs))) return false;
+
+  const canonicalLinks = links.filter((element) => {
+    const rel = element.getAttribute("rel");
+    return rel?.split(/[\t\n\f\r ]+/).some((token) => token.toLowerCase() === "canonical");
+  });
+  return canonicalLinks.length === 1
+    && canonicalLinks[0].getAttribute("href") === expectedCanonical;
 }
 
 function readLogCount(deploymentId, filterArgs) {
@@ -137,8 +187,21 @@ export async function verifyProductionRelease({ deploymentId, expectedCommit, so
     const html = await response.text();
     const expectedCanonical = `https://account.fawxzzy.com${route.split("?")[0]}`;
     accountSmoke.push({ route, status: response.status, url: response.url, expectedCanonical });
-    if (response.status !== 200 || !html.includes(`href="${expectedCanonical}"`)) {
+    if (response.status !== 200 || !hasExactCanonicalLink(html, expectedCanonical)) {
       throw new Error(`Account-origin smoke failed for ${route}.`);
+    }
+  }
+
+  const legalSmoke = [];
+  for (const route of legalRoutes) {
+    const response = await fetchWithTimeout(`https://account.fawxzzy.com${route}`, {
+      redirect: "follow",
+    });
+    const html = await response.text();
+    const expectedCanonical = `https://fawxzzy.com${route}`;
+    legalSmoke.push({ route, status: response.status, url: response.url, expectedCanonical });
+    if (response.status !== 200 || !hasExactCanonicalLink(html, expectedCanonical)) {
+      throw new Error(`Legal-route smoke failed for ${route}.`);
     }
   }
 
@@ -216,7 +279,7 @@ export async function verifyProductionRelease({ deploymentId, expectedCommit, so
       rollbackDeploymentId,
       rollbackReadyState: rollbackDeployment.readyState,
     },
-    verification: { smoke, accountSmoke, pendingApi, wwwRedirect: 308, ranges, logs },
+    verification: { smoke, accountSmoke, legalSmoke, pendingApi, wwwRedirect: 308, ranges, logs },
   };
 
   const targetPath = receiptPath ?? path.join(repoRoot, "visual-evidence", expectedCommit, "production-release-receipt.json");
