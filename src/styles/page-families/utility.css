@@ -1253,11 +1253,11 @@
 
 @media (max-height: 650px) {
   .account-page--utility .account-shell--utility {
-    padding: 24px 24px 16px;
+    padding: 16px 24px 12px;
   }
 
   .account-auth-intro h1 {
-    margin-top: 12px;
+    margin-top: 8px;
     font-size: clamp(1.75rem, 10cqi, 2.25rem);
   }
 
@@ -1267,7 +1267,7 @@
   }
 
   .account-auth-body {
-    padding-block: 4px;
+    padding-block: 0;
   }
 
   .account-form--auth {
@@ -1284,20 +1284,6 @@
 
   .account-auth-dock .catalog-button {
     min-height: 48px;
-  }
-}
-
-@media (max-height: 520px) {
-  .account-page--utility .account-shell--utility {
-    padding: 12px 24px 10px;
-  }
-
-  .account-auth-intro h1 {
-    margin-top: 8px;
-  }
-
-  .account-auth-body {
-    padding-block: 0;
   }
 }
 
