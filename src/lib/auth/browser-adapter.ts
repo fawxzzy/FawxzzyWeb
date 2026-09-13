@@ -28,9 +28,7 @@ export type PortalAuthAdapter = {
   onSessionChange(listener: (session: PortalSession | null) => void): () => void;
   signIn(email: string, password: string): Promise<PortalSession | null>;
   handoffToFitness(returnTarget: string, expectedUserId: string): Promise<string>;
-  getOAuthAuthorization(authorizationId: string): Promise<unknown>;
-  approveOAuthAuthorization(authorizationId: string): Promise<string>;
-  denyOAuthAuthorization(authorizationId: string): Promise<string>;
+  getOAuthAccessToken(expectedUserId: string): Promise<string>;
   signUp(
     email: string,
     password: string,
@@ -367,24 +365,17 @@ function createSupabaseAdapter(
         },
       });
     },
-    async getOAuthAuthorization(authorizationId) {
-      const { data, error } = await client.auth.oauth.getAuthorizationDetails(authorizationId);
-      if (error || !data) throw error ?? new Error("Authorization request unavailable.");
-      return data;
-    },
-    async approveOAuthAuthorization(authorizationId) {
-      const { data, error } = await client.auth.oauth.approveAuthorization(authorizationId, {
-        skipBrowserRedirect: true,
-      });
-      if (error || !data?.redirect_url) throw error ?? new Error("Authorization request unavailable.");
-      return data.redirect_url;
-    },
-    async denyOAuthAuthorization(authorizationId) {
-      const { data, error } = await client.auth.oauth.denyAuthorization(authorizationId, {
-        skipBrowserRedirect: true,
-      });
-      if (error || !data?.redirect_url) throw error ?? new Error("Authorization request unavailable.");
-      return data.redirect_url;
+    async getOAuthAccessToken(expectedUserId) {
+      const { data, error } = await client.auth.getSession();
+      if (
+        error ||
+        !data.session ||
+        data.session.user.id !== expectedUserId ||
+        typeof data.session.access_token !== "string"
+      ) {
+        throw error ?? new Error("Authorization session unavailable.");
+      }
+      return data.session.access_token;
     },
     async signOut() {
       beginAuthMutation();
@@ -457,8 +448,6 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
     }
   };
   const publish = () => listeners.forEach((listener) => listener(session));
-  const oauthState = "s".repeat(43);
-
   return {
     kind: "test",
     getAuthGeneration() {
@@ -500,37 +489,12 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       }
       return `${accountContract.productOrigins.fitness}${fitnessReturnPath(returnTarget)}`;
     },
-    async getOAuthAuthorization(authorizationId) {
+    async getOAuthAccessToken(expectedUserId) {
       fail();
-      if (!session) throw new Error("Authorization request unavailable.");
-      if (scenario === "oauth-auto") {
-        return {
-          redirect_url: `${accountContract.productOrigins.mazer}/?code=local-auto-code&state=${oauthState}`,
-        };
+      if (!session || session.userId !== expectedUserId) {
+        throw new Error("Authorization session unavailable.");
       }
-      return {
-        authorization_id: authorizationId,
-        client: {
-          id: "local-mazer-oauth-client",
-          logo_uri: "",
-          name: "Mazer",
-          uri: accountContract.productOrigins.mazer,
-        },
-        redirect_uri: `${accountContract.productOrigins.mazer}/`,
-        scope: "email",
-        user: { email: session.email, id: session.userId },
-      };
-    },
-    async approveOAuthAuthorization() {
-      fail();
-      if (scenario === "oauth-hostile") {
-        return "https://attacker.example.test/?code=stolen";
-      }
-      return `${accountContract.productOrigins.mazer}/?code=local-code&state=${oauthState}`;
-    },
-    async denyOAuthAuthorization() {
-      fail();
-      return `${accountContract.productOrigins.mazer}/?error=access_denied&state=${oauthState}`;
+      return `local-${scenario ?? "default"}-oauth-token-1234567890`;
     },
     async signOut() {
       beginAuthMutation();

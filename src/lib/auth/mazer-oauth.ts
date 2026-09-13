@@ -9,14 +9,16 @@ export const MAZER_OAUTH_PENDING_TTL_MS = 15 * 60 * 1000;
 
 const AUTHORIZATION_ID_PATTERN = /^[A-Za-z0-9_-]{16,512}$/;
 const AUTH_GENERATION_PATTERN = /^[a-f0-9]{64}$/;
+const ACCESS_TOKEN_PATTERN = /^[A-Za-z0-9._~-]+$/;
 const STATE_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 const APPROVAL_QUERY_KEYS = new Set(["code", "state"]);
-const DENIAL_QUERY_KEYS = new Set(["error", "state"]);
+const DENIAL_QUERY_KEYS = new Set(["error", "error_description", "state"]);
 const REDIRECT_MAX_BYTES = 4_096;
 const CODE_MAX_LENGTH = 2_048;
+const ACCESS_TOKEN_MAX_LENGTH = 8_192;
+export const MAZER_OAUTH_DENIAL_DESCRIPTION = "User denied the request";
 
 export type MazerOAuthAuthorizationDetails = {
-  authorizationId: string;
   clientId: string;
   clientName: string;
   redirectUri: string;
@@ -50,6 +52,13 @@ export function isValidMazerAuthorizationId(value: unknown): value is string {
 
 export function isValidAuthGeneration(value: unknown): value is string {
   return typeof value === "string" && AUTH_GENERATION_PATTERN.test(value);
+}
+
+export function isValidOAuthAccessToken(value: unknown): value is string {
+  return typeof value === "string" &&
+    value.length >= 16 &&
+    value.length <= ACCESS_TOKEN_MAX_LENGTH &&
+    ACCESS_TOKEN_PATTERN.test(value);
 }
 
 export function parsePendingMazerOAuthAuthorization(
@@ -93,15 +102,65 @@ export async function storePendingMazerOAuthAuthorization(
   return response.ok;
 }
 
-export async function readPendingMazerOAuthAuthorization() {
+export async function rebindPendingMazerOAuthAuthorization(authGeneration: string) {
+  if (!isValidAuthGeneration(authGeneration)) return false;
+  const response = await fetch(MAZER_OAUTH_PENDING_API_PATH, {
+    body: JSON.stringify({ authGeneration }),
+    cache: "no-store",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    method: "PATCH",
+  });
+  return response.ok;
+}
+
+function oauthGatewayHeaders(accessToken: string, authGeneration: string) {
+  if (!isValidOAuthAccessToken(accessToken) || !isValidAuthGeneration(authGeneration)) {
+    return null;
+  }
+  return {
+    Authorization: `Bearer ${accessToken}`,
+    "X-Fawxzzy-Auth-Generation": authGeneration,
+  };
+}
+
+export async function readPendingMazerOAuthAuthorization(
+  accessToken: string,
+  authGeneration: string,
+) {
+  const headers = oauthGatewayHeaders(accessToken, authGeneration);
+  if (!headers) throw new Error("Authorization session unavailable.");
   const response = await fetch(MAZER_OAUTH_PENDING_API_PATH, {
     cache: "no-store",
     credentials: "same-origin",
+    headers,
     method: "GET",
   });
   if (response.status === 404) return null;
   if (!response.ok) throw new Error("Pending authorization unavailable.");
-  return parsePendingMazerOAuthAuthorization(await response.json().catch(() => null));
+  return parseMazerOAuthGatewayResult(await response.json().catch(() => null));
+}
+
+export async function decidePendingMazerOAuthAuthorization(
+  action: "approve" | "deny",
+  accessToken: string,
+  authGeneration: string,
+) {
+  const authHeaders = oauthGatewayHeaders(accessToken, authGeneration);
+  if (!authHeaders) throw new Error("Authorization session unavailable.");
+  const response = await fetch(MAZER_OAUTH_PENDING_API_PATH, {
+    body: JSON.stringify({ action, authGeneration }),
+    cache: "no-store",
+    credentials: "same-origin",
+    headers: { ...authHeaders, "Content-Type": "application/json" },
+    method: "PUT",
+  });
+  if (!response.ok) throw new Error("Authorization decision unavailable.");
+  const value = await response.json().catch(() => null);
+  if (!isRecord(value) || !hasExactKeys(value, ["redirectUrl"]) || typeof value.redirectUrl !== "string") {
+    throw new Error("Authorization decision unavailable.");
+  }
+  return value.redirectUrl;
 }
 
 export async function clearPendingMazerOAuthAuthorization() {
@@ -115,15 +174,16 @@ export async function clearPendingMazerOAuthAuthorization() {
   }
 }
 
-export function normalizeMazerOAuthAuthorizationResult(
+export function normalizeMazerOAuthProviderResult(
   value: unknown,
+  expectedAuthorizationId: string,
 ): MazerOAuthAuthorizationResult | null {
-  if (!isRecord(value)) return null;
+  if (!isRecord(value) || !isValidMazerAuthorizationId(expectedAuthorizationId)) return null;
   if (typeof value.redirect_url === "string") {
     return { kind: "redirect", redirectUrl: value.redirect_url };
   }
   if (
-    !isValidMazerAuthorizationId(value.authorization_id) ||
+    value.authorization_id !== expectedAuthorizationId ||
     typeof value.redirect_uri !== "string" ||
     typeof value.scope !== "string" ||
     !isRecord(value.client) ||
@@ -138,12 +198,51 @@ export function normalizeMazerOAuthAuthorizationResult(
   return {
     kind: "authorization",
     details: {
-      authorizationId: value.authorization_id,
       clientId: value.client.id,
       clientName: value.client.name,
       redirectUri: value.redirect_uri,
       scope: value.scope,
       userId: value.user.id,
+    },
+  };
+}
+
+export function parseMazerOAuthGatewayResult(value: unknown): MazerOAuthAuthorizationResult | null {
+  if (!isRecord(value) || typeof value.kind !== "string") return null;
+  if (
+    value.kind === "redirect" &&
+    hasExactKeys(value, ["kind", "redirectUrl"]) &&
+    typeof value.redirectUrl === "string"
+  ) {
+    return { kind: "redirect", redirectUrl: value.redirectUrl };
+  }
+  if (
+    value.kind !== "authorization" ||
+    !hasExactKeys(value, ["kind", "details"]) ||
+    !isRecord(value.details) ||
+    !hasExactKeys(value.details, [
+      "clientId",
+      "clientName",
+      "redirectUri",
+      "scope",
+      "userId",
+    ]) ||
+    typeof value.details.clientId !== "string" ||
+    typeof value.details.clientName !== "string" ||
+    typeof value.details.redirectUri !== "string" ||
+    typeof value.details.scope !== "string" ||
+    typeof value.details.userId !== "string"
+  ) {
+    return null;
+  }
+  return {
+    kind: "authorization",
+    details: {
+      clientId: value.details.clientId,
+      clientName: value.details.clientName,
+      redirectUri: value.details.redirectUri,
+      scope: value.details.scope,
+      userId: value.details.userId,
     },
   };
 }
@@ -209,7 +308,13 @@ export function sanitizeMazerOAuthDenialRedirect(value: unknown) {
   const url = parseBoundedMazerRedirect(value);
   if (!url || !hasExactSearchKeys(url, DENIAL_QUERY_KEYS)) return null;
   const error = url.searchParams.get("error");
+  const errorDescription = url.searchParams.get("error_description");
   const state = url.searchParams.get("state");
-  if (error !== "access_denied" || !state || !STATE_PATTERN.test(state)) return null;
+  if (
+    error !== "access_denied" ||
+    errorDescription !== MAZER_OAUTH_DENIAL_DESCRIPTION ||
+    !state ||
+    !STATE_PATTERN.test(state)
+  ) return null;
   return url.href;
 }

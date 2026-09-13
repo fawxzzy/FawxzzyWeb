@@ -9,12 +9,13 @@ import {
 import { resolvePortalAuthAdapter } from "@/lib/auth/browser-adapter";
 import {
   clearPendingMazerOAuthAuthorization,
+  decidePendingMazerOAuthAuthorization,
   isExpectedMazerOAuthAuthorization,
   isValidAuthGeneration,
   isValidMazerAuthorizationId,
   MAZER_OAUTH_AUTHORIZATION_PATH,
-  normalizeMazerOAuthAuthorizationResult,
   readPendingMazerOAuthAuthorization,
+  rebindPendingMazerOAuthAuthorization,
   sanitizeMazerOAuthApprovalRedirect,
   sanitizeMazerOAuthDenialRedirect,
   storePendingMazerOAuthAuthorization,
@@ -109,11 +110,6 @@ export function MazerOAuthAuthorization() {
         return;
       }
 
-      const pending = await readPendingMazerOAuthAuthorization();
-      if (!pending) {
-        if (active) setState({ kind: "invalid" });
-        return;
-      }
       const authGeneration = resolution.adapter.getAuthGeneration();
       if (!isValidAuthGeneration(authGeneration)) {
         await clearPendingMazerOAuthAuthorization();
@@ -127,23 +123,15 @@ export function MazerOAuthAuthorization() {
         return;
       }
 
-      // A normal sign-in advances the durable generation. Rebind the still
-      // provider-owned request once, before consent is shown, to the session
-      // that will make the decision.
-      if (pending.authGeneration !== authGeneration) {
-        const rebound = await storePendingMazerOAuthAuthorization(
-          pending.authorizationId,
-          authGeneration,
-        );
-        if (!rebound) {
-          if (active) setState({ kind: "unavailable" });
-          return;
-        }
+      // A normal sign-in advances the durable generation. Rebind the hidden
+      // provider handle once, without ever returning it to page JavaScript.
+      const rebound = await rebindPendingMazerOAuthAuthorization(authGeneration);
+      if (!rebound) {
+        if (active) setState({ kind: "invalid" });
+        return;
       }
 
-      const rawDetails = await resolution.adapter.getOAuthAuthorization(
-        pending.authorizationId,
-      );
+      const accessToken = await resolution.adapter.getOAuthAccessToken(session.userId);
       if (
         resolution.adapter.getAuthGeneration() !== authGeneration ||
         (await resolution.adapter.getSession())?.userId !== session.userId
@@ -153,7 +141,7 @@ export function MazerOAuthAuthorization() {
         return;
       }
 
-      const result = normalizeMazerOAuthAuthorizationResult(rawDetails);
+      const result = await readPendingMazerOAuthAuthorization(accessToken, authGeneration);
       if (!result) {
         if (active) setState({ kind: "invalid" });
         return;
@@ -169,7 +157,6 @@ export function MazerOAuthAuthorization() {
         return;
       }
       if (
-        result.details.authorizationId !== pending.authorizationId ||
         result.details.userId !== session.userId ||
         !isExpectedMazerOAuthAuthorization(result.details, window.location.origin)
       ) {
@@ -213,16 +200,19 @@ export function MazerOAuthAuthorization() {
         return;
       }
 
-      // This final synchronous generation read is directly adjacent to the
-      // provider decision, closing same-subject sign-out/sign-in races.
+      const accessToken = await resolution.adapter.getOAuthAccessToken(session.userId);
       if (resolution.adapter.getAuthGeneration() !== state.authGeneration) {
         await clearPendingMazerOAuthAuthorization();
         setState({ kind: "invalid" });
         return;
       }
-      const rawRedirect = decision === "approve"
-        ? await resolution.adapter.approveOAuthAuthorization(state.details.authorizationId)
-        : await resolution.adapter.denyOAuthAuthorization(state.details.authorizationId);
+      // The server uses this exact captured token for the provider decision.
+      // A later SDK/session mutation cannot substitute a newer session.
+      const rawRedirect = await decidePendingMazerOAuthAuthorization(
+        decision,
+        accessToken,
+        state.authGeneration,
+      );
       const destination = decision === "approve"
         ? sanitizeMazerOAuthApprovalRedirect(rawRedirect)
         : sanitizeMazerOAuthDenialRedirect(rawRedirect);
@@ -230,7 +220,6 @@ export function MazerOAuthAuthorization() {
         setState({ kind: "invalid" });
         return;
       }
-      await clearPendingMazerOAuthAuthorization();
       navigateToMazer(destination);
     } catch {
       setState({ kind: "unavailable" });

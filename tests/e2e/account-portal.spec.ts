@@ -46,8 +46,9 @@ import { validatePassword } from "../../src/lib/auth/password-policy";
 import { isBrowserSafeSupabasePublicKey } from "../../src/lib/auth/supabase-public-key.mjs";
 import {
   MAZER_OAUTH_PENDING_COOKIE,
+  MAZER_OAUTH_DENIAL_DESCRIPTION,
   isValidMazerAuthorizationId,
-  normalizeMazerOAuthAuthorizationResult,
+  normalizeMazerOAuthProviderResult,
   parsePendingMazerOAuthAuthorization,
   sanitizeMazerOAuthApprovalRedirect,
   sanitizeMazerOAuthDenialRedirect,
@@ -55,7 +56,9 @@ import {
 import {
   DELETE as deletePendingMazerOAuth,
   GET as getPendingMazerOAuth,
+  PATCH as patchPendingMazerOAuth,
   POST as postPendingMazerOAuth,
+  PUT as putPendingMazerOAuth,
 } from "../../api/account/mazer-oauth-pending";
 import {
   humanAccountServices,
@@ -108,12 +111,71 @@ test.beforeEach(async ({ context }) => {
       await route.fulfill({ status: 204 });
       return;
     }
+    if (request.method() === "PATCH") {
+      const body = request.postDataJSON() as { authGeneration: string };
+      if (!pending) {
+        await route.fulfill({ status: 404 });
+        return;
+      }
+      pending = { ...pending, authGeneration: body.authGeneration };
+      await route.fulfill({ status: 204 });
+      return;
+    }
     if (!pending) {
       await route.fulfill({ status: 404 });
       return;
     }
+    const token = request.headers().authorization ?? "";
+    const authGeneration = request.headers()["x-fawxzzy-auth-generation"];
+    if (!token.startsWith("Bearer local-") || authGeneration !== pending.authGeneration) {
+      await route.fulfill({ status: 401 });
+      return;
+    }
+    if (request.method() === "PUT") {
+      const body = request.postDataJSON() as {
+        action: "approve" | "deny";
+        authGeneration: string;
+      };
+      if (body.authGeneration !== pending.authGeneration) {
+        await route.fulfill({ status: 401 });
+        return;
+      }
+      const redirectUrl = token.includes("oauth-hostile")
+        ? "https://attacker.example.test/?code=stolen"
+        : body.action === "approve"
+          ? `${accountContract.productOrigins.mazer}/?code=local-code&state=${oauthState}`
+          : `${accountContract.productOrigins.mazer}/?error=access_denied&error_description=${encodeURIComponent(MAZER_OAUTH_DENIAL_DESCRIPTION)}&state=${oauthState}`;
+      pending = null;
+      await route.fulfill({
+        body: JSON.stringify({ redirectUrl }),
+        contentType: "application/json",
+        status: 200,
+      });
+      return;
+    }
+    if (token.includes("oauth-auto")) {
+      pending = null;
+      await route.fulfill({
+        body: JSON.stringify({
+          kind: "redirect",
+          redirectUrl: `${accountContract.productOrigins.mazer}/?code=local-auto-code&state=${oauthState}`,
+        }),
+        contentType: "application/json",
+        status: 200,
+      });
+      return;
+    }
     await route.fulfill({
-      body: JSON.stringify(pending),
+      body: JSON.stringify({
+        kind: "authorization",
+        details: {
+          clientId: "local-mazer-oauth-client",
+          clientName: "Mazer",
+          redirectUri: `${accountContract.productOrigins.mazer}/`,
+          scope: "email",
+          userId: "preview-user",
+        },
+      }),
       contentType: "application/json",
       headers: { "Cache-Control": "no-store" },
       status: 200,
@@ -221,19 +283,31 @@ test("Mazer OAuth accepts only one bounded expiring authorization carrier", () =
 
 test("Mazer OAuth normalizes provider details and validates decision-specific redirects", () => {
   const authorizationId = "authorization-id-1234567890";
-  expect(normalizeMazerOAuthAuthorizationResult({
+  expect(normalizeMazerOAuthProviderResult({
     authorization_id: authorizationId,
     client: { id: "local-mazer-oauth-client", name: "Mazer" },
     redirect_uri: "https://mazer.fawxzzy.com/",
     scope: "email",
     user: { id: "preview-user" },
-  })).toMatchObject({ kind: "authorization" });
+  }, authorizationId)).toMatchObject({
+    kind: "authorization",
+    details: { userId: "preview-user" },
+  });
+  expect(JSON.stringify(normalizeMazerOAuthProviderResult({
+    authorization_id: authorizationId,
+    client: { id: "local-mazer-oauth-client", name: "Mazer" },
+    redirect_uri: "https://mazer.fawxzzy.com/",
+    scope: "email",
+    user: { id: "preview-user" },
+  }, authorizationId))).not.toContain(authorizationId);
   expect(sanitizeMazerOAuthApprovalRedirect(
     `https://mazer.fawxzzy.com/?code=one-time&state=${oauthState}`,
   )).toBe(`https://mazer.fawxzzy.com/?code=one-time&state=${oauthState}`);
   expect(sanitizeMazerOAuthDenialRedirect(
-    `https://mazer.fawxzzy.com/?error=access_denied&state=${oauthState}`,
-  )).toBe(`https://mazer.fawxzzy.com/?error=access_denied&state=${oauthState}`);
+    `https://mazer.fawxzzy.com/?error=access_denied&error_description=${encodeURIComponent(MAZER_OAUTH_DENIAL_DESCRIPTION)}&state=${oauthState}`,
+  )).toBe(
+    `https://mazer.fawxzzy.com/?error=access_denied&error_description=${encodeURIComponent(MAZER_OAUTH_DENIAL_DESCRIPTION)}&state=${oauthState}`,
+  );
   for (const hostile of [
     "https://attacker.example.test/?code=one-time",
     "https://mazer.fawxzzy.com/path?code=one-time",
@@ -272,14 +346,96 @@ test("Mazer pending carrier is Secure, HttpOnly, host-only, bounded, and single-
   expect(setCookie).not.toContain("Domain=");
 
   const cookiePair = setCookie?.split(";", 1)[0] ?? "";
-  const read = getPendingMazerOAuth(new Request(
-    "https://account.fawxzzy.com/api/account/mazer-oauth-pending",
-    { headers: { Cookie: cookiePair } },
-  ));
-  expect(read.status).toBe(200);
-  await expect(read.json()).resolves.toMatchObject({ authorizationId, authGeneration });
+  const accessToken = `${"a".repeat(32)}.${"b".repeat(32)}.${"c".repeat(32)}`;
+  const previousUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const previousKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const previousFetch = globalThis.fetch;
+  const upstreamCalls: Array<{ body: string | null; method: string; url: string }> = [];
+  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://bxtcuhkotumitoqtrcej.supabase.co";
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_local_test_key";
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    const method = init?.method ?? "GET";
+    upstreamCalls.push({ body: typeof init?.body === "string" ? init.body : null, method, url });
+    if (method === "GET") {
+      return Response.json({
+        authorization_id: authorizationId,
+        client: { id: "local-mazer-oauth-client", name: "Mazer" },
+        redirect_uri: "https://mazer.fawxzzy.com/",
+        scope: "email",
+        user: { id: "preview-user" },
+      });
+    }
+    const action = JSON.parse(String(init?.body)) as { action: "approve" | "deny" };
+    return Response.json({
+      redirect_url: action.action === "approve"
+        ? `https://mazer.fawxzzy.com/?code=one-time&state=${oauthState}`
+        : `https://mazer.fawxzzy.com/?error=access_denied&error_description=${encodeURIComponent(MAZER_OAUTH_DENIAL_DESCRIPTION)}&state=${oauthState}`,
+    });
+  };
+  try {
+    const rebound = await patchPendingMazerOAuth(new Request(
+      "https://account.fawxzzy.com/api/account/mazer-oauth-pending",
+      {
+        body: JSON.stringify({ authGeneration }),
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: cookiePair,
+          Origin: "https://account.fawxzzy.com",
+        },
+        method: "PATCH",
+      },
+    ));
+    expect(rebound.status).toBe(204);
 
-  const duplicate = getPendingMazerOAuth(new Request(
+    const read = await getPendingMazerOAuth(new Request(
+      "https://account.fawxzzy.com/api/account/mazer-oauth-pending",
+      { headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Cookie: cookiePair,
+        "X-Fawxzzy-Auth-Generation": authGeneration,
+      } },
+    ));
+    expect(read.status).toBe(200);
+    const browserPayload = await read.json();
+    expect(browserPayload).toMatchObject({
+      kind: "authorization",
+      details: { clientName: "Mazer", userId: "preview-user" },
+    });
+    expect(JSON.stringify(browserPayload)).not.toContain(authorizationId);
+    expect(upstreamCalls[0]).toMatchObject({
+      method: "GET",
+      url: `https://bxtcuhkotumitoqtrcej.supabase.co/auth/v1/oauth/authorizations/${authorizationId}`,
+    });
+
+    const approved = await putPendingMazerOAuth(new Request(
+      "https://account.fawxzzy.com/api/account/mazer-oauth-pending",
+      {
+        body: JSON.stringify({ action: "approve", authGeneration }),
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+          Cookie: cookiePair,
+          Origin: "https://account.fawxzzy.com",
+          "X-Fawxzzy-Auth-Generation": authGeneration,
+        },
+        method: "PUT",
+      },
+    ));
+    expect(approved.status).toBe(200);
+    await expect(approved.json()).resolves.toEqual({
+      redirectUrl: `https://mazer.fawxzzy.com/?code=one-time&state=${oauthState}`,
+    });
+    expect(approved.headers.get("set-cookie")).toContain("Max-Age=0");
+  } finally {
+    globalThis.fetch = previousFetch;
+    if (previousUrl === undefined) delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    else process.env.NEXT_PUBLIC_SUPABASE_URL = previousUrl;
+    if (previousKey === undefined) delete process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    else process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = previousKey;
+  }
+
+  const duplicate = await getPendingMazerOAuth(new Request(
     "https://account.fawxzzy.com/api/account/mazer-oauth-pending",
     { headers: { Cookie: `${cookiePair}; ${cookiePair}` } },
   ));
@@ -315,7 +471,7 @@ test("Mazer pending carrier is Secure, HttpOnly, host-only, bounded, and single-
     authGeneration,
     expiresAt: Date.now() - 1,
   }), "utf8").toString("base64url");
-  const expired = getPendingMazerOAuth(new Request(
+  const expired = await getPendingMazerOAuth(new Request(
     "https://account.fawxzzy.com/api/account/mazer-oauth-pending",
     { headers: { Cookie: `${MAZER_OAUTH_PENDING_COOKIE}=${expiredValue}` } },
   ));
@@ -1905,7 +2061,8 @@ test("the public legal center publishes all versioned canonical documents", asyn
 test("website, Mazer, and unknown account contexts use the correct legal center", async ({ page }) => {
   const surfaces = ["/login", "/reset-password", "/account"] as const;
   for (const route of surfaces) {
-    await page.goto(`${route}?auth_test=success`);
+    const scenario = route === "/account" ? "session" : "success";
+    await page.goto(`${route}?auth_test=${scenario}`);
     const websiteLegal = page.locator('.account-auth-legal[aria-label="Fawxzzy legal"]');
     await expect(websiteLegal.getByRole("link", { name: "Privacy Policy" })).toHaveAttribute(
       "href",
@@ -1916,7 +2073,7 @@ test("website, Mazer, and unknown account contexts use the correct legal center"
       "https://fawxzzy.com/terms",
     );
 
-    await page.goto(`${route}?app=mazer&auth_test=success`);
+    await page.goto(`${route}?app=mazer&auth_test=${scenario}`);
     const mazerLegal = page.locator('.account-auth-legal[aria-label="Mazer legal"]');
     await expect(mazerLegal.getByRole("link", { name: "Privacy Policy" })).toHaveAttribute(
       "href",
@@ -1927,7 +2084,7 @@ test("website, Mazer, and unknown account contexts use the correct legal center"
       "https://fawxzzy.com/legal/mazer/terms",
     );
 
-    await page.goto(`${route}?app=unknown&auth_test=success`);
+    await page.goto(`${route}?app=unknown&auth_test=${scenario}`);
     await expect(page.locator('.account-card--auth[data-auth-product="website"]')).toBeVisible();
     await expect(page.locator('.account-auth-legal[aria-label="Fawxzzy legal"]')).toBeVisible();
   }
@@ -1966,7 +2123,7 @@ test("Mazer authorization denial returns a bounded OAuth error", async ({ page }
   await expect(page.getByRole("button", { name: "Cancel" })).toBeVisible();
   await page.getByRole("button", { name: "Cancel" }).click();
   await expect.poll(() => page.locator("html").getAttribute("data-oauth-redirect")).toBe(
-    `https://mazer.fawxzzy.com/?error=access_denied&state=${oauthState}`,
+    `https://mazer.fawxzzy.com/?error=access_denied&error_description=${encodeURIComponent(MAZER_OAUTH_DENIAL_DESCRIPTION)}&state=${oauthState}`,
   );
 });
 
