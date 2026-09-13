@@ -23,6 +23,7 @@ const EXACT_EXTERNAL_RETURN_TARGETS = new Set([
 const EXACT_INTERNAL_RETURN_TARGETS = new Set<string>([
   accountContract.accountPath,
   accountContract.recoveryPath,
+  "/oauth/authorize",
 ]);
 
 function hasTokenMaterial(url: URL) {
@@ -92,6 +93,17 @@ export function sanitizeContextReturnTarget(
   } catch {
     return fallback;
   }
+}
+
+export function sanitizePostAuthReturnTarget(
+  rawTarget: string | null | undefined,
+  context: AccountExperienceContext,
+) {
+  const sanitized = sanitizeReturnTarget(rawTarget);
+  if (context.id === "mazer" && sanitized === "/oauth/authorize") {
+    return sanitized;
+  }
+  return sanitizeContextReturnTarget(rawTarget, context);
 }
 
 export function containsUrlTokenMaterial(url: URL) {

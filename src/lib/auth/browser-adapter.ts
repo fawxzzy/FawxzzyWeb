@@ -27,14 +27,22 @@ export type PortalAuthAdapter = {
   onSessionChange(listener: (session: PortalSession | null) => void): () => void;
   signIn(email: string, password: string): Promise<PortalSession | null>;
   handoffToFitness(returnTarget: string, expectedUserId: string): Promise<string>;
+  getOAuthAuthorization(authorizationId: string): Promise<unknown>;
+  approveOAuthAuthorization(authorizationId: string): Promise<string>;
+  denyOAuthAuthorization(authorizationId: string): Promise<string>;
   signUp(
     email: string,
     password: string,
     username: string,
     contextId: AccountExperienceContextId,
+    returnTarget?: string,
   ): Promise<PortalSession | null>;
   signOut(): Promise<void>;
-  requestPasswordReset(email: string, contextId: AccountExperienceContextId): Promise<void>;
+  requestPasswordReset(
+    email: string,
+    contextId: AccountExperienceContextId,
+    returnTarget?: string,
+  ): Promise<void>;
   updateEmail(email: string): Promise<void>;
   updatePassword(password: string): Promise<void>;
   confirm(tokenHash: string, type: EmailOtpType): Promise<PortalSession | null>;
@@ -286,7 +294,7 @@ function createSupabaseAdapter(
       if (error) throw error;
       return toPortalSession(data.session);
     },
-    async signUp(email, password, username, contextId) {
+    async signUp(email, password, username, contextId, returnTarget) {
       beginAuthMutation();
       let confirmationState: string | undefined;
       if (contextId === "fitness") {
@@ -307,7 +315,7 @@ function createSupabaseAdapter(
           password,
           options: {
             data: { display_name: username, username },
-            emailRedirectTo: accountConfirmUrl(contextId, confirmationState),
+            emailRedirectTo: accountConfirmUrl(contextId, confirmationState, returnTarget),
           },
         });
       } catch (error) {
@@ -355,14 +363,33 @@ function createSupabaseAdapter(
         },
       });
     },
+    async getOAuthAuthorization(authorizationId) {
+      const { data, error } = await client.auth.oauth.getAuthorizationDetails(authorizationId);
+      if (error || !data) throw error ?? new Error("Authorization request unavailable.");
+      return data;
+    },
+    async approveOAuthAuthorization(authorizationId) {
+      const { data, error } = await client.auth.oauth.approveAuthorization(authorizationId, {
+        skipBrowserRedirect: true,
+      });
+      if (error || !data?.redirect_url) throw error ?? new Error("Authorization request unavailable.");
+      return data.redirect_url;
+    },
+    async denyOAuthAuthorization(authorizationId) {
+      const { data, error } = await client.auth.oauth.denyAuthorization(authorizationId, {
+        skipBrowserRedirect: true,
+      });
+      if (error || !data?.redirect_url) throw error ?? new Error("Authorization request unavailable.");
+      return data.redirect_url;
+    },
     async signOut() {
       beginAuthMutation();
       const { error } = await client.auth.signOut({ scope: "local" });
       if (error) throw error;
     },
-    async requestPasswordReset(email, contextId) {
+    async requestPasswordReset(email, contextId, returnTarget) {
       const { error } = await client.auth.resetPasswordForEmail(email, {
-        redirectTo: accountRecoveryUrl(contextId),
+        redirectTo: accountRecoveryUrl(contextId, returnTarget),
       });
       if (error) throw error;
     },
@@ -393,7 +420,7 @@ function createSupabaseAdapter(
 
 function createTestAdapter(scenario: string): PortalAuthAdapter {
   let session: PortalSession | null =
-    scenario === "session"
+    ["session", "oauth-auto", "oauth-hostile"].includes(scenario)
       ? { displayName: "fawxzzy", email: "preview.user@example.test", userId: "preview-user" }
       : null;
   const listeners = new Set<(value: PortalSession | null) => void>();
@@ -454,6 +481,38 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
         throw new FitnessHandoffError();
       }
       return `${accountContract.productOrigins.fitness}${fitnessReturnPath(returnTarget)}`;
+    },
+    async getOAuthAuthorization(authorizationId) {
+      fail();
+      if (!session) throw new Error("Authorization request unavailable.");
+      if (scenario === "oauth-auto") {
+        return {
+          redirect_url: `${accountContract.productOrigins.mazer}/?code=local-auto-code&state=local-state`,
+        };
+      }
+      return {
+        authorization_id: authorizationId,
+        client: {
+          id: "local-mazer-oauth-client",
+          logo_uri: "",
+          name: "Mazer",
+          uri: accountContract.productOrigins.mazer,
+        },
+        redirect_uri: `${accountContract.productOrigins.mazer}/`,
+        scope: "email",
+        user: { email: session.email, id: session.userId },
+      };
+    },
+    async approveOAuthAuthorization() {
+      fail();
+      if (scenario === "oauth-hostile") {
+        return "https://attacker.example.test/?code=stolen";
+      }
+      return `${accountContract.productOrigins.mazer}/?code=local-code&state=local-state`;
+    },
+    async denyOAuthAuthorization() {
+      fail();
+      return `${accountContract.productOrigins.mazer}/?error=access_denied&state=local-state`;
     },
     async signOut() {
       fail();
@@ -536,6 +595,8 @@ export function resolvePortalAuthAdapter(
       "signup-network",
       "signup-unknown",
       "fitness-handoff-error",
+      "oauth-auto",
+      "oauth-hostile",
     ].includes(scenario) &&
     isLocalAuthTestOrigin(location.origin)
   ) {

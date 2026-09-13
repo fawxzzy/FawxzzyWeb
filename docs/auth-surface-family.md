@@ -60,6 +60,8 @@ The family requires 44px minimum interactive targets, visible keyboard focus, no
 - Implement the same anatomy inside the Phaser runtime rather than importing Website or Fitness components.
 - Background: Mazer's own static auth background; gameplay, simulation, announcements, and ambient motion are halted while auth is visible.
 - Preserve one overlay and recoverable input behavior without guest-play access.
+- The account host owns the `/oauth/authorize` OAuth 2.1 consent surface. It accepts one bounded provider authorization identifier, immediately removes it from the address bar, retains it for at most 15 minutes, and resumes the exact request through sign-in, account creation, confirmation, or password recovery.
+- The consent surface accepts only the registered Mazer client, exact `https://mazer.fawxzzy.com/` redirect URI, and `email` scope. Approval and denial revalidate the current account session and accept only a bounded code-or-error redirect back to that exact origin.
 - Do not change the auth/menu surface while another exact writer owns it. Reconcile that work first, then implement from a fresh exact parent.
 
 ## Mazer pattern intake

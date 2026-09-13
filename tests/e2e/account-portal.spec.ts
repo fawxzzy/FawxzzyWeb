@@ -23,6 +23,7 @@ import {
 } from "../../src/config/account";
 import {
   sanitizeContextReturnTarget,
+  sanitizePostAuthReturnTarget,
   sanitizeReturnTarget,
 } from "../../src/config/account-return";
 import {
@@ -43,6 +44,14 @@ import { resolvePortalAuthAdapter } from "../../src/lib/auth/browser-adapter";
 import { safeAuthError, safeAuthSuccess } from "../../src/lib/auth/errors";
 import { validatePassword } from "../../src/lib/auth/password-policy";
 import { isBrowserSafeSupabasePublicKey } from "../../src/lib/auth/supabase-public-key.mjs";
+import {
+  isValidMazerAuthorizationId,
+  MAZER_OAUTH_PENDING_KEY,
+  normalizeMazerOAuthAuthorizationResult,
+  parsePendingMazerOAuthAuthorization,
+  sanitizeMazerOAuthRedirect,
+  serializePendingMazerOAuthAuthorization,
+} from "../../src/lib/auth/mazer-oauth";
 import {
   humanAccountServices,
   normalizeServiceRegistrationReadModel,
@@ -116,6 +125,63 @@ test("one presentation registry renders every product with exact consumer adopti
   );
   expect(accountConfirmUrl("mazer")).toBe(
     "https://account.fawxzzy.com/auth/confirm?app=mazer&returnTo=https%3A%2F%2Fmazer.fawxzzy.com%2F",
+  );
+  expect(accountRecoveryUrl("mazer", "/oauth/authorize")).toBe(
+    "https://account.fawxzzy.com/reset-password?recovery=1&app=mazer&returnTo=%2Foauth%2Fauthorize",
+  );
+  expect(accountConfirmUrl("mazer", undefined, "/oauth/authorize")).toBe(
+    "https://account.fawxzzy.com/auth/confirm?app=mazer&returnTo=%2Foauth%2Fauthorize",
+  );
+});
+
+test("Mazer OAuth keeps only one bounded expiring authorization request", () => {
+  const authorizationId = "authorization-id-1234567890";
+  const serialized = serializePendingMazerOAuthAuthorization(authorizationId, 1_000);
+  expect(serialized).not.toBeNull();
+  expect(parsePendingMazerOAuthAuthorization(serialized, 1_001)).toEqual({
+    authorizationId,
+    expiresAt: 901_000,
+  });
+  expect(parsePendingMazerOAuthAuthorization(serialized, 901_000)).toBeNull();
+  expect(parsePendingMazerOAuthAuthorization('{"authorizationId":"short","expiresAt":2000}', 1_000)).toBeNull();
+  expect(isValidMazerAuthorizationId("short")).toBe(false);
+  expect(isValidMazerAuthorizationId(authorizationId)).toBe(true);
+});
+
+test("Mazer OAuth normalizes provider details and rejects unsafe redirects", () => {
+  const authorizationId = "authorization-id-1234567890";
+  expect(normalizeMazerOAuthAuthorizationResult({
+    authorization_id: authorizationId,
+    client: { id: "local-mazer-oauth-client", name: "Mazer" },
+    redirect_uri: "https://mazer.fawxzzy.com/",
+    scope: "email",
+    user: { id: "preview-user" },
+  })).toMatchObject({ kind: "authorization" });
+  expect(sanitizeMazerOAuthRedirect(
+    "https://mazer.fawxzzy.com/?code=one-time&state=browser-state",
+  )).toBe("https://mazer.fawxzzy.com/?code=one-time&state=browser-state");
+  expect(sanitizeMazerOAuthRedirect(
+    "https://mazer.fawxzzy.com/?error=access_denied&state=browser-state",
+  )).toBe("https://mazer.fawxzzy.com/?error=access_denied&state=browser-state");
+  for (const hostile of [
+    "https://attacker.example.test/?code=one-time",
+    "https://mazer.fawxzzy.com/path?code=one-time",
+    "https://mazer.fawxzzy.com/?access_token=secret",
+    "https://mazer.fawxzzy.com/?code=one&error=two",
+  ]) {
+    expect(sanitizeMazerOAuthRedirect(hostile)).toBeNull();
+  }
+});
+
+test("Mazer OAuth is the only internal product return target", () => {
+  const mazer = accountExperienceContexts.mazer;
+  const fitness = accountExperienceContexts.fitness;
+  expect(sanitizePostAuthReturnTarget("/oauth/authorize", mazer)).toBe("/oauth/authorize");
+  expect(sanitizePostAuthReturnTarget("/oauth/authorize", fitness)).toBe(
+    "https://fitness.fawxzzy.com/",
+  );
+  expect(sanitizePostAuthReturnTarget("/oauth/authorize?authorization_id=private", mazer)).toBe(
+    "https://mazer.fawxzzy.com/",
   );
 });
 
@@ -1656,6 +1722,104 @@ test("Fitness callbacks do not redirect when the secure consumer session fails",
   await expect(page).toHaveURL(/\/auth\/callback$/);
   await page.waitForTimeout(1_500);
   await expect(page).toHaveURL(/\/auth\/callback$/);
+});
+
+test("Mazer authorization captures once, scrubs the URL, and approves to the exact app", async ({ page }) => {
+  const authorizationId = "authorization-id-1234567890";
+  await page.goto(`/oauth/authorize?authorization_id=${authorizationId}&auth_test=session`);
+  await expect(page).toHaveURL(/\/oauth\/authorize\?auth_test=session$/);
+  await expect(page.locator('[data-auth-surface="oauth-consent"]')).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Continue to Mazer?" })).toBeVisible();
+  await expect(page.getByText("Mazer will use your Fawxzzy email")).toBeVisible();
+  await expect.poll(() => page.evaluate(
+    (key) => window.localStorage.getItem(key),
+    MAZER_OAUTH_PENDING_KEY,
+  )).not.toBeNull();
+
+  await page.getByRole("button", { name: "Continue to Mazer" }).click();
+  await expect.poll(() => page.locator("html").getAttribute("data-oauth-redirect")).toBe(
+    "https://mazer.fawxzzy.com/?code=local-code&state=local-state",
+  );
+  await expect.poll(() => page.evaluate(
+    (key) => window.localStorage.getItem(key),
+    MAZER_OAUTH_PENDING_KEY,
+  )).toBeNull();
+});
+
+test("Mazer authorization denial returns a bounded OAuth error", async ({ page }) => {
+  const authorizationId = "authorization-id-1234567890";
+  await page.goto(`/oauth/authorize?authorization_id=${authorizationId}&auth_test=session`);
+  await expect(page.getByRole("button", { name: "Cancel" })).toBeVisible();
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await expect.poll(() => page.locator("html").getAttribute("data-oauth-redirect")).toBe(
+    "https://mazer.fawxzzy.com/?error=access_denied&state=local-state",
+  );
+});
+
+test("Mazer authorization preserves a clean internal return through sign-in", async ({ page }) => {
+  const authorizationId = "authorization-id-1234567890";
+  await page.goto(`/oauth/authorize?authorization_id=${authorizationId}&auth_test=success`);
+  await expect(page).toHaveURL(
+    /\/login\?app=mazer&returnTo=%2Foauth%2Fauthorize&auth_test=success$/,
+  );
+  await page.getByLabel("Email or username").fill("fawxzzy");
+  await page.locator('input[name="password"]').fill("correct horse battery staple");
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect.poll(() => page.locator("html").getAttribute("data-post-auth-destination")).toBe(
+    "/oauth/authorize",
+  );
+});
+
+test("Mazer authorization preserves the same request through signup and recovery", async ({ page }) => {
+  const loginUrl = "/login?app=mazer&returnTo=%2Foauth%2Fauthorize&auth_test=success";
+  await page.goto(loginUrl);
+  await expect(page.getByRole("link", { name: "Reset password" })).toHaveAttribute(
+    "href",
+    "/reset-password?app=mazer&returnTo=%2Foauth%2Fauthorize",
+  );
+  await page.getByRole("button", { name: "Create account" }).click();
+  await page.getByLabel("Username").fill("new.mazer.user");
+  await page.getByLabel("Email", { exact: true }).fill("new.mazer.user@example.test");
+  await page.locator('input[name="password"]').fill("correct horse battery staple");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect.poll(() => page.locator("html").getAttribute("data-post-auth-destination")).toBe(
+    "/oauth/authorize",
+  );
+
+  await page.goto("/reset-password?app=mazer&returnTo=%2Foauth%2Fauthorize&auth_test=success");
+  await expect(page.getByRole("link", { name: "Log in" })).toHaveAttribute(
+    "href",
+    loginUrl.replace("&auth_test=success", ""),
+  );
+});
+
+test("Mazer authorization rejects duplicate requests and hostile provider redirects", async ({ page }) => {
+  await page.goto(
+    "/oauth/authorize?authorization_id=authorization-id-1234567890&authorization_id=authorization-id-0987654321&auth_test=session",
+  );
+  await expect(page.locator('[data-system-state="invalid"]')).toContainText(
+    "invalid or expired",
+  );
+
+  await page.goto(
+    "/oauth/authorize?authorization_id=authorization-id-1234567890&auth_test=oauth-hostile",
+  );
+  await expect(page.getByRole("button", { name: "Continue to Mazer" })).toBeVisible();
+  await page.getByRole("button", { name: "Continue to Mazer" }).click();
+  await expect(page.locator('[data-system-state="invalid"]')).toContainText(
+    "invalid or expired",
+  );
+  await expect(page.locator("html")).not.toHaveAttribute("data-oauth-redirect", /.+/);
+});
+
+test("Mazer authorization accepts only a previously approved exact app redirect", async ({ page }) => {
+  await page.goto(
+    "/oauth/authorize?authorization_id=authorization-id-1234567890&auth_test=oauth-auto",
+  );
+  await expect.poll(() => page.locator("html").getAttribute("data-oauth-redirect")).toBe(
+    "https://mazer.fawxzzy.com/?code=local-auto-code&state=local-state",
+  );
+  await expect(page.getByRole("button", { name: "Continue to Mazer" })).toHaveCount(0);
 });
 
 test("callback rejects a mismatched state without an exchange", async ({ page }) => {

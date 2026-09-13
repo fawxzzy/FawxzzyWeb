@@ -9,6 +9,7 @@ import {
 } from "@/config/account";
 import {
   sanitizeContextReturnTarget,
+  sanitizePostAuthReturnTarget,
   sanitizeReturnTarget,
 } from "@/config/account-return";
 import { productIdentity } from "@/config/product";
@@ -59,9 +60,10 @@ async function settleSignupAttempt(
   password: string,
   username: string,
   context: AccountExperienceContext,
+  returnTarget?: string,
 ) {
   const [result] = await Promise.allSettled([
-    adapter.signUp(email, password, username, context.id),
+    adapter.signUp(email, password, username, context.id, returnTarget),
     new Promise((resolve) => window.setTimeout(resolve, SIGNUP_SETTLEMENT_MINIMUM_MS)),
   ]);
   return result.status === "fulfilled" ? result.value : null;
@@ -165,10 +167,17 @@ function useTransientNotice(duration = 5_000) {
   };
 }
 
-function contextualPath(path: string, context: AccountExperienceContext) {
+function contextualPath(
+  path: string,
+  context: AccountExperienceContext,
+  returnTarget?: string,
+) {
   if (context.id === "website") return path;
   const url = new URL(path, accountContract.canonicalOrigin);
   url.searchParams.set("app", context.id);
+  if (context.id === "mazer" && returnTarget === "/oauth/authorize") {
+    url.searchParams.set("returnTo", returnTarget);
+  }
   return `${url.pathname}${url.search}`;
 }
 
@@ -337,6 +346,16 @@ function LoginPanel({
   const cooldown = useCooldown();
   const adapter = adapterFrom(resolution);
   const displayedIdentity = rememberedIdentity ?? storedRememberedIdentity;
+  const hydrated = useHydrated();
+  const returnTarget = hydrated
+    ? sanitizePostAuthReturnTarget(
+        new URLSearchParams(window.location.search).get("returnTo"),
+        context,
+      )
+    : null;
+  const internalMazerReturn = returnTarget === "/oauth/authorize"
+    ? returnTarget
+    : undefined;
 
   useEffect(() => {
     if (!adapter || displayedIdentity) return;
@@ -400,19 +419,22 @@ function LoginPanel({
           password,
           submittedUsername,
           context,
+          internalMazerReturn,
         );
         if (session) {
           const identity = session.displayName || submittedUsername;
           writeRememberedIdentity(identity);
           setRememberedIdentity(identity);
-          if (context.id === "fitness") {
-            const destinationUrl = new URL(
-              sanitizeContextReturnTarget(
-                new URLSearchParams(window.location.search).get("returnTo"),
-                context,
-              ),
-            );
-            const destination = await adapter.handoffToFitness(destinationUrl.href, session.userId);
+          if (context.id === "fitness" || internalMazerReturn) {
+            const destination = context.id === "fitness"
+              ? await adapter.handoffToFitness(
+                  sanitizeContextReturnTarget(
+                    new URLSearchParams(window.location.search).get("returnTo"),
+                    context,
+                  ),
+                  session.userId,
+                )
+              : internalMazerReturn!;
             transient.show({ kind: "success", text: safeAuthSuccess("signup") });
             if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
               document.documentElement.dataset.postAuthDestination = destination;
@@ -434,16 +456,17 @@ function LoginPanel({
       }
       if (!session) transient.show({ kind: "error", text: safeAuthError("login") });
       if (session) {
-        const destinationUrl = new URL(
-          sanitizeContextReturnTarget(
-            new URLSearchParams(window.location.search).get("returnTo"),
-            context,
-          ),
+        const postAuthTarget = sanitizePostAuthReturnTarget(
+          new URLSearchParams(window.location.search).get("returnTo"),
+          context,
         );
-        if (context.id === "website") destinationUrl.searchParams.set("signedIn", "1");
-        const destination = context.id === "fitness"
+        const destinationUrl = postAuthTarget.startsWith("/")
+          ? null
+          : new URL(postAuthTarget);
+        if (context.id === "website" && destinationUrl) destinationUrl.searchParams.set("signedIn", "1");
+        const destination = context.id === "fitness" && destinationUrl
           ? await adapter.handoffToFitness(destinationUrl.href, session.userId)
-          : destinationUrl.href;
+          : destinationUrl?.href ?? postAuthTarget;
         transient.show({ kind: "success", text: "Signed in on this account origin." });
         if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
           document.documentElement.dataset.postAuthDestination = destination;
@@ -566,7 +589,7 @@ function LoginPanel({
           {intent === "login" ? (
             <>
               <AccountTextDivider />
-              <a href={contextualPath("/reset-password", context)}>Reset password</a>
+              <a href={contextualPath("/reset-password", context, internalMazerReturn)}>Reset password</a>
             </>
           ) : null}
         </div>
@@ -817,6 +840,15 @@ function ResetPanel({
   const cooldown = useCooldown();
   const recoveryState = useRecoverySession(hydrated, recovery, resolution);
   const recoveryReady = recovery && recoveryState === "ready";
+  const returnTarget = hydrated
+    ? sanitizePostAuthReturnTarget(
+        new URLSearchParams(window.location.search).get("returnTo"),
+        context,
+      )
+    : null;
+  const internalMazerReturn = returnTarget === "/oauth/authorize"
+    ? returnTarget
+    : undefined;
 
   const recoveryNotice: Notice | null = !recovery
     ? null
@@ -860,7 +892,7 @@ function ResetPanel({
         formElement.reset();
         transient.show({ kind: "success", text: safeAuthSuccess("reset-complete") });
         window.setTimeout(() => {
-          window.location.replace(contextualPath("/login", context));
+          window.location.replace(contextualPath("/login", context, internalMazerReturn));
         }, 700);
       } catch {
         transient.show({ kind: "error", text: safeAuthError("reset-complete") });
@@ -880,7 +912,7 @@ function ResetPanel({
     setInvalidFields(new Set());
     cooldown.start();
     try {
-      await adapter.requestPasswordReset(email, context.id);
+      await adapter.requestPasswordReset(email, context.id, internalMazerReturn);
       transient.show({ kind: "success", text: safeAuthSuccess("reset-request") });
     } catch {
       transient.show({ kind: "success", text: safeAuthSuccess("reset-request") });
@@ -964,7 +996,7 @@ function ResetPanel({
         data-has-legal={context.legalLinks.length > 0 || undefined}
       >
         <div className="account-card__links">
-          <a href={contextualPath("/login", context)}>Log in</a>
+          <a href={contextualPath("/login", context, internalMazerReturn)}>Log in</a>
         </div>
         <AccountLegalLinks context={context} />
       </div>

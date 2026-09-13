@@ -141,18 +141,40 @@ export const accountUrls = {
   recovery: `${accountContract.canonicalOrigin}${accountContract.recoveryPath}`,
 } as const;
 
-export function accountRecoveryUrl(contextId: AccountExperienceContextId) {
+function isMazerOAuthContinuation(
+  contextId: AccountExperienceContextId,
+  returnTarget?: string,
+) {
+  return contextId === "mazer" && returnTarget === "/oauth/authorize";
+}
+
+export function accountRecoveryUrl(
+  contextId: AccountExperienceContextId,
+  returnTarget?: string,
+) {
   const url = new URL(accountContract.recoveryPath, accountContract.canonicalOrigin);
   if (contextId !== "website") url.searchParams.set("app", contextId);
+  if (isMazerOAuthContinuation(contextId, returnTarget)) {
+    url.searchParams.set("returnTo", returnTarget!);
+  }
   return url.href;
 }
 
-export function accountConfirmUrl(contextId: AccountExperienceContextId, state?: string) {
+export function accountConfirmUrl(
+  contextId: AccountExperienceContextId,
+  state?: string,
+  returnTarget?: string,
+) {
   if (contextId === "website") return accountUrls.confirm;
   const context = accountExperienceContexts[contextId];
   const url = new URL(accountContract.confirmPath, accountContract.canonicalOrigin);
   url.searchParams.set("app", contextId);
-  url.searchParams.set("returnTo", new URL("/", context.destinationOrigin).href);
+  url.searchParams.set(
+    "returnTo",
+    isMazerOAuthContinuation(contextId, returnTarget)
+      ? returnTarget!
+      : new URL("/", context.destinationOrigin).href,
+  );
   if (state) url.searchParams.set("state", state);
   return url.href;
 }
