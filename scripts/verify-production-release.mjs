@@ -90,12 +90,15 @@ function hasDuplicateCanonicalAttribute(rawAttributes) {
 
 export function hasExactCanonicalLink(html, expectedCanonical) {
   const document = htmlParser.parse(html);
-  return document.querySelectorAll("head > link").some((element) => {
-    if (hasDuplicateCanonicalAttribute(element.rawAttrs)) return false;
+  const links = document.querySelectorAll("head > link");
+  if (links.some((element) => hasDuplicateCanonicalAttribute(element.rawAttrs))) return false;
+
+  const canonicalLinks = links.filter((element) => {
     const rel = element.getAttribute("rel");
-    return rel?.split(/\s+/).some((token) => token.toLowerCase() === "canonical")
-      && element.getAttribute("href") === expectedCanonical;
+    return rel?.split(/[\t\n\f\r ]+/).some((token) => token.toLowerCase() === "canonical");
   });
+  return canonicalLinks.length === 1
+    && canonicalLinks[0].getAttribute("href") === expectedCanonical;
 }
 
 function readLogCount(deploymentId, filterArgs) {
