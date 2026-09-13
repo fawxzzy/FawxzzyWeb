@@ -54,9 +54,44 @@ async function fetchWithTimeout(url, options = {}) {
   return fetch(url, { ...options, signal: AbortSignal.timeout(20_000) });
 }
 
+function hasDuplicateCanonicalAttribute(rawAttributes) {
+  const counts = new Map([["href", 0], ["rel", 0]]);
+  let cursor = 0;
+
+  while (cursor < rawAttributes.length) {
+    while (/\s/.test(rawAttributes[cursor] ?? "")) cursor += 1;
+    if (cursor >= rawAttributes.length || rawAttributes[cursor] === "/") break;
+
+    const nameStart = cursor;
+    while (cursor < rawAttributes.length && !/[\s=/>]/.test(rawAttributes[cursor])) cursor += 1;
+    const name = rawAttributes.slice(nameStart, cursor).toLowerCase();
+    if (!name) {
+      cursor += 1;
+      continue;
+    }
+    if (counts.has(name)) counts.set(name, counts.get(name) + 1);
+
+    while (/\s/.test(rawAttributes[cursor] ?? "")) cursor += 1;
+    if (rawAttributes[cursor] !== "=") continue;
+    cursor += 1;
+    while (/\s/.test(rawAttributes[cursor] ?? "")) cursor += 1;
+    const quote = rawAttributes[cursor];
+    if (quote === '"' || quote === "'") {
+      cursor += 1;
+      while (cursor < rawAttributes.length && rawAttributes[cursor] !== quote) cursor += 1;
+      if (rawAttributes[cursor] === quote) cursor += 1;
+    } else {
+      while (cursor < rawAttributes.length && !/\s/.test(rawAttributes[cursor])) cursor += 1;
+    }
+  }
+
+  return [...counts.values()].some((count) => count > 1);
+}
+
 export function hasExactCanonicalLink(html, expectedCanonical) {
   const document = htmlParser.parse(html);
   return document.querySelectorAll("head > link").some((element) => {
+    if (hasDuplicateCanonicalAttribute(element.rawAttrs)) return false;
     const rel = element.getAttribute("rel");
     return rel?.split(/\s+/).some((token) => token.toLowerCase() === "canonical")
       && element.getAttribute("href") === expectedCanonical;
