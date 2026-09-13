@@ -7,6 +7,10 @@ const defaultSocialImage = productIdentity.linkPreview;
 export const publicIndexableRoutes = [
   "/",
   productIdentity.appsPath,
+  "/privacy",
+  "/terms",
+  "/legal/mazer/privacy",
+  "/legal/mazer/terms",
 ] as const;
 
 export function absolutePublicUrl(path: string) {
