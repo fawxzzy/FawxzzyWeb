@@ -1470,32 +1470,51 @@ test("account status exits checking when account service configuration is unavai
   await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
 });
 
-test("focusing a create-account field preserves the locked mobile viewport and action rails", async ({
+test("keyboard-height signup viewports keep every field and action rail visible without scrolling", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 390, height: 650 });
-  await page.goto("/login?auth_test=success");
-  await page.evaluate(() => {
-    document.documentElement.style.setProperty("--app-safe-top", "20px");
-    document.documentElement.style.setProperty("--app-safe-bottom", "34px");
-  });
-  await page.getByRole("button", { name: "Create account" }).click();
-  const password = page.getByLabel("Password", { exact: true });
-  await password.focus();
-  const passwordBox = await password.boundingBox();
-  const secondaryBox = await page.locator(".account-auth-secondary").boundingBox();
-  const viewportState = await page.evaluate(() => ({
-    documentClientHeight: document.documentElement.clientHeight,
-    documentScrollHeight: document.documentElement.scrollHeight,
-    windowScrollY: window.scrollY,
-  }));
-  expect(passwordBox).not.toBeNull();
-  expect(secondaryBox).not.toBeNull();
-  expect(passwordBox!.y + passwordBox!.height).toBeLessThanOrEqual(secondaryBox!.y);
-  expect(viewportState.windowScrollY).toBe(0);
-  expect(viewportState.documentScrollHeight).toBeLessThanOrEqual(
-    viewportState.documentClientHeight,
-  );
+  for (const height of [560, 500]) {
+    await page.setViewportSize({ width: 390, height });
+    await page.goto("/login?auth_test=success");
+    await page.evaluate(() => {
+      document.documentElement.style.setProperty("--app-safe-top", "20px");
+      document.documentElement.style.setProperty("--app-safe-bottom", "34px");
+    });
+    await page.getByRole("button", { name: "Create account" }).click();
+    const body = page.locator(".account-auth-body");
+    const bodyBox = await body.boundingBox();
+    const secondaryBox = await page.locator(".account-auth-secondary").boundingBox();
+    const dockBox = await page.locator(".account-auth-dock").boundingBox();
+    expect(bodyBox).not.toBeNull();
+    expect(secondaryBox).not.toBeNull();
+    expect(dockBox).not.toBeNull();
+
+    for (const field of await page.locator(".account-form--auth input").all()) {
+      await field.focus();
+      const fieldBox = await field.boundingBox();
+      expect(fieldBox, `${height}px field`).not.toBeNull();
+      expect(fieldBox!.y, `${height}px field top`).toBeGreaterThanOrEqual(bodyBox!.y);
+      expect(fieldBox!.y + fieldBox!.height, `${height}px field bottom`).toBeLessThanOrEqual(
+        bodyBox!.y + bodyBox!.height,
+      );
+      expect(await page.evaluate(() => window.scrollY), `${height}px window scroll`).toBe(0);
+    }
+
+    const viewportState = await page.evaluate(() => ({
+      documentClientHeight: document.documentElement.clientHeight,
+      documentScrollHeight: document.documentElement.scrollHeight,
+    }));
+    expect(viewportState.documentScrollHeight, `${height}px document height`).toBeLessThanOrEqual(
+      viewportState.documentClientHeight,
+    );
+    expect(bodyBox!.y + bodyBox!.height, `${height}px body/secondary`).toBeLessThanOrEqual(
+      secondaryBox!.y + 1,
+    );
+    expect(secondaryBox!.y + secondaryBox!.height, `${height}px secondary/dock`).toBeLessThanOrEqual(
+      dockBox!.y + 1,
+    );
+    expect(dockBox!.y + dockBox!.height, `${height}px dock`).toBeLessThanOrEqual(height);
+  }
 });
 
 test("signup enforces ten characters and accepts long passwords", async ({ browserName, page }) => {

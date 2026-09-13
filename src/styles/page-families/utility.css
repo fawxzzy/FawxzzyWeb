@@ -1251,19 +1251,54 @@
   }
 }
 
-@media (max-height: 560px) {
+@media (max-height: 650px) {
   .account-page--utility .account-shell--utility {
-    padding-top: 24px;
+    padding: 24px 24px 16px;
   }
 
   .account-auth-intro h1 {
-    margin-top: 18px;
+    margin-top: 12px;
+    font-size: clamp(1.75rem, 10cqi, 2.25rem);
+  }
+
+  .account-auth-intro > .account-auth-identity {
+    margin-top: 6px;
+    font-size: 14px;
   }
 
   .account-auth-body {
-    padding-block: 8px;
+    padding-block: 4px;
   }
 
+  .account-form--auth {
+    gap: 10px;
+  }
+
+  .account-page--utility .account-form--auth input {
+    min-height: 44px;
+  }
+
+  .account-auth-dock {
+    margin-top: 8px;
+  }
+
+  .account-auth-dock .catalog-button {
+    min-height: 48px;
+  }
+}
+
+@media (max-height: 520px) {
+  .account-page--utility .account-shell--utility {
+    padding: 12px 24px 10px;
+  }
+
+  .account-auth-intro h1 {
+    margin-top: 8px;
+  }
+
+  .account-auth-body {
+    padding-block: 0;
+  }
 }
 
 /* The public legal center uses one versioned document anatomy for the
