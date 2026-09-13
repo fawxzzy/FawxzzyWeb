@@ -14,6 +14,8 @@ import {
 
 const id = "a".repeat(43);
 const origin = "https://fitness.fawxzzy.com";
+const currentFitnessMerge = "b5e4453edacfed17759bb4c495a6b914652558c3";
+const previousFitnessMerge = "f87f2dc7e0cc3cbead0eb3ea5ed7b9c592fdfa94";
 const pair = { accessToken: "synthetic-access", refreshToken: "synthetic-refresh" };
 const rotatedPair = { accessToken: "rotated-access", refreshToken: "rotated-refresh" };
 const readiness = {
@@ -42,7 +44,7 @@ function fixture(responses: Response[]) {
 
 test("Fitness handoff activates only on the canonical account runtime with exact evidence", () => {
   expect(FITNESS_HANDOFF_ACTIVATION.fitnessConsumerMerge)
-    .toBe("f87f2dc7e0cc3cbead0eb3ea5ed7b9c592fdfa94");
+    .toBe(currentFitnessMerge);
   expect(fitnessHandoffRuntimeReady("https://account.fawxzzy.com")).toBe(true);
   for (const runtimeOrigin of [
     "http://127.0.0.1:3210",
@@ -59,6 +61,33 @@ test("Fitness handoff activates only on the canonical account runtime with exact
   ]) {
     expect(fitnessHandoffRuntimeReady("https://account.fawxzzy.com", activation)).toBe(false);
   }
+});
+
+test("Fitness release binding accepts the current merge and rejects the previous merge before token read", async () => {
+  let currentReads = 0;
+  const current = fixture([json(begin), json(end)]);
+  await expect(completeFitnessHandoff("/today", {
+    enabled: true,
+    persistSession,
+    request: current.request,
+    readSession: async () => { currentReads += 1; return pair; },
+  })).resolves.toBe(`${origin}/today`);
+  expect(currentReads).toBe(1);
+  expect(current.calls).toHaveLength(2);
+
+  let previousReads = 0;
+  const previous = fixture([json({
+    ...begin,
+    readiness: { ...readiness, sourceCommit: previousFitnessMerge },
+  })]);
+  await expect(completeFitnessHandoff("/today", {
+    enabled: true,
+    persistSession,
+    request: previous.request,
+    readSession: async () => { previousReads += 1; return pair; },
+  })).rejects.toThrow(FITNESS_HANDOFF_UNAVAILABLE);
+  expect(previousReads).toBe(0);
+  expect(previous.calls).toHaveLength(1);
 });
 
 test("inactive Fitness handoff fails before any credential read or request", async () => {
