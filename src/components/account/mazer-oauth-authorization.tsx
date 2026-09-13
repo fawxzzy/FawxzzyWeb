@@ -1,24 +1,35 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { accountContract, classifyRuntimeOrigin } from "@/config/account";
+import {
+  accountContract,
+  accountExperienceContexts,
+  classifyRuntimeOrigin,
+} from "@/config/account";
 import { resolvePortalAuthAdapter } from "@/lib/auth/browser-adapter";
 import {
+  clearPendingMazerOAuthAuthorization,
   isExpectedMazerOAuthAuthorization,
+  isValidAuthGeneration,
   isValidMazerAuthorizationId,
   MAZER_OAUTH_AUTHORIZATION_PATH,
-  MAZER_OAUTH_PENDING_KEY,
   normalizeMazerOAuthAuthorizationResult,
-  parsePendingMazerOAuthAuthorization,
-  sanitizeMazerOAuthRedirect,
-  serializePendingMazerOAuthAuthorization,
+  readPendingMazerOAuthAuthorization,
+  sanitizeMazerOAuthApprovalRedirect,
+  sanitizeMazerOAuthDenialRedirect,
+  storePendingMazerOAuthAuthorization,
   type MazerOAuthAuthorizationDetails,
 } from "@/lib/auth/mazer-oauth";
+import { AccountLegalLinks } from "@/components/account/account-legal-links";
 import { SystemState } from "@/components/system/system-state";
 
 type AuthorizationState =
   | { kind: "loading" }
-  | { kind: "consent"; details: MazerOAuthAuthorizationDetails }
+  | {
+      kind: "consent";
+      authGeneration: string;
+      details: MazerOAuthAuthorizationDetails;
+    }
   | { kind: "invalid" }
   | { kind: "unavailable" };
 
@@ -39,11 +50,11 @@ function loginDestination() {
   return `${url.pathname}${url.search}`;
 }
 
-function clearPendingAuthorization() {
-  try {
-    window.localStorage.removeItem(MAZER_OAUTH_PENDING_KEY);
-  } catch {
-    // The unavailable state below handles browsers without durable local storage.
+function navigateToMazer(destination: string) {
+  if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
+    document.documentElement.dataset.oauthRedirect = destination;
+  } else {
+    window.location.assign(destination);
   }
 }
 
@@ -58,116 +69,169 @@ export function MazerOAuthAuthorization() {
   );
 
   useEffect(() => {
-    if (!resolution) return;
-    if (started.current) return;
+    if (!resolution || started.current) return;
     started.current = true;
-    const query = new URLSearchParams(window.location.search);
-    const incomingIds = query.getAll("authorization_id");
-    if (incomingIds.length > 0) {
-      const incomingAuthorizationId = incomingIds.length === 1 ? incomingIds[0] : null;
-      const serialized = incomingAuthorizationId
-        ? serializePendingMazerOAuthAuthorization(incomingAuthorizationId)
-        : null;
-      if (!serialized) {
-        void Promise.resolve().then(() => setState({ kind: "invalid" }));
+    let active = true;
+
+    async function start() {
+      if (resolution?.status !== "ready") {
+        if (active) setState({ kind: "unavailable" });
         return;
       }
-      try {
-        window.localStorage.setItem(MAZER_OAUTH_PENDING_KEY, serialized);
-      } catch {
-        void Promise.resolve().then(() => setState({ kind: "unavailable" }));
+
+      const query = new URLSearchParams(window.location.search);
+      const incomingIds = query.getAll("authorization_id");
+      if (incomingIds.length > 0) {
+        const incomingAuthorizationId = incomingIds.length === 1 ? incomingIds[0] : null;
+        const authGeneration = resolution.adapter.getAuthGeneration();
+        if (
+          !isValidMazerAuthorizationId(incomingAuthorizationId) ||
+          !isValidAuthGeneration(authGeneration)
+        ) {
+          if (active) setState({ kind: "invalid" });
+          return;
+        }
+        const stored = await storePendingMazerOAuthAuthorization(
+          incomingAuthorizationId,
+          authGeneration,
+        );
+        if (!stored) {
+          if (active) setState({ kind: "unavailable" });
+          return;
+        }
+        query.delete("authorization_id");
+        const cleanQuery = classifyRuntimeOrigin(window.location.origin) === "local-test"
+          ? query.toString()
+          : "";
+        window.location.replace(
+          `${MAZER_OAUTH_AUTHORIZATION_PATH}${cleanQuery ? `?${cleanQuery}` : ""}`,
+        );
         return;
       }
-      query.delete("authorization_id");
-      const cleanQuery = classifyRuntimeOrigin(window.location.origin) === "local-test"
-        ? query.toString()
-        : "";
-      window.location.replace(
-        `${MAZER_OAUTH_AUTHORIZATION_PATH}${cleanQuery ? `?${cleanQuery}` : ""}`,
+
+      const pending = await readPendingMazerOAuthAuthorization();
+      if (!pending) {
+        if (active) setState({ kind: "invalid" });
+        return;
+      }
+      const authGeneration = resolution.adapter.getAuthGeneration();
+      if (!isValidAuthGeneration(authGeneration)) {
+        await clearPendingMazerOAuthAuthorization();
+        if (active) setState({ kind: "unavailable" });
+        return;
+      }
+
+      const session = await resolution.adapter.getSession();
+      if (!session) {
+        window.location.replace(loginDestination());
+        return;
+      }
+
+      // A normal sign-in advances the durable generation. Rebind the still
+      // provider-owned request once, before consent is shown, to the session
+      // that will make the decision.
+      if (pending.authGeneration !== authGeneration) {
+        const rebound = await storePendingMazerOAuthAuthorization(
+          pending.authorizationId,
+          authGeneration,
+        );
+        if (!rebound) {
+          if (active) setState({ kind: "unavailable" });
+          return;
+        }
+      }
+
+      const rawDetails = await resolution.adapter.getOAuthAuthorization(
+        pending.authorizationId,
       );
-      return;
+      if (
+        resolution.adapter.getAuthGeneration() !== authGeneration ||
+        (await resolution.adapter.getSession())?.userId !== session.userId
+      ) {
+        await clearPendingMazerOAuthAuthorization();
+        if (active) setState({ kind: "invalid" });
+        return;
+      }
+
+      const result = normalizeMazerOAuthAuthorizationResult(rawDetails);
+      if (!result) {
+        if (active) setState({ kind: "invalid" });
+        return;
+      }
+      if (result.kind === "redirect") {
+        const destination = sanitizeMazerOAuthApprovalRedirect(result.redirectUrl);
+        if (!destination) {
+          if (active) setState({ kind: "invalid" });
+          return;
+        }
+        await clearPendingMazerOAuthAuthorization();
+        navigateToMazer(destination);
+        return;
+      }
+      if (
+        result.details.authorizationId !== pending.authorizationId ||
+        result.details.userId !== session.userId ||
+        !isExpectedMazerOAuthAuthorization(result.details, window.location.origin)
+      ) {
+        if (active) setState({ kind: "invalid" });
+        return;
+      }
+      if (active) {
+        setState({
+          kind: "consent",
+          authGeneration,
+          details: result.details,
+        });
+      }
     }
 
-    let storedAuthorizationId: string | null = null;
-    try {
-      storedAuthorizationId = parsePendingMazerOAuthAuthorization(
-        window.localStorage.getItem(MAZER_OAUTH_PENDING_KEY),
-      )?.authorizationId ?? null;
-    } catch {
-      void Promise.resolve().then(() => setState({ kind: "unavailable" }));
-      return;
-    }
-    if (!isValidMazerAuthorizationId(storedAuthorizationId)) {
-      void Promise.resolve().then(() => setState({ kind: "invalid" }));
-      return;
-    }
-    if (resolution.status !== "ready") {
-      void Promise.resolve().then(() => setState({ kind: "unavailable" }));
-      return;
-    }
-
-    resolution.adapter
-      .getSession()
-      .then((session) => {
-        if (!session) {
-          window.location.replace(loginDestination());
-          return null;
-        }
-        return resolution.adapter.getOAuthAuthorization(storedAuthorizationId);
-      })
-      .then((rawDetails) => {
-        if (rawDetails === null) return;
-        const result = normalizeMazerOAuthAuthorizationResult(rawDetails);
-        if (!result) {
-          setState({ kind: "invalid" });
-          return;
-        }
-        if (result.kind === "redirect") {
-          const destination = sanitizeMazerOAuthRedirect(result.redirectUrl);
-          if (!destination) {
-            setState({ kind: "invalid" });
-            return;
-          }
-          clearPendingAuthorization();
-          if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
-            document.documentElement.dataset.oauthRedirect = destination;
-          } else {
-            window.location.assign(destination);
-          }
-          return;
-        }
-        if (!isExpectedMazerOAuthAuthorization(result.details, window.location.origin)) {
-          setState({ kind: "invalid" });
-          return;
-        }
-        setState({ kind: "consent", details: result.details });
-      })
-      .catch(() => setState({ kind: "unavailable" }));
+    void start().catch(() => {
+      if (active) setState({ kind: "unavailable" });
+    });
+    return () => {
+      active = false;
+    };
   }, [resolution]);
 
   async function decide(decision: "approve" | "deny") {
     if (state.kind !== "consent" || resolution?.status !== "ready" || busy) return;
     setBusy(true);
     try {
+      if (resolution.adapter.getAuthGeneration() !== state.authGeneration) {
+        await clearPendingMazerOAuthAuthorization();
+        setState({ kind: "invalid" });
+        return;
+      }
       const session = await resolution.adapter.getSession();
-      if (!session || session.userId !== state.details.userId) {
-        window.location.replace(loginDestination());
+      if (
+        !session ||
+        session.userId !== state.details.userId ||
+        resolution.adapter.getAuthGeneration() !== state.authGeneration
+      ) {
+        await clearPendingMazerOAuthAuthorization();
+        setState({ kind: "invalid" });
+        return;
+      }
+
+      // This final synchronous generation read is directly adjacent to the
+      // provider decision, closing same-subject sign-out/sign-in races.
+      if (resolution.adapter.getAuthGeneration() !== state.authGeneration) {
+        await clearPendingMazerOAuthAuthorization();
+        setState({ kind: "invalid" });
         return;
       }
       const rawRedirect = decision === "approve"
         ? await resolution.adapter.approveOAuthAuthorization(state.details.authorizationId)
         : await resolution.adapter.denyOAuthAuthorization(state.details.authorizationId);
-      const destination = sanitizeMazerOAuthRedirect(rawRedirect);
+      const destination = decision === "approve"
+        ? sanitizeMazerOAuthApprovalRedirect(rawRedirect)
+        : sanitizeMazerOAuthDenialRedirect(rawRedirect);
       if (!destination) {
         setState({ kind: "invalid" });
         return;
       }
-      clearPendingAuthorization();
-      if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
-        document.documentElement.dataset.oauthRedirect = destination;
-      } else {
-        window.location.assign(destination);
-      }
+      await clearPendingMazerOAuthAuthorization();
+      navigateToMazer(destination);
     } catch {
       setState({ kind: "unavailable" });
     } finally {
@@ -198,12 +262,17 @@ export function MazerOAuthAuthorization() {
         <h1 id="mazer-oauth-title">Continue to Mazer?</h1>
         <span>Mazer will use your Fawxzzy email to open the same account.</span>
       </header>
+      <div className="account-auth-secondary" data-has-legal="true">
+        <div className="account-card__links">
+          <button className="account-inline-link" disabled={busy} onClick={() => void decide("deny")} type="button">
+            Cancel
+          </button>
+        </div>
+        <AccountLegalLinks context={accountExperienceContexts.mazer} />
+      </div>
       <div className="account-auth-dock">
         <button className="catalog-button catalog-button--primary" disabled={busy} onClick={() => void decide("approve")} type="button">
           {busy ? "Working…" : "Continue to Mazer"}
-        </button>
-        <button className="account-inline-link" disabled={busy} onClick={() => void decide("deny")} type="button">
-          Cancel
         </button>
       </div>
     </section>

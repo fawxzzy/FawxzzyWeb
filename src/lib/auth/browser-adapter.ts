@@ -23,6 +23,7 @@ export type PortalSession = {
 
 export type PortalAuthAdapter = {
   kind: "supabase" | "test";
+  getAuthGeneration(): string | null;
   getSession(): Promise<PortalSession | null>;
   onSessionChange(listener: (session: PortalSession | null) => void): () => void;
   signIn(email: string, password: string): Promise<PortalSession | null>;
@@ -249,6 +250,9 @@ function createSupabaseAdapter(
 
   return {
     kind: "supabase",
+    getAuthGeneration() {
+      return authGeneration.current();
+    },
     async getSession() {
       const { data, error } = await client.auth.getSession();
       if (error) throw error;
@@ -419,6 +423,14 @@ function createSupabaseAdapter(
 }
 
 function createTestAdapter(scenario: string): PortalAuthAdapter {
+  const browserStorage = resolveBrowserAuthStorage();
+  const authGeneration = createAuthGenerationCoordinator(
+    browserStorage.storage,
+    browserStorage.durable,
+  );
+  const beginAuthMutation = () => {
+    authGeneration.advance();
+  };
   let session: PortalSession | null =
     ["session", "oauth-auto", "oauth-hostile"].includes(scenario)
       ? { displayName: "fawxzzy", email: "preview.user@example.test", userId: "preview-user" }
@@ -445,9 +457,13 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
     }
   };
   const publish = () => listeners.forEach((listener) => listener(session));
+  const oauthState = "s".repeat(43);
 
   return {
     kind: "test",
+    getAuthGeneration() {
+      return authGeneration.current();
+    },
     async getSession() {
       if (scenario === "session-pending") {
         return new Promise<PortalSession | null>(() => undefined);
@@ -460,6 +476,7 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       return () => listeners.delete(listener);
     },
     async signIn(email) {
+      beginAuthMutation();
       fail();
       session = {
         displayName: email.includes("@") ? email.split("@", 1)[0] : email,
@@ -470,6 +487,7 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       return session;
     },
     async signUp(email, _password, username) {
+      beginAuthMutation();
       failSignup();
       session = { displayName: username, email, userId: "preview-user" };
       publish();
@@ -487,7 +505,7 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       if (!session) throw new Error("Authorization request unavailable.");
       if (scenario === "oauth-auto") {
         return {
-          redirect_url: `${accountContract.productOrigins.mazer}/?code=local-auto-code&state=local-state`,
+          redirect_url: `${accountContract.productOrigins.mazer}/?code=local-auto-code&state=${oauthState}`,
         };
       }
       return {
@@ -508,13 +526,14 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       if (scenario === "oauth-hostile") {
         return "https://attacker.example.test/?code=stolen";
       }
-      return `${accountContract.productOrigins.mazer}/?code=local-code&state=local-state`;
+      return `${accountContract.productOrigins.mazer}/?code=local-code&state=${oauthState}`;
     },
     async denyOAuthAuthorization() {
       fail();
-      return `${accountContract.productOrigins.mazer}/?error=access_denied&state=local-state`;
+      return `${accountContract.productOrigins.mazer}/?error=access_denied&state=${oauthState}`;
     },
     async signOut() {
+      beginAuthMutation();
       fail();
       session = null;
       publish();
@@ -523,14 +542,17 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       fail();
     },
     async updateEmail(email) {
+      beginAuthMutation();
       fail();
       session = session ? { ...session, email } : null;
       publish();
     },
     async updatePassword() {
+      beginAuthMutation();
       fail();
     },
     async confirm() {
+      beginAuthMutation();
       fail();
       session = {
         displayName: "confirmed.user",
@@ -541,6 +563,7 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       return session;
     },
     async exchangeCode() {
+      beginAuthMutation();
       if (scenario === "pending") {
         return new Promise<PortalSession | null>(() => undefined);
       }

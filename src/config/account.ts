@@ -85,7 +85,16 @@ export const accountExperienceContexts: Record<
     consumerIntegration: "active",
     destinationOrigin: accountContract.publicHubOrigin,
     id: "website",
-    legalLinks: [],
+    legalLinks: [
+      {
+        href: new URL("/privacy", productIdentity.canonicalOrigin).href,
+        label: "Privacy Policy",
+      },
+      {
+        href: new URL("/terms", productIdentity.canonicalOrigin).href,
+        label: "Terms of Service",
+      },
+    ],
     productName: productIdentity.publicName,
     resetLabel: "Send recovery link",
     signInLabel: "Sign in",
@@ -116,7 +125,16 @@ export const accountExperienceContexts: Record<
     consumerIntegration: "pending",
     destinationOrigin: accountContract.productOrigins.mazer,
     id: "mazer",
-    legalLinks: [],
+    legalLinks: [
+      {
+        href: new URL("/legal/mazer/privacy", productIdentity.canonicalOrigin).href,
+        label: "Privacy Policy",
+      },
+      {
+        href: new URL("/legal/mazer/terms", productIdentity.canonicalOrigin).href,
+        label: "Terms of Service",
+      },
+    ],
     productName: "Mazer",
     resetLabel: "Send recovery link",
     signInLabel: "Sign in",

@@ -45,13 +45,18 @@ import { safeAuthError, safeAuthSuccess } from "../../src/lib/auth/errors";
 import { validatePassword } from "../../src/lib/auth/password-policy";
 import { isBrowserSafeSupabasePublicKey } from "../../src/lib/auth/supabase-public-key.mjs";
 import {
+  MAZER_OAUTH_PENDING_COOKIE,
   isValidMazerAuthorizationId,
-  MAZER_OAUTH_PENDING_KEY,
   normalizeMazerOAuthAuthorizationResult,
   parsePendingMazerOAuthAuthorization,
-  sanitizeMazerOAuthRedirect,
-  serializePendingMazerOAuthAuthorization,
+  sanitizeMazerOAuthApprovalRedirect,
+  sanitizeMazerOAuthDenialRedirect,
 } from "../../src/lib/auth/mazer-oauth";
+import {
+  DELETE as deletePendingMazerOAuth,
+  GET as getPendingMazerOAuth,
+  POST as postPendingMazerOAuth,
+} from "../../api/account/mazer-oauth-pending";
 import {
   humanAccountServices,
   normalizeServiceRegistrationReadModel,
@@ -61,6 +66,8 @@ import {
 } from "../../src/lib/account/service-registration";
 import { apps } from "../../src/data/apps";
 import { productIdentity } from "../../src/config/product";
+import { legalCenter } from "../../src/config/legal";
+import sitemap from "../../src/app/sitemap";
 
 const accountRoutes = [
   ["/login", `Sign in | ${productIdentity.publicName}`],
@@ -69,6 +76,50 @@ const accountRoutes = [
   ["/auth/callback", `Account handoff | ${productIdentity.publicName}`],
   ["/reset-password", `Reset password | ${productIdentity.publicName}`],
 ] as const;
+
+const legalRoutes = [
+  ["/privacy", `Privacy Policy | ${productIdentity.publicName}`, "platform-privacy"],
+  ["/terms", `Terms of Service | ${productIdentity.publicName}`, "platform-terms"],
+  ["/legal/mazer/privacy", `Mazer Privacy Policy | ${productIdentity.publicName}`, "mazer-privacy"],
+  ["/legal/mazer/terms", `Mazer Terms of Service | ${productIdentity.publicName}`, "mazer-terms"],
+] as const;
+
+const oauthState = "s".repeat(43);
+
+test.beforeEach(async ({ context }) => {
+  let pending: {
+    authorizationId: string;
+    authGeneration: string;
+    expiresAt: number;
+  } | null = null;
+  await context.route("**/api/account/mazer-oauth-pending", async (route) => {
+    const request = route.request();
+    if (request.method() === "POST") {
+      const body = request.postDataJSON() as {
+        authorizationId: string;
+        authGeneration: string;
+      };
+      pending = { ...body, expiresAt: Date.now() + 15 * 60 * 1000 };
+      await route.fulfill({ status: 204 });
+      return;
+    }
+    if (request.method() === "DELETE") {
+      pending = null;
+      await route.fulfill({ status: 204 });
+      return;
+    }
+    if (!pending) {
+      await route.fulfill({ status: 404 });
+      return;
+    }
+    await route.fulfill({
+      body: JSON.stringify(pending),
+      contentType: "application/json",
+      headers: { "Cache-Control": "no-store" },
+      status: 200,
+    });
+  });
+});
 
 test("auth surfaces derive public branding from product identity", () => {
   const sources = [
@@ -112,6 +163,14 @@ test("one presentation registry renders every product with exact consumer adopti
     { href: "https://fitness.fawxzzy.com/privacy", label: "Privacy Policy" },
     { href: "https://fitness.fawxzzy.com/terms", label: "Terms of Service" },
   ]);
+  expect(accountExperienceContexts.website.legalLinks).toEqual([
+    { href: "https://fawxzzy.com/privacy", label: "Privacy Policy" },
+    { href: "https://fawxzzy.com/terms", label: "Terms of Service" },
+  ]);
+  expect(accountExperienceContexts.mazer.legalLinks).toEqual([
+    { href: "https://fawxzzy.com/legal/mazer/privacy", label: "Privacy Policy" },
+    { href: "https://fawxzzy.com/legal/mazer/terms", label: "Terms of Service" },
+  ]);
   expect(accountRecoveryUrl("website")).toBe(accountUrls.recovery);
   expect(accountRecoveryUrl("fitness")).toBe(
     "https://account.fawxzzy.com/reset-password?recovery=1&app=fitness",
@@ -134,21 +193,33 @@ test("one presentation registry renders every product with exact consumer adopti
   );
 });
 
-test("Mazer OAuth keeps only one bounded expiring authorization request", () => {
+test("Mazer OAuth accepts only one bounded expiring authorization carrier", () => {
   const authorizationId = "authorization-id-1234567890";
-  const serialized = serializePendingMazerOAuthAuthorization(authorizationId, 1_000);
-  expect(serialized).not.toBeNull();
-  expect(parsePendingMazerOAuthAuthorization(serialized, 1_001)).toEqual({
+  const authGeneration = "a".repeat(64);
+  expect(parsePendingMazerOAuthAuthorization({
     authorizationId,
+    authGeneration,
+    expiresAt: 901_000,
+  }, 1_001)).toEqual({
+    authorizationId,
+    authGeneration,
     expiresAt: 901_000,
   });
-  expect(parsePendingMazerOAuthAuthorization(serialized, 901_000)).toBeNull();
-  expect(parsePendingMazerOAuthAuthorization('{"authorizationId":"short","expiresAt":2000}', 1_000)).toBeNull();
+  expect(parsePendingMazerOAuthAuthorization({
+    authorizationId,
+    authGeneration,
+    expiresAt: 901_000,
+  }, 901_000)).toBeNull();
+  expect(parsePendingMazerOAuthAuthorization({
+    authorizationId: "short",
+    authGeneration,
+    expiresAt: 2_000,
+  }, 1_000)).toBeNull();
   expect(isValidMazerAuthorizationId("short")).toBe(false);
   expect(isValidMazerAuthorizationId(authorizationId)).toBe(true);
 });
 
-test("Mazer OAuth normalizes provider details and rejects unsafe redirects", () => {
+test("Mazer OAuth normalizes provider details and validates decision-specific redirects", () => {
   const authorizationId = "authorization-id-1234567890";
   expect(normalizeMazerOAuthAuthorizationResult({
     authorization_id: authorizationId,
@@ -157,20 +228,99 @@ test("Mazer OAuth normalizes provider details and rejects unsafe redirects", () 
     scope: "email",
     user: { id: "preview-user" },
   })).toMatchObject({ kind: "authorization" });
-  expect(sanitizeMazerOAuthRedirect(
-    "https://mazer.fawxzzy.com/?code=one-time&state=browser-state",
-  )).toBe("https://mazer.fawxzzy.com/?code=one-time&state=browser-state");
-  expect(sanitizeMazerOAuthRedirect(
-    "https://mazer.fawxzzy.com/?error=access_denied&state=browser-state",
-  )).toBe("https://mazer.fawxzzy.com/?error=access_denied&state=browser-state");
+  expect(sanitizeMazerOAuthApprovalRedirect(
+    `https://mazer.fawxzzy.com/?code=one-time&state=${oauthState}`,
+  )).toBe(`https://mazer.fawxzzy.com/?code=one-time&state=${oauthState}`);
+  expect(sanitizeMazerOAuthDenialRedirect(
+    `https://mazer.fawxzzy.com/?error=access_denied&state=${oauthState}`,
+  )).toBe(`https://mazer.fawxzzy.com/?error=access_denied&state=${oauthState}`);
   for (const hostile of [
     "https://attacker.example.test/?code=one-time",
     "https://mazer.fawxzzy.com/path?code=one-time",
     "https://mazer.fawxzzy.com/?access_token=secret",
     "https://mazer.fawxzzy.com/?code=one&error=two",
+    `https://mazer.fawxzzy.com/?code=one-time&state=${oauthState}&error_description=nope`,
+    "https://mazer.fawxzzy.com/?code=one-time&state=short",
   ]) {
-    expect(sanitizeMazerOAuthRedirect(hostile)).toBeNull();
+    expect(sanitizeMazerOAuthApprovalRedirect(hostile)).toBeNull();
+    expect(sanitizeMazerOAuthDenialRedirect(hostile)).toBeNull();
   }
+});
+
+test("Mazer pending carrier is Secure, HttpOnly, host-only, bounded, and single-valued", async () => {
+  const authorizationId = "authorization-id-1234567890";
+  const authGeneration = "a".repeat(64);
+  const stored = await postPendingMazerOAuth(new Request(
+    "https://account.fawxzzy.com/api/account/mazer-oauth-pending",
+    {
+      body: JSON.stringify({ authorizationId, authGeneration }),
+      headers: {
+        "Content-Type": "application/json",
+        Origin: "https://account.fawxzzy.com",
+      },
+      method: "POST",
+    },
+  ));
+  expect(stored.status).toBe(204);
+  const setCookie = stored.headers.get("set-cookie");
+  expect(setCookie).toContain(`${MAZER_OAUTH_PENDING_COOKIE}=`);
+  expect(setCookie).toContain("HttpOnly");
+  expect(setCookie).toContain("Secure");
+  expect(setCookie).toContain("SameSite=Lax");
+  expect(setCookie).toContain("Path=/");
+  expect(setCookie).toContain("Max-Age=900");
+  expect(setCookie).not.toContain("Domain=");
+
+  const cookiePair = setCookie?.split(";", 1)[0] ?? "";
+  const read = getPendingMazerOAuth(new Request(
+    "https://account.fawxzzy.com/api/account/mazer-oauth-pending",
+    { headers: { Cookie: cookiePair } },
+  ));
+  expect(read.status).toBe(200);
+  await expect(read.json()).resolves.toMatchObject({ authorizationId, authGeneration });
+
+  const duplicate = getPendingMazerOAuth(new Request(
+    "https://account.fawxzzy.com/api/account/mazer-oauth-pending",
+    { headers: { Cookie: `${cookiePair}; ${cookiePair}` } },
+  ));
+  expect(duplicate.status).toBe(400);
+  expect(duplicate.headers.get("set-cookie")).toContain("Max-Age=0");
+
+  const cleared = deletePendingMazerOAuth(new Request(
+    "https://account.fawxzzy.com/api/account/mazer-oauth-pending",
+    {
+      headers: { Origin: "https://account.fawxzzy.com" },
+      method: "DELETE",
+    },
+  ));
+  expect(cleared.status).toBe(204);
+  expect(cleared.headers.get("set-cookie")).toContain("Max-Age=0");
+
+  const crossOrigin = await postPendingMazerOAuth(new Request(
+    "https://account.fawxzzy.com/api/account/mazer-oauth-pending",
+    {
+      body: JSON.stringify({ authorizationId, authGeneration }),
+      headers: {
+        "Content-Type": "application/json",
+        Origin: "https://mazer.fawxzzy.com",
+      },
+      method: "POST",
+    },
+  ));
+  expect(crossOrigin.status).toBe(403);
+  expect(crossOrigin.headers.get("set-cookie")).toBeNull();
+
+  const expiredValue = Buffer.from(JSON.stringify({
+    authorizationId,
+    authGeneration,
+    expiresAt: Date.now() - 1,
+  }), "utf8").toString("base64url");
+  const expired = getPendingMazerOAuth(new Request(
+    "https://account.fawxzzy.com/api/account/mazer-oauth-pending",
+    { headers: { Cookie: `${MAZER_OAUTH_PENDING_COOKIE}=${expiredValue}` } },
+  ));
+  expect(expired.status).toBe(404);
+  expect(expired.headers.get("set-cookie")).toContain("Max-Age=0");
 });
 
 test("Mazer OAuth is the only internal product return target", () => {
@@ -834,31 +984,39 @@ test("login accepts a legacy short password and maps adapter errors safely", asy
 test("auth text-link rows use one fixed, vertically centered divider geometry", async ({ page }) => {
   await page.goto("/login?auth_test=success");
 
-  const separator = page.locator(".account-link-separator");
+  const actionSeparator = page.locator(".account-card__links .account-link-separator");
+  const legalSeparator = page.locator(".account-auth-legal .account-link-separator");
   const passwordIcon = page.locator(".account-password-toggle svg");
-  await expect(separator).toHaveCount(1);
-  await expect(separator.locator(":scope > span")).toHaveCount(1);
-  await expect(separator).toHaveCSS("width", "8px");
-  await expect(separator).toHaveCSS("height", "14px");
-  await expect(separator.locator(":scope > span")).toHaveCSS("width", "2px");
-  await expect(separator.locator(":scope > span")).toHaveCSS("height", "14px");
+  await expect(actionSeparator).toHaveCount(1);
+  await expect(legalSeparator).toHaveCount(1);
+  for (const separator of [actionSeparator, legalSeparator]) {
+    await expect(separator.locator(":scope > span")).toHaveCount(1);
+    await expect(separator).toHaveCSS("width", "8px");
+    await expect(separator).toHaveCSS("height", "14px");
+    await expect(separator.locator(":scope > span")).toHaveCSS("width", "2px");
+    await expect(separator.locator(":scope > span")).toHaveCSS("height", "14px");
+  }
   await expect(passwordIcon).toHaveCSS("width", "20px");
   await expect(passwordIcon).toHaveCSS("height", "20px");
   await expect(page.locator(".account-text-action")).toHaveCSS("padding", "0px");
-  await expect(page.locator(".account-card__links")).toContainText("Create account");
-  await expect(page.locator(".account-card__links")).toContainText("Reset password");
+  await expect(page.locator(".account-card__links")).toContainText("Create Account");
+  await expect(page.locator(".account-card__links")).toContainText("Reset Password");
 
   const footerBox = await page.locator(".account-auth-secondary").boundingBox();
   const dockBox = await page.locator(".account-auth-dock .catalog-button").boundingBox();
   const websiteLinksBox = await page.locator(".account-card__links").boundingBox();
-  const websiteDividerBox = await separator.boundingBox();
-  const websiteFirstLinkBox = await page.getByRole("button", { name: "Create account" }).boundingBox();
+  const websiteDividerBox = await actionSeparator.boundingBox();
+  const websiteFirstLinkBox = await page.getByRole("button", { name: "Create Account" }).boundingBox();
+  const websiteLegalBox = await page.locator(".account-auth-legal").boundingBox();
+  const websiteLegalDividerBox = await legalSeparator.boundingBox();
   const usableViewportWidth = await page.evaluate(() => document.documentElement.clientWidth);
   expect(footerBox).not.toBeNull();
   expect(dockBox).not.toBeNull();
   expect(websiteLinksBox).not.toBeNull();
   expect(websiteDividerBox).not.toBeNull();
   expect(websiteFirstLinkBox).not.toBeNull();
+  expect(websiteLegalBox).not.toBeNull();
+  expect(websiteLegalDividerBox).not.toBeNull();
   expect(Math.round(dockBox!.y - (footerBox!.y + footerBox!.height))).toBe(16);
   expect(
     Math.abs(websiteDividerBox!.x + websiteDividerBox!.width / 2 - usableViewportWidth / 2),
@@ -879,11 +1037,11 @@ test("auth text-link rows use one fixed, vertically centered divider geometry", 
   expect(legalBox).not.toBeNull();
   expect(legalDividerBox).not.toBeNull();
   expect(legalFirstLinkBox).not.toBeNull();
-  expect(Math.round(legalBox!.y)).toBe(Math.round(websiteLinksBox!.y));
+  expect(Math.round(legalBox!.y)).toBe(Math.round(websiteLegalBox!.y));
   expect(
     Math.abs(legalDividerBox!.x + legalDividerBox!.width / 2 - usableViewportWidth / 2),
   ).toBeLessThanOrEqual(1);
-  expect(Math.abs(legalDividerBox!.x - websiteDividerBox!.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(legalDividerBox!.x - websiteLegalDividerBox!.x)).toBeLessThanOrEqual(1);
   expect(
     Math.abs(
       legalDividerBox!.y + legalDividerBox!.height / 2 -
@@ -1110,7 +1268,7 @@ test("registered contexts swap product presentation without changing auth author
 
   await page.goto("/login?auth_test=success&app=unknown");
   await expect(page.locator('.account-card--auth[data-auth-product="website"]')).toBeVisible();
-  await expect(page.locator(".account-auth-legal")).toHaveCount(0);
+  await expect(page.locator('.account-auth-legal[aria-label="Fawxzzy legal"]')).toBeVisible();
 
   await page.goto("/login?auth_test=success&app=mazer&app=fitness");
   await expect(page.locator('.account-card--auth[data-auth-product="website"]')).toBeVisible();
@@ -1724,6 +1882,57 @@ test("Fitness callbacks do not redirect when the secure consumer session fails",
   await expect(page).toHaveURL(/\/auth\/callback$/);
 });
 
+test("the public legal center publishes all versioned canonical documents", async ({ page }) => {
+  for (const [route, title, documentId] of legalRoutes) {
+    await page.goto(route);
+    await expect(page).toHaveTitle(title);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      "href",
+      `${productIdentity.canonicalOrigin}${route}`,
+    );
+    const document = page.locator(`[data-legal-document="${documentId}"]`);
+    await expect(document).toHaveAttribute("data-legal-version", "2026-09-13");
+    await expect(document.getByText("Last updated")).toContainText(
+      legalCenter.lastUpdated.label,
+    );
+  }
+  const sitemapUrls = sitemap().map((entry) => entry.url);
+  for (const [route] of legalRoutes) {
+    expect(sitemapUrls).toContain(`${productIdentity.canonicalOrigin}${route}`);
+  }
+});
+
+test("website, Mazer, and unknown account contexts use the correct legal center", async ({ page }) => {
+  const surfaces = ["/login", "/reset-password", "/account"] as const;
+  for (const route of surfaces) {
+    await page.goto(`${route}?auth_test=success`);
+    const websiteLegal = page.locator('.account-auth-legal[aria-label="Fawxzzy legal"]');
+    await expect(websiteLegal.getByRole("link", { name: "Privacy Policy" })).toHaveAttribute(
+      "href",
+      "https://fawxzzy.com/privacy",
+    );
+    await expect(websiteLegal.getByRole("link", { name: "Terms of Service" })).toHaveAttribute(
+      "href",
+      "https://fawxzzy.com/terms",
+    );
+
+    await page.goto(`${route}?app=mazer&auth_test=success`);
+    const mazerLegal = page.locator('.account-auth-legal[aria-label="Mazer legal"]');
+    await expect(mazerLegal.getByRole("link", { name: "Privacy Policy" })).toHaveAttribute(
+      "href",
+      "https://fawxzzy.com/legal/mazer/privacy",
+    );
+    await expect(mazerLegal.getByRole("link", { name: "Terms of Service" })).toHaveAttribute(
+      "href",
+      "https://fawxzzy.com/legal/mazer/terms",
+    );
+
+    await page.goto(`${route}?app=unknown&auth_test=success`);
+    await expect(page.locator('.account-card--auth[data-auth-product="website"]')).toBeVisible();
+    await expect(page.locator('.account-auth-legal[aria-label="Fawxzzy legal"]')).toBeVisible();
+  }
+});
+
 test("Mazer authorization captures once, scrubs the URL, and approves to the exact app", async ({ page }) => {
   const authorizationId = "authorization-id-1234567890";
   await page.goto(`/oauth/authorize?authorization_id=${authorizationId}&auth_test=session`);
@@ -1731,19 +1940,24 @@ test("Mazer authorization captures once, scrubs the URL, and approves to the exa
   await expect(page.locator('[data-auth-surface="oauth-consent"]')).toBeVisible();
   await expect(page.getByRole("heading", { name: "Continue to Mazer?" })).toBeVisible();
   await expect(page.getByText("Mazer will use your Fawxzzy email")).toBeVisible();
+  const legal = page.locator('.account-auth-legal[aria-label="Mazer legal"]');
+  await expect(legal.getByRole("link", { name: "Privacy Policy" })).toHaveAttribute(
+    "href",
+    "https://fawxzzy.com/legal/mazer/privacy",
+  );
+  await expect(legal.getByRole("link", { name: "Terms of Service" })).toHaveAttribute(
+    "href",
+    "https://fawxzzy.com/legal/mazer/terms",
+  );
   await expect.poll(() => page.evaluate(
-    (key) => window.localStorage.getItem(key),
-    MAZER_OAUTH_PENDING_KEY,
-  )).not.toBeNull();
+    (id) => Object.values(window.localStorage).some((value) => value.includes(id)),
+    authorizationId,
+  )).toBe(false);
 
   await page.getByRole("button", { name: "Continue to Mazer" }).click();
   await expect.poll(() => page.locator("html").getAttribute("data-oauth-redirect")).toBe(
-    "https://mazer.fawxzzy.com/?code=local-code&state=local-state",
+    `https://mazer.fawxzzy.com/?code=local-code&state=${oauthState}`,
   );
-  await expect.poll(() => page.evaluate(
-    (key) => window.localStorage.getItem(key),
-    MAZER_OAUTH_PENDING_KEY,
-  )).toBeNull();
 });
 
 test("Mazer authorization denial returns a bounded OAuth error", async ({ page }) => {
@@ -1752,7 +1966,7 @@ test("Mazer authorization denial returns a bounded OAuth error", async ({ page }
   await expect(page.getByRole("button", { name: "Cancel" })).toBeVisible();
   await page.getByRole("button", { name: "Cancel" }).click();
   await expect.poll(() => page.locator("html").getAttribute("data-oauth-redirect")).toBe(
-    "https://mazer.fawxzzy.com/?error=access_denied&state=local-state",
+    `https://mazer.fawxzzy.com/?error=access_denied&state=${oauthState}`,
   );
 });
 
@@ -1812,12 +2026,47 @@ test("Mazer authorization rejects duplicate requests and hostile provider redire
   await expect(page.locator("html")).not.toHaveAttribute("data-oauth-redirect", /.+/);
 });
 
+test("Mazer consent fails closed after a same-tab auth-generation change", async ({ page }) => {
+  await page.goto(
+    "/oauth/authorize?authorization_id=authorization-id-1234567890&auth_test=session",
+  );
+  await expect(page.getByRole("button", { name: "Continue to Mazer" })).toBeVisible();
+  await page.evaluate(
+    ({ key, value }) => window.localStorage.setItem(key, value),
+    { key: accountContract.authGenerationKey, value: "b".repeat(64) },
+  );
+  await page.getByRole("button", { name: "Continue to Mazer" }).click();
+  await expect(page.locator('[data-system-state="invalid"]')).toContainText(
+    "invalid or expired",
+  );
+  await expect(page.locator("html")).not.toHaveAttribute("data-oauth-redirect", /.+/);
+});
+
+test("Mazer consent fails closed after a cross-tab auth-generation change", async ({ context, page }) => {
+  await page.goto(
+    "/oauth/authorize?authorization_id=authorization-id-1234567890&auth_test=session",
+  );
+  await expect(page.getByRole("button", { name: "Continue to Mazer" })).toBeVisible();
+  const sibling = await context.newPage();
+  await sibling.goto("/");
+  await sibling.evaluate(
+    ({ key, value }) => window.localStorage.setItem(key, value),
+    { key: accountContract.authGenerationKey, value: "c".repeat(64) },
+  );
+  await sibling.close();
+  await page.getByRole("button", { name: "Continue to Mazer" }).click();
+  await expect(page.locator('[data-system-state="invalid"]')).toContainText(
+    "invalid or expired",
+  );
+  await expect(page.locator("html")).not.toHaveAttribute("data-oauth-redirect", /.+/);
+});
+
 test("Mazer authorization accepts only a previously approved exact app redirect", async ({ page }) => {
   await page.goto(
     "/oauth/authorize?authorization_id=authorization-id-1234567890&auth_test=oauth-auto",
   );
   await expect.poll(() => page.locator("html").getAttribute("data-oauth-redirect")).toBe(
-    "https://mazer.fawxzzy.com/?code=local-auto-code&state=local-state",
+    `https://mazer.fawxzzy.com/?code=local-auto-code&state=${oauthState}`,
   );
   await expect(page.getByRole("button", { name: "Continue to Mazer" })).toHaveCount(0);
 });
@@ -1892,4 +2141,52 @@ test("account routes fit an iPhone-class viewport and expose visible focus state
     await page.locator("main a, main button, main input").first().focus();
     await expect(page.locator(":focus")).toBeVisible();
   }
+});
+
+test("mobile account documents stay fixed while bounded form content can scroll", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const cases = [
+    { route: "/login?auth_test=success", title: "Welcome" },
+    { route: "/reset-password?auth_test=success", title: "Reset Password" },
+    { route: "/account?auth_test=session", title: "Account" },
+  ] as const;
+
+  for (const { route, title } of cases) {
+    await page.goto(route);
+    const heading = page.getByRole("heading", { name: title });
+    await expect(heading).toBeVisible();
+    const before = await heading.boundingBox();
+    await page.evaluate(() => window.scrollTo(0, 500));
+    const after = await heading.boundingBox();
+    expect(await page.evaluate(() => window.scrollY), route).toBe(0);
+    expect(after?.y, route).toBe(before?.y);
+    const body = page.locator(".account-auth-body");
+    if (await body.count()) {
+      const bodyBox = await body.boundingBox();
+      expect((before?.y ?? 0) + (before?.height ?? 0), route).toBeLessThanOrEqual(
+        (bodyBox?.y ?? 0) + 1,
+      );
+    }
+  }
+
+  await page.goto("/login?auth_test=success");
+  await page.getByRole("button", { name: "Create Account" }).click();
+  const createHeading = page.getByRole("heading", { name: "Create Account" });
+  await expect(createHeading).toBeVisible();
+  const createMetrics = await createHeading.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      clientWidth: element.clientWidth,
+      lineHeight: Number.parseFloat(style.lineHeight),
+      scrollWidth: element.scrollWidth,
+      height: element.getBoundingClientRect().height,
+    };
+  });
+  expect(createMetrics.scrollWidth).toBeLessThanOrEqual(createMetrics.clientWidth + 1);
+  expect(createMetrics.height).toBeLessThanOrEqual(createMetrics.lineHeight + 1);
+  const createBox = await createHeading.boundingBox();
+  const formBox = await page.locator(".account-auth-body").boundingBox();
+  expect((createBox?.y ?? 0) + (createBox?.height ?? 0)).toBeLessThanOrEqual(
+    (formBox?.y ?? 0) + 1,
+  );
 });

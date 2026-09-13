@@ -1,18 +1,19 @@
 import { accountContract, isLocalAuthTestOrigin } from "@/config/account";
 
 export const MAZER_OAUTH_AUTHORIZATION_PATH = "/oauth/authorize";
-export const MAZER_OAUTH_PENDING_KEY = "fawxzzy.account.mazer.oauth.pending.v1";
+export const MAZER_OAUTH_PENDING_API_PATH = "/api/account/mazer-oauth-pending";
+export const MAZER_OAUTH_PENDING_COOKIE = "__Host-fawxzzy-mazer-oauth-pending";
 export const MAZER_OAUTH_REDIRECT_URI = `${accountContract.productOrigins.mazer}/`;
 export const MAZER_OAUTH_SCOPE = "email";
 export const MAZER_OAUTH_PENDING_TTL_MS = 15 * 60 * 1000;
 
 const AUTHORIZATION_ID_PATTERN = /^[A-Za-z0-9_-]{16,512}$/;
-const REDIRECT_QUERY_KEYS = new Set([
-  "code",
-  "error",
-  "error_description",
-  "state",
-]);
+const AUTH_GENERATION_PATTERN = /^[a-f0-9]{64}$/;
+const STATE_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+const APPROVAL_QUERY_KEYS = new Set(["code", "state"]);
+const DENIAL_QUERY_KEYS = new Set(["error", "state"]);
+const REDIRECT_MAX_BYTES = 4_096;
+const CODE_MAX_LENGTH = 2_048;
 
 export type MazerOAuthAuthorizationDetails = {
   authorizationId: string;
@@ -29,6 +30,7 @@ export type MazerOAuthAuthorizationResult =
 
 export type PendingMazerOAuthAuthorization = {
   authorizationId: string;
+  authGeneration: string;
   expiresAt: number;
 };
 
@@ -36,44 +38,80 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function hasExactKeys(value: Record<string, unknown>, keys: readonly string[]) {
+  const actual = Object.keys(value).sort();
+  const expected = [...keys].sort();
+  return actual.length === expected.length && actual.every((key, index) => key === expected[index]);
+}
+
 export function isValidMazerAuthorizationId(value: unknown): value is string {
   return typeof value === "string" && AUTHORIZATION_ID_PATTERN.test(value);
 }
 
-export function serializePendingMazerOAuthAuthorization(
-  authorizationId: string,
-  now = Date.now(),
-) {
-  if (!isValidMazerAuthorizationId(authorizationId)) return null;
-  return JSON.stringify({
-    authorizationId,
-    expiresAt: now + MAZER_OAUTH_PENDING_TTL_MS,
-  } satisfies PendingMazerOAuthAuthorization);
+export function isValidAuthGeneration(value: unknown): value is string {
+  return typeof value === "string" && AUTH_GENERATION_PATTERN.test(value);
 }
 
 export function parsePendingMazerOAuthAuthorization(
-  value: string | null | undefined,
+  value: unknown,
   now = Date.now(),
-) {
-  if (!value) return null;
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    if (
-      !isRecord(parsed) ||
-      !isValidMazerAuthorizationId(parsed.authorizationId) ||
-      typeof parsed.expiresAt !== "number" ||
-      !Number.isSafeInteger(parsed.expiresAt) ||
-      parsed.expiresAt <= now ||
-      parsed.expiresAt > now + MAZER_OAUTH_PENDING_TTL_MS
-    ) {
-      return null;
-    }
-    return {
-      authorizationId: parsed.authorizationId,
-      expiresAt: parsed.expiresAt,
-    } satisfies PendingMazerOAuthAuthorization;
-  } catch {
+): PendingMazerOAuthAuthorization | null {
+  if (
+    !isRecord(value) ||
+    !hasExactKeys(value, ["authorizationId", "authGeneration", "expiresAt"]) ||
+    !isValidMazerAuthorizationId(value.authorizationId) ||
+    !isValidAuthGeneration(value.authGeneration) ||
+    typeof value.expiresAt !== "number" ||
+    !Number.isSafeInteger(value.expiresAt) ||
+    value.expiresAt <= now ||
+    value.expiresAt > now + MAZER_OAUTH_PENDING_TTL_MS
+  ) {
     return null;
+  }
+
+  return {
+    authorizationId: value.authorizationId,
+    authGeneration: value.authGeneration,
+    expiresAt: value.expiresAt,
+  };
+}
+
+export async function storePendingMazerOAuthAuthorization(
+  authorizationId: string,
+  authGeneration: string,
+) {
+  if (!isValidMazerAuthorizationId(authorizationId) || !isValidAuthGeneration(authGeneration)) {
+    return false;
+  }
+  const response = await fetch(MAZER_OAUTH_PENDING_API_PATH, {
+    body: JSON.stringify({ authorizationId, authGeneration }),
+    cache: "no-store",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+  return response.ok;
+}
+
+export async function readPendingMazerOAuthAuthorization() {
+  const response = await fetch(MAZER_OAUTH_PENDING_API_PATH, {
+    cache: "no-store",
+    credentials: "same-origin",
+    method: "GET",
+  });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error("Pending authorization unavailable.");
+  return parsePendingMazerOAuthAuthorization(await response.json().catch(() => null));
+}
+
+export async function clearPendingMazerOAuthAuthorization() {
+  const response = await fetch(MAZER_OAUTH_PENDING_API_PATH, {
+    cache: "no-store",
+    credentials: "same-origin",
+    method: "DELETE",
+  });
+  if (!response.ok && response.status !== 404) {
+    throw new Error("Pending authorization unavailable.");
   }
 }
 
@@ -130,8 +168,10 @@ export function isExpectedMazerOAuthAuthorization(
   );
 }
 
-export function sanitizeMazerOAuthRedirect(value: unknown) {
-  if (typeof value !== "string") return null;
+function parseBoundedMazerRedirect(value: unknown) {
+  if (typeof value !== "string" || new TextEncoder().encode(value).byteLength > REDIRECT_MAX_BYTES) {
+    return null;
+  }
   try {
     const url = new URL(value);
     if (
@@ -139,20 +179,37 @@ export function sanitizeMazerOAuthRedirect(value: unknown) {
       url.pathname !== "/" ||
       url.username ||
       url.password ||
-      url.hash ||
-      [...url.searchParams.keys()].some((key) => !REDIRECT_QUERY_KEYS.has(key)) ||
-      url.searchParams.getAll("code").length > 1 ||
-      url.searchParams.getAll("state").length > 1 ||
-      url.searchParams.getAll("error").length > 1 ||
-      url.searchParams.getAll("error_description").length > 1
+      url.hash
     ) {
       return null;
     }
-    const code = url.searchParams.get("code");
-    const error = url.searchParams.get("error");
-    if ((Boolean(code) === Boolean(error)) || (!code && !error)) return null;
-    return url.href;
+    return url;
   } catch {
     return null;
   }
+}
+
+function hasExactSearchKeys(url: URL, expectedKeys: Set<string>) {
+  const keys = [...url.searchParams.keys()];
+  return keys.length === expectedKeys.size &&
+    keys.every((key) => expectedKeys.has(key)) &&
+    [...expectedKeys].every((key) => url.searchParams.getAll(key).length === 1);
+}
+
+export function sanitizeMazerOAuthApprovalRedirect(value: unknown) {
+  const url = parseBoundedMazerRedirect(value);
+  if (!url || !hasExactSearchKeys(url, APPROVAL_QUERY_KEYS)) return null;
+  const code = url.searchParams.get("code");
+  const state = url.searchParams.get("state");
+  if (!code || code.length > CODE_MAX_LENGTH || !state || !STATE_PATTERN.test(state)) return null;
+  return url.href;
+}
+
+export function sanitizeMazerOAuthDenialRedirect(value: unknown) {
+  const url = parseBoundedMazerRedirect(value);
+  if (!url || !hasExactSearchKeys(url, DENIAL_QUERY_KEYS)) return null;
+  const error = url.searchParams.get("error");
+  const state = url.searchParams.get("state");
+  if (error !== "access_denied" || !state || !STATE_PATTERN.test(state)) return null;
+  return url.href;
 }

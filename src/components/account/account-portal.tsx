@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   accountContract,
   classifyRuntimeOrigin,
@@ -41,6 +41,10 @@ import {
   SystemState,
   type SystemStateVariant,
 } from "@/components/system/system-state";
+import {
+  AccountLegalLinks,
+  AccountTextDivider,
+} from "@/components/account/account-legal-links";
 
 type PortalMode = "login" | "account" | "confirm" | "callback" | "reset";
 
@@ -210,28 +214,6 @@ function AuthLiveNotice({ notice }: { notice: Notice | null }) {
     >
       {notice.text}
     </p>
-  );
-}
-
-function AccountTextDivider() {
-  return (
-    <span aria-hidden="true" className="account-link-separator">
-      <span />
-    </span>
-  );
-}
-
-function AccountLegalLinks({ context }: { context: AccountExperienceContext }) {
-  if (context.legalLinks.length === 0) return null;
-  return (
-    <div aria-label={`${context.productName} legal`} className="account-auth-legal">
-      {context.legalLinks.map((link, index) => (
-        <Fragment key={link.href}>
-          {index > 0 ? <AccountTextDivider /> : null}
-          <a href={link.href}>{link.label}</a>
-        </Fragment>
-      ))}
-    </div>
   );
 }
 
@@ -493,7 +475,7 @@ function LoginPanel({
       <header className="account-auth-intro">
         <p>{context.productName}</p>
         <h1 aria-live="polite" id="login-panel-title">
-          {intent === "login" ? "Welcome" : "Create account"}
+          {intent === "login" ? "Welcome" : "Create Account"}
         </h1>
         {intent === "login" && displayedIdentity ? (
           <p className="account-auth-identity" data-testid="remembered-identity">
@@ -584,12 +566,12 @@ function LoginPanel({
             onClick={switchIntent}
             type="button"
           >
-            {intent === "login" ? "Create account" : "Log in"}
+            {intent === "login" ? "Create Account" : "Log in"}
           </button>
           {intent === "login" ? (
             <>
               <AccountTextDivider />
-              <a href={contextualPath("/reset-password", context, internalMazerReturn)}>Reset password</a>
+              <a href={contextualPath("/reset-password", context, internalMazerReturn)}>Reset Password</a>
             </>
           ) : null}
         </div>
@@ -731,7 +713,7 @@ function AccountPanel({
         data-has-legal={context.legalLinks.length > 0 || undefined}
       >
         <div className="account-card__links">
-          <a href={contextualPath("/reset-password", context)}>Reset password</a>
+          <a href={contextualPath("/reset-password", context)}>Reset Password</a>
         </div>
         <AccountLegalLinks context={context} />
       </div>
@@ -932,7 +914,7 @@ function ResetPanel({
       <RuntimeNote />
       <header className="account-auth-intro">
         <p>{context.productName}</p>
-        <h1 id="reset-panel-title">{recovery ? "New password" : "Reset password"}</h1>
+        <h1 id="reset-panel-title">{recovery ? "New Password" : "Reset Password"}</h1>
       </header>
       <div className="account-auth-body">
         <SetupState resolution={resolution} />

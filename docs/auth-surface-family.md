@@ -17,7 +17,7 @@ The three products use one rigid authentication anatomy. Product theme may chang
 Every sign-in and create-account surface provides these elements in this order:
 
 1. Product identity.
-2. `Welcome` or `Create account`, with the remembered username directly below `Welcome` when available.
+2. `Welcome` or `Create Account`, with the remembered username directly below `Welcome` when available.
 3. Labeled identifier and password controls with password-manager semantics and the shared password-visibility icon.
 4. A compact sign-in/create-account/recovery action row.
 5. One full-width bottom-dock submit action with visible disabled and pending states.
@@ -28,7 +28,9 @@ Every editable credential field preserves native mobile caret placement, long-pr
 
 The product marker, screen title, and remembered username form one top-anchored intro group. The complete field set is independently centered against the viewport, and the primary action remains independently bottom-anchored. Field count must not pull the intro down or move the bottom action. The product-owned password reveal is the only visible reveal control; browser-native duplicate reveal and clear controls are suppressed without changing password-manager or autofill semantics.
 
-The secondary-action rail is geometry-owned rather than flow-owned: it reserves one 44px text-action row and one 32px lower row, with its lower edge fixed 16px above the 56px bottom dock. When legal links exist, screen actions occupy the upper row and legal links occupy the lower row. When legal links do not exist, screen actions occupy that same lower-row position rather than jumping upward. Every divider is the same shared 8px-by-14px component with a 2px stroke, pinned to the exact horizontal screen centerline and vertically centered against its neighboring text.
+The utility document never scrolls during ordinary supported mobile viewports. When keyboard pressure, extreme text size, or a genuinely short viewport requires overflow, only the bounded form/content region may scroll; the intro, secondary rail, and primary dock remain stable. Normal-width mobile headings use title case and remain on one line without overlapping the form.
+
+The secondary-action rail is geometry-owned rather than flow-owned: it reserves two 44px touch-safe rows, with its lower edge fixed 16px above the 56px bottom dock. When legal links exist, screen actions occupy the upper row and legal links occupy the lower row. When legal links do not exist, screen actions occupy that same lower-row position rather than jumping upward. Every divider is the same shared 8px-by-14px component with a 2px stroke, pinned to the exact horizontal screen centerline and vertically centered against its neighboring text.
 
 The Fitness presentation derives its public Privacy Policy and Terms of Service from the catalog's current Fitness origin; the account host renders those live destinations without copying the legal documents, switching early to a planned origin, or changing product ownership.
 
@@ -60,7 +62,7 @@ The family requires 44px minimum interactive targets, visible keyboard focus, no
 - Implement the same anatomy inside the Phaser runtime rather than importing Website or Fitness components.
 - Background: Mazer's own static auth background; gameplay, simulation, announcements, and ambient motion are halted while auth is visible.
 - Preserve one overlay and recoverable input behavior without guest-play access.
-- The account host owns the `/oauth/authorize` OAuth 2.1 consent surface. It accepts one bounded provider authorization identifier, immediately removes it from the address bar, retains it for at most 15 minutes, and resumes the exact request through sign-in, account creation, confirmation, or password recovery.
+- The account host owns the `/oauth/authorize` OAuth 2.1 consent surface. It accepts one bounded provider authorization identifier, immediately removes it from the address bar, and retains it for at most 15 minutes in a Secure, HttpOnly, SameSite=Lax, host-only cookie. Page script and local storage never receive the retained identifier.
 - The consent surface accepts only the registered Mazer client, exact `https://mazer.fawxzzy.com/` redirect URI, and `email` scope. Approval and denial revalidate the current account session and accept only a bounded code-or-error redirect back to that exact origin.
 - Do not change the auth/menu surface while another exact writer owns it. Reconcile that work first, then implement from a fresh exact parent.
 
@@ -86,5 +88,11 @@ The family requires 44px minimum interactive targets, visible keyboard focus, no
 5. Each product requires focused tests, responsive screenshots, exact-head review, and a separately authorized release.
 
 Failure mode: visual mimicry without a shared structural contract drifts into absolute positioning, extra copy, inconsistent actions, and moving controls. Tests must assert the anatomy and layout behavior, not only the presence of labels.
+
+## Installed-app navigation boundary
+
+Manifest scope is same-origin. Therefore an installed Fitness or Mazer app cannot make the cross-origin account website behave like an in-scope top-level PWA document. The shared contract centralizes Auth semantics, validation, copy, presentation tokens, and verified return targets, while each installed product owns a same-origin account shell in its own visual language. That shell may broker to the canonical account service, but it must not duplicate Auth authority, iframe the account host, depend on experimental scope extensions, spoof browser chrome, or rely only on browser history for return navigation.
+
+A back or return action is rendered only from a closed product registry entry. Arbitrary query-string return URLs are never accepted. Website and active Fitness contexts have verified destinations; Mazer gains an installed-app return control only after its owner-side consumer is released and observed.
 
 This contract grants no commit, push, pull-request, merge, provider, deployment, or production authority.
