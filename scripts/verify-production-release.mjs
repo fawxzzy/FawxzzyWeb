@@ -36,11 +36,13 @@ const accountRoutes = [
   "/auth/callback",
   "/auth/confirm",
   "/reset-password?recovery=1",
+  "/oauth/authorize",
+];
+const legalRoutes = [
   "/privacy",
   "/terms",
   "/legal/mazer/privacy",
   "/legal/mazer/terms",
-  "/oauth/authorize",
 ];
 
 function runVercelJson(args) {
@@ -142,6 +144,19 @@ export async function verifyProductionRelease({ deploymentId, expectedCommit, so
     }
   }
 
+  const legalSmoke = [];
+  for (const route of legalRoutes) {
+    const response = await fetchWithTimeout(`https://account.fawxzzy.com${route}`, {
+      redirect: "follow",
+    });
+    const html = await response.text();
+    const expectedCanonical = `https://fawxzzy.com${route}`;
+    legalSmoke.push({ route, status: response.status, url: response.url, expectedCanonical });
+    if (response.status !== 200 || !html.includes(`href="${expectedCanonical}"`)) {
+      throw new Error(`Legal-route smoke failed for ${route}.`);
+    }
+  }
+
   const pendingEndpoint = "https://account.fawxzzy.com/api/account/mazer-oauth-pending";
   const pendingMissing = await fetchWithTimeout(pendingEndpoint, { redirect: "manual" });
   const pendingWrongOrigin = await fetchWithTimeout(pendingEndpoint, {
@@ -216,7 +231,7 @@ export async function verifyProductionRelease({ deploymentId, expectedCommit, so
       rollbackDeploymentId,
       rollbackReadyState: rollbackDeployment.readyState,
     },
-    verification: { smoke, accountSmoke, pendingApi, wwwRedirect: 308, ranges, logs },
+    verification: { smoke, accountSmoke, legalSmoke, pendingApi, wwwRedirect: 308, ranges, logs },
   };
 
   const targetPath = receiptPath ?? path.join(repoRoot, "visual-evidence", expectedCommit, "production-release-receipt.json");
