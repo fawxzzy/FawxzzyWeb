@@ -53,21 +53,111 @@ async function fetchWithTimeout(url, options = {}) {
   return fetch(url, { ...options, signal: AbortSignal.timeout(20_000) });
 }
 
-function readQuotedAttribute(tag, name) {
-  const match = tag.match(new RegExp(`(?:^|\\s)${name}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`, "i"));
-  return match ? (match[1] ?? match[2]) : null;
+function parseTagAttributes(source, offset) {
+  const attributes = new Map();
+  let cursor = offset;
+
+  while (cursor < source.length) {
+    while (/\s/.test(source[cursor] ?? "")) cursor += 1;
+    if (cursor >= source.length || source[cursor] === "/") break;
+
+    const nameStart = cursor;
+    while (cursor < source.length && !/[\s=/>]/.test(source[cursor])) cursor += 1;
+    const name = source.slice(nameStart, cursor).toLowerCase();
+    while (/\s/.test(source[cursor] ?? "")) cursor += 1;
+
+    let value = "";
+    if (source[cursor] === "=") {
+      cursor += 1;
+      while (/\s/.test(source[cursor] ?? "")) cursor += 1;
+      const quote = source[cursor];
+      if (quote === '"' || quote === "'") {
+        cursor += 1;
+        const valueStart = cursor;
+        while (cursor < source.length && source[cursor] !== quote) cursor += 1;
+        value = source.slice(valueStart, cursor);
+        if (source[cursor] === quote) cursor += 1;
+      } else {
+        const valueStart = cursor;
+        while (cursor < source.length && !/[\s>]/.test(source[cursor])) cursor += 1;
+        value = source.slice(valueStart, cursor);
+      }
+    }
+
+    if (name && !attributes.has(name)) attributes.set(name, value);
+  }
+
+  return attributes;
+}
+
+function findTagEnd(html, offset) {
+  let quote = null;
+  for (let cursor = offset; cursor < html.length; cursor += 1) {
+    const character = html[cursor];
+    if (quote) {
+      if (character === quote) quote = null;
+    } else if (character === '"' || character === "'") {
+      quote = character;
+    } else if (character === ">") {
+      return cursor;
+    }
+  }
+  return -1;
 }
 
 export function hasExactCanonicalLink(html, expectedCanonical) {
-  const withoutComments = html.replace(/<!--[\s\S]*?-->/g, "");
-  const linkTags = withoutComments.match(/<link\b[^>]*>/gi) ?? [];
+  const lowerHtml = html.toLowerCase();
+  let cursor = 0;
+  let inHead = false;
+  let rawTextElement = null;
 
-  return linkTags.some((tag) => {
-    const rel = readQuotedAttribute(tag, "rel");
-    const href = readQuotedAttribute(tag, "href");
-    return rel?.split(/\s+/).some((token) => token.toLowerCase() === "canonical")
-      && href === expectedCanonical;
-  });
+  while (cursor < html.length) {
+    const tagStart = html.indexOf("<", cursor);
+    if (tagStart === -1) return false;
+
+    if (rawTextElement) {
+      const closeStart = lowerHtml.indexOf(`</${rawTextElement}`, tagStart);
+      if (closeStart === -1) return false;
+      cursor = closeStart;
+      rawTextElement = null;
+      continue;
+    }
+    if (html.startsWith("<!--", tagStart)) {
+      const commentEnd = html.indexOf("-->", tagStart + 4);
+      cursor = commentEnd === -1 ? html.length : commentEnd + 3;
+      continue;
+    }
+
+    const tagEnd = findTagEnd(html, tagStart + 1);
+    if (tagEnd === -1) return false;
+    const tagSource = html.slice(tagStart + 1, tagEnd);
+    const tagMatch = tagSource.match(/^\s*(\/?)\s*([A-Za-z][A-Za-z0-9:-]*)/);
+    if (!tagMatch) {
+      cursor = tagEnd + 1;
+      continue;
+    }
+
+    const closing = tagMatch[1] === "/";
+    const tagName = tagMatch[2].toLowerCase();
+    if (closing) {
+      if (tagName === "head") inHead = false;
+    } else {
+      if (tagName === "head") inHead = true;
+      if (inHead && tagName === "link") {
+        const attributes = parseTagAttributes(tagSource, tagMatch[0].length);
+        const rel = attributes.get("rel");
+        const href = attributes.get("href");
+        if (rel?.split(/\s+/).some((token) => token.toLowerCase() === "canonical")
+          && href === expectedCanonical) {
+          return true;
+        }
+      }
+      if (["script", "style", "textarea", "title"].includes(tagName)) rawTextElement = tagName;
+    }
+    cursor = tagEnd + 1;
+  }
+
+  return false;
 }
 
 function readLogCount(deploymentId, filterArgs) {
