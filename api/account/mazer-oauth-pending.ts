@@ -10,7 +10,7 @@ import {
   sanitizeMazerOAuthApprovalRedirect,
   sanitizeMazerOAuthDenialRedirect,
   type PendingMazerOAuthAuthorization,
-} from "../../src/lib/auth/mazer-oauth";
+} from "../../src/lib/auth/mazer-oauth.js";
 
 const CANONICAL_ORIGIN = "https://account.fawxzzy.com";
 const MASTER_SUPABASE_ORIGIN = "https://bxtcuhkotumitoqtrcej.supabase.co";

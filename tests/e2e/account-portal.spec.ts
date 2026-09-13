@@ -479,6 +479,20 @@ test("Mazer pending carrier is Secure, HttpOnly, host-only, bounded, and single-
   expect(expired.headers.get("set-cookie")).toContain("Max-Age=0");
 });
 
+test("Vercel packages the Mazer pending function as an ES module", () => {
+  const packageManifest = JSON.parse(readFileSync(path.resolve("package.json"), "utf8")) as {
+    type?: string;
+  };
+  const functionSource = readFileSync(
+    path.resolve("api/account/mazer-oauth-pending.ts"),
+    "utf8",
+  );
+  expect(packageManifest.type).toBe("module");
+  expect(functionSource).toContain('from "node:buffer"');
+  expect(functionSource).toContain('from "../../src/lib/auth/mazer-oauth.js"');
+  expect(functionSource).not.toContain('from "../../src/lib/auth/mazer-oauth";');
+});
+
 test("Mazer OAuth is the only internal product return target", () => {
   const mazer = accountExperienceContexts.mazer;
   const fitness = accountExperienceContexts.fitness;
