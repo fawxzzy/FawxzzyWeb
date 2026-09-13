@@ -169,7 +169,19 @@ export async function verifyProductionRelease({ deploymentId, expectedCommit, so
     throw new Error("The captured rollback deployment is not READY.");
   }
 
-  const aliases = project.targets.production.alias ?? [];
+  const aliasResponse = runVercelJson([
+    "api",
+    `/v4/aliases?projectId=${VERCEL_PRODUCTION_CONTRACT.projectId}`,
+    "--scope",
+    VERCEL_PRODUCTION_CONTRACT.teamSlug,
+    "--raw",
+  ]);
+  if (!Array.isArray(aliasResponse.aliases) || aliasResponse.pagination?.next) {
+    throw new Error("The authoritative Vercel alias readback is incomplete.");
+  }
+  const aliases = aliasResponse.aliases
+    .filter((binding) => binding.deploymentId === deploymentId)
+    .map((binding) => binding.alias);
   for (const alias of VERCEL_PRODUCTION_CONTRACT.productionAliases) {
     if (!aliases.includes(alias)) throw new Error(`Required production alias is missing: ${alias}`);
   }
