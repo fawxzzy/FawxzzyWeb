@@ -13,7 +13,7 @@ export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
   fitnessConsumerMerges: [
     "b5e4453edacfed17759bb4c495a6b914652558c3",
     "8070196cd3f5efbe2faf7fe8719971cf2ebd1e39",
-    "c8e7dd33d0a4272cb3860a54f87a290ede21c773",
+    "79957260f2169ab9c2d7eed4d6aed4351387b7b0",
   ],
   state: "active",
 } as const satisfies FitnessHandoffActivation);
