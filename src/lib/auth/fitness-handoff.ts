@@ -1,7 +1,7 @@
 import { accountContract, accountExperienceContexts } from "@/config/account";
 
 export type FitnessHandoffActivation = Readonly<{
-  fitnessConsumerMerge: string;
+  fitnessConsumerMerges: readonly [string, string];
   state: "active" | "inactive";
 }>;
 
@@ -10,7 +10,10 @@ export const FITNESS_HANDOFF_READINESS_CONTRACT_VERSION =
 export const FITNESS_HANDOFF_MASTER_PROJECT_REF = "bxtcuhkotumitoqtrcej";
 
 export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
-  fitnessConsumerMerge: "b5e4453edacfed17759bb4c495a6b914652558c3",
+  fitnessConsumerMerges: [
+    "b5e4453edacfed17759bb4c495a6b914652558c3",
+    "8070196cd3f5efbe2faf7fe8719971cf2ebd1e39",
+  ],
   state: "active",
 } as const satisfies FitnessHandoffActivation);
 
@@ -29,7 +32,9 @@ export function fitnessHandoffRuntimeReady(
       && !candidate.username && !candidate.password
       && accountExperienceContexts.fitness.consumerIntegration === "active"
       && activation.state === "active"
-      && /^[0-9a-f]{40}$/.test(activation.fitnessConsumerMerge);
+      && activation.fitnessConsumerMerges.length === 2
+      && new Set(activation.fitnessConsumerMerges).size === 2
+      && activation.fitnessConsumerMerges.every((merge) => /^[0-9a-f]{40}$/.test(merge));
   } catch {
     return false;
   }
@@ -99,7 +104,8 @@ function validRuntimeReadiness(
     && value.authProjectRef === FITNESS_HANDOFF_MASTER_PROJECT_REF
     && value.contractVersion === FITNESS_HANDOFF_READINESS_CONTRACT_VERSION
     && value.handoffStore === "available"
-    && value.sourceCommit === activation.fitnessConsumerMerge;
+    && typeof value.sourceCommit === "string"
+    && activation.fitnessConsumerMerges.some((merge) => merge === value.sourceCommit);
 }
 
 async function bounded<T>(operation: (signal: AbortSignal) => Promise<T>): Promise<T> {
