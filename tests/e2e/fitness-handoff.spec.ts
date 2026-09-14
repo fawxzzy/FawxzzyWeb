@@ -15,7 +15,7 @@ import {
 const id = "a".repeat(43);
 const origin = "https://fitness.fawxzzy.com";
 const currentFitnessMerge = "b5e4453edacfed17759bb4c495a6b914652558c3";
-const reviewedFitnessSource = "79957260f2169ab9c2d7eed4d6aed4351387b7b0";
+const reviewedFitnessSource = "dbbe305fc511633166c1a65396fdf9ef6a1c79f1";
 const productionFitnessMerge = "8070196cd3f5efbe2faf7fe8719971cf2ebd1e39";
 const legacyFitnessMerge = "f87f2dc7e0cc3cbead0eb3ea5ed7b9c592fdfa94";
 const pair = { accessToken: "synthetic-access", refreshToken: "synthetic-refresh" };
