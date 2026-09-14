@@ -1229,7 +1229,7 @@ test("auth entry uses one stable Fitness-shaped frame and remembers the returnin
   const body = page.locator(".account-auth-body");
   const form = page.locator(".account-form--auth");
   await expect(card).toHaveCSS("position", "relative");
-  await expect(card).toHaveCSS("display", "flex");
+  await expect(card).toHaveCSS("display", "grid");
   await expect(body).toHaveCSS("display", "flex");
   await expect(form).toHaveCSS("position", "static");
 
@@ -1280,25 +1280,27 @@ test("every account surface shares the anchored intro, centered fields, and dock
     const secondary = card.locator(".account-auth-secondary");
     const dock = card.locator(".account-auth-dock .catalog-button");
 
-    await expect(intro).toHaveCSS("flex-grow", "0");
-    await expect(intro).toHaveCSS("flex-shrink", "0");
+    await expect(intro).toHaveCSS("grid-row-start", "1");
 
     const cardBox = await card.boundingBox();
     const introBox = await intro.boundingBox();
+    const bodyBox = await card.locator(".account-auth-body").boundingBox();
     const fieldGroupBox = await card.locator(".account-form--auth").boundingBox();
     const secondaryBox = await secondary.boundingBox();
     const dockBox = await dock.boundingBox();
-    const viewport = page.viewportSize();
     expect(cardBox).not.toBeNull();
     expect(introBox).not.toBeNull();
+    expect(bodyBox).not.toBeNull();
     expect(fieldGroupBox).not.toBeNull();
     expect(secondaryBox).not.toBeNull();
     expect(dockBox).not.toBeNull();
-    expect(viewport).not.toBeNull();
     expect(Math.round(introBox!.y - cardBox!.y)).toBe(0);
     expect(introBox!.y).toBeLessThanOrEqual(48);
     expect(
-      Math.abs(fieldGroupBox!.y + fieldGroupBox!.height / 2 - viewport!.height / 2),
+      Math.abs(
+        fieldGroupBox!.y + fieldGroupBox!.height / 2 -
+          (bodyBox!.y + bodyBox!.height / 2),
+      ),
     ).toBeLessThanOrEqual(1);
     expect(Math.round(dockBox!.y - (secondaryBox!.y + secondaryBox!.height))).toBe(16);
 
@@ -1315,11 +1317,14 @@ test("every account surface shares the anchored intro, centered fields, and dock
   const signupCard = page.locator('[data-auth-surface="credentials"]');
   await expect(signupCard.getByRole("heading", { name: "Create account" })).toBeVisible();
   const signupFieldsBox = await signupCard.locator(".account-form--auth").boundingBox();
-  const signupViewport = page.viewportSize();
+  const signupBodyBox = await signupCard.locator(".account-auth-body").boundingBox();
   expect(signupFieldsBox).not.toBeNull();
-  expect(signupViewport).not.toBeNull();
+  expect(signupBodyBox).not.toBeNull();
   expect(
-    Math.abs(signupFieldsBox!.y + signupFieldsBox!.height / 2 - signupViewport!.height / 2),
+    Math.abs(
+      signupFieldsBox!.y + signupFieldsBox!.height / 2 -
+        (signupBodyBox!.y + signupBodyBox!.height / 2),
+    ),
   ).toBeLessThanOrEqual(1);
   for (const field of await signupCard.locator("input").all()) {
     await expect(field).toHaveCSS("padding-left", "54px");
@@ -1465,18 +1470,51 @@ test("account status exits checking when account service configuration is unavai
   await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
 });
 
-test("short create-account viewports can scroll fields above the fixed action rails", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 600 });
-  await page.goto("/login?auth_test=success");
-  await page.getByRole("button", { name: "Create account" }).click();
-  const password = page.getByLabel("Password", { exact: true });
-  await password.focus();
-  await password.evaluate((element) => element.scrollIntoView({ block: "center" }));
-  const passwordBox = await password.boundingBox();
-  const secondaryBox = await page.locator(".account-auth-secondary").boundingBox();
-  expect(passwordBox).not.toBeNull();
-  expect(secondaryBox).not.toBeNull();
-  expect(passwordBox!.y + passwordBox!.height).toBeLessThanOrEqual(secondaryBox!.y);
+test("keyboard-height signup viewports keep every field and action rail visible without scrolling", async ({
+  page,
+}) => {
+  for (const height of [560, 500]) {
+    await page.setViewportSize({ width: 390, height });
+    await page.goto("/login?auth_test=success");
+    await page.evaluate(() => {
+      document.documentElement.style.setProperty("--app-safe-top", "20px");
+      document.documentElement.style.setProperty("--app-safe-bottom", "34px");
+    });
+    await page.getByRole("button", { name: "Create account" }).click();
+    const body = page.locator(".account-auth-body");
+    const bodyBox = await body.boundingBox();
+    const secondaryBox = await page.locator(".account-auth-secondary").boundingBox();
+    const dockBox = await page.locator(".account-auth-dock").boundingBox();
+    expect(bodyBox).not.toBeNull();
+    expect(secondaryBox).not.toBeNull();
+    expect(dockBox).not.toBeNull();
+
+    for (const field of await page.locator(".account-form--auth input").all()) {
+      await field.focus();
+      const fieldBox = await field.boundingBox();
+      expect(fieldBox, `${height}px field`).not.toBeNull();
+      expect(fieldBox!.y, `${height}px field top`).toBeGreaterThanOrEqual(bodyBox!.y);
+      expect(fieldBox!.y + fieldBox!.height, `${height}px field bottom`).toBeLessThanOrEqual(
+        bodyBox!.y + bodyBox!.height,
+      );
+      expect(await page.evaluate(() => window.scrollY), `${height}px window scroll`).toBe(0);
+    }
+
+    const viewportState = await page.evaluate(() => ({
+      documentClientHeight: document.documentElement.clientHeight,
+      documentScrollHeight: document.documentElement.scrollHeight,
+    }));
+    expect(viewportState.documentScrollHeight, `${height}px document height`).toBeLessThanOrEqual(
+      viewportState.documentClientHeight,
+    );
+    expect(bodyBox!.y + bodyBox!.height, `${height}px body/secondary`).toBeLessThanOrEqual(
+      secondaryBox!.y + 1,
+    );
+    expect(secondaryBox!.y + secondaryBox!.height, `${height}px secondary/dock`).toBeLessThanOrEqual(
+      dockBox!.y + 1,
+    );
+    expect(dockBox!.y + dockBox!.height, `${height}px dock`).toBeLessThanOrEqual(height);
+  }
 });
 
 test("signup enforces ten characters and accepts long passwords", async ({ browserName, page }) => {
@@ -2314,16 +2352,22 @@ test("account routes fit an iPhone-class viewport and expose visible focus state
   }
 });
 
-test("mobile account documents stay fixed while bounded form content can scroll", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+test("mobile account screens use one locked viewport without nested scrolling or overlap", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 650 });
   const cases = [
-    { route: "/login?auth_test=success", title: "Welcome" },
-    { route: "/reset-password?auth_test=success", title: "Reset Password" },
-    { route: "/account?auth_test=session", title: "Account" },
+    { route: "/login?auth_test=success", title: "Welcome", create: false },
+    { route: "/login?auth_test=success", title: "Create Account", create: true },
+    { route: "/reset-password?auth_test=success", title: "Reset Password", create: false },
+    { route: "/account?auth_test=session", title: "Account", create: false },
   ] as const;
 
-  for (const { route, title } of cases) {
+  for (const { route, title, create } of cases) {
     await page.goto(route);
+    await page.evaluate(() => {
+      document.documentElement.style.setProperty("--app-safe-top", "20px");
+      document.documentElement.style.setProperty("--app-safe-bottom", "34px");
+    });
+    if (create) await page.getByRole("button", { name: "Create Account" }).click();
     const heading = page.getByRole("heading", { name: title });
     await expect(heading).toBeVisible();
     const before = await heading.boundingBox();
@@ -2332,32 +2376,32 @@ test("mobile account documents stay fixed while bounded form content can scroll"
     expect(await page.evaluate(() => window.scrollY), route).toBe(0);
     expect(after?.y, route).toBe(before?.y);
     const body = page.locator(".account-auth-body");
+    const bodyBox = await body.boundingBox();
     if (await body.count()) {
-      const bodyBox = await body.boundingBox();
+      const bodyScroll = await body.evaluate((element) => ({
+        clientHeight: element.clientHeight,
+        overflowY: getComputedStyle(element).overflowY,
+        scrollHeight: element.scrollHeight,
+        scrollTop: element.scrollTop,
+      }));
       expect((before?.y ?? 0) + (before?.height ?? 0), route).toBeLessThanOrEqual(
         (bodyBox?.y ?? 0) + 1,
       );
+      expect(bodyScroll.overflowY, route).toBe("hidden");
+      expect(bodyScroll.scrollTop, route).toBe(0);
+      expect(bodyScroll.scrollHeight, route).toBeLessThanOrEqual(bodyScroll.clientHeight + 1);
     }
-  }
 
-  await page.goto("/login?auth_test=success");
-  await page.getByRole("button", { name: "Create Account" }).click();
-  const createHeading = page.getByRole("heading", { name: "Create Account" });
-  await expect(createHeading).toBeVisible();
-  const createMetrics = await createHeading.evaluate((element) => {
-    const style = getComputedStyle(element);
-    return {
-      clientWidth: element.clientWidth,
-      lineHeight: Number.parseFloat(style.lineHeight),
-      scrollWidth: element.scrollWidth,
-      height: element.getBoundingClientRect().height,
-    };
-  });
-  expect(createMetrics.scrollWidth).toBeLessThanOrEqual(createMetrics.clientWidth + 1);
-  expect(createMetrics.height).toBeLessThanOrEqual(createMetrics.lineHeight + 1);
-  const createBox = await createHeading.boundingBox();
-  const formBox = await page.locator(".account-auth-body").boundingBox();
-  expect((createBox?.y ?? 0) + (createBox?.height ?? 0)).toBeLessThanOrEqual(
-    (formBox?.y ?? 0) + 1,
-  );
+    const secondaryBox = await page.locator(".account-auth-secondary").boundingBox();
+    const dockBox = await page.locator(".account-auth-dock").boundingBox();
+    expect(secondaryBox).not.toBeNull();
+    expect(dockBox).not.toBeNull();
+    expect((bodyBox?.y ?? 0) + (bodyBox?.height ?? 0), route).toBeLessThanOrEqual(
+      (secondaryBox?.y ?? 0) + 1,
+    );
+    expect((secondaryBox?.y ?? 0) + (secondaryBox?.height ?? 0), route).toBeLessThanOrEqual(
+      (dockBox?.y ?? 0) + 1,
+    );
+    expect((dockBox?.y ?? 0) + (dockBox?.height ?? 0), route).toBeLessThanOrEqual(650);
+  }
 });
