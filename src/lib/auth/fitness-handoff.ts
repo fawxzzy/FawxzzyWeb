@@ -1,7 +1,7 @@
 import { accountContract, accountExperienceContexts } from "@/config/account";
 
 export type FitnessHandoffActivation = Readonly<{
-  fitnessConsumerMerges: readonly [string, string];
+  fitnessConsumerMerges: readonly [string, string, string];
   state: "active" | "inactive";
 }>;
 
@@ -13,6 +13,7 @@ export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
   fitnessConsumerMerges: [
     "b5e4453edacfed17759bb4c495a6b914652558c3",
     "8070196cd3f5efbe2faf7fe8719971cf2ebd1e39",
+    "c8e7dd33d0a4272cb3860a54f87a290ede21c773",
   ],
   state: "active",
 } as const satisfies FitnessHandoffActivation);
@@ -32,8 +33,8 @@ export function fitnessHandoffRuntimeReady(
       && !candidate.username && !candidate.password
       && accountExperienceContexts.fitness.consumerIntegration === "active"
       && activation.state === "active"
-      && activation.fitnessConsumerMerges.length === 2
-      && new Set(activation.fitnessConsumerMerges).size === 2
+      && activation.fitnessConsumerMerges.length === 3
+      && new Set(activation.fitnessConsumerMerges).size === 3
       && activation.fitnessConsumerMerges.every((merge) => /^[0-9a-f]{40}$/.test(merge));
   } catch {
     return false;

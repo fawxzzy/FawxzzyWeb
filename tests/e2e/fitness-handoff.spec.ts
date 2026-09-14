@@ -15,8 +15,9 @@ import {
 const id = "a".repeat(43);
 const origin = "https://fitness.fawxzzy.com";
 const currentFitnessMerge = "b5e4453edacfed17759bb4c495a6b914652558c3";
-const nextFitnessMerge = "8070196cd3f5efbe2faf7fe8719971cf2ebd1e39";
-const previousFitnessMerge = "f87f2dc7e0cc3cbead0eb3ea5ed7b9c592fdfa94";
+const reviewedFitnessSource = "c8e7dd33d0a4272cb3860a54f87a290ede21c773";
+const productionFitnessMerge = "8070196cd3f5efbe2faf7fe8719971cf2ebd1e39";
+const legacyFitnessMerge = "f87f2dc7e0cc3cbead0eb3ea5ed7b9c592fdfa94";
 const pair = { accessToken: "synthetic-access", refreshToken: "synthetic-refresh" };
 const rotatedPair = { accessToken: "rotated-access", refreshToken: "rotated-refresh" };
 const readiness = {
@@ -45,7 +46,7 @@ function fixture(responses: Response[]) {
 
 test("Fitness handoff activates only on the canonical account runtime with exact evidence", () => {
   expect(FITNESS_HANDOFF_ACTIVATION.fitnessConsumerMerges)
-    .toEqual([currentFitnessMerge, nextFitnessMerge]);
+    .toEqual([currentFitnessMerge, productionFitnessMerge, reviewedFitnessSource]);
   expect(fitnessHandoffRuntimeReady("https://account.fawxzzy.com")).toBe(true);
   for (const runtimeOrigin of [
     "http://127.0.0.1:3210",
@@ -58,15 +59,16 @@ test("Fitness handoff activates only on the canonical account runtime with exact
 
   for (const activation of [
     { ...FITNESS_HANDOFF_ACTIVATION, state: "inactive" as const },
-    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: ["invalid", nextFitnessMerge] as const },
-    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: [currentFitnessMerge, currentFitnessMerge] as const },
+    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: ["invalid", productionFitnessMerge, reviewedFitnessSource] as const },
+    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: [currentFitnessMerge, currentFitnessMerge, reviewedFitnessSource] as const },
+    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: [currentFitnessMerge, productionFitnessMerge] as unknown as readonly [string, string, string] },
   ]) {
     expect(fitnessHandoffRuntimeReady("https://account.fawxzzy.com", activation)).toBe(false);
   }
 });
 
-test("Fitness release binding accepts both transition merges and rejects every unlisted merge before token read", async () => {
-  for (const sourceCommit of [currentFitnessMerge, nextFitnessMerge]) {
+test("Fitness release binding accepts all transition sources and rejects every unlisted merge before token read", async () => {
+  for (const sourceCommit of [currentFitnessMerge, productionFitnessMerge, reviewedFitnessSource]) {
     let reads = 0;
     const accepted = fixture([json({
       ...begin,
@@ -82,7 +84,7 @@ test("Fitness release binding accepts both transition merges and rejects every u
     expect(accepted.calls).toHaveLength(2);
   }
 
-  for (const sourceCommit of [previousFitnessMerge, "0".repeat(40), "a".repeat(40)]) {
+  for (const sourceCommit of [legacyFitnessMerge, "0".repeat(40), "a".repeat(40)]) {
     let reads = 0;
     const rejected = fixture([json({
       ...begin,
