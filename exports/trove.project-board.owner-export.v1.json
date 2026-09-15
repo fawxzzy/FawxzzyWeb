@@ -1,0 +1,122 @@
+{
+  "contract_version": "atlas.project-board.owner-export.v1",
+  "export_id": "pbe_trove_owner_fb437fc33785",
+  "project_id": "trove",
+  "board_id": "discordos:project-feedback:trove",
+  "owner": "trove",
+  "adapter_id": "fawxzzyweb-owner-source-v1",
+  "source_revision": "sha256:fb437fc33785476c8a61a7b79197e7b75d7232b09741339f75552e72df90b07c",
+  "generated_at": "2026-09-15T01:41:16.000Z",
+  "sources": [
+    {
+      "source_id": "fawxzzyweb-owner-work",
+      "kind": "json",
+      "repository": "FawxzzyWeb",
+      "path": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json",
+      "revision": "sha256:41fafc20144518b505bb560c1ff0ec160e28bcde06cb14fc50e6b0a1bc056f5f",
+      "observed_at": "2026-09-15T01:41:16.000Z"
+    },
+    {
+      "source_id": "fawxzzyweb-owner-export-adapter",
+      "kind": "generated",
+      "repository": "FawxzzyWeb",
+      "path": "repos/FawxzzyWeb/scripts/export-project-board-owner.mjs",
+      "revision": "sha256:d36a7ec7902bf3b2a1d93eccdc89ddafc64bae8f2b2fe2deb963124da5b371fa",
+      "observed_at": "2026-09-15T01:41:16.000Z"
+    }
+  ],
+  "cards": [
+    {
+      "idempotency_key": "pbk_trove_fw-projects-001_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FW-PROJECTS-001",
+        "project_id": "trove",
+        "board_id": "discordos:project-feedback:trove",
+        "title": "Publish the master-backed Fawxzzy project board",
+        "description": "The read-only FawxzzyWeb /projects experience is source-proven against the provider-neutral project-board contract and is waiting for the remaining canonical owner export before final generation and guarded publication.",
+        "card_type": "feature",
+        "lifecycle": "blocked",
+        "priority": null,
+        "owner": "trove",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-09-15T01:41:16.000Z",
+        "source_ref": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json#FW-PROJECTS-001",
+        "extensions": {
+          "public_safe": true,
+          "source_baseline_commit": "af6a2076712ce7517b1e021bf4841048f6f97085"
+        }
+      },
+      "source": {
+        "source_id": "fawxzzyweb-owner-work",
+        "source_ref": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json#FW-PROJECTS-001",
+        "source_status": "current",
+        "source_updated_at": "2026-09-15T01:41:16.000Z"
+      },
+      "content": {
+        "summary": "The read-only FawxzzyWeb /projects experience is source-proven against the provider-neutral project-board contract and is waiting for the remaining canonical owner export before final generation and guarded publication.",
+        "objective": "Publish a responsive, accessible read-only project-board experience from current owner exports and the master public read model without restoring DiscordOS as a runtime dependency or exposing private evidence.",
+        "acceptance_criteria": [
+          "Current FawxzzyWeb main contains the read-only /projects consumer with no runtime or build dependency on DiscordOS.",
+          "Every displayed card retains its stable project, card, owner, lifecycle, relationship, and source-revision identity.",
+          "Public output excludes provider identifiers, private evidence, secrets, raw transcripts, and privileged credentials.",
+          "Lifecycle counts, completed history, stale-source behavior, accessibility, and narrow-screen interaction pass deterministic verification.",
+          "Source publication and production release remain separate guarded owner boundaries."
+        ],
+        "discoveries": [
+          "The canonical Fitness owner export is complete and merged.",
+          "The prior FawxzzyWeb /projects implementation is reusable design evidence but its retired DiscordOS-backed generator is not authoritative.",
+          "SOC-024 remains Socials OS program work and is not duplicated onto the FawxzzyWeb owner board."
+        ],
+        "next_actions": [
+          "Consume the canonical Mazer owner export when it becomes available.",
+          "Regenerate the project-board read model from the complete active-project owner-export set.",
+          "Rebase the source-proven /projects implementation onto current FawxzzyWeb main and run the guarded publication lifecycle."
+        ],
+        "blockers": [
+          "The canonical active/planned Mazer owner export is not yet available for deterministic final read-model generation."
+        ],
+        "evidence": [
+          "runtime/atlas/continuity/owner-fawxzzyweb-project-board-ui-r001-source-receipt-20260914.json",
+          "runtime/atlas/continuity/fitness-project-board-owner-export-terminal-r001-20260914.json",
+          "runtime/atlas/continuity/discordos-to-fawxzzyweb-project-board-plan-reconciliation-20260914.json",
+          "docs/architecture/FAWXZZYWEB-OPERATIONAL-IDENTITY-COMPATIBILITY.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    }
+  ],
+  "extensions": {
+    "source_work_item_count": 1,
+    "exported_card_count": 1,
+    "excluded_record_count": 3,
+    "excluded_record_identities": [
+      "SOC-024",
+      "github:fawxzzy/FawxzzyWeb#1",
+      "ui-standards-adoption-trove"
+    ],
+    "active_project_ids": [
+      "trove"
+    ],
+    "excluded_project_ids": [
+      "discordos",
+      "fitness",
+      "mazer",
+      "music-sesh"
+    ],
+    "socials_program_identity": "SOC-024",
+    "socials_program_disposition": "cross-owner-current-not-duplicated",
+    "stale_open_issue_identity": "github:fawxzzy/FawxzzyWeb#1",
+    "stale_open_issue_disposition": "superseded-history",
+    "private_records_included": false,
+    "external_provider_identifiers_included": false,
+    "discord_mutation_authorized": false
+  }
+}
