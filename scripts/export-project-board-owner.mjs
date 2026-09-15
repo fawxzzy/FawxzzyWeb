@@ -171,7 +171,7 @@ export function buildProjectBoardOwnerExport(source, bytes, identity = productId
       },
       {
         source_id: "fawxzzyweb-product-identity",
-        kind: "typescript",
+        kind: "manual-registry",
         repository: repository.name,
         path: `${repository.root}/${IDENTITY_PATH}`,
         revision: `sha256:${sha256(identityBytes)}`,

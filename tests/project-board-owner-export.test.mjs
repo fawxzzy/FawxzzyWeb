@@ -16,6 +16,7 @@ const sourceText = fs.readFileSync(path.join(repoRoot, "planning/project-board-o
 const adapterText = fs.readFileSync(path.join(repoRoot, "scripts/export-project-board-owner.mjs"), "utf8");
 const identityText = fs.readFileSync(path.join(repoRoot, "src/config/product.ts"), "utf8");
 const source = JSON.parse(sourceText);
+const canonicalSourceKinds = new Set(["json", "yaml", "markdown", "database", "generated", "manual-registry"]);
 const build = (value = source, identity = productIdentity) => buildProjectBoardOwnerExport(value, {
   source: JSON.stringify(value, null, 2),
   adapter: adapterText,
@@ -75,7 +76,9 @@ test("derives repository metadata and source paths from canonical product identi
   for (const entry of output.sources) {
     assert.equal(entry.repository, productIdentity.repositoryName);
     assert.match(entry.path, new RegExp(`^repos/${productIdentity.repositoryName}/`));
+    assert.equal(canonicalSourceKinds.has(entry.kind), true, `${entry.source_id} must use a canonical source kind`);
   }
+  assert.equal(output.sources.find((entry) => entry.source_id === "fawxzzyweb-product-identity")?.kind, "manual-registry");
 
   const renamedIdentity = { ...productIdentity, repositoryName: "FawxzzyWebNext" };
   const renamedSource = structuredClone(source);
