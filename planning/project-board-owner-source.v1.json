@@ -1,0 +1,103 @@
+{
+  "schema_version": "fawxzzyweb.project-board-owner-source.v1",
+  "project_id": "trove",
+  "display_name": "FawxzzyWeb",
+  "board_id": "discordos:project-feedback:trove",
+  "owner": "trove",
+  "state": "active",
+  "updated_at": "2026-09-15T01:41:16.000Z",
+  "source_baseline": {
+    "repository": "fawxzzy/FawxzzyWeb",
+    "commit": "af6a2076712ce7517b1e021bf4841048f6f97085",
+    "tree": "2de97f0d59860ec6f7f0dd0832dfa0aa88fb238c",
+    "open_issue_count": 1,
+    "socials_roadmap_sha256": "438e57318e4af78f78329c68be2c9f6796e2fda9adb9c2486f04c51e412ed503",
+    "socials_owner_export_sha256": "d6b2b137d71422544a3d60b2cf27cf91bb867cbf480f733050f7dcd96bc0f087",
+    "project_board_ui_receipt_sha256": "15339a9b3f644984e266a6e2874f3fed2cf43b83f476fa4a9ad3840cf2edfea3",
+    "fitness_owner_export_terminal_sha256": "51738425ac03637693d862c7ba4f771a3bcb28065fb9bc996ffb290e903d7819",
+    "board_plan_reconciliation_sha256": "fa0073d6618284a13a57aaf02161ec3eb5caee5eb2d1100525eba9c2a996f645"
+  },
+  "work_items": [
+    {
+      "id": "FW-PROJECTS-001",
+      "title": "Publish the master-backed Fawxzzy project board",
+      "record_kind": "project-work",
+      "card_type": "feature",
+      "lifecycle": "blocked",
+      "priority": null,
+      "summary": "The read-only FawxzzyWeb /projects experience is source-proven against the provider-neutral project-board contract and is waiting for the remaining canonical owner export before final generation and guarded publication.",
+      "objective": "Publish a responsive, accessible read-only project-board experience from current owner exports and the master public read model without restoring DiscordOS as a runtime dependency or exposing private evidence.",
+      "acceptance_criteria": [
+        "Current FawxzzyWeb main contains the read-only /projects consumer with no runtime or build dependency on DiscordOS.",
+        "Every displayed card retains its stable project, card, owner, lifecycle, relationship, and source-revision identity.",
+        "Public output excludes provider identifiers, private evidence, secrets, raw transcripts, and privileged credentials.",
+        "Lifecycle counts, completed history, stale-source behavior, accessibility, and narrow-screen interaction pass deterministic verification.",
+        "Source publication and production release remain separate guarded owner boundaries."
+      ],
+      "discoveries": [
+        "The canonical Fitness owner export is complete and merged.",
+        "The prior FawxzzyWeb /projects implementation is reusable design evidence but its retired DiscordOS-backed generator is not authoritative.",
+        "SOC-024 remains Socials OS program work and is not duplicated onto the FawxzzyWeb owner board."
+      ],
+      "next_actions": [
+        "Consume the canonical Mazer owner export when it becomes available.",
+        "Regenerate the project-board read model from the complete active-project owner-export set.",
+        "Rebase the source-proven /projects implementation onto current FawxzzyWeb main and run the guarded publication lifecycle."
+      ],
+      "blockers": [
+        "The canonical active/planned Mazer owner export is not yet available for deterministic final read-model generation."
+      ],
+      "dependencies": [],
+      "evidence": [
+        "runtime/atlas/continuity/owner-fawxzzyweb-project-board-ui-r001-source-receipt-20260914.json",
+        "runtime/atlas/continuity/fitness-project-board-owner-export-terminal-r001-20260914.json",
+        "runtime/atlas/continuity/discordos-to-fawxzzyweb-project-board-plan-reconciliation-20260914.json",
+        "docs/architecture/FAWXZZYWEB-OPERATIONAL-IDENTITY-COMPATIBILITY.md"
+      ],
+      "updated_at": "2026-09-15T01:41:16.000Z"
+    }
+  ],
+  "excluded_records": [
+    {
+      "identity": "github:fawxzzy/FawxzzyWeb#1",
+      "disposition": "superseded-history",
+      "source_state": "OPEN",
+      "source_updated_at": "2026-04-21T23:32:35Z",
+      "source_body_sha256": "d7583298dee67bb343127f0d7d2c302bf52476b9b0f3c9c6cfadac3ccc0048d4",
+      "reason": "The issue records an April Trove deployment incident superseded by later verified FawxzzyWeb production releases; an open provider incident log is not current website work.",
+      "evidence": [
+        "repos/FawxzzyWeb/docs/receipts/2026-07-16-fawxzzyweb-production-cutover.md",
+        "repos/FawxzzyWeb/docs/receipts/2026-07-16-fawxzzyweb-trailer-discovery-production.md"
+      ]
+    },
+    {
+      "identity": "SOC-024",
+      "disposition": "cross-owner-current-not-duplicated",
+      "source_state": "blocked",
+      "source_updated_at": "2026-07-18T17:40:41Z",
+      "reason": "SOC-024 is the stable Socials OS owned-distribution program record. Its remaining profile-routing work stays on the Socials OS board; the completed website migration portion is provenance, not a second FawxzzyWeb card.",
+      "evidence": [
+        "repos/socials-os/planning/roadmap.json#SOC-024",
+        "repos/socials-os/exports/atlas.project-board.owner-export.v1.json#SOC-024",
+        "repos/FawxzzyWeb/README.md"
+      ]
+    },
+    {
+      "identity": "ui-standards-adoption-trove",
+      "disposition": "unplanned-candidate-not-admitted",
+      "source_state": "intake",
+      "source_updated_at": "2026-07-15T12:00:00Z",
+      "reason": "The root UI standards candidate remains explicitly unplanned with projection authorization false and therefore is not current active, planning, or blocked owner work.",
+      "evidence": [
+        "docs/registry/ATLAS-UI-STANDARDS-CANDIDATE-CARDS.v1.json#atlas-ui-owner-adoption-trove-v1"
+      ]
+    }
+  ],
+  "scope": {
+    "included_project_ids": ["trove"],
+    "excluded_project_ids": ["discordos", "fitness", "mazer", "music-sesh"],
+    "included_lifecycles": ["in-progress", "planning", "blocked"],
+    "private_records_included": false,
+    "discord_mutation_authorized": false
+  }
+}

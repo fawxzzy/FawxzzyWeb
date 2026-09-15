@@ -1,5 +1,6 @@
 export const productIdentity = {
   publicName: "Fawxzzy",
+  repositoryOwner: "fawxzzy",
   repositoryName: "FawxzzyWeb",
   providerSlug: "fawxzzyweb",
   description:
