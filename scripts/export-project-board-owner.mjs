@@ -4,16 +4,18 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { productIdentity } from "../src/config/product.ts";
+
 const SOURCE_PATH = "planning/project-board-owner-source.v1.json";
 const ADAPTER_PATH = "scripts/export-project-board-owner.mjs";
+const IDENTITY_PATH = "src/config/product.ts";
 const OUTPUT_PATH = "exports/trove.project-board.owner-export.v1.json";
 const PROJECT_ID = "trove";
 const BOARD_ID = "discordos:project-feedback:trove";
 const OWNER = "trove";
 const INCLUDED_LIFECYCLES = Object.freeze(["in-progress", "planning", "blocked"]);
-const REQUIRED_EXCLUSIONS = Object.freeze([
+const STATIC_REQUIRED_EXCLUSIONS = Object.freeze([
   "SOC-024",
-  "github:fawxzzy/FawxzzyWeb#1",
   "ui-standards-adoption-trove",
 ]);
 
@@ -34,6 +36,20 @@ function requireString(value, label) {
   return value.trim();
 }
 
+function resolveRepositoryIdentity(identity) {
+  const owner = requireString(identity?.repositoryOwner, "productIdentity.repositoryOwner");
+  const name = requireString(identity?.repositoryName, "productIdentity.repositoryName");
+  if (!/^[A-Za-z0-9_.-]+$/.test(owner) || !/^[A-Za-z0-9_.-]+$/.test(name)) {
+    throw new Error("product repository identity contains unsupported characters");
+  }
+  return {
+    name,
+    root: `repos/${name}`,
+    slug: `${owner}/${name}`,
+    staleIssueIdentity: `github:${owner}/${name}#1`,
+  };
+}
+
 function requireIsoTimestamp(value, label) {
   if (typeof value !== "string" || Number.isNaN(Date.parse(value)) || !/(?:Z|[+-]\d\d:\d\d)$/.test(value)) {
     throw new Error(`${label} must be a timezone-aware ISO timestamp`);
@@ -41,20 +57,21 @@ function requireIsoTimestamp(value, label) {
   return new Date(value).toISOString();
 }
 
-function assertSource(source) {
+function assertSource(source, repository) {
   requireExact(source.schema_version, "fawxzzyweb.project-board-owner-source.v1", "schema_version");
   requireExact(source.project_id, PROJECT_ID, "project_id");
-  requireExact(source.display_name, "FawxzzyWeb", "display_name");
+  requireExact(source.display_name, repository.name, "display_name");
   requireExact(source.board_id, BOARD_ID, "board_id");
   requireExact(source.owner, OWNER, "owner");
   requireExact(source.state, "active", "state");
-  requireExact(source.source_baseline?.repository, "fawxzzy/FawxzzyWeb", "source_baseline.repository");
+  requireExact(source.source_baseline?.repository, repository.slug, "source_baseline.repository");
   requireExact(source.source_baseline?.commit, "af6a2076712ce7517b1e021bf4841048f6f97085", "source_baseline.commit");
   requireExact(source.source_baseline?.tree, "2de97f0d59860ec6f7f0dd0832dfa0aa88fb238c", "source_baseline.tree");
   if (!Array.isArray(source.work_items) || source.work_items.length !== 1) throw new Error("owner source must contain the one exact current FawxzzyWeb work item");
   if (source.work_items[0]?.id !== "FW-PROJECTS-001") throw new Error("unexpected FawxzzyWeb work identity");
   const identities = (source.excluded_records ?? []).map((record) => record.identity).sort();
-  if (JSON.stringify(identities) !== JSON.stringify([...REQUIRED_EXCLUSIONS].sort())) throw new Error("excluded-record reconciliation changed");
+  const requiredExclusions = [...STATIC_REQUIRED_EXCLUSIONS, repository.staleIssueIdentity].sort();
+  if (JSON.stringify(identities) !== JSON.stringify(requiredExclusions)) throw new Error("excluded-record reconciliation changed");
   if (source.scope?.discord_mutation_authorized !== false || source.scope?.private_records_included !== false) throw new Error("public owner-export boundary changed");
   if (JSON.stringify(source.scope?.included_project_ids) !== JSON.stringify([PROJECT_ID])) throw new Error("only the active FawxzzyWeb project may be exported");
   if (JSON.stringify(source.scope?.included_lifecycles) !== JSON.stringify(INCLUDED_LIFECYCLES)) throw new Error("owner lifecycle allowlist changed");
@@ -64,7 +81,7 @@ function assertSource(source) {
   requireIsoTimestamp(source.updated_at, "updated_at");
 }
 
-function mapCard(item) {
+function mapCard(item, repository) {
   if (!INCLUDED_LIFECYCLES.includes(item.lifecycle)) throw new Error(`unsupported current lifecycle for ${item.id}`);
   if (item.lifecycle === "blocked" && (!Array.isArray(item.blockers) || item.blockers.length === 0)) throw new Error(`${item.id} must retain its exact blocker`);
   const arrays = ["acceptance_criteria", "discoveries", "next_actions", "blockers", "dependencies", "evidence"];
@@ -72,7 +89,7 @@ function mapCard(item) {
   if (new Set(item.dependencies).size !== item.dependencies.length || item.dependencies.includes(item.id)) throw new Error(`${item.id} has invalid dependencies`);
   if (item.acceptance_criteria.length === 0 || item.next_actions.length === 0) throw new Error(`${item.id} requires acceptance and next-action truth`);
   for (const evidence of item.evidence) if (!portablePath(evidence)) throw new Error(`${item.id} has a non-portable evidence path`);
-  const sourceRef = `repos/FawxzzyWeb/${SOURCE_PATH}#${item.id}`;
+  const sourceRef = `${repository.root}/${SOURCE_PATH}#${item.id}`;
   const recordStatus = item.lifecycle === "planning" ? "candidate" : "active";
   return {
     idempotency_key: `pbk_trove_${item.id.toLowerCase().replace(/[^a-z0-9]+/g, "-")}_v1`,
@@ -117,12 +134,14 @@ function mapCard(item) {
   };
 }
 
-export function buildProjectBoardOwnerExport(source, bytes) {
-  assertSource(source);
+export function buildProjectBoardOwnerExport(source, bytes, identity = productIdentity) {
+  const repository = resolveRepositoryIdentity(identity);
+  assertSource(source, repository);
   const sourceBytes = normalize(bytes.source);
   const adapterBytes = normalize(bytes.adapter);
-  const sourceRevision = `sha256:${sha256(`${sourceBytes}\n--FAWXZZYWEB-OWNER-ADAPTER--\n${adapterBytes}`)}`;
-  const cards = source.work_items.map(mapCard).sort((left, right) => left.record.card_id.localeCompare(right.record.card_id));
+  const identityBytes = normalize(bytes.identity);
+  const sourceRevision = `sha256:${sha256(`${sourceBytes}\n--FAWXZZYWEB-OWNER-ADAPTER--\n${adapterBytes}\n--FAWXZZYWEB-PRODUCT-IDENTITY--\n${identityBytes}`)}`;
+  const cards = source.work_items.map((item) => mapCard(item, repository)).sort((left, right) => left.record.card_id.localeCompare(right.record.card_id));
   if (cards.some((card) => /^(?:FF-|MZ-|DOS-|MUSIC-)/.test(card.record.card_id))) throw new Error("cross-owner card identity entered the FawxzzyWeb export");
   return {
     contract_version: "atlas.project-board.owner-export.v1",
@@ -137,17 +156,25 @@ export function buildProjectBoardOwnerExport(source, bytes) {
       {
         source_id: "fawxzzyweb-owner-work",
         kind: "json",
-        repository: "FawxzzyWeb",
-        path: `repos/FawxzzyWeb/${SOURCE_PATH}`,
+        repository: repository.name,
+        path: `${repository.root}/${SOURCE_PATH}`,
         revision: `sha256:${sha256(sourceBytes)}`,
         observed_at: requireIsoTimestamp(source.updated_at, "updated_at"),
       },
       {
         source_id: "fawxzzyweb-owner-export-adapter",
         kind: "generated",
-        repository: "FawxzzyWeb",
-        path: `repos/FawxzzyWeb/${ADAPTER_PATH}`,
+        repository: repository.name,
+        path: `${repository.root}/${ADAPTER_PATH}`,
         revision: `sha256:${sha256(adapterBytes)}`,
+        observed_at: requireIsoTimestamp(source.updated_at, "updated_at"),
+      },
+      {
+        source_id: "fawxzzyweb-product-identity",
+        kind: "typescript",
+        repository: repository.name,
+        path: `${repository.root}/${IDENTITY_PATH}`,
+        revision: `sha256:${sha256(identityBytes)}`,
         observed_at: requireIsoTimestamp(source.updated_at, "updated_at"),
       },
     ],
@@ -161,7 +188,7 @@ export function buildProjectBoardOwnerExport(source, bytes) {
       excluded_project_ids: [...source.scope.excluded_project_ids].sort(),
       socials_program_identity: "SOC-024",
       socials_program_disposition: "cross-owner-current-not-duplicated",
-      stale_open_issue_identity: "github:fawxzzy/FawxzzyWeb#1",
+      stale_open_issue_identity: repository.staleIssueIdentity,
       stale_open_issue_disposition: "superseded-history",
       private_records_included: false,
       external_provider_identifiers_included: false,
@@ -173,7 +200,8 @@ export function buildProjectBoardOwnerExport(source, bytes) {
 export function renderProjectBoardOwnerExport(repoRoot) {
   const source = fs.readFileSync(path.join(repoRoot, SOURCE_PATH), "utf8");
   const adapter = fs.readFileSync(path.join(repoRoot, ADAPTER_PATH), "utf8");
-  return `${JSON.stringify(buildProjectBoardOwnerExport(JSON.parse(source), { source, adapter }), null, 2)}\n`;
+  const identity = fs.readFileSync(path.join(repoRoot, IDENTITY_PATH), "utf8");
+  return `${JSON.stringify(buildProjectBoardOwnerExport(JSON.parse(source), { source, adapter, identity }), null, 2)}\n`;
 }
 
 export function runProjectBoardOwnerExport(argv, repoRoot = process.cwd()) {

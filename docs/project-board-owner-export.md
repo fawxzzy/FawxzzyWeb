@@ -2,6 +2,8 @@
 
 `planning/project-board-owner-source.v1.json` is the source-backed current-work registry for the stable ATLAS project ID `trove`, displayed publicly as **FawxzzyWeb**. `scripts/export-project-board-owner.mjs` deterministically produces `exports/trove.project-board.owner-export.v1.json` for the provider-neutral `atlas.project-board.owner-export.v1` contract.
 
+Repository ownership, repository naming, and repository-relative source paths derive from the canonical `src/config/product.ts` identity. That identity file is included in the export source revision, so an identity change makes the tracked export stale until it is deliberately regenerated.
+
 ## Current selection
 
 The export contains one current FawxzzyWeb-owned card: the source-proven `/projects` consumer and guarded publication lane. It remains blocked on the canonical Mazer owner export. The already-complete Fitness export is evidence, not duplicated Fitness work.

@@ -1,11 +1,11 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_trove_owner_fb437fc33785",
+  "export_id": "pbe_trove_owner_172d851fa1c8",
   "project_id": "trove",
   "board_id": "discordos:project-feedback:trove",
   "owner": "trove",
   "adapter_id": "fawxzzyweb-owner-source-v1",
-  "source_revision": "sha256:fb437fc33785476c8a61a7b79197e7b75d7232b09741339f75552e72df90b07c",
+  "source_revision": "sha256:172d851fa1c814a4ad9ab0db6665900a4822c6f9fb78da2e46102b512410fa30",
   "generated_at": "2026-09-15T01:41:16.000Z",
   "sources": [
     {
@@ -21,7 +21,15 @@
       "kind": "generated",
       "repository": "FawxzzyWeb",
       "path": "repos/FawxzzyWeb/scripts/export-project-board-owner.mjs",
-      "revision": "sha256:d36a7ec7902bf3b2a1d93eccdc89ddafc64bae8f2b2fe2deb963124da5b371fa",
+      "revision": "sha256:a2b91c4ee628bcfa0388ff0d91116ec13c8ad71f902e306374883ef4078abc78",
+      "observed_at": "2026-09-15T01:41:16.000Z"
+    },
+    {
+      "source_id": "fawxzzyweb-product-identity",
+      "kind": "typescript",
+      "repository": "FawxzzyWeb",
+      "path": "repos/FawxzzyWeb/src/config/product.ts",
+      "revision": "sha256:191520ba158b6d8a8953bfaa87f8d113c98f775f1deb23f53217183df88b93bb",
       "observed_at": "2026-09-15T01:41:16.000Z"
     }
   ],
