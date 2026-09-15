@@ -14,9 +14,9 @@ import {
 
 const id = "a".repeat(43);
 const origin = "https://fitness.fawxzzy.com";
-const currentFitnessMerge = "b5e4453edacfed17759bb4c495a6b914652558c3";
-const reviewedFitnessSource = "dbbe305fc511633166c1a65396fdf9ef6a1c79f1";
-const productionFitnessMerge = "8070196cd3f5efbe2faf7fe8719971cf2ebd1e39";
+const priorFitnessMerge = "8070196cd3f5efbe2faf7fe8719971cf2ebd1e39";
+const productionFitnessMerge = "dbbe305fc511633166c1a65396fdf9ef6a1c79f1";
+const reviewedFitnessMerge = "389d4d21aa79725ba6cd716dcc84d7aa917ada3e";
 const legacyFitnessMerge = "f87f2dc7e0cc3cbead0eb3ea5ed7b9c592fdfa94";
 const pair = { accessToken: "synthetic-access", refreshToken: "synthetic-refresh" };
 const rotatedPair = { accessToken: "rotated-access", refreshToken: "rotated-refresh" };
@@ -24,7 +24,7 @@ const readiness = {
   authProjectRef: FITNESS_HANDOFF_MASTER_PROJECT_REF,
   contractVersion: FITNESS_HANDOFF_READINESS_CONTRACT_VERSION,
   handoffStore: "available",
-  sourceCommit: currentFitnessMerge,
+  sourceCommit: reviewedFitnessMerge,
 };
 const begin = { ok: true, handoffId: id, readiness, returnTo: "/today" };
 const end = { ok: true, returnTo: "/today", session: rotatedPair };
@@ -46,7 +46,7 @@ function fixture(responses: Response[]) {
 
 test("Fitness handoff activates only on the canonical account runtime with exact evidence", () => {
   expect(FITNESS_HANDOFF_ACTIVATION.fitnessConsumerMerges)
-    .toEqual([currentFitnessMerge, productionFitnessMerge, reviewedFitnessSource]);
+    .toEqual([priorFitnessMerge, productionFitnessMerge, reviewedFitnessMerge]);
   expect(fitnessHandoffRuntimeReady("https://account.fawxzzy.com")).toBe(true);
   for (const runtimeOrigin of [
     "http://127.0.0.1:3210",
@@ -59,16 +59,16 @@ test("Fitness handoff activates only on the canonical account runtime with exact
 
   for (const activation of [
     { ...FITNESS_HANDOFF_ACTIVATION, state: "inactive" as const },
-    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: ["invalid", productionFitnessMerge, reviewedFitnessSource] as const },
-    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: [currentFitnessMerge, currentFitnessMerge, reviewedFitnessSource] as const },
-    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: [currentFitnessMerge, productionFitnessMerge] as unknown as readonly [string, string, string] },
+    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: ["invalid", productionFitnessMerge, reviewedFitnessMerge] as const },
+    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: [priorFitnessMerge, priorFitnessMerge, reviewedFitnessMerge] as const },
+    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: [priorFitnessMerge, productionFitnessMerge] as unknown as readonly [string, string, string] },
   ]) {
     expect(fitnessHandoffRuntimeReady("https://account.fawxzzy.com", activation)).toBe(false);
   }
 });
 
 test("Fitness release binding accepts all transition sources and rejects every unlisted merge before token read", async () => {
-  for (const sourceCommit of [currentFitnessMerge, productionFitnessMerge, reviewedFitnessSource]) {
+  for (const sourceCommit of [priorFitnessMerge, productionFitnessMerge, reviewedFitnessMerge]) {
     let reads = 0;
     const accepted = fixture([json({
       ...begin,
