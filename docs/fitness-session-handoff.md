@@ -89,8 +89,11 @@ The portal starts only the credential-free handshake from
 `https://account.fawxzzy.com`. Before the portal reads or sends a session pair,
 Fitness must return the exact `fitness.auth-handoff-readiness.v1` object from
 the live request. That object binds the reviewed deployed source commit, master
-Auth project, and available handoff store. A legacy, rolled-back, non-master,
-malformed, or source-drifted response fails closed before credential retrieval.
+Auth project, and available handoff store. A legacy, non-master, malformed, or
+unlisted-source response fails closed before credential retrieval. This includes
+an unlisted rollback source. A reviewed retained rollback is accepted only while
+its exact commit remains in the release allowlist; the master-project and
+handoff-store checks still apply.
 Local adapters never transmit synthetic credentials to live services. Website
 and Mazer continuations remain unchanged by this Fitness-only activation.
 
