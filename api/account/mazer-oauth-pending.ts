@@ -34,7 +34,40 @@ const RESPONSE_HEADERS = {
   "X-Content-Type-Options": "nosniff",
 } as const;
 
-class ProviderUnavailableError extends Error {}
+type ProviderFailureStage =
+  | "configuration"
+  | "transport"
+  | "upstream_status"
+  | "response_read"
+  | "response_size"
+  | "response_json"
+  | "response_contract"
+  | "redirect_contract";
+
+class ProviderUnavailableError extends Error {
+  constructor(readonly stage: ProviderFailureStage, readonly upstreamStatus?: number) {
+    super("OAuth provider unavailable.");
+  }
+}
+
+function reportProviderFailure(operation: "read" | "approve" | "deny", error: unknown) {
+  // Serialize only our fixed classifications. Provider bodies, exception text,
+  // request URLs, handles, users, cookies and credentials must never enter logs.
+  const failure = error instanceof ProviderUnavailableError ? error : null;
+  const status = failure?.upstreamStatus;
+  try {
+    console.warn(JSON.stringify({
+      event: "mazer_oauth_provider_failure",
+      operation,
+      stage: failure?.stage ?? "unexpected",
+      ...(typeof status === "number" && Number.isInteger(status) && status >= 100 && status <= 599
+        ? { upstreamStatus: status }
+        : {}),
+    }));
+  } catch {
+    // Diagnostics must not change the existing fail-closed response or cause a retry.
+  }
+}
 
 function isAllowedOrigin(origin: string) {
   return origin === CANONICAL_ORIGIN || LOCAL_ORIGINS.has(origin);
@@ -132,16 +165,16 @@ function readProviderConfig() {
   const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
   const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
   if (!rawUrl || !publishableKey || publishableKey.length > 4_096 || /\s/.test(publishableKey)) {
-    throw new ProviderUnavailableError();
+    throw new ProviderUnavailableError("configuration");
   }
   let url: URL;
   try {
     url = new URL(rawUrl);
   } catch {
-    throw new ProviderUnavailableError();
+    throw new ProviderUnavailableError("configuration");
   }
   if (url.origin !== MASTER_SUPABASE_ORIGIN || !["", "/"].includes(url.pathname)) {
-    throw new ProviderUnavailableError();
+    throw new ProviderUnavailableError("configuration");
   }
   return { publishableKey, url: url.origin };
 }
@@ -168,16 +201,29 @@ async function providerRequest(
       signal: AbortSignal.timeout(8_000),
     });
   } catch {
-    throw new ProviderUnavailableError();
+    throw new ProviderUnavailableError("transport");
   }
-  const bytes = new Uint8Array(await upstream.arrayBuffer());
-  if (!upstream.ok || bytes.byteLength > PROVIDER_RESPONSE_MAX_BYTES) {
-    throw new ProviderUnavailableError();
+  if (!upstream.ok) {
+    try {
+      await upstream.body?.cancel();
+    } catch {
+      // Preserve the classified HTTP failure even when stream cleanup fails.
+    }
+    throw new ProviderUnavailableError("upstream_status", upstream.status);
+  }
+  let bytes: Uint8Array;
+  try {
+    bytes = new Uint8Array(await upstream.arrayBuffer());
+  } catch {
+    throw new ProviderUnavailableError("response_read");
+  }
+  if (bytes.byteLength > PROVIDER_RESPONSE_MAX_BYTES) {
+    throw new ProviderUnavailableError("response_size");
   }
   try {
     return JSON.parse(new TextDecoder().decode(bytes)) as unknown;
   } catch {
-    throw new ProviderUnavailableError();
+    throw new ProviderUnavailableError("response_json");
   }
 }
 
@@ -233,10 +279,13 @@ export async function GET(request: Request) {
   try {
     const raw = await providerRequest(current.pending, accessToken);
     const result = normalizeMazerOAuthProviderResult(raw, current.pending.authorizationId);
-    if (!result) return response(502);
+    if (!result) throw new ProviderUnavailableError("response_contract");
     if (result.kind === "redirect") {
       const redirectUrl = sanitizeMazerOAuthApprovalRedirect(result.redirectUrl);
-      if (!redirectUrl) return response(502, null, { "Set-Cookie": clearCookie() });
+      if (!redirectUrl) {
+        reportProviderFailure("read", new ProviderUnavailableError("redirect_contract"));
+        return response(502, null, { "Set-Cookie": clearCookie() });
+      }
       return response(200, JSON.stringify({ kind: "redirect", redirectUrl }), {
         "Content-Type": "application/json; charset=utf-8",
         "Set-Cookie": clearCookie(),
@@ -245,7 +294,8 @@ export async function GET(request: Request) {
     return response(200, JSON.stringify(result), {
       "Content-Type": "application/json; charset=utf-8",
     });
-  } catch {
+  } catch (error) {
+    reportProviderFailure("read", error);
     return response(502);
   }
 }
@@ -274,17 +324,22 @@ export async function PUT(request: Request) {
   try {
     const raw = await providerRequest(current.pending, accessToken, parsed.value.action);
     if (!isRecord(raw) || !hasExactKeys(raw, ["redirect_url"])) {
+      reportProviderFailure(parsed.value.action, new ProviderUnavailableError("response_contract"));
       return response(502, null, { "Set-Cookie": clearCookie() });
     }
     const redirectUrl = parsed.value.action === "approve"
       ? sanitizeMazerOAuthApprovalRedirect(raw.redirect_url)
       : sanitizeMazerOAuthDenialRedirect(raw.redirect_url);
-    if (!redirectUrl) return response(502, null, { "Set-Cookie": clearCookie() });
+    if (!redirectUrl) {
+      reportProviderFailure(parsed.value.action, new ProviderUnavailableError("redirect_contract"));
+      return response(502, null, { "Set-Cookie": clearCookie() });
+    }
     return response(200, JSON.stringify({ redirectUrl }), {
       "Content-Type": "application/json; charset=utf-8",
       "Set-Cookie": clearCookie(),
     });
-  } catch {
+  } catch (error) {
+    reportProviderFailure(parsed.value.action, error);
     // The provider may have consumed the one-time decision before a transport
     // failure became visible. Clear locally so the browser never replays it.
     return response(502, null, { "Set-Cookie": clearCookie() });
