@@ -17,6 +17,10 @@ const origin = "https://fitness.fawxzzy.com";
 const priorFitnessMerge = "8070196cd3f5efbe2faf7fe8719971cf2ebd1e39";
 const productionFitnessMerge = "dbbe305fc511633166c1a65396fdf9ef6a1c79f1";
 const reviewedFitnessMerge = "389d4d21aa79725ba6cd716dcc84d7aa917ada3e";
+const retainedRollbackFitnessMerge = "5a9ba02e2b950285342fb189d680564ce5cdc489";
+const usernameReleaseFitnessMerge = "dbb63556d8b01b383dd61d326ce551635cb8b4d8";
+const acceptedFitnessMerges = [priorFitnessMerge, productionFitnessMerge, reviewedFitnessMerge,
+  retainedRollbackFitnessMerge, usernameReleaseFitnessMerge] as const;
 const legacyFitnessMerge = "f87f2dc7e0cc3cbead0eb3ea5ed7b9c592fdfa94";
 const pair = { accessToken: "synthetic-access", refreshToken: "synthetic-refresh" };
 const rotatedPair = { accessToken: "rotated-access", refreshToken: "rotated-refresh" };
@@ -24,7 +28,7 @@ const readiness = {
   authProjectRef: FITNESS_HANDOFF_MASTER_PROJECT_REF,
   contractVersion: FITNESS_HANDOFF_READINESS_CONTRACT_VERSION,
   handoffStore: "available",
-  sourceCommit: reviewedFitnessMerge,
+  sourceCommit: usernameReleaseFitnessMerge,
 };
 const begin = { ok: true, handoffId: id, readiness, returnTo: "/today" };
 const end = { ok: true, returnTo: "/today", session: rotatedPair };
@@ -46,7 +50,7 @@ function fixture(responses: Response[]) {
 
 test("Fitness handoff activates only on the canonical account runtime with exact evidence", () => {
   expect(FITNESS_HANDOFF_ACTIVATION.fitnessConsumerMerges)
-    .toEqual([priorFitnessMerge, productionFitnessMerge, reviewedFitnessMerge]);
+    .toEqual(acceptedFitnessMerges);
   expect(fitnessHandoffRuntimeReady("https://account.fawxzzy.com")).toBe(true);
   for (const runtimeOrigin of [
     "http://127.0.0.1:3210",
@@ -59,16 +63,17 @@ test("Fitness handoff activates only on the canonical account runtime with exact
 
   for (const activation of [
     { ...FITNESS_HANDOFF_ACTIVATION, state: "inactive" as const },
-    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: ["invalid", productionFitnessMerge, reviewedFitnessMerge] as const },
-    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: [priorFitnessMerge, priorFitnessMerge, reviewedFitnessMerge] as const },
-    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: [priorFitnessMerge, productionFitnessMerge] as unknown as readonly [string, string, string] },
+    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: ["invalid", productionFitnessMerge, reviewedFitnessMerge, retainedRollbackFitnessMerge, usernameReleaseFitnessMerge] as const },
+    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: [priorFitnessMerge, priorFitnessMerge, reviewedFitnessMerge, retainedRollbackFitnessMerge, usernameReleaseFitnessMerge] as const },
+    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: [priorFitnessMerge, productionFitnessMerge] as unknown as typeof acceptedFitnessMerges },
+    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: [...acceptedFitnessMerges, "a".repeat(40)] as unknown as typeof acceptedFitnessMerges },
   ]) {
     expect(fitnessHandoffRuntimeReady("https://account.fawxzzy.com", activation)).toBe(false);
   }
 });
 
 test("Fitness release binding accepts all transition sources and rejects every unlisted merge before token read", async () => {
-  for (const sourceCommit of [priorFitnessMerge, productionFitnessMerge, reviewedFitnessMerge]) {
+  for (const sourceCommit of acceptedFitnessMerges) {
     let reads = 0;
     const accepted = fixture([json({
       ...begin,
@@ -84,7 +89,9 @@ test("Fitness release binding accepts all transition sources and rejects every u
     expect(accepted.calls).toHaveLength(2);
   }
 
-  for (const sourceCommit of [legacyFitnessMerge, "0".repeat(40), "a".repeat(40)]) {
+  for (const sourceCommit of [legacyFitnessMerge, "0".repeat(40), "a".repeat(40),
+    "6ab6c782e239b50a8adf00cc65e553f679c8abda", usernameReleaseFitnessMerge.toUpperCase(),
+    ` ${usernameReleaseFitnessMerge}`, usernameReleaseFitnessMerge.slice(0, 7)]) {
     let reads = 0;
     const rejected = fixture([json({
       ...begin,
