@@ -98,6 +98,9 @@ for (const operation of ["read", "approve", "deny"] as const) {
         expect(warning(warnings)).toEqual({
           event: "mazer_oauth_provider_failure", operation, stage: failure.stage,
           ...(failure.status === undefined ? {} : { upstreamStatus: failure.status }),
+          ...(operation === "read" && failure.stage === "response_contract"
+            ? { contractIssue: "authorization_id" }
+            : {}),
         });
         if (operation === "read" && failure.stage !== "redirect_contract") {
           expect(result.headers.get("set-cookie")).toBeNull();
@@ -156,5 +159,52 @@ test("Mazer logging failure still returns502 and clears uncertain consent", asyn
     expect(result.status).toBe(502);
     expect(result.headers.get("set-cookie")).toContain("Max-Age=0");
     expect(calls()).toBe(1);
+  });
+});
+
+const authorizationDetails = {
+  authorization_id: authorizationId,
+  redirect_uri: "https://mazer.fawxzzy.com/",
+  scope: "email",
+  client: { id: "synthetic-client", name: "Mazer" },
+  user: { id: "synthetic-user" },
+};
+
+const contractCases: Array<{ issue: string; value: unknown }> = [
+  ...[null, [], sensitive].map((value) => ({ issue: "response_object", value })),
+  { issue: "authorization_id", value: { ...authorizationDetails, authorization_id: sensitive } },
+  { issue: "authorization_id", value: { redirect_uri: sensitive, scope: null, client: null } },
+  { issue: "redirect_uri", value: { ...authorizationDetails, redirect_uri: { private: sensitive } } },
+  { issue: "scope", value: { ...authorizationDetails, scope: [sensitive] } },
+  { issue: "client_object", value: { ...authorizationDetails, client: null } },
+  { issue: "client_object", value: { ...authorizationDetails, client: [sensitive] } },
+  { issue: "client_id", value: { ...authorizationDetails, client: { client_id: sensitive, name: "Mazer" } } },
+  { issue: "client_name", value: { ...authorizationDetails, client: { id: "synthetic-client", client_name: sensitive } } },
+  { issue: "user_object", value: { ...authorizationDetails, user: null } },
+  { issue: "user_id", value: { ...authorizationDetails, user: { id: 123, email: sensitive } } },
+];
+
+for (const [index, item] of contractCases.entries()) {
+  test(`Mazer rejected authorization exposes only fixed contract issue ${index}: ${item.issue}`, async () => {
+    await withMock(async () => Response.json(item.value), async (warnings, calls) => {
+      const result = await GET(request(await carrier(), "read"));
+      expect(result.status).toBe(502);
+      expect(await result.text()).toBe("");
+      expect(result.headers.get("set-cookie")).toBeNull();
+      expect(calls()).toBe(1);
+      expect(warning(warnings)).toEqual({
+        event: "mazer_oauth_provider_failure", operation: "read",
+        stage: "response_contract", contractIssue: item.issue,
+      });
+    });
+  });
+}
+
+test("Mazer ignores provider-supplied diagnostic keys and preserves valid authorization", async () => {
+  await withMock(async () => Response.json({ ...authorizationDetails, contractIssue: sensitive, private: sensitive }), async (warnings) => {
+    const result = await GET(request(await carrier(), "read"));
+    expect(result.status).toBe(200);
+    expect(await result.text()).not.toContain(sensitive);
+    expect(warnings).toEqual([]);
   });
 });
