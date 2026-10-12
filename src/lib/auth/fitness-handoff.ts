@@ -1,7 +1,7 @@
 import { accountContract, accountExperienceContexts } from "@/config/account";
 
 export type FitnessHandoffActivation = Readonly<{
-  fitnessConsumerMerges: readonly [string, string, string];
+  fitnessConsumerMerges: readonly [string, string, string, string, string];
   state: "active" | "inactive";
 }>;
 
@@ -14,6 +14,10 @@ export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
     "8070196cd3f5efbe2faf7fe8719971cf2ebd1e39",
     "dbbe305fc511633166c1a65396fdf9ef6a1c79f1",
     "389d4d21aa79725ba6cd716dcc84d7aa917ada3e",
+    // Retained production rollback and reviewed username/reset release candidate.
+    // Release acceptance and canonical cutover remain separate from this source list.
+    "5a9ba02e2b950285342fb189d680564ce5cdc489",
+    "dbb63556d8b01b383dd61d326ce551635cb8b4d8",
   ],
   state: "active",
 } as const satisfies FitnessHandoffActivation);
@@ -33,8 +37,8 @@ export function fitnessHandoffRuntimeReady(
       && !candidate.username && !candidate.password
       && accountExperienceContexts.fitness.consumerIntegration === "active"
       && activation.state === "active"
-      && activation.fitnessConsumerMerges.length === 3
-      && new Set(activation.fitnessConsumerMerges).size === 3
+      && activation.fitnessConsumerMerges.length === 5
+      && new Set(activation.fitnessConsumerMerges).size === 5
       && activation.fitnessConsumerMerges.every((merge) => /^[0-9a-f]{40}$/.test(merge));
   } catch {
     return false;
