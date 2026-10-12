@@ -44,8 +44,17 @@ type ProviderFailureStage =
   | "response_contract"
   | "redirect_contract";
 
+type ProviderContractIssue =
+  | "response_object" | "authorization_id" | "redirect_uri" | "scope"
+  | "client_object" | "client_id" | "client_name" | "user_object" | "user_id"
+  | "unclassified";
+
 class ProviderUnavailableError extends Error {
-  constructor(readonly stage: ProviderFailureStage, readonly upstreamStatus?: number) {
+  constructor(
+    readonly stage: ProviderFailureStage,
+    readonly upstreamStatus?: number,
+    readonly contractIssue?: ProviderContractIssue,
+  ) {
     super("OAuth provider unavailable.");
   }
 }
@@ -60,6 +69,9 @@ function reportProviderFailure(operation: "read" | "approve" | "deny", error: un
       event: "mazer_oauth_provider_failure",
       operation,
       stage: failure?.stage ?? "unexpected",
+      ...(failure?.stage === "response_contract" && failure.contractIssue
+        ? { contractIssue: failure.contractIssue }
+        : {}),
       ...(typeof status === "number" && Number.isInteger(status) && status >= 100 && status <= 599
         ? { upstreamStatus: status }
         : {}),
@@ -80,6 +92,21 @@ function isExactSameOrigin(request: Request) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function classifyRejectedAuthorization(value: unknown, expectedId: string): ProviderContractIssue {
+  // Diagnose only the first rejected boundary. Never return provider values or
+  // keys, and never use these observations to accept a rejected response.
+  if (!isRecord(value)) return "response_object";
+  if (value.authorization_id !== expectedId) return "authorization_id";
+  if (typeof value.redirect_uri !== "string") return "redirect_uri";
+  if (typeof value.scope !== "string") return "scope";
+  if (!isRecord(value.client)) return "client_object";
+  if (typeof value.client.id !== "string") return "client_id";
+  if (typeof value.client.name !== "string") return "client_name";
+  if (!isRecord(value.user)) return "user_object";
+  if (typeof value.user.id !== "string") return "user_id";
+  return "unclassified";
 }
 
 function hasExactKeys(value: Record<string, unknown>, keys: readonly string[]) {
@@ -279,7 +306,11 @@ export async function GET(request: Request) {
   try {
     const raw = await providerRequest(current.pending, accessToken);
     const result = normalizeMazerOAuthProviderResult(raw, current.pending.authorizationId);
-    if (!result) throw new ProviderUnavailableError("response_contract");
+    if (!result) {
+      throw new ProviderUnavailableError(
+        "response_contract", undefined, classifyRejectedAuthorization(raw, current.pending.authorizationId),
+      );
+    }
     if (result.kind === "redirect") {
       const redirectUrl = sanitizeMazerOAuthApprovalRedirect(result.redirectUrl);
       if (!redirectUrl) {

@@ -20,6 +20,15 @@ contains an operation (`read`, `approve`, or `deny`) and a fixed failure stage:
 | `redirect_contract` | The provider redirect failed the existing exact destination/query checks. |
 | `unexpected` | An unclassified exception reached the existing failure boundary. |
 
+For a rejected authorization read, `response_contract` also includes one fixed
+`contractIssue`: `response_object`, `authorization_id`, `redirect_uri`, `scope`,
+`client_object`, `client_id`, `client_name`, `user_object`, `user_id`, or
+`unclassified`. This identifies the first missing, mistyped, or mismatched
+boundary using constant labels. It contains no observed values, arbitrary keys,
+identity comparisons, or provider-supplied diagnostic text. Validation and the
+empty failure response remain unchanged; a label never authorizes accepting a
+different provider shape. Consent diagnostics remain unchanged.
+
 Logs contain no raw exception text, provider response, URL, authorization handle,
 user identity, cookie, token, or key. Public responses contain no diagnostic stage
 or upstream status. Logging failure cannot change the response or cause a retry.
@@ -31,6 +40,12 @@ operator-owned resize or restart. A working static application does not prove
 Auth health. Once healthy, one fresh app-originated request can establish the
 remaining failure stage. Query only the exact deployment, route and observation
 window. Do not recover user credentials or pending handles to replay requests.
+
+Use the supported function-log interface for application warnings. The installed
+CLI's historical log path projects request summaries and selects only the first
+application entry per request; an empty result there does not prove that the
+function emitted no warning. Accept either documented text or structured tool
+responses, and retain only the fixed fields above.
 
 Synthetic tests replace fetch completely and assert the warning allowlist,
 failure stages, absence of private values, unchanged responses, and no retries.
