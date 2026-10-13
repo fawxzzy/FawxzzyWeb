@@ -103,7 +103,7 @@ function classifyRejectedAuthorization(value: unknown, expectedId: string): Prov
   if (typeof value.scope !== "string") return "scope";
   if (!isRecord(value.client)) return "client_object";
   if (typeof value.client.id !== "string") return "client_id";
-  if (typeof value.client.name !== "string") return "client_name";
+  if (value.client.name !== undefined && typeof value.client.name !== "string") return "client_name";
   if (!isRecord(value.user)) return "user_object";
   if (typeof value.user.id !== "string") return "user_id";
   return "unclassified";

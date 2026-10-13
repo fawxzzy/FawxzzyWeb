@@ -179,7 +179,11 @@ const contractCases: Array<{ issue: string; value: unknown }> = [
   { issue: "client_object", value: { ...authorizationDetails, client: null } },
   { issue: "client_object", value: { ...authorizationDetails, client: [sensitive] } },
   { issue: "client_id", value: { ...authorizationDetails, client: { client_id: sensitive, name: "Mazer" } } },
-  { issue: "client_name", value: { ...authorizationDetails, client: { id: "synthetic-client", client_name: sensitive } } },
+  ...[null, 123, [sensitive], { private: sensitive }].map((name) => ({
+    issue: "client_name", value: { ...authorizationDetails, client: { id: "synthetic-client", name } },
+  })),
+  { issue: "user_object", value: { ...authorizationDetails, client: { id: "synthetic-client" }, user: null } },
+  { issue: "user_id", value: { ...authorizationDetails, client: { id: "synthetic-client" }, user: { id: 123 } } },
   { issue: "user_object", value: { ...authorizationDetails, user: null } },
   { issue: "user_id", value: { ...authorizationDetails, user: { id: 123, email: sensitive } } },
 ];
@@ -208,3 +212,29 @@ test("Mazer ignores provider-supplied diagnostic keys and preserves valid author
     expect(warnings).toEqual([]);
   });
 });
+
+for (const name of [undefined, "", "Mazer"]) {
+  test(`Mazer authorization accepts optional display name ${String(name)} without private diagnostic values`, async () => {
+    await withMock(async () => Response.json({
+      ...authorizationDetails,
+      client: { id: "synthetic-client", name, client_name: sensitive },
+      user: { id: "synthetic-user", email: sensitive },
+      private: sensitive,
+    }), async (warnings, calls) => {
+      const result = await GET(request(await carrier(), "read"));
+      expect(result.status).toBe(200);
+      expect(result.headers.get("cache-control")).toContain("no-store");
+      expect(result.headers.get("set-cookie")).toBeNull();
+      const body = await result.text();
+      expect(JSON.parse(body)).toEqual({ kind: "authorization", details: {
+        clientId: "synthetic-client", clientName: name ?? "",
+        redirectUri: "https://mazer.fawxzzy.com/", scope: "email", userId: "synthetic-user",
+      } });
+      for (const privateValue of [authorizationId, authGeneration, accessToken, providerKey, sensitive]) {
+        expect(body).not.toContain(privateValue);
+      }
+      expect(calls()).toBe(1);
+      expect(warnings).toEqual([]);
+    });
+  });
+}
