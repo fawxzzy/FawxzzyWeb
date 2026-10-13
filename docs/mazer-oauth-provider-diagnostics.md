@@ -25,9 +25,26 @@ For a rejected authorization read, `response_contract` also includes one fixed
 `client_object`, `client_id`, `client_name`, `user_object`, `user_id`, or
 `unclassified`. This identifies the first missing, mistyped, or mismatched
 boundary using constant labels. It contains no observed values, arbitrary keys,
-identity comparisons, or provider-supplied diagnostic text. Validation and the
-empty failure response remain unchanged; a label never authorizes accepting a
-different provider shape. Consent diagnostics remain unchanged.
+identity comparisons, or provider-supplied diagnostic text. A label never
+authorizes accepting a different provider shape. Consent diagnostics and the
+empty failure response remain unchanged.
+
+## Optional client display name
+
+[Supabase Auth v2.197.0's authorization response](https://github.com/supabase/auth/blob/v2.197.0/internal/api/oauthserver/authorize.go)
+declares the client display name as `name,omitempty`. An unset name may therefore
+be absent from otherwise valid authorization details. The portal normalizes only
+an omitted/undefined name to an empty string, keeping the gateway's exact
+`clientName: string` shape. Present nonstring names, including `null`, are rejected
+as `client_name`. An unknown `client_name` alias is ignored, never used as fallback.
+
+The product identity check accepts an empty name or the exact name `Mazer` only
+when the configured client ID, exact Mazer redirect URI, and `email` scope also
+match. Explicit foreign names still fail closed. The UI's session-user and auth
+generation checks, consent decision, and redirect validation remain required.
+An omitted display name does not supply or replace any of those identity proofs.
+Diagnostic classification follows the same optional-name rule; an absent name
+must not mask a subsequent invalid user field.
 
 Logs contain no raw exception text, provider response, URL, authorization handle,
 user identity, cookie, token, or key. Public responses contain no diagnostic stage
@@ -49,4 +66,5 @@ responses, and retain only the fixed fields above.
 
 Synthetic tests replace fetch completely and assert the warning allowlist,
 failure stages, absence of private values, unchanged responses, and no retries.
-This source change alone neither fixes nor proves live authenticated handoff.
+Optional-name regressions also cover exact identity checks and normalized gateway
+shape. Passing source tests alone does not prove live authenticated handoff.

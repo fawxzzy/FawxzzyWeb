@@ -197,7 +197,7 @@ export function normalizeMazerOAuthProviderResult(
     typeof value.scope !== "string" ||
     !isRecord(value.client) ||
     typeof value.client.id !== "string" ||
-    typeof value.client.name !== "string" ||
+    (value.client.name !== undefined && typeof value.client.name !== "string") ||
     !isRecord(value.user) ||
     typeof value.user.id !== "string"
   ) {
@@ -208,7 +208,8 @@ export function normalizeMazerOAuthProviderResult(
     kind: "authorization",
     details: {
       clientId: value.client.id,
-      clientName: value.client.name,
+      // Supabase omits an unset display name; client ID remains authoritative.
+      clientName: value.client.name ?? "",
       redirectUri: value.redirect_uri,
       scope: value.scope,
       userId: value.user.id,
@@ -270,7 +271,7 @@ export function isExpectedMazerOAuthAuthorization(
   return Boolean(
     expectedClientId &&
       details.clientId === expectedClientId &&
-      details.clientName === "Mazer" &&
+      (details.clientName === "" || details.clientName === "Mazer") &&
       details.redirectUri === MAZER_OAUTH_REDIRECT_URI &&
       details.scope === MAZER_OAUTH_SCOPE,
   );
