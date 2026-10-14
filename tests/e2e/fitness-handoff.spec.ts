@@ -19,8 +19,9 @@ const productionFitnessMerge = "dbbe305fc511633166c1a65396fdf9ef6a1c79f1";
 const reviewedFitnessMerge = "389d4d21aa79725ba6cd716dcc84d7aa917ada3e";
 const retainedRollbackFitnessMerge = "5a9ba02e2b950285342fb189d680564ce5cdc489";
 const usernameReleaseFitnessMerge = "dbb63556d8b01b383dd61d326ce551635cb8b4d8";
+const legacyRetirementFitnessMerge = "0467722373da14760779392d94a212e3f10aac92";
 const acceptedFitnessMerges = [priorFitnessMerge, productionFitnessMerge, reviewedFitnessMerge,
-  retainedRollbackFitnessMerge, usernameReleaseFitnessMerge] as const;
+  retainedRollbackFitnessMerge, usernameReleaseFitnessMerge, legacyRetirementFitnessMerge] as const;
 const legacyFitnessMerge = "f87f2dc7e0cc3cbead0eb3ea5ed7b9c592fdfa94";
 const pair = { accessToken: "synthetic-access", refreshToken: "synthetic-refresh" };
 const rotatedPair = { accessToken: "rotated-access", refreshToken: "rotated-refresh" };
@@ -28,7 +29,7 @@ const readiness = {
   authProjectRef: FITNESS_HANDOFF_MASTER_PROJECT_REF,
   contractVersion: FITNESS_HANDOFF_READINESS_CONTRACT_VERSION,
   handoffStore: "available",
-  sourceCommit: usernameReleaseFitnessMerge,
+  sourceCommit: legacyRetirementFitnessMerge,
 };
 const begin = { ok: true, handoffId: id, readiness, returnTo: "/today" };
 const end = { ok: true, returnTo: "/today", session: rotatedPair };
@@ -63,8 +64,8 @@ test("Fitness handoff activates only on the canonical account runtime with exact
 
   for (const activation of [
     { ...FITNESS_HANDOFF_ACTIVATION, state: "inactive" as const },
-    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: ["invalid", productionFitnessMerge, reviewedFitnessMerge, retainedRollbackFitnessMerge, usernameReleaseFitnessMerge] as const },
-    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: [priorFitnessMerge, priorFitnessMerge, reviewedFitnessMerge, retainedRollbackFitnessMerge, usernameReleaseFitnessMerge] as const },
+    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: ["invalid", productionFitnessMerge, reviewedFitnessMerge, retainedRollbackFitnessMerge, usernameReleaseFitnessMerge, legacyRetirementFitnessMerge] as const },
+    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: [priorFitnessMerge, priorFitnessMerge, reviewedFitnessMerge, retainedRollbackFitnessMerge, usernameReleaseFitnessMerge, legacyRetirementFitnessMerge] as const },
     { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: [priorFitnessMerge, productionFitnessMerge] as unknown as typeof acceptedFitnessMerges },
     { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: [...acceptedFitnessMerges, "a".repeat(40)] as unknown as typeof acceptedFitnessMerges },
   ]) {
