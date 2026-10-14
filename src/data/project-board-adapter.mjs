@@ -28,8 +28,14 @@ function nonempty(value) {
 }
 
 function instant(value) {
-  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value)
-    && Number.isFinite(Date.parse(value));
+  const date = typeof value === "string" ? /^(\d{4})-(\d{2})-(\d{2})T/.exec(value) : null;
+  if (!date || !Number.isFinite(Date.parse(value))) return false;
+  const year = Number(date[1]);
+  const month = Number(date[2]);
+  const day = Number(date[3]);
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return month >= 1 && month <= 12 && day >= 1 && day <= days[month - 1];
 }
 
 function canonicalContent(value) {
@@ -71,6 +77,7 @@ export function resolveDetailDependency(cards, sourceProjectId, reference, index
 export function validateFourBoardSnapshot(snapshot, { allowEmptyPreview = false } = {}) {
   if (!sameFields(snapshot, ["boards", "preparedAt", "publicationReady", "schema", "sourceKind"])
     || snapshot.schema !== "fawxzzy.project-board.public-preview.v1"
+    || typeof snapshot.preparedAt !== "string"
     || !instant(`${snapshot.preparedAt}T00:00:00Z`)
     || typeof snapshot.publicationReady !== "boolean"
     || !nonempty(snapshot.sourceKind)
@@ -88,7 +95,7 @@ export function validateFourBoardSnapshot(snapshot, { allowEmptyPreview = false 
       if (!sameFields(card, CARD_FIELDS) || !nonempty(card.id) || !nonempty(card.sourceProjectId)
         || !nonempty(card.owner) || !nonempty(card.title) || !nonempty(card.summary)
         || !nonempty(card.workType) || !LIFECYCLES.has(card.lifecycle)
-        || !HASH.test(card.sourceRevision) || !instant(card.updatedAt)
+        || typeof card.sourceRevision !== "string" || !HASH.test(card.sourceRevision) || !instant(card.updatedAt)
         || !Array.isArray(card.dependencies) || card.dependencies.some((id) => !nonempty(id))
         || ["priority", "parentId", "duplicateOf", "supersededBy"].some((key) => card[key] !== null && !nonempty(card[key]))
         || (board.id === "atlas-stack" ? ATLAS_COMPONENTS[card.sourceProjectId] !== card.component : card.component !== null)

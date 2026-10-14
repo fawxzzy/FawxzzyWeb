@@ -257,3 +257,49 @@ test("selected detail resolves against current visible cards, including update a
   assert.equal(resolveVisibleSelection([], identity), null);
   assert.equal(resolveVisibleSelection(updated, null), null);
 });
+
+for (const [label, change] of [
+  ["snapshot February 30", (snapshot) => { snapshot.preparedAt = "2026-02-30"; }],
+  ["card February 30", (snapshot) => { snapshot.boards[0].cards[0].updatedAt = "2026-02-30T12:00:00Z"; }],
+  ["non-leap century February 29", (snapshot) => { snapshot.preparedAt = "2100-02-29"; }],
+  ["array-valued snapshot date", (snapshot) => { snapshot.preparedAt = ["2026-10-14"]; }],
+  ["array-valued source revision", (snapshot) => {
+    snapshot.boards[2].cards[0].sourceRevision = [`sha256:${"a".repeat(64)}`];
+  }],
+]) {
+  test(`reject ${label} before public snapshot acceptance`, () => {
+    const snapshot = copy(approved);
+    change(snapshot);
+    assert.throws(() => validateFourBoardSnapshot(snapshot));
+  });
+}
+
+test("reject nonexistent envelope generation day before freshness acceptance", () => {
+  const invalid = { ...envelope(approved), generatedAt: "2026-02-30T12:00:00Z" };
+  const result = applyBoardEnvelope(initialBoardState(fixture), invalid);
+  assert.equal(result.health, "incompatible");
+  assert.equal(result.reason, "INVALID_ENVELOPE");
+  assert.deepEqual(boardView(result).boards, []);
+});
+
+test("valid leap dates and UTC offsets remain accepted", () => {
+  const valid = copy(approved);
+  valid.preparedAt = "2000-02-29";
+  valid.boards[0].cards[0].updatedAt = "2024-02-29T23:30:00-05:00";
+  assert.doesNotThrow(() => validateFourBoardSnapshot(valid));
+  const result = applyBoardEnvelope(initialBoardState(fixture), {
+    ...envelope(valid), generatedAt: "2024-02-29T12:00:00+02:00",
+  });
+  assert.equal(result.health, "healthy");
+});
+
+test("cold and missed-revision clients retain the catch-up guard", () => {
+  const cold = applyBoardEnvelope(initialBoardState(fixture), envelope(approved, "rev-3", "rev-2"));
+  assert.equal(cold.reason, "STALE_OR_FORKED_REVISION");
+  assert.equal(cold.projectionRevision, null);
+  const accepted = applyBoardEnvelope(initialBoardState(fixture), envelope(approved));
+  const missed = applyBoardEnvelope(accepted, envelope(approved, "rev-3", "rev-2"));
+  assert.equal(missed.reason, "STALE_OR_FORKED_REVISION");
+  assert.equal(missed.projectionRevision, "rev-1");
+  assert.equal(boardView(missed).authoritative, false);
+});
