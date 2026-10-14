@@ -157,7 +157,7 @@ html:has(.projects-page) {
   gap: 12px;
 }
 
-.project-stage[data-stage="active"] { --stage-color: #5ca7ff; }
+.project-stage[data-stage="build"] { --stage-color: #5ca7ff; }
 .project-stage[data-stage="review"] { --stage-color: #c084fc; }
 .project-stage[data-stage="blocked"] { --stage-color: #fb7185; }
 
