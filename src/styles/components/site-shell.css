@@ -185,3 +185,32 @@
     padding-inline: 0.78rem;
   }
 }
+
+@media (max-width: 380px) {
+  .site-nav {
+    align-items: flex-start;
+  }
+
+  .site-nav__brand {
+    flex-shrink: 0;
+    padding-inline: 0;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+  }
+
+  .site-nav__brand-label {
+    display: inline;
+  }
+
+  .site-nav__links {
+    flex: 1;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0;
+  }
+
+  .site-nav__links a {
+    padding-inline: 0.4rem;
+    font-size: 0.76rem;
+  }
+}

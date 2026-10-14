@@ -4,7 +4,7 @@ import { accountUrls } from "@/config/account";
 import { productIdentity } from "@/config/product";
 
 type SiteNavProps = {
-  current: "account" | "apps" | "home";
+  current: "account" | "apps" | "home" | "projects";
 };
 
 export function SiteNav({ current }: SiteNavProps) {
@@ -38,6 +38,9 @@ export function SiteNav({ current }: SiteNavProps) {
           href={productIdentity.appsPath}
         >
           Apps
+        </StaticLink>
+        <StaticLink aria-current={current === "projects" ? "page" : undefined} href="/projects">
+          Projects
         </StaticLink>
         <StaticLink href={accountUrls.account}>Account</StaticLink>
       </div>
