@@ -199,9 +199,13 @@ test("abort and timeout fail closed even when injected fetch ignores cancellatio
   const pending = abortedReader.refresh({ signal: controller.signal });
   controller.abort();
   assert.equal((await pending).health, "unavailable");
-  resolveLate(jsonResponse(envelope()));
-  await Promise.resolve();
+  let lateCancelCalls = 0;
+  const lateBody = new ReadableStream({ cancel() { lateCancelCalls += 1; } });
+  resolveLate(new Response(lateBody, { headers: { "Content-Type": "application/json" } }));
+  await new Promise((resolve) => setImmediate(resolve));
   assert.equal(abortedReader.getState().projectionRevision, null);
+  assert.equal(lateCancelCalls, 1);
+  assert.equal(lateBody.locked, false);
 
   const timedOut = configured(() => new Promise(() => {}), { timeoutMs: 10 });
   assert.equal((await timedOut.refresh()).health, "unavailable");
@@ -214,4 +218,59 @@ test("abort and timeout fail closed even when injected fetch ignores cancellatio
   assert.equal((await newerWins.refresh()).health, "healthy");
   assert.equal((await olderTimedOut).health, "healthy");
   assert.equal(newerWins.getState().projectionRevision, "rev-1");
+});
+
+test("timeout cancels a stalled response body and releases its stream lock", async () => {
+  let cancelCalls = 0;
+  const body = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode('{"schema":'));
+    },
+    cancel() { cancelCalls += 1; },
+  });
+  const response = new Response(body, { headers: { "Content-Type": "application/json" } });
+  const reader = configured(async () => response, { timeoutMs: 10 });
+  const state = await reader.refresh();
+  assert.equal(state.health, "unavailable");
+  assert.deepEqual(boardView(state).boards, []);
+  assert.equal(cancelCalls, 1);
+  assert.equal(body.locked, false);
+});
+
+test("explicit abort cancels an acquired stalled body without accepting late data", async () => {
+  let cancelCalls = 0;
+  const body = new ReadableStream({
+    start(controller) {
+      controller.enqueue(new TextEncoder().encode('{"schema":'));
+    },
+    cancel() { cancelCalls += 1; },
+  });
+  const response = new Response(body, { headers: { "Content-Type": "application/json" } });
+  const reader = configured(async () => response);
+  const controller = new AbortController();
+  const pending = reader.refresh({ signal: controller.signal });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(body.locked, true);
+  controller.abort();
+  const state = await pending;
+  assert.equal(state.health, "unavailable");
+  assert.deepEqual(boardView(state).boards, []);
+  assert.equal(cancelCalls, 1);
+  assert.equal(body.locked, false);
+  assert.equal(reader.getState().projectionRevision, null);
+});
+
+test("rejected and declared-oversized responses discard their bodies", async () => {
+  for (const headers of [
+    { "Content-Type": "text/html" },
+    { "Content-Type": "application/json", "Content-Length": String(1024 * 1024 + 1) },
+  ]) {
+    let cancelCalls = 0;
+    const body = new ReadableStream({ cancel() { cancelCalls += 1; } });
+    const state = await configured(async () => new Response(body, { headers })).refresh();
+    assert.equal(state.health, "unavailable");
+    assert.deepEqual(boardView(state).boards, []);
+    assert.equal(cancelCalls, 1);
+    assert.equal(body.locked, false);
+  }
 });

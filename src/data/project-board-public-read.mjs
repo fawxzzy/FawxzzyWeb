@@ -11,34 +11,67 @@ function publicJson(contentType) {
   return mime === "application/json" || /^application\/[a-z0-9.+_-]+\+json$/.test(mime ?? "");
 }
 
-async function readJsonBody(response) {
-  const declaredLength = response.headers.get("content-length");
-  if (declaredLength !== null && /^\d+$/.test(declaredLength)
-    && Number(declaredLength) > MAX_RESPONSE_BYTES) throw new Error("oversized");
+function discardBody(response) {
+  try {
+    void response?.body?.cancel?.().catch(() => {});
+  } catch {
+    // Discard is best effort; no response body reaches the board state.
+  }
+}
+
+async function readJsonBody(response, signal) {
   const reader = response.body?.getReader();
   if (!reader) throw new Error("missing body");
   const chunks = [];
   let size = 0;
+  let released = false;
+  let cancelled = false;
+  const release = () => {
+    if (!released) {
+      reader.releaseLock();
+      released = true;
+    }
+  };
+  const cancel = () => {
+    if (cancelled) return;
+    cancelled = true;
+    try {
+      void reader.cancel().catch(() => {});
+    } finally {
+      release();
+    }
+  };
+  const onAbort = () => cancel();
+  signal.addEventListener("abort", onAbort, { once: true });
   try {
+    if (signal.aborted) throw new Error("aborted");
+    const declaredLength = response.headers.get("content-length");
+    if (declaredLength !== null && /^\d+$/.test(declaredLength)
+      && Number(declaredLength) > MAX_RESPONSE_BYTES) throw new Error("oversized");
     while (true) {
       const { done, value } = await reader.read();
+      if (signal.aborted) throw new Error("aborted");
       if (done) break;
       if (!(value instanceof Uint8Array)) throw new Error("invalid body chunk");
       size += value.byteLength;
       if (size > MAX_RESPONSE_BYTES) throw new Error("oversized");
       chunks.push(value);
     }
+    if (size === 0) throw new Error("empty body");
+    const bytes = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+  } catch (error) {
+    cancel();
+    throw error;
   } finally {
-    reader.releaseLock();
+    signal.removeEventListener("abort", onAbort);
+    release();
   }
-  if (size === 0) throw new Error("empty body");
-  const bytes = new Uint8Array(size);
-  let offset = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
 }
 
 async function fetchPublicEnvelope(config, signal) {
@@ -51,10 +84,11 @@ async function fetchPublicEnvelope(config, signal) {
     signal,
   });
   if (!response || response.redirected || response.status !== 200
-    || !publicJson(response.headers?.get("content-type"))) {
+    || !publicJson(response.headers?.get("content-type")) || signal.aborted) {
+    discardBody(response);
     throw new Error("invalid public response");
   }
-  return readJsonBody(response);
+  return readJsonBody(response, signal);
 }
 
 export function createPublicBoardReader(initialState, config = null) {
@@ -82,9 +116,12 @@ export function createPublicBoardReader(initialState, config = null) {
     const controller = new AbortController();
     const onExternalAbort = () => controller.abort();
     externalSignal?.addEventListener("abort", onExternalAbort, { once: true });
+    let rejectAbort;
+    const onAbort = () => rejectAbort(new Error("aborted"));
     const aborted = new Promise((_, reject) => {
-      if (controller.signal.aborted) reject(new Error("aborted"));
-      else controller.signal.addEventListener("abort", () => reject(new Error("aborted")), { once: true });
+      rejectAbort = reject;
+      controller.signal.addEventListener("abort", onAbort, { once: true });
+      if (controller.signal.aborted) onAbort();
     });
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -100,6 +137,7 @@ export function createPublicBoardReader(initialState, config = null) {
       controller.abort();
     } finally {
       clearTimeout(timeout);
+      controller.signal.removeEventListener("abort", onAbort);
       externalSignal?.removeEventListener("abort", onExternalAbort);
     }
     return getState();
