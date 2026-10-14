@@ -79,6 +79,26 @@ declared size and streamed size before invoking its store or Auth validator.
 
 ## Boundaries and acceptance
 
+### Release dependency order
+
+Before any Fitness production cutover, the deployed portal must accept the
+candidate's exact merged commit in `FITNESS_HANDOFF_ACTIVATION`. Public login
+rendering alone cannot prove this: the portal checks `readiness.sourceCommit`
+before retrieving credentials. An unlisted candidate must block the release.
+
+The six-source transition list includes reviewed Fitness PR198-201 merge
+`0467722373da14760779392d94a212e3f10aac92` and retains current production rollback
+`dbb63556d8b01b383dd61d326ce551635cb8b4d8` plus the four earlier accepted sources.
+Release and verify this portal binding first, then stage and verify the exact
+Fitness candidate before switching its canonical domain. Keep the prior portal
+and Fitness deployment bindings until both acceptance observations pass.
+This source list is not deployment or authenticated handoff acceptance.
+
+Run `npx playwright test tests/e2e/fitness-handoff.spec.ts` against the local
+build to cover all six accepted sources, unknown-source rejection before token
+retrieval, and unchanged master/store/response constraints. Run `npm run verify`
+for repository acceptance.
+
 The portal is statically exported: do not invent a Next server route or a
 Supabase provider mutation here. Fitness owns the real atomic consume adapter;
 an injected in-memory fixture is not a deployable implementation. A boolean or
