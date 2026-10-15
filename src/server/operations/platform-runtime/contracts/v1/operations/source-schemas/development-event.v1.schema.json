@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "socials-os.development-event.v1.schema.json",
+  "title": "Private development operations event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "occurred_at",
+    "source_role",
+    "source_system",
+    "category",
+    "card_id",
+    "board_id",
+    "factual_summary",
+    "evidence_references",
+    "visibility",
+    "sensitivity",
+    "include_in_digest",
+    "status",
+    "supersedes_event_id"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "pattern": "^dev-event:[a-z0-9][a-z0-9-]{1,62}$"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_role": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_system": {
+      "type": "string",
+      "minLength": 1
+    },
+    "category": {
+      "enum": [
+        "state",
+        "decision",
+        "receipt",
+        "blocker",
+        "handoff"
+      ]
+    },
+    "card_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^card:[a-z0-9][a-z0-9-]{1,62}$"
+    },
+    "board_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^board:[a-z0-9][a-z0-9-]{1,62}$"
+    },
+    "factual_summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_references": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "visibility": {
+      "enum": [
+        "private",
+        "internal"
+      ]
+    },
+    "sensitivity": {
+      "enum": [
+        "sanitized",
+        "restricted"
+      ]
+    },
+    "include_in_digest": {
+      "type": "boolean"
+    },
+    "status": {
+      "enum": [
+        "accepted",
+        "superseded",
+        "rejected"
+      ]
+    },
+    "supersedes_event_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^dev-event:[a-z0-9][a-z0-9-]{1,62}$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "card_id": {
+            "type": "null"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "board_id": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "socials-os.development-board.v2.schema.json",
+  "title": "Private development operations board v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "board_id",
+    "title",
+    "ordered_lanes",
+    "card_selectors",
+    "visibility",
+    "source_revision",
+    "projection_revision",
+    "source_watermark",
+    "generated_at",
+    "read_model_health"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "socials-os.development-board.v2.schema.json"
+    },
+    "board_id": {
+      "type": "string",
+      "pattern": "^board:[a-z0-9][a-z0-9-]{1,62}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ordered_lanes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "card_selectors": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "visibility": {
+      "enum": [
+        "private",
+        "internal"
+      ]
+    },
+    "source_revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projection_revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_watermark": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "read_model_health": {
+      "enum": [
+        "healthy",
+        "stale",
+        "unavailable",
+        "reconciling",
+        "incompatible"
+      ]
+    }
+  }
+}

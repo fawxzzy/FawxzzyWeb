@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "socials-os.development-card.v1.schema.json",
+  "title": "Private development operations card",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "card_id",
+    "project_slug",
+    "title",
+    "lifecycle",
+    "owner_role",
+    "priority",
+    "dependencies",
+    "blockers",
+    "source_reference",
+    "evidence_references",
+    "created_at",
+    "updated_at",
+    "supersedes_card_id",
+    "visibility"
+  ],
+  "properties": {
+    "card_id": {
+      "type": "string",
+      "pattern": "^card:[a-z0-9][a-z0-9-]{1,62}$"
+    },
+    "project_slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lifecycle": {
+      "enum": [
+        "planning",
+        "ready",
+        "in_progress",
+        "review",
+        "blocked",
+        "completed",
+        "superseded"
+      ]
+    },
+    "owner_role": {
+      "type": "string",
+      "minLength": 1
+    },
+    "priority": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low",
+        null
+      ]
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^card:[a-z0-9][a-z0-9-]{1,62}$"
+      },
+      "uniqueItems": true
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "source_reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_references": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "supersedes_card_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^card:[a-z0-9][a-z0-9-]{1,62}$"
+    },
+    "visibility": {
+      "enum": [
+        "private",
+        "internal"
+      ]
+    }
+  }
+}
