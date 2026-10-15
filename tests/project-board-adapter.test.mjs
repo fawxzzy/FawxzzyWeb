@@ -87,11 +87,11 @@ test("card links use composite identity and never guess across colliding project
   assert.strictEqual(resolveCardReference(cards, "atlas", "UNIQUE"), cards[2]);
 });
 
-test("card detail retains unresolved and ambiguous prerequisites without reading a missing card", () => {
+test("public payload rejects unresolved prerequisites while detail lookup remains safe", () => {
   const snapshot = copy(fixture);
   const source = snapshot.boards[0].cards[0];
   source.dependencies = ["MISSING-001", "MISSING-001"];
-  assert.doesNotThrow(() => validateFourBoardSnapshot(snapshot));
+  assert.throws(() => validateFourBoardSnapshot(snapshot), /relationship target is not visible/);
   const cards = snapshot.boards.flatMap((board) => board.cards);
   const first = resolveDetailDependency(cards, source.sourceProjectId, source.dependencies[0], 0);
   const second = resolveDetailDependency(cards, source.sourceProjectId, source.dependencies[1], 1);
@@ -106,6 +106,18 @@ test("card detail retains unresolved and ambiguous prerequisites without reading
     key: "0:SHARED", target: null,
   });
   assert.strictEqual(resolveDetailDependency(collisions, "atlas", "SHARED", 0).target, collisions[0]);
+});
+
+test("public payload rejects private or omitted relationship identifiers", () => {
+  for (const field of ["dependencies", "parentId", "duplicateOf", "supersededBy"]) {
+    const snapshot = copy(approved);
+    const card = snapshot.boards[0].cards[0];
+    card[field] = field === "dependencies" ? ["PRIVATE-CARD-001"] : "PRIVATE-CARD-001";
+    assert.throws(() => validateFourBoardSnapshot(snapshot), /relationship target is not visible/, field);
+    const state = applyBoardEnvelope(initialBoardState(preview), envelope(snapshot));
+    assert.equal(state.health, "incompatible", field);
+    assert.deepEqual(boardView(state).boards, [], field);
+  }
 });
 
 test("stale or forked revision retains data but removes current-truth authority", () => {
@@ -199,6 +211,8 @@ test("renderer follows a supplied validated state and shows honest freshness", a
 
   const previewMarkup = render();
   assert.match(previewMarkup, /Live master sync is pending/);
+  assert.match(previewMarkup, /Public view.*Fawxzzy project boards/);
+  assert.match(previewMarkup, /Public board view. Full account access/);
   assert.match(previewMarkup, /Fawxzzy Fitness/);
 
   const changed = copy(approved);

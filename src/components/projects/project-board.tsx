@@ -98,7 +98,7 @@ export function ProjectBoard({ publicBoardState }: { publicBoardState?: PublicBo
   const normalized = query.trim().toLowerCase();
   const source = (board?.cards ?? []) as Card[];
   const cards = normalized ? source.filter((card) =>
-      `${card.id} ${card.component ?? ""} ${card.title} ${card.summary} ${card.owner} ${card.workType} ${card.lifecycle} ${card.dependencies.join(" ")}`
+      `${card.id} ${card.component ?? ""} ${card.title} ${card.summary} ${card.owner} ${card.workType} ${card.lifecycle}`
         .toLowerCase().includes(normalized),
     ) : source;
   const activeCards = cards.filter((card) => !isCompleted(card));
@@ -122,8 +122,9 @@ export function ProjectBoard({ publicBoardState }: { publicBoardState?: PublicBo
       <div className="project-board-shell">
         <div className="project-board-toolbar">
           <div>
-            <p className="eyebrow">Fawxzzy project boards</p>
+            <p className="eyebrow">Public view · Fawxzzy project boards</p>
             <h1>{board?.name ?? "Project boards unavailable"}</h1>
+            <p className="project-board-toolbar__rule">Public board view. Full account access uses a separate owner-only surface.</p>
             <p>{activeCards.length} open · {completedCards.length} completed</p>
             <p aria-live="polite" className="project-board-toolbar__rule">
               {view.reason === "STATIC_PREVIEW_NOT_CURRENT_TRUTH"
@@ -190,7 +191,7 @@ export function ProjectBoard({ publicBoardState }: { publicBoardState?: PublicBo
             <div className="project-detail__dependencies"><h3>Depends on</h3>
               {selected.dependencies.length ? <ul>{selected.dependencies.map((id, index) => {
                 const { key, target: dependency } = resolveDetailDependency(allCards, selected.sourceProjectId, id, index);
-                return <li key={key}>{dependency ? <button onClick={() => selectCard(dependency)} type="button">{id} · View card</button> : <span>{id} · Outside or ambiguous in this view</span>}</li>;
+                return <li key={key}>{dependency ? <button onClick={() => selectCard(dependency)} type="button">{dependency.id} · View card</button> : <span>Another prerequisite is outside this view.</span>}</li>;
               })}</ul> : <p>No public prerequisites shown.</p>}
               <p>Only links between displayed cards are shown; other source prerequisites may exist.</p>
             </div>
@@ -201,9 +202,9 @@ export function ProjectBoard({ publicBoardState }: { publicBoardState?: PublicBo
               <div><dt>Source project</dt><dd>{selected.sourceProjectId}</dd></div>
               <div><dt>Priority</dt><dd>{selected.priority ? titleCase(selected.priority) : "Not ranked"}</dd></div>
               <div><dt>Card updated</dt><dd>{selected.updatedAt.slice(0, 10)}</dd></div>
-              {selected.parentId ? <div><dt>Parent</dt><dd>{selected.parentId}</dd></div> : null}
-              {selected.duplicateOf ? <div><dt>Duplicate of</dt><dd>{selected.duplicateOf}</dd></div> : null}
-              {selected.supersededBy ? <div><dt>Superseded by</dt><dd>{selected.supersededBy}</dd></div> : null}
+              {selected.parentId ? <div><dt>Parent</dt><dd>{resolveCardReference(allCards, selected.sourceProjectId, selected.parentId)?.id ?? "Outside this view"}</dd></div> : null}
+              {selected.duplicateOf ? <div><dt>Duplicate of</dt><dd>{resolveCardReference(allCards, selected.sourceProjectId, selected.duplicateOf)?.id ?? "Outside this view"}</dd></div> : null}
+              {selected.supersededBy ? <div><dt>Superseded by</dt><dd>{resolveCardReference(allCards, selected.sourceProjectId, selected.supersededBy)?.id ?? "Outside this view"}</dd></div> : null}
             </dl>
             <div className="project-detail__dependencies"><h3>Enables</h3>
               {dependents.length ? <ul>{dependents.map((card) => <li key={cardKey(card)}><button onClick={() => selectCard(card)} type="button">{cardKey(card)} · View card</button></li>)}</ul> : <p>No cards directly depend on this card.</p>}

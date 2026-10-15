@@ -112,6 +112,19 @@ export function validateFourBoardSnapshot(snapshot, { allowEmptyPreview = false 
       sourceRevisions.set(card.sourceProjectId, card.sourceRevision);
     }
   }
+  // Public snapshots may link only to cards present in the same sanitized
+  // snapshot. A missing target could reveal a private or unapproved card ID
+  // through the payload even when the renderer hides its label.
+  const cards = snapshot.boards.flatMap((board) => board.cards);
+  for (const card of cards) {
+    for (const reference of [
+      ...card.dependencies, card.parentId, card.duplicateOf, card.supersededBy,
+    ]) {
+      if (reference !== null && !resolveCardReference(cards, card.sourceProjectId, reference)) {
+        throw new Error("Public card relationship target is not visible");
+      }
+    }
+  }
   if (identities.size === 0 && !(allowEmptyPreview && !snapshot.publicationReady)) {
     throw new Error("Empty public projection");
   }
