@@ -14,6 +14,11 @@ const PROJECT_ID = "trove";
 const BOARD_ID = "discordos:project-feedback:trove";
 const OWNER = "trove";
 const INCLUDED_LIFECYCLES = Object.freeze(["in-progress", "planning", "blocked"]);
+const SUPPORTED_LIFECYCLES = new Set([...INCLUDED_LIFECYCLES, "ready", "review", "completed"]);
+const SUPPORTED_PRIORITIES = new Set([null, "low", "medium", "high", "critical"]);
+const SUPPORTED_CARD_TYPES = new Set(["feature", "bug", "governance", "architecture", "documentation", "automation", "research", "migration", "reliability", "technical-debt"]);
+const LEGACY_PUBLIC_SAFE_CARD_ID = "FW-PROJECTS-001";
+const WEB_CARD_ID = /^FW-[A-Z0-9]+(?:-[A-Z0-9]+)*$/;
 const STATIC_REQUIRED_EXCLUSIONS = Object.freeze([
   "SOC-024",
   "ui-standards-adoption-trove",
@@ -67,25 +72,48 @@ function assertSource(source, repository) {
   requireExact(source.source_baseline?.repository, repository.slug, "source_baseline.repository");
   requireExact(source.source_baseline?.commit, "af6a2076712ce7517b1e021bf4841048f6f97085", "source_baseline.commit");
   requireExact(source.source_baseline?.tree, "2de97f0d59860ec6f7f0dd0832dfa0aa88fb238c", "source_baseline.tree");
-  if (!Array.isArray(source.work_items) || source.work_items.length !== 1) throw new Error("owner source must contain the one exact current FawxzzyWeb work item");
-  if (source.work_items[0]?.id !== "FW-PROJECTS-001") throw new Error("unexpected FawxzzyWeb work identity");
+  if (!Array.isArray(source.work_items) || source.work_items.length === 0) throw new Error("owner source must retain current FawxzzyWeb work");
+  const cardIds = new Set();
+  for (const item of source.work_items) {
+    if (!item || typeof item !== "object" || Array.isArray(item) || typeof item.id !== "string" || !WEB_CARD_ID.test(item.id)) {
+      throw new Error("owner source contains an invalid FawxzzyWeb work identity");
+    }
+    if (cardIds.has(item.id)) throw new Error(`duplicate FawxzzyWeb work identity: ${item.id}`);
+    cardIds.add(item.id);
+  }
+  if (!cardIds.has(LEGACY_PUBLIC_SAFE_CARD_ID)) throw new Error("original FawxzzyWeb board work identity is missing");
   const identities = (source.excluded_records ?? []).map((record) => record.identity).sort();
   const requiredExclusions = [...STATIC_REQUIRED_EXCLUSIONS, repository.staleIssueIdentity].sort();
   if (JSON.stringify(identities) !== JSON.stringify(requiredExclusions)) throw new Error("excluded-record reconciliation changed");
   if (source.scope?.discord_mutation_authorized !== false || source.scope?.private_records_included !== false) throw new Error("public owner-export boundary changed");
   if (JSON.stringify(source.scope?.included_project_ids) !== JSON.stringify([PROJECT_ID])) throw new Error("only the active FawxzzyWeb project may be exported");
-  if (JSON.stringify(source.scope?.included_lifecycles) !== JSON.stringify(INCLUDED_LIFECYCLES)) throw new Error("owner lifecycle allowlist changed");
+  const lifecycles = source.scope?.included_lifecycles;
+  if (!Array.isArray(lifecycles) || new Set(lifecycles).size !== lifecycles.length
+    || INCLUDED_LIFECYCLES.some((lifecycle) => !lifecycles.includes(lifecycle))
+    || lifecycles.some((lifecycle) => !SUPPORTED_LIFECYCLES.has(lifecycle))) {
+    throw new Error("unsupported owner lifecycle scope");
+  }
   for (const excluded of ["discordos", "fitness", "mazer", "music-sesh"]) {
     if (!source.scope?.excluded_project_ids?.includes(excluded)) throw new Error(`missing excluded project boundary: ${excluded}`);
   }
   requireIsoTimestamp(source.updated_at, "updated_at");
 }
 
-function mapCard(item, repository) {
-  if (!INCLUDED_LIFECYCLES.includes(item.lifecycle)) throw new Error(`unsupported current lifecycle for ${item.id}`);
+function mapCard(item, repository, lifecycles) {
+  if (!lifecycles.includes(item.lifecycle)) throw new Error(`unsupported current lifecycle for ${item.id}`);
+  if (item.record_kind !== "project-work") throw new Error(`${item.id}.record_kind must be project-work`);
+  if (!SUPPORTED_PRIORITIES.has(item.priority)) throw new Error(`${item.id}.priority is unsupported`);
+  if (!SUPPORTED_CARD_TYPES.has(item.card_type)) throw new Error(`${item.id}.card_type is unsupported`);
+  if (item.public_safe !== undefined && typeof item.public_safe !== "boolean") throw new Error(`${item.id}.public_safe must be boolean`);
+  if (item.id !== LEGACY_PUBLIC_SAFE_CARD_ID && typeof item.public_safe !== "boolean") throw new Error(`${item.id} requires an explicit public_safe decision`);
   if (item.lifecycle === "blocked" && (!Array.isArray(item.blockers) || item.blockers.length === 0)) throw new Error(`${item.id} must retain its exact blocker`);
   const arrays = ["acceptance_criteria", "discoveries", "next_actions", "blockers", "dependencies", "evidence"];
-  for (const field of arrays) if (!Array.isArray(item[field])) throw new Error(`${item.id}.${field} must be an array`);
+  for (const field of arrays) {
+    if (!Array.isArray(item[field]) || item[field].some((value) => typeof value !== "string" || value.trim() === "")) {
+      throw new Error(`${item.id}.${field} must be an array of non-empty strings`);
+    }
+  }
+  if (item.lifecycle === "ready" && item.blockers.length > 0) throw new Error(`${item.id} cannot be ready with blockers`);
   if (new Set(item.dependencies).size !== item.dependencies.length || item.dependencies.includes(item.id)) throw new Error(`${item.id} has invalid dependencies`);
   if (item.acceptance_criteria.length === 0 || item.next_actions.length === 0) throw new Error(`${item.id} requires acceptance and next-action truth`);
   for (const evidence of item.evidence) if (!portablePath(evidence)) throw new Error(`${item.id} has a non-portable evidence path`);
@@ -111,7 +139,7 @@ function mapCard(item, repository) {
       updated_at: requireIsoTimestamp(item.updated_at, `${item.id}.updated_at`),
       source_ref: sourceRef,
       extensions: {
-        public_safe: true,
+        public_safe: item.public_safe ?? true,
         source_baseline_commit: "af6a2076712ce7517b1e021bf4841048f6f97085",
       },
     },
@@ -141,8 +169,11 @@ export function buildProjectBoardOwnerExport(source, bytes, identity = productId
   const adapterBytes = normalize(bytes.adapter);
   const identityBytes = normalize(bytes.identity);
   const sourceRevision = `sha256:${sha256(`${sourceBytes}\n--FAWXZZYWEB-OWNER-ADAPTER--\n${adapterBytes}\n--FAWXZZYWEB-PRODUCT-IDENTITY--\n${identityBytes}`)}`;
-  const cards = source.work_items.map((item) => mapCard(item, repository)).sort((left, right) => left.record.card_id.localeCompare(right.record.card_id));
-  if (cards.some((card) => /^(?:FF-|MZ-|DOS-|MUSIC-)/.test(card.record.card_id))) throw new Error("cross-owner card identity entered the FawxzzyWeb export");
+  const cards = source.work_items.map((item) => mapCard(item, repository, source.scope.included_lifecycles)).sort((left, right) => {
+    const a = left.record.card_id;
+    const b = right.record.card_id;
+    return a < b ? -1 : a > b ? 1 : 0;
+  });
   return {
     contract_version: "atlas.project-board.owner-export.v1",
     export_id: `pbe_trove_owner_${sourceRevision.slice(7, 19)}`,

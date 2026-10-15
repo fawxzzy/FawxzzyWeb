@@ -6,7 +6,9 @@ Repository ownership, repository naming, and repository-relative source paths de
 
 ## Current selection
 
-The export contains one current FawxzzyWeb-owned card: the source-proven `/projects` consumer and guarded publication lane. It remains blocked on the canonical Mazer owner export. The already-complete Fitness export is evidence, not duplicated Fitness work.
+The current source contains one FawxzzyWeb-owned card: the source-proven `/projects` consumer and guarded publication lane. It remains blocked on the canonical Mazer owner export. The already-complete Fitness export is evidence, not duplicated Fitness work.
+
+The producer can now validate and deterministically export additional `FW-` owner cards without changing the existing card's ID or content. A new card needs an explicit `public_safe` decision; omission is accepted only for the original `FW-PROJECTS-001` source record to preserve its existing export. A `false` decision stays in the owner export for governed intake; a `true` decision still needs the public projection owner's approval before website publication. Duplicate and cross-owner IDs fail closed. The existing `in-progress`, `planning`, and `blocked` lifecycle scope is retained; `ready`, `review`, and `completed` require an explicit source-scope update before use. Priority, lifecycle, source revision and source references stay attached to each exported card.
 
 The producer deliberately excludes:
 
@@ -36,4 +38,4 @@ The normal `npm run verify` includes the focused owner-export test and stale-out
 
 ## Boundary
 
-This is a repository-local source projection only. It does not write Discord, Supabase, any provider, a deployment, or production. DiscordOS remains retired provenance for the public project board, and the separate master-backed FawxzzyWeb read-model lane remains the only intended presentation path.
+This is a repository-local source projection only. It does not write Discord, Supabase, any provider, a deployment, or production. It does not implement or adopt the separate draft Platform private-operations event journal. A source export still needs the existing canonical writer's intake, conflict checks and a real result-return readback. DiscordOS remains retired provenance for the public project board, and the separate master-backed FawxzzyWeb read-model lane remains the only intended presentation path.
