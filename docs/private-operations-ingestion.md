@@ -13,6 +13,9 @@ six live callbacks: `assertPreflight`, `readPolicy`, `readControlState`, `admitR
 executable/lockfile hashes, policy pins, target, correlation and current ownership
 before credential access. It must independently admit the exact request digest,
 head generation, source trust receipt and expiry through the policy-admin role.
+`admitRequest` must return exactly `{status: 'admitted', correlation, requestDigest}`
+with the prepared request's identities. Missing, uncertain, mismatched or extra
+fields stop ingestion before the effect-boundary callback or storage execution.
 The policy-admin connection also reads control state; R002 does not grant that
 helper to the ingestor. The ingestion login cannot perform admission. Callback interfaces alone are
 not proof that the canonical scheduler is connected. Live host wiring, independent
@@ -23,6 +26,19 @@ pooler login is `platform_ops_ingest_login.bxtcuhkotumitoqtrcej`; it is not clai
 to exist. Structured connection settings require TLS certificate verification,
 an explicit CA, bounded timeouts and no privileged role memberships. Do not supply
 service-role credentials, connection strings or browser-accessible settings.
+
+`control-store.mjs` supplies the separate policy connection using only
+`platform_ops_policy_login.bxtcuhkotumitoqtrcej`, verified TLS and bounded timeouts.
+Every acquired client proves the exact login and policy-admin-only membership;
+every transitive membership outside that login and `platform_ops_policy_admin`
+is refused, including unrelated privileged PostgreSQL roles.
+`readState` returns closed control metadata. `admit` binds the prepared request
+hash, head/generation, revisions, trust digest and correlation to fixed parameterized
+SQL in one transaction. It offers no policy-installation or operator-grant method.
+The actual canonical gate must authorize that exact request before calling it.
+An unacknowledged admission COMMIT returns `unknown`; the host must stop and settle
+the admission separately, never retry it or start ingestion. The login and its
+credential are not provisioned by this source. Full host wiring remains separate.
 
 The trusted host pins the private Socials repository, numeric ID `1301080630`.
 Only its fixed `api.github.com` repository paths are fetched; public visibility

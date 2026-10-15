@@ -1,6 +1,6 @@
 import { prepareIngestion } from '../../src/server/operations/ingest.mjs';
 import { readTrustedSources } from '../../src/server/operations/source-reader.mjs';
-import { hash, reject } from '../../src/server/operations/runtime.mjs';
+import { fields, hash, reject } from '../../src/server/operations/runtime.mjs';
 
 /** Host-only entry point. No CLI, public handler, timer or default authority.
  * The existing ATLAS executor must supply its live canonical gate. A source
@@ -22,7 +22,10 @@ export async function ingestOnce({ gate, store, pins, correlation, tokenForRepos
     if (expected.registry_revision !== prepared.registryRevision || expected.redaction_revision !== prepared.redactionRevision) reject('POLICY_DRIFT');
     // A separate canonical policy writer installs the exact DB admission; the
     // ingestor connection has no operations_admit grant and cannot grant itself.
-    await gate.admitRequest({ ...scope, ...prepared });
+    const admission = await gate.admitRequest({ ...scope, ...prepared });
+    fields(admission, ['status', 'correlation', 'requestDigest']);
+    if (admission.status !== 'admitted' || admission.correlation !== prepared.correlation
+      || admission.requestDigest !== prepared.requestDigest) reject('ADMISSION_UNCONFIRMED');
     await gate.assertEffectBoundary({ ...scope, requestDigest: prepared.requestDigest, trustDigest: prepared.trustDigest,
       expectedGeneration: prepared.expectedGeneration, expectedHead: prepared.expectedHead });
     const current = await gate.readControlState();

@@ -5,6 +5,7 @@ import { hash, loadRuntime } from '../src/server/operations/runtime.mjs';
 import { readTrustedSources } from '../src/server/operations/source-reader.mjs';
 import { prepareIngestion, exactOrder } from '../src/server/operations/ingest.mjs';
 import { createOperationsStore, createTlsConnector } from '../src/server/operations/store.mjs';
+import { createOperationsControl, createPolicyTlsConnector } from '../src/server/operations/control-store.mjs';
 import { ingestOnce } from '../scripts/operations/ingest-once.mjs';
 import { computeCandidateOperationsDigest } from '../src/server/operations/platform-runtime/scripts/lib/development-operations-digest.mjs';
 
@@ -17,6 +18,82 @@ const nextCorrelation = '00000000-0000-4000-8000-000000000002';
 const expected = { generation: 1, revision: null, registry_revision: registry, redaction_revision: policyRevision };
 const empty = { status: 'ready', generation: 1, revision: null, health: 'reconciling', observations: [] };
 const clock = () => new Date(now);
+function controlDb(mode) {
+  const calls = []; let closed = 0; let connections = 0;
+  return { calls, get closed() { return closed; }, get connections() { return connections; },
+    connect: async () => { connections += 1; return {
+      query: async (sql, args) => {
+        calls.push({ sql, args });
+        if (sql.startsWith('SELECT current_user')) return { rows: [{ allowed: mode !== 'privileged' }] };
+        if (sql.includes('operations_control_state')) return { rows: [{ value: mode === 'malformed'
+          ? { generation: '0', secret: 'PRIVATE' } : { ...expected, correlation: null, health: 'reconciling' } }] };
+        if (mode === 'abort' && sql.includes('operations_admit')) throw new Error('PRIVATE_DATABASE_DETAIL');
+        if (mode === 'lost' && sql === 'COMMIT') throw new Error('PRIVATE_DATABASE_DETAIL');
+        return { rows: [{}] };
+      }, end: async () => { closed += 1; },
+    }; },
+  };
+}
+
+test('control connector accepts only fixed scoped TLS configuration', () => {
+  const config = { host: 'aws-1-region.pooler.supabase.com', port: 5432, database: 'postgres',
+    user: 'platform_ops_policy_login.bxtcuhkotumitoqtrcej', password: 'fixture', ca: 'fixture' };
+  assert.equal(typeof createPolicyTlsConnector(config), 'function');
+  for (const change of [{ user: 'postgres.bxtcuhkotumitoqtrcej' }, { ca: '' }, { host: 'attacker.invalid' },
+    { ssl: false }, { connectionString: 'postgres://fixture' }, { port: 1234 }, { database: 'other' }]) {
+    assert.throws(() => createPolicyTlsConnector({ ...config, ...change }));
+  }
+});
+test('control state uses policy-only role proof and closes the client', async () => {
+  const d = controlDb(); const result = await createOperationsControl(d.connect, clock).readState();
+  assert.equal(result.generation, 1); assert.equal(d.connections, 1); assert.equal(d.closed, 1);
+  assert.match(d.calls[0].sql, /platform_ops_policy_login/u);
+  assert.match(d.calls[0].sql, /p\.rolname NOT IN\s*\('platform_ops_policy_login','platform_ops_policy_admin'\)/u);
+});
+test('control state rejects privileged role without reading state', async () => {
+  const d = controlDb('privileged'); await assert.rejects(createOperationsControl(d.connect, clock).readState(), { message: 'OPS_CONTROL_ROLE' });
+  assert.equal(d.calls.length, 1); assert.equal(d.closed, 1);
+});
+test('control state rejects malformed or private database fields', async () => {
+  const d = controlDb('malformed'); await assert.rejects(createOperationsControl(d.connect, clock).readState(), { message: 'OPS_CONTROL_STATE' });
+  assert.equal(d.closed, 1);
+});
+test('control admission binds eight exact parameters in one transaction', async () => {
+  const d = controlDb(); const prepared = await prepare(); const expires = '2026-10-15T03:05:00.000Z';
+  const result = await createOperationsControl(d.connect, clock).admit(prepared, expires);
+  assert.equal(result.status, 'admitted'); assert.equal(d.connections, 1); assert.equal(d.closed, 1);
+  const query = d.calls.find((x) => x.sql.includes('operations_admit'));
+  assert.deepEqual(query.args, [prepared.correlation, prepared.requestDigest, prepared.expectedHead, prepared.expectedGeneration,
+    prepared.registryRevision, prepared.redactionRevision, prepared.trustDigest, expires]);
+  assert.equal(d.calls.filter((x) => x.sql === 'BEGIN').length, 1); assert.equal(d.calls.at(-1).sql, 'COMMIT');
+});
+test('control admission precommit failure rolls back and sanitizes', async () => {
+  const d = controlDb('abort'); await assert.rejects(createOperationsControl(d.connect, clock).admit(await prepare(), '2026-10-15T03:05:00.000Z'), { message: 'OPS_CONTROL_ADMISSION_ABORTED' });
+  assert.equal(d.calls.at(-1).sql, 'ROLLBACK'); assert.equal(d.closed, 1);
+});
+test('control admission lost COMMIT acknowledgement stays unknown without retry', async () => {
+  const d = controlDb('lost'); const result = await createOperationsControl(d.connect, clock).admit(await prepare(), '2026-10-15T03:05:00.000Z');
+  assert.equal(result.status, 'unknown'); assert.equal(d.connections, 1);
+  assert.equal(d.calls.filter((x) => x.sql === 'COMMIT').length, 1); assert.equal(d.calls.some((x) => x.sql === 'ROLLBACK'), false);
+});
+test('control admission rejects digest or body identity drift before connecting', async () => {
+  const d = controlDb(); const c = createOperationsControl(d.connect, clock); const prepared = await prepare();
+  await assert.rejects(c.admit({ ...prepared, requestDigest: hash('changed') }, '2026-10-15T03:05:00.000Z'), { message: 'OPS_CONTROL_REQUEST' });
+  await assert.rejects(c.admit({ ...prepared, correlation: nextCorrelation }, '2026-10-15T03:05:00.000Z'), { message: 'OPS_CONTROL_REQUEST' });
+  assert.equal(d.connections, 0);
+});
+test('control admission refuses noncanonical or expired expiry before connecting', async () => {
+  const d = controlDb(); const c = createOperationsControl(d.connect, clock); const prepared = await prepare();
+  for (const expires of ['2026-10-15T03:01:00.000Z', '2026-10-15T03:30:00.000Z', 'infinity', '2026-10-15T03:05:00Z']) {
+    await assert.rejects(c.admit(prepared, expires), { message: 'OPS_CONTROL_EXPIRY' });
+  }
+  assert.equal(d.connections, 0);
+});
+test('control admission rechecks expiry after connection latency', async () => {
+  const d = controlDb(); let reads = 0; const c = createOperationsControl(d.connect, () => new Date(reads++ ? '2026-10-15T03:06:00Z' : now));
+  await assert.rejects(c.admit(await prepare(), '2026-10-15T03:05:00.000Z'), { message: 'OPS_CONTROL_ADMISSION_ABORTED' });
+  assert.equal(d.calls.some((x) => x.sql.includes('operations_admit')), false); assert.equal(d.closed, 1);
+});
 function seal(payload, type) {
   const envelope = { schema_identity: `socials-os.development-${type}.v1.schema.json`, producer_identity: identity,
     source_revision: revision, mapping_version: mapping, payload };
@@ -235,7 +312,7 @@ function host(f, mutate = () => {}) {
   const steps = []; const state = structuredClone(expected); let effects = 0;
   const gate = { assertPreflight: async () => { steps.push('preflight'); },
     readPolicy: async ({ policyPins, signal }) => { steps.push('policy'); assert.deepEqual(policyPins, f.pins.policy); assert.equal(signal.aborted, false); return f.readPolicy({ pins: policyPins, signal }); }, readControlState: async () => ({ ...state }),
-    admitRequest: async (p) => { steps.push('admit'); assert.equal(hash(p.rawRequest), p.requestDigest); },
+    admitRequest: async (p) => { steps.push('admit'); assert.equal(hash(p.rawRequest), p.requestDigest); return { status: 'admitted', correlation: p.correlation, requestDigest: p.requestDigest }; },
     assertEffectBoundary: async () => { steps.push('effect'); }, recordTerminal: async (receipt) => { steps.push('receipt'); assert.equal(JSON.stringify(receipt).includes('PRIVATE_'), false); } };
   const store = { reconstruction: async () => empty,
     execute: async (p) => { effects += 1; return { status: 'settled', outcome: 'committed', correlation: p.correlation }; } };
@@ -256,6 +333,17 @@ test('head drift after admission stops before effect', async () => {
 test('failed admission does not execute', async () => {
   const h = host(fixture(), ({ gate }) => { gate.admitRequest = async () => { throw new Error('DENIED'); }; });
   assert.equal((await ingestOnce(h.args)).status, 'stopped'); assert.equal(h.effects(), 0);
+});
+for (const [label, result] of [
+  ['missing', () => undefined], ['null', () => null],
+  ['unknown commit', p => ({ status: 'unknown', correlation: p.correlation, requestDigest: p.requestDigest })],
+  ['wrong correlation', p => ({ status: 'admitted', correlation: nextCorrelation, requestDigest: p.requestDigest })],
+  ['wrong digest', p => ({ status: 'admitted', correlation: p.correlation, requestDigest: hash('other') })],
+  ['extra field', p => ({ status: 'admitted', correlation: p.correlation, requestDigest: p.requestDigest, ignored: true })],
+]) test(`unconfirmed ${label} admission stops before effect boundary`, async () => {
+  const h = host(fixture(), ({ gate }) => { gate.admitRequest = async p => result(p); });
+  assert.equal((await ingestOnce(h.args)).status, 'stopped'); assert.equal(h.effects(), 0);
+  assert.equal(h.steps.includes('effect'), false);
 });
 test('receipt failure preserves settled effect and never repeats it', async () => {
   const h = host(fixture(), ({ gate }) => { gate.recordTerminal = async () => { throw new Error('DISK'); }; });
