@@ -132,3 +132,15 @@ even though Node's Response constructor returns null. The rendered open/close
 cases cover both Chromium and WebKit; direct tests also reject nonempty,
 unexpectedly sized and stalled acknowledgments. See [Response body browser
 behavior](https://developer.mozilla.org/en-US/docs/Web/API/Response/body).
+
+The same rule applies to incoming session requests. A Vercel Web Handler can
+receive a zero-byte POST or DELETE as a non-null stream. After validating the
+exact origin, method and headers, the server proves EOF before reading
+configuration, authenticating or calling the database. Any payload byte,
+invalid framing, locked/consumed stream, abort, stream error, more than 16 empty
+chunks or one-second deadline denies the request. Cancellation is never awaited.
+Claimed `Content-Length: 0` alone cannot establish that the body is empty.
+Loopback HTTP cases exercise incoming Node streams converted to Web Requests,
+including empty POST/DELETE and nonempty or foreign-origin denial. Synthetic
+Request constructors alone are insufficient transport coverage. See the
+[Vercel Web Handler contract](https://vercel.com/docs/functions/functions-api-reference).
