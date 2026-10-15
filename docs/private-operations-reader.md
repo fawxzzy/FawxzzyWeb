@@ -80,3 +80,55 @@ The vendored `platform-runtime` subtree is hash-pinned to upstream bytes.
 Repository `.gitattributes` forces LF checkouts only in that subtree, including
 on Windows with `core.autocrlf=true`. Keep the pins intact; a line-ending mismatch
 is a checkout failure, not permission to recompute hashes.
+
+## Private account page
+
+`/operations` is a static, noindex account shell. It contains no private data at
+build time and adds no public navigation entry. The page only connects from the
+exact account origin, using the existing Auth adapter. Operator access still
+depends on the server and database checks; signing in alone does not grant it.
+The existing loopback-only `auth_test` adapter is used for local browser fixtures.
+Synthetic credentials are never sent to a live provider.
+
+Reuse the normal scrollable account shell for this content surface. The utility
+variant is intentionally a fixed-height sign-in screen and clips long content;
+do not change shared authentication layout rules to fit an operations overview.
+Browser cases verify full heading visibility and scroll reachability of cards.
+
+Open and close are explicit session operations. Refresh/Check access is a
+read-only reconciliation; nothing polls, retries an uncertain write, or reopens
+a session automatically. The request bearer exists only in its request closure,
+not in UI state, logs, page URLs or application storage. Browser-generated
+Origin/Fetch Metadata is used without header spoofing. Responses require bounded
+strict UTF-8 JSON and the same display validator used by the server.
+
+A healthy result is displayed as a timestamped observation for at most 60
+seconds. Its timer only erases it. Auth events (including same-user events),
+generation changes, page hiding, pagehide, unmount, failed refresh and nonhealthy
+results erase private cards. Returning to the page requires manual refresh.
+Cards render escaped text; evidence handles are opaque references, not links or
+actions. No workflow write controls or raw internal JSON are exposed.
+
+Every asynchronous operation captures the user, a nonnull durable Auth
+generation and a local event epoch. All three must still match at each await
+boundary and before publication. A module-level gate serializes every HTTP
+request across component remounts and identities: even a denied read can clear
+the HttpOnly cookie. A JavaScript epoch fence cannot prevent a late Set-Cookie.
+The gate therefore remains occupied until the actual transport settles, even
+after the 10-second UI deadline. An uncertain result disables session mutations
+until an explicit current-identity read reconciles it. Unsettled requests remain
+held; a timeout never claims cancellation or success. This gate is a UI safety
+measure; caller-bound SQL authorization remains the cross-subject boundary.
+
+The controller tests cover delayed responses, A-to-B-to-A changes, passive Auth
+events, null generation, remount, unknown acknowledgment, request/body timeout,
+bounded parsing and observation erasure. Chromium and mobile WebKit fixtures
+exercise the actual route with synthetic local requests. These fixtures do not
+prove deployed availability or genuine signed-in operator acceptance.
+
+Regression rule: validate a session's 204 acknowledgment by its zero byte body,
+not `response.body === null`. Browser Fetch can expose an empty stream for 204
+even though Node's Response constructor returns null. The rendered open/close
+cases cover both Chromium and WebKit; direct tests also reject nonempty,
+unexpectedly sized and stalled acknowledgments. See [Response body browser
+behavior](https://developer.mozilla.org/en-US/docs/Web/API/Response/body).
