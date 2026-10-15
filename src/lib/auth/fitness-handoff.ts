@@ -1,7 +1,7 @@
 import { accountContract, accountExperienceContexts } from "@/config/account";
 
 export type FitnessHandoffActivation = Readonly<{
-  fitnessConsumerMerges: readonly [string, string, string, string, string, string];
+  fitnessConsumerMerges: readonly [string, string, string, string, string, string, string];
   state: "active" | "inactive";
 }>;
 
@@ -20,6 +20,8 @@ export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
     "dbb63556d8b01b383dd61d326ce551635cb8b4d8",
     // Reviewed PR198-201 release; the portal must ship this binding first.
     "0467722373da14760779392d94a212e3f10aac92",
+    // Reviewed PR202 password-policy release; deploy this portal binding first.
+    "c086111c4ca3374c6f0c6d57f5e090b22cb57063",
   ],
   state: "active",
 } as const satisfies FitnessHandoffActivation);
@@ -39,8 +41,8 @@ export function fitnessHandoffRuntimeReady(
       && !candidate.username && !candidate.password
       && accountExperienceContexts.fitness.consumerIntegration === "active"
       && activation.state === "active"
-      && activation.fitnessConsumerMerges.length === 6
-      && new Set(activation.fitnessConsumerMerges).size === 6
+      && activation.fitnessConsumerMerges.length === 7
+      && new Set(activation.fitnessConsumerMerges).size === 7
       && activation.fitnessConsumerMerges.every((merge) => /^[0-9a-f]{40}$/.test(merge));
   } catch {
     return false;
