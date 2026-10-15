@@ -1,5 +1,5 @@
 import { authenticate, COOKIE, fail, handleDigest, newHandle, readHandle, cookie, clearCookie, MASTER } from './consumer-auth.mjs';
-import { createConsumerConnector, createConsumerStore } from './consumer-store.mjs';
+import { createConsumerStore } from './consumer-store.mjs';
 import { exactOrder } from './ordering.mjs';
 
 const ORIGIN = 'https://account.fawxzzy.com';
@@ -75,6 +75,7 @@ export function createConsumerHandler(dependencies) {
       const handle = readHandle(request);
       const deps = typeof dependencies === 'function' ? dependencies() : dependencies;
       const identity = await (deps.authenticate ?? authenticate)(request, deps.auth, deps.authOptions);
+      const store = deps.store ?? createConsumerStore(deps.auth, request.headers.get('authorization'), deps.storeOptions);
       if (route === 'session' && request.method === 'POST') {
         // One current session per browser cookie. Explicitly close before reopen.
         if (handle) return response(409, { error: 'OPS_SESSION_EXISTS' });
@@ -82,16 +83,16 @@ export function createConsumerHandler(dependencies) {
         const age = identity.expires - now;
         if (!Number.isSafeInteger(age) || age < 1 || age > 900) fail('OPS_ACCESS_DENIED');
         mutation = true;
-        await deps.store.open(handleDigest(raw, identity), identity);
+        await store.open(handleDigest(raw, identity), identity);
         return response(204, null, { 'Set-Cookie': cookie(raw, age) });
       }
       if (!handle) fail('OPS_ACCESS_DENIED');
       const digest = handleDigest(handle, identity);
       if (route === 'session') {
-        mutation = true; await deps.store.close(digest);
+        mutation = true; await store.close(digest);
         return response(204, null, { 'Set-Cookie': clearCookie() });
       }
-      return response(200, validateView(await deps.store.read(digest)));
+      return response(200, validateView(await store.read(digest)));
     } catch (error) {
       const code = ['OPS_ACCESS_DENIED', 'OPS_REQUEST_DENIED'].includes(error?.code) ? error.code : 'OPS_UNAVAILABLE';
       return response(code === 'OPS_UNAVAILABLE' ? 503 : 403, { error: code },
@@ -101,18 +102,10 @@ export function createConsumerHandler(dependencies) {
 }
 
 function environmentDependencies() {
-  // Explicitly off by default. These new scoped credentials are not provisioned
-  // by publishing this source. No existing intake/provider capsules are read.
+  // Explicitly off by default. RPC installation, exposure, operator grant and
+  // deployment are separate acceptance steps. Only a publishable key is used.
   if (process.env.OPERATIONS_READER_ENABLED !== 'true') fail('OPS_UNAVAILABLE');
-  const settings = (kind) => {
-    const name = kind.toUpperCase();
-    return { host: process.env[`OPERATIONS_${name}_DB_HOST`], port: Number(process.env[`OPERATIONS_${name}_DB_PORT`]),
-      database: 'postgres', user: process.env[`OPERATIONS_${name}_DB_USER`], password: process.env[`OPERATIONS_${name}_DB_PASSWORD`],
-      ca: process.env[`OPERATIONS_${name}_DB_CA`] };
-  };
-  return { auth: { url: MASTER, publishableKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY },
-    store: createConsumerStore({ reader: createConsumerConnector('reader', settings('reader')),
-      session: createConsumerConnector('session', settings('session')) }) };
+  return { auth: { url: MASTER, publishableKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY } };
 }
 export const operationsHandler = createConsumerHandler(environmentDependencies);
 export { COOKIE };

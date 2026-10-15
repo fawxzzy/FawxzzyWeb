@@ -1,18 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
-import { EventEmitter } from 'node:events';
-import { PassThrough } from 'node:stream';
 import { readFile } from 'node:fs/promises';
 import { authenticate, MASTER, COOKIE, handleDigest, newHandle, readHandle, boundedAuthJson } from '../src/server/operations/consumer-auth.mjs';
 import { createConsumerHandler, validateView, operationsHandler } from '../src/server/operations/consumer-http.mjs';
-import { createConsumerConnector, createConsumerStore, installProtocolCap, AUDIT_SQL, READ_SQL } from '../src/server/operations/consumer-store.mjs';
+import { createConsumerStore, boundedRpcJson, INPUT_LIMIT } from '../src/server/operations/consumer-store.mjs';
 
-const require = createRequire(import.meta.url);
-const Connection = require('pg/lib/connection.js');
 const now = 1800000000000;
 const identity = { subject: '11111111-1111-4111-8111-111111111111', session: '22222222-2222-4222-8222-222222222222', expires: now / 1000 + 900 };
-const claims = { sub: identity.subject, session_id: identity.session, iss: `${MASTER}/auth/v1`, aud: 'authenticated', role: 'authenticated', exp: identity.expires };
+const claims = { sub: identity.subject, session_id: identity.session, iss: `${MASTER}/auth/v1`, aud: 'authenticated', role: 'authenticated', is_anonymous: false, exp: identity.expires };
 const config = { url: MASTER, publishableKey: `sb_publishable_${'a'.repeat(24)}` };
 const jwt = (c = claims) => `eyJhbGciOiJFUzI1NiJ9.${Buffer.from(JSON.stringify(c)).toString('base64url')}.c2lnbmF0dXJl`;
 const token = jwt();
@@ -138,54 +133,89 @@ for (const [name, edit] of Object.entries({ extra: (v) => { v.secret = 'private'
   test(`display rejects ${name}`, () => { const v = clone(view); edit(v); assert.throws(() => validateView(v), /OPS_UNAVAILABLE/u); });
 }
 
-test('pinned pg TLS upgrade installs parser then guarded instance stream, accepting only bounded protocol', () => {
-  const connection = new Connection({ ssl: true }); connection.on('error', () => {});
-  const client = { connection }; const check = installProtocolCap(client, 6); let messages = 0;
-  connection.on('readyForQuery', () => { messages++; });
-  connection.upgradeToSSL('localhost', () => {}); check();
-  assert.equal(connection.stream.encrypted, true);
-  const ready = Buffer.from([90, 0, 0, 0, 5, 73]);
-  connection.stream.emit('data', ready); assert.equal(messages, 1);
-  connection.stream.emit('data', ready); assert.equal(messages, 1); assert.equal(connection.stream.destroyed, true);
+const digest = `sha256:${'a'.repeat(64)}`;
+test('three fixed RPCs forward only the Auth-validated bearer and public key', async () => {
+  const calls = [];
+  const store = createConsumerStore(config, `Bearer ${token}`, { fetchImpl: async (url, init) => {
+    calls.push([url, init]); return Response.json(url.endsWith('/read') ? view : { status: url.endsWith('/open_session') ? 'opened' : 'closed' });
+  } });
+  await store.open(digest, identity); assert.deepEqual(await store.read(digest), view); await store.close(digest);
+  assert.deepEqual(calls.map(([url]) => url), ['open_session', 'read', 'close_session'].map((name) => `${MASTER}/rest/v1/rpc/${name}`));
+  assert.deepEqual(JSON.parse(calls[0][1].body), { handle_digest: digest, expires_at: new Date(identity.expires * 1000).toISOString() });
+  for (const [, init] of calls) {
+    assert.equal(init.method, 'POST'); assert.equal(init.redirect, 'error'); assert.equal(init.cache, 'no-store'); assert.ok(init.signal);
+    assert.deepEqual(init.headers, { apikey: config.publishableKey, Authorization: `Bearer ${token}`,
+      'Content-Profile': 'operations_api', 'Content-Type': 'application/json', Accept: 'application/json' });
+    assert.ok(!init.body.includes(identity.subject)); assert.ok(!init.body.includes(identity.session));
+  }
+  assert.deepEqual(JSON.parse(calls[1][1].body), { handle_digest: digest });
+  assert.deepEqual(JSON.parse(calls[2][1].body), { handle_digest: digest });
 });
-for (const chunks of [[7], [3, 4]]) {
-  test(`one chunk/cumulative cap rejects before parser ${chunks}`, () => {
-    const stream = new PassThrough(); stream.encrypted = true; stream.on('error', () => {});
-    const connection = new EventEmitter(); connection.stream = stream; let bytes = 0; stream.on('data', (x) => { bytes += x.length; });
-    const check = installProtocolCap({ connection }, 6); connection.emit('sslconnect'); check();
-    for (const n of chunks) stream.emit('data', Buffer.alloc(n));
-    assert.equal(bytes, chunks.length === 1 ? 0 : 3); assert.equal(stream.destroyed, true);
+test('handler validates Auth before constructing the per-request transport', async () => {
+  const calls = []; const deps = { auth: config, now: () => now,
+    authOptions: { now: () => now, fetchImpl: async (_, init) => { calls.push(['auth', init.headers.Authorization]); return provider(); } },
+    storeOptions: { fetchImpl: async (_, init) => { calls.push(['rpc', init.headers.Authorization]); return Response.json({ status: 'opened' }); } } };
+  const handler = createConsumerHandler(deps);
+  assert.equal((await handler(request('session', 'POST'), 'session')).status, 204);
+  assert.deepEqual(calls, [['auth', `Bearer ${token}`], ['rpc', `Bearer ${token}`]]);
+  calls.length = 0; deps.authOptions.fetchImpl = async () => new Response(null, { status: 401 });
+  assert.equal((await handler(request('session', 'POST'), 'session')).status, 403); assert.equal(calls.length, 0);
+});
+test('transport rejects legacy URLs, arbitrary profile, secret keys and malformed bearer before network', () => {
+  for (const cfg of [{ ...config, url: 'https://legacy.supabase.co' }, { ...config, schema: 'public' },
+    { ...config, publishableKey: 'sb_secret_fixture' }, { ...config, password: 'fixture' }]) {
+    assert.throws(() => createConsumerStore(cfg, `Bearer ${token}`), /OPS_UNAVAILABLE/u);
+  }
+  for (const bearer of ['', token, 'Bearer a.b', `Bearer ${'a'.repeat(8192)}.b.c`]) assert.throws(() => createConsumerStore(config, bearer), /OPS_UNAVAILABLE/u);
+  assert.throws(() => createConsumerStore(config, `Bearer ${token}`, { timeoutMs: 3001 }), /OPS_UNAVAILABLE/u);
+});
+test('invalid digests and expiry never invoke RPC', async () => {
+  let calls = 0; const store = createConsumerStore(config, `Bearer ${token}`, { fetchImpl: async () => { calls++; return Response.json({}); } });
+  for (const value of [null, 'sha256:a', `sha256:${'A'.repeat(64)}`]) for (const op of ['read', 'close', 'open']) await assert.rejects(store[op](value, identity), /OPS_ACCESS_DENIED/u);
+  for (const expires of [null, Infinity, 1.5, 253402300800]) await assert.rejects(store.open(digest, { ...identity, expires }), /OPS_ACCESS_DENIED/u);
+  assert.equal(calls, 0);
+});
+for (const [name, result] of Object.entries({ null: null, empty: {}, array: [], extra: { status: 'opened', private: 'secret' }, wrong: { status: 'closed' } })) {
+  test(`malformed open acknowledgment ${name} is unknown and never retried`, async () => {
+    let calls = 0; const store = createConsumerStore(config, `Bearer ${token}`, { fetchImpl: async () => { calls++; return Response.json(result); } });
+    await assert.rejects(store.open(digest, identity), /^Error: OPS_UNAVAILABLE$/u); assert.equal(calls, 1);
   });
 }
-test('hook drift fails closed and does not patch stream prototypes', () => {
-  const prototype = PassThrough.prototype.emit; const stream = new PassThrough(); stream.encrypted = true; stream.on('error', () => {});
-  const connection = new EventEmitter(); connection.stream = stream;
-  const check = installProtocolCap({ connection }); connection.emit('sslconnect');
-  assert.throws(check, /OPS_DATABASE_HOOK/u); assert.equal(stream.destroyed, true); assert.equal(PassThrough.prototype.emit, prototype);
+test('lost/denied/failed RPC responses use finite codes and single attempts', async () => {
+  for (const status of [202, 204, 301, 401, 403, 429, 500]) {
+    let calls = 0; const store = createConsumerStore(config, `Bearer ${token}`, { fetchImpl: async () => { calls++; return new Response(null, { status }); } });
+    await assert.rejects(store.close(digest), status === 401 || status === 403 ? /OPS_ACCESS_DENIED/u : /OPS_UNAVAILABLE/u); assert.equal(calls, 1);
+  }
+  for (const error of ['OPS_ACCESS_DENIED', 'OPS_UNAVAILABLE', 'PRIVATE_PROVIDER_ERROR']) {
+    const store = createConsumerStore(config, `Bearer ${token}`, { fetchImpl: async () => Response.json({ error }) });
+    await assert.rejects(store.open(digest, identity), error === 'OPS_ACCESS_DENIED' ? /OPS_ACCESS_DENIED/u : /^Error: OPS_UNAVAILABLE$/u);
+  }
+  let calls = 0; const store = createConsumerStore(config, `Bearer ${token}`, { fetchImpl: async () => { calls++; throw new Error('PRIVATE_RESPONSE'); } });
+  await assert.rejects(store.close(digest), /^Error: OPS_UNAVAILABLE$/u); assert.equal(calls, 1);
 });
-test('structured scoped config excludes admin/legacy credentials and SSL overrides', () => {
-  const cfg = { host: 'aws-0-us-east-1.pooler.supabase.com', port: 5432, database: 'postgres',
-    user: 'platform_ops_reader_login.bxtcuhkotumitoqtrcej', password: 'synthetic', ca: '-----BEGIN CERTIFICATE-----\nfixture' };
-  assert.equal(typeof createConsumerConnector('reader', cfg), 'function');
-  for (const bad of [{ ...cfg, user: 'postgres.bxtcuhkotumitoqtrcej' }, { ...cfg, ssl: false }, { ...cfg, host: 'evil.invalid' }, { ...cfg, user: 'platform_ops_reader_login.legacy' }]) {
-    assert.throws(() => createConsumerConnector('reader', bad), /OPS_DATABASE_CONFIG/u);
+test('RPC enforces streamed size, content type, encoding and claimed length before JSON acceptance', async () => {
+  for (const response of [new Response('x'.repeat(INPUT_LIMIT + 1), { headers: { 'Content-Type': 'application/json' } }),
+    new Response('{}', { headers: { 'Content-Type': 'text/html' } }),
+    new Response('{}', { headers: { 'Content-Type': 'application/json', 'Content-Length': String(INPUT_LIMIT + 1) } }),
+    new Response('{}', { headers: { 'Content-Type': 'application/json', 'Content-Length': 'invalid' } }),
+    new Response(new Uint8Array([123, 34, 120, 34, 58, 34, 255, 34, 125]), { headers: { 'Content-Type': 'application/json' } }),
+    new Response('{', { headers: { 'Content-Type': 'application/json' } })]) {
+    await assert.rejects(boundedRpcJson(response, new AbortController().signal), /^Error: OPS_UNAVAILABLE$/u);
+  }
+  const stream = new ReadableStream({ start(controller) { controller.enqueue(new Uint8Array(INPUT_LIMIT)); controller.enqueue(new Uint8Array(1)); controller.close(); } });
+  await assert.rejects(boundedRpcJson(new Response(stream, { headers: { 'Content-Type': 'application/json' } }), new AbortController().signal), /OPS_UNAVAILABLE/u);
+});
+test('RPC deadline covers nonsettling fetch, stream and cancellation', async () => {
+  for (const fetchImpl of [() => new Promise(() => {}), async () => new Response(new ReadableStream({ pull() { return new Promise(() => {}); }, cancel() { return new Promise(() => {}); } }), { headers: { 'Content-Type': 'application/json' } })]) {
+    const store = createConsumerStore(config, `Bearer ${token}`, { fetchImpl, timeoutMs: 15 });
+    await assert.rejects(store.open(digest, identity), /OPS_UNAVAILABLE/u);
   }
 });
-test('exact read wrapper invokes once; audit covers effective PUBLIC/inherited privileges', () => {
-  assert.equal((READ_SQL.match(/operations_read\(/gu) ?? []).length, 1); assert.match(READ_SQL, /WITH result AS MATERIALIZED/u);
-  assert.match(READ_SQL, /jsonb_build_object\('error','OPS_UNAVAILABLE'\)/u);
-  for (const invariant of ['current_user=$1', 'session_user=$1', 'rolbypassrls', 'rolcreaterole', 'pg_has_role', 'has_function_privilege', 'has_table_privilege', 'has_any_column_privilege', 'has_sequence_privilege']) assert.ok(AUDIT_SQL.includes(invariant));
-});
-test('failed audit forbids operation; failed mutation is single attempt with finite error', async () => {
-  for (const allowed of [false, null, true]) {
-    const calls = []; let destroyed = 0;
-    const c = { connection: { stream: { destroy() { destroyed++; } } }, end: async () => {},
-      async query(sql, args) { calls.push([sql, args]); if (sql === AUDIT_SQL) return { rows: [{ allowed }] }; throw new Error('PRIVATE_DATABASE_ERROR'); } };
-    const store = createConsumerStore({ session: async () => c });
-    await assert.rejects(store.open(`sha256:${'a'.repeat(64)}`, identity), /^Error: OPS_UNAVAILABLE$/u);
-    assert.equal(calls.length, allowed ? 2 : 1); assert.equal(destroyed, 1);
-    assert.deepEqual(calls[0][1].slice(0, 2), ['platform_ops_session_login', 'platform_ops_session_issuer']);
-  }
+test('RPC read cannot bypass closed display validation', async () => {
+  const handler = createConsumerHandler({ auth: config, authOptions,
+    storeOptions: { fetchImpl: async () => Response.json({ ...view, private: 'secret' }) } });
+  const res = await handler(request('read', 'GET', { headers: { Cookie: `${COOKIE}=${newHandle()}` } }), 'read');
+  assert.equal(res.status, 503); assert.deepEqual(await res.json(), { error: 'OPS_UNAVAILABLE' });
 });
 test('route adapters preserve standalone deployment contract and expose only intended verbs', async () => {
   const session = await readFile(new URL('../api/operations/session.ts', import.meta.url), 'utf8');
