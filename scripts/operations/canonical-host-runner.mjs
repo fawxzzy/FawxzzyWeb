@@ -7,8 +7,22 @@ import { fields, hash, reject } from '../../src/server/operations/runtime.mjs';
 import { parseCandidateOperationsJson as parse } from '../../src/server/operations/platform-runtime/scripts/lib/development-operations-json.mjs';
 
 const limit = 1048576;
+const responseLimit = 16 * limit;
 const preparedKeys = ['rawRequest', 'requestDigest', 'trustDigest', 'correlation', 'expectedGeneration', 'expectedHead',
   'registryRevision', 'redactionRevision', 'health', 'projectionRevision'];
+
+function parseFrame(bytes) {
+  if (bytes.length <= limit) return parse(bytes);
+  // Reconstruction wraps many individually bounded raw-request strings. The
+  // candidate document parser deliberately caps one document at 1 MiB. Larger
+  // parent frames must be exact compact JSON: roundtrip rejects duplicate keys,
+  // lossy numbers, alternate escaping and noncanonical object order. Nested
+  // raw requests are still checked by the original candidate parser downstream.
+  const text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
+  const value = JSON.parse(text);
+  if (JSON.stringify(value) !== text) reject('HOST_FRAME_CANONICAL');
+  return value;
+}
 
 /** Bounded one-response-at-a-time pipe. Neither paths nor methods are executable. */
 export function createPipe(input, output) {
@@ -17,13 +31,13 @@ export function createPipe(input, output) {
   function data(chunk) {
     if (failure || ended) return;
     buffer = Buffer.concat([buffer, chunk]);
-    if (buffer.length > limit) { fail(); return; }
+    if (buffer.length > responseLimit) { fail(); return; }
     const cut = buffer.indexOf(10);
     if (cut < 0) return;
     // Parent sends the next frame only after a child request. Pipelining is invalid.
     if (cut !== buffer.length - 1 || saved) { fail(); return; }
     try {
-      const value = parse(buffer.subarray(0, cut)); buffer = Buffer.alloc(0);
+      const value = parseFrame(buffer.subarray(0, cut)); buffer = Buffer.alloc(0);
       if (pending) { const waiter = pending; pending = undefined; waiter.resolve(value); }
       else saved = value;
     } catch { fail(); }
@@ -39,7 +53,7 @@ export function createPipe(input, output) {
   return {
     read,
     async request(method, value) {
-      if (++id > 6) reject('HOST_REQUEST_LIMIT');
+      if (++id > 9) reject('HOST_REQUEST_LIMIT');
       const raw = `${JSON.stringify({ id, method, value })}\n`;
       if (Buffer.byteLength(raw) > 8 * limit) reject('HOST_REQUEST_SIZE');
       const response = read();
@@ -59,7 +73,9 @@ export function createPipe(input, output) {
 export async function runHost(pipe, { controlFactory = (c) => createOperationsControl(createPolicyTlsConnector(c)),
   storeFactory = (c) => createOperationsStore(createTlsConnector(c)), ingest = ingestOnce, clock = () => new Date() } = {}) {
   const init = await pipe.read();
-  fields(init, ['protocol', 'pins', 'correlation', 'expiresAt']);
+  const provider = Object.hasOwn(init, 'transportMode');
+  fields(init, ['protocol', 'pins', 'correlation', 'expiresAt', ...(provider ? ['transportMode'] : [])]);
+  if (provider && init.transportMode !== 'existing-master-broker-v1') reject('HOST_MODE');
   if (init.protocol !== 'atlas-private-operations-host-v1'
     || typeof init.correlation !== 'string' || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/u.test(init.correlation)
     || typeof init.expiresAt !== 'string' || !Number.isFinite(Date.parse(init.expiresAt))) reject('HOST_INIT');
@@ -71,15 +87,16 @@ export async function runHost(pipe, { controlFactory = (c) => createOperationsCo
     async assertPreflight(value) {
       time(); if (phase !== 'new' || JSON.stringify(value) !== JSON.stringify(scope)) reject('HOST_SEQUENCE');
       const credentials = await pipe.request('preflight', value);
-      fields(credentials, ['control', 'ingest', 'githubToken']);
+      fields(credentials, provider ? ['githubToken'] : ['control', 'ingest', 'githubToken']);
       if (typeof credentials.githubToken !== 'string' || !credentials.githubToken || /[\r\n]/u.test(credentials.githubToken)) reject('HOST_CREDENTIALS');
-      control = controlFactory(credentials.control); store = storeFactory(credentials.ingest); token = credentials.githubToken;
+      if (!provider) { control = controlFactory(credentials.control); store = storeFactory(credentials.ingest); }
+      token = credentials.githubToken;
       phase = 'started';
     },
     async readControlState() {
       time(); reads += 1;
       if (!(reads === 1 && phase === 'started' || reads === 2 && phase === 'effect')) reject('HOST_SEQUENCE');
-      return control.readState();
+      return provider ? pipe.request('state', scope) : control.readState();
     },
     async readPolicy({ signal, ...value }) {
       time(); if (phase !== 'started' || signal?.aborted) reject('HOST_SEQUENCE');
@@ -93,10 +110,10 @@ export async function runHost(pipe, { controlFactory = (c) => createOperationsCo
     async admitRequest(value) {
       time(); if (phase !== 'policy') reject('HOST_SEQUENCE');
       const permit = await pipe.request('admit', value);
-      fields(permit, ['requestDigest', 'expiresAt']);
+      fields(permit, ['requestDigest', 'expiresAt', ...(provider ? ['admission'] : [])]);
       if (permit.requestDigest !== value.requestDigest || new Date(permit.expiresAt).toISOString() !== expiresAt) reject('HOST_PERMIT');
       time(); phase = 'admitted';
-      return control.admit(Object.fromEntries(preparedKeys.map((key) => [key, value[key]])), expiresAt);
+      return provider ? permit.admission : control.admit(Object.fromEntries(preparedKeys.map((key) => [key, value[key]])), expiresAt);
     },
     async assertEffectBoundary(value) {
       time(); if (phase !== 'admitted') reject('HOST_SEQUENCE');
@@ -113,11 +130,13 @@ export async function runHost(pipe, { controlFactory = (c) => createOperationsCo
   const boundedStore = {
     async reconstruction(generation) {
       time(); if (phase !== 'started' || reconstruction || reads !== 1) reject('HOST_SEQUENCE');
-      reconstruction = true; return store.reconstruction(generation);
+      reconstruction = true;
+      return provider ? pipe.request('reconstruction', { ...scope, generation }) : store.reconstruction(generation);
     },
     async execute(prepared) {
       time(); if (phase !== 'effect' || executed || reads !== 2) reject('HOST_SEQUENCE');
-      executed = true; return store.execute(prepared);
+      executed = true;
+      return provider ? pipe.request('ingest', { ...scope, requestDigest: prepared.requestDigest }) : store.execute(prepared);
     },
   };
   try {

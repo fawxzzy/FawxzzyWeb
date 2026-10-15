@@ -152,3 +152,21 @@ Failure mode: accepting producer-supplied redaction or discarding prior conflict
 history can turn valid-looking hashes into a false healthy projection. The fixed
 private-producer/independent-policy intake and full-history tests are the prevention contract. Keep
 these rules in this runbook and its tests when adding another producer.
+# Optional existing-identity host broker
+
+The canonical host may seal `existing-master-broker-v1` in its native plan. In
+this mode the runner receives only the GitHub token and private policy; every
+database operation returns through the parent. No database password reaches the
+source-reader process. The mode has no public route or CLI/environment override.
+The existing direct connector remains unchanged.
+
+The nine ordered exchanges are preflight, state, reconstruction, policy, admit,
+effect, state, ingest, terminal. The parent owns the finite broker, native checks,
+source pins, exclusive attempt and scheduler lock. Intake retains a 1 MiB request
+limit; reconstruction responses may use up to 16 MiB of escaped JSON.
+
+This mode reuses an existing privileged operator identity; it does not establish
+database-level least privilege or provide unattended credentials. Policy
+activation is a separate named operation, completed and reconciled before intake
+reads its starting generation. This runner cannot activate policy. Source proof
+does not establish live intake, restart or private-operator acceptance.

@@ -88,13 +88,54 @@ test('pipe parses split frame and matches response identity', async () => {
   } finally { pipe.close(); }
 });
 test('pipe rejects duplicate keys, multiple frames, invalid UTF8 and oversize', async () => {
-  for (const raw of [Buffer.from('{"a":1,"a":2}\n'), Buffer.from('{}\n{}\n'), Buffer.from([255, 10]), Buffer.alloc(1048577, 65)]) {
+  for (const raw of [Buffer.from('{"a":1,"a":2}\n'), Buffer.from('{}\n{}\n'), Buffer.from([255, 10]), Buffer.alloc(16 * 1048576 + 1, 65)]) {
     const input = new PassThrough(); const pipe = createPipe(input, new PassThrough());
     try { const pending = pipe.read(); input.write(raw); await assert.rejects(pending); } finally { pipe.close(); }
   }
+});
+
+test('provider mode routes all database operations through the parent without DB credentials', async () => {
+  const f = fixture(); f.config.transportMode = 'existing-master-broker-v1';
+  const request = f.pipe.request;
+  f.pipe.request = async (method, value) => {
+    if (['preflight', 'state', 'reconstruction', 'admit', 'ingest'].includes(method)) {
+      f.messages.push({ method, value });
+      if (method === 'preflight') return { githubToken: 'FIXTURE_SECRET' };
+      if (method === 'state') return { generation: 1 };
+      if (method === 'reconstruction') return {};
+      if (method === 'admit') return { requestDigest: prepared.requestDigest, expiresAt: f.config.expiresAt,
+        admission: { status: 'admitted', correlation, requestDigest: prepared.requestDigest } };
+      return { status: 'settled', outcome: 'committed', correlation };
+    }
+    return request(method, value);
+  };
+  f.options.controlFactory = () => { throw new Error('DB credentials reached child'); };
+  f.options.storeFactory = () => { throw new Error('DB credentials reached child'); };
+  assert.equal((await runHost(f.pipe, f.options)).status, 'settled');
+  assert.deepEqual(f.messages.map((x) => x.method), ['preflight', 'state', 'reconstruction', 'policy', 'admit', 'effect', 'state', 'ingest', 'terminal']);
+  assert.equal(f.calls.length, 0);
+});
+test('provider mode refuses credential expansion and unknown transport', async () => {
+  const f = fixture(); f.config.transportMode = 'existing-master-broker-v1';
+  await assert.rejects(runHost(f.pipe, f.options)); assert.equal(f.calls.length, 0);
+  const bad = fixture(); bad.config.transportMode = 'arbitrary';
+  await assert.rejects(runHost(bad.pipe, bad.options)); assert.equal(bad.messages.length, 0);
 });
 test('pipe rejects mismatched acknowledgement and EOF', async () => {
   const input = new PassThrough(); const pipe = createPipe(input, new PassThrough());
   try { const pending = pipe.request('x', {}); input.write('{"id":2,"ok":true,"value":{}}\n'); await assert.rejects(pending);
     const next = pipe.read(); input.end(); await assert.rejects(next); } finally { pipe.close(); }
+});
+
+test('bounded reconstruction envelope exceeds one document without weakening duplicate rejection', async () => {
+  for (const duplicate of [false, true]) {
+    const input = new PassThrough(); const pipe = createPipe(input, new PassThrough());
+    try {
+      const value = { body: 'x'.repeat(2 * 1048576), id: 1 };
+      const raw = JSON.stringify(value).slice(0, -1) + (duplicate ? ',"id":2}' : '}');
+      const pending = pipe.read(); input.write(`${raw}\n`);
+      if (duplicate) await assert.rejects(pending);
+      else assert.deepEqual(await pending, value);
+    } finally { pipe.close(); }
+  }
 });
