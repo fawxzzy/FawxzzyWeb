@@ -1,0 +1,20 @@
+{
+  "repository": "fawxzzy/fawxzzy-platform",
+  "numeric_id": 1304203342,
+  "commit": "c60bb451eba9c08f0b3435faadb93ef5da5e0d36",
+  "files": {
+    "scripts/lib/development-operations-projection.mjs": "60b791343c5ea0afdf1e5e1b274056e85a5ecc21bd7aac71b1078964acbd408a",
+    "scripts/lib/development-operations-json.mjs": "35916e198ef0239db47f4829b91c195feea00ed246b4183d8e0228b44810fd51",
+    "scripts/lib/development-operations-journal.mjs": "482311972edf1e12b4504bbfb90c2364e83ccf6f1953edce98e68157e1e73004",
+    "scripts/lib/development-operations-integrity.mjs": "dfea0b22c2a76726ac7ad4c438ea190a364a706226cf7949253fe45e8e388b7a",
+    "scripts/lib/development-operations-digest.mjs": "ce0190b28cb01e98ab2c6ae07988bd35149a8fcb2b0bd0cd10723c41f8125f37",
+    "scripts/lib/development-operations-contribution.mjs": "81b038b69e2a8667db44eccb6e7d165bc4a91cafc940272a20816a4ec5fe2d73",
+    "contracts/v1/operations/source-schemas/development-card.v1.schema.json": "2b1f0e69cc5fce7ab484b01ae215317c4cff3a5c7466e149b1c9ca13fb3ae6f8",
+    "contracts/v1/operations/source-schemas/development-board.v1.schema.json": "d3d090a5ea4da52f17f10b048d81d1397676ff98e29ef6a6c1ffc557a5e8eb28",
+    "contracts/v1/operations/source-schemas/development-event.v1.schema.json": "ef2f6cf081bcbbb1098482add1cd1e3b7ebc62a34e698be6cf8e14b018d4f41e",
+    "contracts/v1/operations/source-schemas/development-board.v2.schema.json": "3e2dc041aa726196adc0eb482f29ea00c246b2df4501892efa0de11266ed2aed",
+    "contracts/v1/operations/source-schemas/development-event.v2.schema.json": "8f82f40ce944f570b3fcdacb3c4a9e3a866b4e5905f7f4fa7e57e4936b4cfe40"
+  },
+  "package_json_sha256": "b44852845e7b30ca3a548f372a51fd7a33c5729dcbbedadb6d555e7a86cdb365",
+  "package_lock_sha256": "acc85e01b1d80fd22f4e239fd3a9d917c921e15683a77ffd54df4fc5c4930c40"
+}

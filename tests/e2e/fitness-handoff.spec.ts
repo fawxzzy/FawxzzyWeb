@@ -19,8 +19,10 @@ const productionFitnessMerge = "dbbe305fc511633166c1a65396fdf9ef6a1c79f1";
 const reviewedFitnessMerge = "389d4d21aa79725ba6cd716dcc84d7aa917ada3e";
 const retainedRollbackFitnessMerge = "5a9ba02e2b950285342fb189d680564ce5cdc489";
 const usernameReleaseFitnessMerge = "dbb63556d8b01b383dd61d326ce551635cb8b4d8";
+const legacyRetirementFitnessMerge = "0467722373da14760779392d94a212e3f10aac92";
+const passwordPolicyFitnessMerge = "c086111c4ca3374c6f0c6d57f5e090b22cb57063";
 const acceptedFitnessMerges = [priorFitnessMerge, productionFitnessMerge, reviewedFitnessMerge,
-  retainedRollbackFitnessMerge, usernameReleaseFitnessMerge] as const;
+  retainedRollbackFitnessMerge, usernameReleaseFitnessMerge, legacyRetirementFitnessMerge, passwordPolicyFitnessMerge] as const;
 const legacyFitnessMerge = "f87f2dc7e0cc3cbead0eb3ea5ed7b9c592fdfa94";
 const pair = { accessToken: "synthetic-access", refreshToken: "synthetic-refresh" };
 const rotatedPair = { accessToken: "rotated-access", refreshToken: "rotated-refresh" };
@@ -28,7 +30,7 @@ const readiness = {
   authProjectRef: FITNESS_HANDOFF_MASTER_PROJECT_REF,
   contractVersion: FITNESS_HANDOFF_READINESS_CONTRACT_VERSION,
   handoffStore: "available",
-  sourceCommit: usernameReleaseFitnessMerge,
+  sourceCommit: passwordPolicyFitnessMerge,
 };
 const begin = { ok: true, handoffId: id, readiness, returnTo: "/today" };
 const end = { ok: true, returnTo: "/today", session: rotatedPair };
@@ -63,9 +65,10 @@ test("Fitness handoff activates only on the canonical account runtime with exact
 
   for (const activation of [
     { ...FITNESS_HANDOFF_ACTIVATION, state: "inactive" as const },
-    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: ["invalid", productionFitnessMerge, reviewedFitnessMerge, retainedRollbackFitnessMerge, usernameReleaseFitnessMerge] as const },
-    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: [priorFitnessMerge, priorFitnessMerge, reviewedFitnessMerge, retainedRollbackFitnessMerge, usernameReleaseFitnessMerge] as const },
+    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: ["invalid", productionFitnessMerge, reviewedFitnessMerge, retainedRollbackFitnessMerge, usernameReleaseFitnessMerge, legacyRetirementFitnessMerge, passwordPolicyFitnessMerge] as const },
+    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: [priorFitnessMerge, priorFitnessMerge, reviewedFitnessMerge, retainedRollbackFitnessMerge, usernameReleaseFitnessMerge, legacyRetirementFitnessMerge, passwordPolicyFitnessMerge] as const },
     { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: [priorFitnessMerge, productionFitnessMerge] as unknown as typeof acceptedFitnessMerges },
+    { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: acceptedFitnessMerges.slice(0, 6) as unknown as typeof acceptedFitnessMerges },
     { ...FITNESS_HANDOFF_ACTIVATION, fitnessConsumerMerges: [...acceptedFitnessMerges, "a".repeat(40)] as unknown as typeof acceptedFitnessMerges },
   ]) {
     expect(fitnessHandoffRuntimeReady("https://account.fawxzzy.com", activation)).toBe(false);
@@ -91,7 +94,8 @@ test("Fitness release binding accepts all transition sources and rejects every u
 
   for (const sourceCommit of [legacyFitnessMerge, "0".repeat(40), "a".repeat(40),
     "6ab6c782e239b50a8adf00cc65e553f679c8abda", usernameReleaseFitnessMerge.toUpperCase(),
-    ` ${usernameReleaseFitnessMerge}`, usernameReleaseFitnessMerge.slice(0, 7)]) {
+    ` ${usernameReleaseFitnessMerge}`, usernameReleaseFitnessMerge.slice(0, 7),
+    passwordPolicyFitnessMerge.toUpperCase(), passwordPolicyFitnessMerge.slice(0, 7)]) {
     let reads = 0;
     const rejected = fixture([json({
       ...begin,
