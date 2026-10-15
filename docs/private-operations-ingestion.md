@@ -170,3 +170,29 @@ database-level least privilege or provide unattended credentials. Policy
 activation is a separate named operation, completed and reconciled before intake
 reads its starting generation. This runner cannot activate policy. Source proof
 does not establish live intake, restart or private-operator acceptance.
+
+Broker execution responses have a closed contract. A settled response must name
+the exact correlation, an allowed outcome, and the prepared projection revision
+(or null for quarantine). A missing, malformed, mismatched or lost response is
+recorded as `unknown` with the known correlation and request digest. It is never
+accepted as committed, labeled as a known pre-effect stop, or retried.
+
+## Private intake timestamp profile
+
+The immutable upstream contribution schemas describe general RFC3339, including
+valid leap seconds. This private intake additionally requires its installed
+ordering profile: seconds 00 through 59, a known timezone (not `-00:00`), and at
+most 256 fractional digits. Every schema timestamp is checked at the runtime
+validation boundary before fetched source is accepted or retained data is used.
+Unsupported values fail with `OPS_TIMESTAMP_PROFILE` before admission.
+
+This restriction is explicit; the adapter does not silently normalize a leap
+second onto the next ordinary instant or change historical ordering. Ordinary
+timestamp integer/fraction encodings remain byte-identical. Supporting leap
+seconds later requires a separately versioned ordering/storage contract and
+producer acceptance. The general upstream schemas and their pinned bytes remain
+unchanged.
+
+Failure mode: a broadly schema-valid timestamp can still exceed a narrower
+consumer ordering contract. Keep the profile check at the intake boundary, with
+regressions proving general-schema acceptance and private-profile rejection.

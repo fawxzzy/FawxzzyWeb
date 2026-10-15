@@ -136,7 +136,24 @@ export async function runHost(pipe, { controlFactory = (c) => createOperationsCo
     async execute(prepared) {
       time(); if (phase !== 'effect' || executed || reads !== 2) reject('HOST_SEQUENCE');
       executed = true;
-      return provider ? pipe.request('ingest', { ...scope, requestDigest: prepared.requestDigest }) : store.execute(prepared);
+      if (!provider) return store.execute(prepared);
+      // A request may have reached COMMIT even when its reply is malformed or
+      // lost. Preserve uncertainty and the known request identity; never retry
+      // or turn an invalid response into a successful/stopped terminal.
+      const unknown = () => ({ status: 'unknown', correlation: prepared.correlation, requestDigest: prepared.requestDigest });
+      try {
+        const result = await pipe.request('ingest', { ...scope, requestDigest: prepared.requestDigest });
+        if (result?.status === 'unknown') {
+          fields(result, ['status', 'correlation', 'requestDigest']);
+          if (result.correlation !== prepared.correlation || result.requestDigest !== prepared.requestDigest) return unknown();
+          return unknown();
+        }
+        fields(result, ['status', 'outcome', 'correlation', 'revision']);
+        if (result.status !== 'settled' || result.correlation !== prepared.correlation
+          || !['committed', 'quarantined', 'duplicate'].includes(result.outcome)
+          || (result.outcome === 'quarantined' ? result.revision !== null : result.revision !== prepared.projectionRevision)) return unknown();
+        return { status: 'settled', outcome: result.outcome, correlation: result.correlation, revision: result.revision };
+      } catch { return unknown(); }
     },
   };
   try {

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import { assertTimestampProfile } from './ordering.mjs';
 
 export const hash = (bytes) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
 export function reject(code) { throw Object.assign(new Error(`OPS_${code}`), { code: `OPS_${code}` }); }
@@ -36,6 +37,14 @@ export async function loadRuntime() {
     import('./platform-runtime/scripts/lib/development-operations-journal.mjs'),
     import('./platform-runtime/scripts/lib/development-operations-projection.mjs'),
   ]);
-  return { parse: json.parseCandidateOperationsJson, verify: contribution.verifyCandidateOperationsContribution,
+  const verify = (envelopeInput, proofInput) => {
+    const acceptedDigest = contribution.verifyCandidateOperationsContribution(envelopeInput, proofInput);
+    // General upstream schemas accept more RFC3339 values than this private
+    // ordering protocol. Enforce its explicit profile at the same validation
+    // boundary for fetched and reconstructed inputs, before source acceptance.
+    assertTimestampProfile(json.parseCandidateOperationsJson(envelopeInput));
+    return acceptedDigest;
+  };
+  return { parse: json.parseCandidateOperationsJson, verify,
     journal: journal.appendCandidateOperationsJournal, project: projection.rehearseCandidateOperationsProjection };
 }

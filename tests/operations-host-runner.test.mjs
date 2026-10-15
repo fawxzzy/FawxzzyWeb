@@ -105,7 +105,7 @@ test('provider mode routes all database operations through the parent without DB
       if (method === 'reconstruction') return {};
       if (method === 'admit') return { requestDigest: prepared.requestDigest, expiresAt: f.config.expiresAt,
         admission: { status: 'admitted', correlation, requestDigest: prepared.requestDigest } };
-      return { status: 'settled', outcome: 'committed', correlation };
+      return { status: 'settled', outcome: 'committed', correlation, revision: prepared.projectionRevision };
     }
     return request(method, value);
   };
@@ -120,6 +120,57 @@ test('provider mode refuses credential expansion and unknown transport', async (
   await assert.rejects(runHost(f.pipe, f.options)); assert.equal(f.calls.length, 0);
   const bad = fixture(); bad.config.transportMode = 'arbitrary';
   await assert.rejects(runHost(bad.pipe, bad.options)); assert.equal(bad.messages.length, 0);
+});
+
+function brokerFixture(result, transportFailure = false) {
+  const f = fixture(); f.config.transportMode = 'existing-master-broker-v1';
+  const request = f.pipe.request;
+  f.pipe.request = async (method, value) => {
+    if (!['preflight', 'state', 'reconstruction', 'admit', 'ingest'].includes(method)) return request(method, value);
+    f.messages.push({ method, value });
+    if (method === 'preflight') return { githubToken: 'FIXTURE_SECRET' };
+    if (method === 'state') return { generation: 1 };
+    if (method === 'reconstruction') return {};
+    if (method === 'admit') return { requestDigest: prepared.requestDigest, expiresAt: f.config.expiresAt,
+      admission: { status: 'admitted', correlation, requestDigest: prepared.requestDigest } };
+    if (transportFailure) throw new Error('PRIVATE_PROVIDER_FAILURE');
+    return result;
+  };
+  return f;
+}
+
+for (const [name, value] of Object.entries({
+  null: null, missing: {}, missingStatus: { outcome: 'committed', correlation, revision: prepared.projectionRevision },
+  wrongStatus: { status: 'success', outcome: 'committed', correlation, revision: prepared.projectionRevision },
+  wrongCorrelation: { status: 'settled', outcome: 'committed', correlation: 'wrong', revision: prepared.projectionRevision },
+  wrongOutcome: { status: 'settled', outcome: 'failed', correlation, revision: null },
+  missingRevision: { status: 'settled', outcome: 'committed', correlation },
+  wrongRevision: { status: 'settled', outcome: 'committed', correlation, revision: hash('other') },
+  falseQuarantine: { status: 'settled', outcome: 'quarantined', correlation, revision: prepared.projectionRevision },
+  expanded: { status: 'settled', outcome: 'committed', correlation, revision: prepared.projectionRevision, secret: 'PRIVATE' },
+  wrongUnknownDigest: { status: 'unknown', correlation, requestDigest: hash('other') },
+})) {
+  test(`malformed broker ${name} remains correlated unknown after one effect`, async () => {
+    const f = brokerFixture(value); const result = await runHost(f.pipe, f.options);
+    assert.deepEqual(result, { status: 'unknown', correlation, requestDigest: prepared.requestDigest, receiptPersistence: 'recorded' });
+    assert.equal(f.messages.filter((x) => x.method === 'ingest').length, 1);
+    assert.deepEqual(f.messages.at(-1), { method: 'terminal', value: { status: 'unknown', correlation, requestDigest: prepared.requestDigest } });
+  });
+}
+for (const outcome of ['committed', 'duplicate', 'quarantined']) {
+  test(`valid broker ${outcome} retains exact prepared identity`, async () => {
+    const value = { status: 'settled', outcome, correlation, revision: outcome === 'quarantined' ? null : prepared.projectionRevision };
+    const f = brokerFixture(value); assert.deepEqual(await runHost(f.pipe, f.options), { ...value, receiptPersistence: 'recorded' });
+    assert.equal(f.messages.filter((x) => x.method === 'ingest').length, 1);
+  });
+}
+test('broker unknown and lost acknowledgement never replay or claim stopped', async () => {
+  for (const lost of [false, true]) {
+    const expected = { status: 'unknown', correlation, requestDigest: prepared.requestDigest };
+    const f = brokerFixture(expected, lost);
+    assert.deepEqual(await runHost(f.pipe, f.options), { ...expected, receiptPersistence: 'recorded' });
+    assert.equal(f.messages.filter((x) => x.method === 'ingest').length, 1);
+  }
 });
 test('pipe rejects mismatched acknowledgement and EOF', async () => {
   const input = new PassThrough(); const pipe = createPipe(input, new PassThrough());

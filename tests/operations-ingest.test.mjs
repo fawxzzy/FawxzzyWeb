@@ -8,6 +8,8 @@ import { createOperationsStore, createTlsConnector } from '../src/server/operati
 import { createOperationsControl, createPolicyTlsConnector } from '../src/server/operations/control-store.mjs';
 import { ingestOnce } from '../scripts/operations/ingest-once.mjs';
 import { computeCandidateOperationsDigest } from '../src/server/operations/platform-runtime/scripts/lib/development-operations-digest.mjs';
+import { verifyCandidateOperationsContribution } from '../src/server/operations/platform-runtime/scripts/lib/development-operations-contribution.mjs';
+import { assertTimestampProfile } from '../src/server/operations/ordering.mjs';
 
 const revision = 'a'.repeat(40); const publication = 'b'.repeat(40); const registry = 'c'.repeat(40);
 const policyRevision = 'd'.repeat(40); const approvalReceipt = 'sha256:' + 'e'.repeat(64);
@@ -167,6 +169,49 @@ function retained(prepared) {
 }
 
 test('pinned transitive runtime loads with exact dependencies', async () => { assert.equal(typeof (await loadRuntime()).project, 'function'); });
+
+function replaceEventTimestamp({ manifest, rawFiles }, timestamp) {
+  const entry = manifest.files.find((x) => x.kind === 'event');
+  const envelope = JSON.parse(rawFiles.get(entry.path).toString('utf8'));
+  envelope.payload.occurred_at = timestamp;
+  const bytes = Buffer.from(JSON.stringify(envelope));
+  entry.digest = `sha256:${computeCandidateOperationsDigest(envelope)}`;
+  entry.sha256 = hash(bytes);
+  entry.blob = createHash('sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
+  manifest.associations[0].event_digest = entry.digest;
+  rawFiles.set(entry.path, bytes);
+  return { envelope, proof: { digest: entry.digest } };
+}
+
+test('general RFC3339 leap-second validity does not admit unsupported private ordering', async () => {
+  let input;
+  const f = fixture((value) => { input = replaceEventTimestamp(value, '2016-12-31T23:59:60Z'); });
+  assert.equal(verifyCandidateOperationsContribution(JSON.stringify(input.envelope), JSON.stringify(input.proof)), input.proof.digest);
+  const runtime = await loadRuntime();
+  assert.throws(() => runtime.verify(JSON.stringify(input.envelope), JSON.stringify(input.proof)), { code: 'OPS_TIMESTAMP_PROFILE' });
+  await assert.rejects(readTrustedSources(f), { code: 'OPS_TIMESTAMP_PROFILE' });
+});
+
+for (const unsupported of ['2016-12-31T23:59:60.5Z', '2026-10-15T03:00:00-00:00', `2026-10-15T03:00:00.${'1'.repeat(257)}Z`]) {
+  test(`source validation rejects unsupported timestamp profile ${unsupported.length}`, async () => {
+    const f = fixture((value) => replaceEventTimestamp(value, unsupported));
+    await assert.rejects(readTrustedSources(f), { code: 'OPS_TIMESTAMP_PROFILE' });
+  });
+}
+
+test('private timestamp profile covers each schema timestamp without changing normal ordering', () => {
+  const schemas = { 'card.v1': ['created_at', 'updated_at'], 'board.v1': ['generated_at'],
+    'board.v2': ['generated_at'], 'event.v1': ['occurred_at'], 'event.v2': ['occurred_at'] };
+  for (const [name, dates] of Object.entries(schemas)) {
+    const payload = Object.fromEntries(dates.map((key) => [key, stamp]));
+    const envelope = { schema_identity: `socials-os.development-${name}.schema.json`, payload };
+    assert.doesNotThrow(() => assertTimestampProfile(envelope));
+    for (const key of dates) assert.throws(() => assertTimestampProfile({ ...envelope,
+      payload: { ...payload, [key]: '2016-12-31T23:59:60Z' } }), { code: 'OPS_TIMESTAMP_PROFILE' });
+  }
+  assert.deepEqual(exactOrder(stamp), { order_seconds: '63959252400', order_fraction: '123456789123456789' });
+  assert.deepEqual(exactOrder('2026-10-15T04:00:00.10+01:00'), exactOrder('2026-10-15T03:00:00.1Z'));
+});
 test('fixed private producer, independently held policy and raw-byte trust reach a closed candidate projection', async () => {
   const f = fixture(); const p = await prepare(f); const request = JSON.parse(p.rawRequest);
   assert.equal(p.health, 'healthy'); assert.equal(request.projection.cards[0].title, 'Reviewed title');
