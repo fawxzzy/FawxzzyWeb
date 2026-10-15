@@ -9,7 +9,7 @@ import { ingestOnce } from '../scripts/operations/ingest-once.mjs';
 import { computeCandidateOperationsDigest } from '../src/server/operations/platform-runtime/scripts/lib/development-operations-digest.mjs';
 
 const revision = 'a'.repeat(40); const publication = 'b'.repeat(40); const registry = 'c'.repeat(40);
-const policyRevision = 'd'.repeat(40); const policyCommit = 'e'.repeat(40);
+const policyRevision = 'd'.repeat(40); const approvalReceipt = 'sha256:' + 'e'.repeat(64);
 const identity = 'github-repository:1301080630'; const mapping = 'socials-card-snapshot:v1';
 const stamp = '2026-10-15T03:00:00.123456789123456789Z'; const now = '2026-10-15T03:01:00.000Z';
 const correlation = '00000000-0000-4000-8000-000000000001';
@@ -63,23 +63,23 @@ function fixture(change = () => {}) {
       responses.set(`${prefix}/git/trees/${sha}`, { sha, truncated: false, tree: entries }); return sha;
     }
     const treeSha = tree(root);
-    responses.set(prefix, { id, full_name: name, default_branch: 'main' });
+    responses.set(prefix, { id, full_name: name, default_branch: 'main', private: true });
     responses.set(`${prefix}/branches/main`, { commit: { sha: commit } });
     responses.set(`${prefix}/git/commits/${commit}`, { sha: commit, tree: { sha: treeSha } });
     const base = id === 1301080630 ? revision : policyRevision;
     responses.set(`${prefix}/compare/${base}...${commit}`, { status: 'ahead', base_commit: { sha: base }, merge_base_commit: { sha: base } });
   }
   repo('fawxzzy/socials-os', 1301080630, publication, rawFiles);
-  repo('fawxzzy/fawxzzy-platform', 1304203342, policyCommit, new Map([['operations/policies/socials-redaction.v1.json', policyBytes]]));
   const pins = { source: { commit: publication, sourceRevision: revision, sha256: hash(manifestBytes), admittedRevisions: [revision] },
-    policy: { commit: policyCommit, sourceRevision: policyRevision, sha256: hash(policyBytes), registryRevision: registry } };
+    policy: { kind: 'host-private-v1', redactionRevision: policyRevision, sha256: hash(policyBytes), registryRevision: registry, approvalReceiptSha256: approvalReceipt } };
   const calls = []; const tokens = [];
   const tokenForRepository = async (id) => { tokens.push(id); return `fixture-token-${id}`; };
   const fetcher = async (url, options) => {
     calls.push({ url, options }); assert.equal(options.redirect, 'error'); assert.equal(new URL(url).hostname, 'api.github.com');
     return new Response(JSON.stringify(responses.get(url) ?? {}), { status: responses.has(url) ? 200 : 404 });
   };
-  return { pins, responses, calls, tokens, tokenForRepository, fetcher, clock };
+  const readPolicy = async () => ({ bytes: Buffer.from(policyBytes), approvalReceiptSha256: approvalReceipt });
+  return { pins, responses, calls, tokens, tokenForRepository, readPolicy, fetcher, clock };
 }
 async function prepare(f = fixture(), extra = {}) {
   return prepareIngestion({ source: await readTrustedSources(f), reconstruction: empty, expected, correlation, now, ...extra });
@@ -90,12 +90,12 @@ function retained(prepared) {
 }
 
 test('pinned transitive runtime loads with exact dependencies', async () => { assert.equal(typeof (await loadRuntime()).project, 'function'); });
-test('fixed repositories, independent policy and raw-byte trust reach a closed candidate projection', async () => {
+test('fixed private producer, independently held policy and raw-byte trust reach a closed candidate projection', async () => {
   const f = fixture(); const p = await prepare(f); const request = JSON.parse(p.rawRequest);
   assert.equal(p.health, 'healthy'); assert.equal(request.projection.cards[0].title, 'Reviewed title');
   assert.equal(JSON.stringify(request.projection).includes('PRIVATE_'), false);
   assert.equal(request.projection.authoritative, false); assert.equal(request.projection.actions_enabled, false);
-  assert.deepEqual(f.tokens, [1301080630, 1304203342]); assert.equal(p.requestDigest, hash(p.rawRequest));
+  assert.deepEqual(f.tokens, [1301080630]); assert.ok(f.calls.every(c => !c.url.includes('fawxzzy-platform'))); assert.equal(p.requestDigest, hash(p.rawRequest));
   assert.equal(request.contributions[0].order_fraction, '123456789123456789');
 });
 for (const [label, mutate] of [
@@ -109,6 +109,7 @@ for (const [label, mutate] of [
   ['foreign association', ({ manifest }) => { manifest.associations[0].producer_identity = 'another'; }],
 ]) test(`rejects ${label}`, async () => { await assert.rejects(readTrustedSources(fixture(mutate))); });
 for (const [label, mutate] of [
+  ['producer visibility becomes public', (r) => { r.get('https://api.github.com/repos/fawxzzy/socials-os').private = false; }],
   ['repository numeric drift', (r) => { r.get('https://api.github.com/repos/fawxzzy/socials-os').id = 1; }],
   ['lineage divergence', (r) => { [...r].find(([k]) => k.includes('/compare/'))[1].status = 'diverged'; }],
   ['symlink', (r) => { [...r.values()].find((x) => x.tree?.some((e) => e.type === 'blob')).tree.find((e) => e.type === 'blob').mode = '120000'; }],
@@ -232,7 +233,8 @@ test('TLS connector rejects service-role and connection-string overrides before 
 
 function host(f, mutate = () => {}) {
   const steps = []; const state = structuredClone(expected); let effects = 0;
-  const gate = { assertPreflight: async () => { steps.push('preflight'); }, readControlState: async () => ({ ...state }),
+  const gate = { assertPreflight: async () => { steps.push('preflight'); },
+    readPolicy: async ({ policyPins, signal }) => { steps.push('policy'); assert.deepEqual(policyPins, f.pins.policy); assert.equal(signal.aborted, false); return f.readPolicy({ pins: policyPins, signal }); }, readControlState: async () => ({ ...state }),
     admitRequest: async (p) => { steps.push('admit'); assert.equal(hash(p.rawRequest), p.requestDigest); },
     assertEffectBoundary: async () => { steps.push('effect'); }, recordTerminal: async (receipt) => { steps.push('receipt'); assert.equal(JSON.stringify(receipt).includes('PRIVATE_'), false); } };
   const store = { reconstruction: async () => empty,
@@ -242,7 +244,7 @@ function host(f, mutate = () => {}) {
 }
 test('whole host adapter orders gate, preparation, admission, recheck, effect and receipt', async () => {
   const h = host(fixture()); const receipt = await ingestOnce(h.args);
-  assert.equal(receipt.outcome, 'committed'); assert.equal(h.effects(), 1); assert.deepEqual(h.steps, ['preflight', 'admit', 'effect', 'receipt']);
+  assert.equal(receipt.outcome, 'committed'); assert.equal(h.effects(), 1); assert.deepEqual(h.steps, ['preflight', 'policy', 'admit', 'effect', 'receipt']);
 });
 test('missing canonical gate fails before any source access', async () => {
   const f = fixture(); await assert.rejects(ingestOnce({ ...f, correlation }), { message: 'OPS_CANONICAL_GATE_REQUIRED' }); assert.equal(f.tokens.length, 0);
@@ -258,4 +260,49 @@ test('failed admission does not execute', async () => {
 test('receipt failure preserves settled effect and never repeats it', async () => {
   const h = host(fixture(), ({ gate }) => { gate.recordTerminal = async () => { throw new Error('DISK'); }; });
   const receipt = await ingestOnce(h.args); assert.equal(receipt.receiptPersistence, 'unknown'); assert.equal(receipt.outcome, 'committed'); assert.equal(h.effects(), 1);
+});
+
+test('legacy public Git policy pins are refused before credential access', async () => {
+  const f = fixture(); f.pins.policy = { commit: 'e'.repeat(40), sourceRevision: policyRevision, sha256: f.pins.policy.sha256, registryRevision: registry };
+  await assert.rejects(readTrustedSources(f)); assert.equal(f.tokens.length, 0);
+});
+test('private policy is mandatory and cannot be provided by producer fields', async () => {
+  const f = fixture(); delete f.readPolicy;
+  await assert.rejects(readTrustedSources(f), { message: 'OPS_PRIVATE_POLICY_REQUIRED' }); assert.equal(f.tokens.length, 0);
+});
+for (const [name, change] of [
+  ['changed bytes', r => { r.bytes = Buffer.from('{}'); }],
+  ['wrong approval receipt', r => { r.approvalReceiptSha256 = 'sha256:' + '0'.repeat(64); }],
+  ['oversized bytes', r => { r.bytes = new Uint8Array(262145); }],
+  ['string instead of bytes', r => { r.bytes = '{}'; }],
+  ['unapproved extra return field', r => { r.approved = true; }],
+]) test(`private policy refuses ${name} before Git credentials`, async () => {
+  const f = fixture(); const original = f.readPolicy;
+  f.readPolicy = async (...args) => { const r = await original(...args); change(r); return r; };
+  await assert.rejects(readTrustedSources(f), { message: 'OPS_PRIVATE_POLICY' }); assert.equal(f.tokens.length, 0);
+});
+test('private policy acquisition consumes the shared deadline', async () => {
+  const f = fixture(); let signal;
+  f.readPolicy = async options => { signal = options.signal; return new Promise(() => {}); };
+  await assert.rejects(readTrustedSources({ ...f, timeoutMs: 50 }), { message: 'OPS_SOURCE_DEADLINE' });
+  assert.equal(signal.aborted, true); assert.equal(f.tokens.length, 0);
+});
+test('private policy errors never expose source detail', async () => {
+  const f = fixture(); f.readPolicy = async () => { throw new Error('PRIVATE_POLICY_CONTENT'); };
+  await assert.rejects(readTrustedSources(f), { message: 'OPS_PRIVATE_POLICY' }); assert.equal(f.tokens.length, 0);
+});
+test('host requires canonical policy capability, not caller replacement', async () => {
+  const h = host(fixture()); delete h.args.gate.readPolicy;
+  await assert.rejects(ingestOnce(h.args), { message: 'OPS_CANONICAL_GATE_REQUIRED' }); assert.equal(h.effects(), 0);
+});
+test('host policy refusal prevents admission and effect', async () => {
+  const h = host(fixture(), ({gate}) => { gate.readPolicy = async () => { throw new Error('UNAPPROVED'); }; });
+  assert.equal((await ingestOnce(h.args)).status, 'stopped'); assert.equal(h.effects(), 0);
+  assert.deepEqual(h.steps, ['preflight', 'receipt']);
+});
+test('source trust binds private policy identity without including policy bytes', async () => {
+  const f = fixture(); const source = await readTrustedSources(f);
+  assert.equal(source.trust.policy.sha256, f.pins.policy.sha256);
+  assert.equal(source.trust.policy.approval_receipt_sha256, approvalReceipt);
+  assert.equal(JSON.stringify(source.trust).includes('Reviewed title'), false);
 });

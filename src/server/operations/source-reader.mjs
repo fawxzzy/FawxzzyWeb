@@ -4,14 +4,18 @@ import { digest, fields, hash, loadRuntime, reject, revision } from './runtime.m
 const producer = 'github-repository:1301080630';
 const repositories = Object.freeze({
   source: { id: 1301080630, name: 'fawxzzy/socials-os', path: 'operations/export/manifest.v1.json' },
-  policy: { id: 1304203342, name: 'fawxzzy/fawxzzy-platform', path: 'operations/policies/socials-redaction.v1.json' },
 });
 const maxBytes = 262144;
 function pin(p, policy) {
-  fields(p, policy ? ['commit', 'sourceRevision', 'sha256', 'registryRevision'] : ['commit', 'sourceRevision', 'sha256', 'admittedRevisions']);
-  if (!revision(p.commit) || !revision(p.sourceRevision) || !digest(p.sha256)) reject('SOURCE_PIN');
-  if (policy) { if (!revision(p.registryRevision)) reject('POLICY_PIN'); }
-  else if (!Array.isArray(p.admittedRevisions) || p.admittedRevisions.length < 1 || p.admittedRevisions.length > 256
+  if (policy) {
+    fields(p, ['kind', 'sha256', 'registryRevision', 'redactionRevision', 'approvalReceiptSha256']);
+    if (p.kind !== 'host-private-v1' || !digest(p.sha256) || !revision(p.registryRevision)
+      || !revision(p.redactionRevision) || !digest(p.approvalReceiptSha256)) reject('POLICY_PIN');
+    return;
+  }
+  fields(p, ['commit', 'sourceRevision', 'sha256', 'admittedRevisions']);
+  if (!revision(p.commit) || !revision(p.sourceRevision) || !digest(p.sha256)
+    || !Array.isArray(p.admittedRevisions) || p.admittedRevisions.length < 1 || p.admittedRevisions.length > 256
     || new Set(p.admittedRevisions).size !== p.admittedRevisions.length || !p.admittedRevisions.every(revision)
     || !p.admittedRevisions.includes(p.sourceRevision)) reject('SOURCE_PIN');
 }
@@ -64,9 +68,28 @@ export async function readTrustedSources(options) {
   finally { clearTimeout(timer); controller.abort(); }
 }
 
-async function readWithinBudget({ pins, tokenForRepository, fetcher = fetch, clock = () => new Date() }, budget) {
+async function readWithinBudget({ pins, readPolicy, tokenForRepository, fetcher = fetch, clock = () => new Date() }, budget) {
   fields(pins, ['source', 'policy']); pin(pins.source, false); pin(pins.policy, true);
   const runtime = await budget.wait(loadRuntime());
+  if (typeof readPolicy !== 'function') reject('PRIVATE_POLICY_REQUIRED');
+  let policyBytes;
+  try {
+    // Only the canonical host supplies this callback, after validating native
+    // independent approval, ownership, scope, private custody and exact hashes.
+    // A returned digest is a binding check here, never proof of that approval.
+    const held = await budget.wait(readPolicy({ pins: Object.freeze({ ...pins.policy }), signal: budget.signal }));
+    fields(held, ['bytes', 'approvalReceiptSha256']);
+    if (!(held.bytes instanceof Uint8Array) || held.bytes.byteLength < 1 || held.bytes.byteLength > maxBytes
+      || held.approvalReceiptSha256 !== pins.policy.approvalReceiptSha256) reject('PRIVATE_POLICY_BINDING');
+    policyBytes = Buffer.from(held.bytes); // Own immutable input bytes before parsing.
+    if (hash(policyBytes) !== pins.policy.sha256) reject('PRIVATE_POLICY_BINDING');
+  } catch { budget.check(); reject('PRIVATE_POLICY'); }
+  const policy = runtime.parse(policyBytes);
+  fields(policy, ['schema', 'registry_revision', 'redaction_revision', 'mapping_version', 'max_observation_age_seconds', 'redactions']);
+  if (policy.schema !== 'platform.operations-redaction.v1' || policy.registry_revision !== pins.policy.registryRevision
+    || policy.redaction_revision !== pins.policy.redactionRevision || policy.mapping_version !== 'socials-card-snapshot:v1'
+    || !Number.isInteger(policy.max_observation_age_seconds) || policy.max_observation_age_seconds < 1
+    || policy.max_observation_age_seconds > 86400 || !Array.isArray(policy.redactions) || policy.redactions.length > 256) reject('REDACTION_POLICY');
   async function repository(kind) {
     const fixed = repositories[kind]; const selected = pins[kind];
     budget.check();
@@ -85,7 +108,7 @@ async function readWithinBudget({ pins, tokenForRepository, fetcher = fetch, clo
       } catch { budget.check(); reject('SOURCE_TRANSPORT'); }
     }
     const meta = await get('');
-    if (meta.id !== fixed.id || meta.full_name !== fixed.name || meta.default_branch !== 'main') reject('REPOSITORY_IDENTITY');
+    if (meta.id !== fixed.id || meta.full_name !== fixed.name || meta.default_branch !== 'main' || meta.private !== true) reject('REPOSITORY_IDENTITY');
     const branch = await get('/branches/main'); const tip = branch.commit?.sha;
     if (!revision(tip)) reject('BRANCH_IDENTITY');
     async function ancestor(base, head) {
@@ -101,7 +124,7 @@ async function readWithinBudget({ pins, tokenForRepository, fetcher = fetch, clo
     if (commit.sha !== selected.commit || !revision(commit.tree?.sha)) reject('COMMIT_IDENTITY');
     const trees = new Map();
     async function file(path, expectedHash, expectedBlob) {
-      if (typeof path !== 'string' || path.length > 180 || !/^operations\/(export|policies)\/[A-Za-z0-9_./-]+\.json$/u.test(path)
+      if (typeof path !== 'string' || path.length > 180 || !/^operations\/export\/[A-Za-z0-9_./-]+\.json$/u.test(path)
         || path.split('/').some((part) => !part || part === '.' || part === '..')) reject('SOURCE_PATH');
       let treeSha = commit.tree.sha; const parts = path.split('/');
       for (let i = 0; i < parts.length; i += 1) {
@@ -129,21 +152,15 @@ async function readWithinBudget({ pins, tokenForRepository, fetcher = fetch, clo
     }
     return { file, selected, fixed };
   }
-  // Separate repository, immutable revision and token lookup for policy authority.
-  const source = await repository('source'); const policySource = await repository('policy');
+  // Producer transport cannot provide or override independently held policy.
+  const source = await repository('source');
   const manifestFile = await source.file(source.fixed.path, pins.source.sha256);
-  const policyFile = await policySource.file(policySource.fixed.path, pins.policy.sha256);
-  const manifest = manifestFile.value; const policy = policyFile.value;
+  const manifest = manifestFile.value;
   fields(manifest, ['schema', 'producer_identity', 'source_revision', 'complete', 'files', 'associations']);
   if (manifest.schema !== 'platform.operations-source-manifest.v1' || manifest.producer_identity !== producer
     || manifest.source_revision !== pins.source.sourceRevision || manifest.complete !== true
     || !Array.isArray(manifest.files) || manifest.files.length > 256 || !Array.isArray(manifest.associations)
     || manifest.associations.length > 256) reject('MANIFEST');
-  fields(policy, ['schema', 'registry_revision', 'redaction_revision', 'mapping_version', 'max_observation_age_seconds', 'redactions']);
-  if (policy.schema !== 'platform.operations-redaction.v1' || policy.registry_revision !== pins.policy.registryRevision
-    || policy.redaction_revision !== pins.policy.sourceRevision || policy.mapping_version !== 'socials-card-snapshot:v1'
-    || !Number.isInteger(policy.max_observation_age_seconds) || policy.max_observation_age_seconds < 1
-    || policy.max_observation_age_seconds > 86400 || !Array.isArray(policy.redactions) || policy.redactions.length > 256) reject('REDACTION_POLICY');
   const paths = new Set(); const events = []; const snapshots = []; let size = 0;
   for (const entry of manifest.files) {
     fields(entry, ['path', 'kind', 'blob', 'sha256', 'digest']);
@@ -167,7 +184,9 @@ async function readWithinBudget({ pins, tokenForRepository, fetcher = fetch, clo
     if (a.producer_identity !== producer) reject('PRODUCER_BINDING');
   }
   budget.check(); const observedAt = clock().toISOString();
-  const trust = { pins, observed_at: observedAt, manifest_blob: manifestFile.blob, policy_blob: policyFile.blob,
+  const trust = { pins, observed_at: observedAt, manifest_blob: manifestFile.blob,
+    policy: { custody: 'host-private-v1', sha256: pins.policy.sha256, approval_receipt_sha256: pins.policy.approvalReceiptSha256,
+      registry_revision: policy.registry_revision, redaction_revision: policy.redaction_revision },
     files: manifest.files.map(({ path, blob, sha256 }) => ({ path, blob, sha256 })) };
   return { events, snapshots, associations: manifest.associations, policy, observedAt,
     producer: { producer_identity: producer, source_revision: pins.source.sourceRevision,

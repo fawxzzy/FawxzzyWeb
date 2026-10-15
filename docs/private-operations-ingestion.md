@@ -8,7 +8,7 @@ operator grant, OAuth client or production activation.
 ## Trust and deployment contract
 
 `scripts/operations/ingest-once.mjs` requires the existing ATLAS executor to supply
-five live callbacks: `assertPreflight`, `readControlState`, `admitRequest`,
+six live callbacks: `assertPreflight`, `readPolicy`, `readControlState`, `admitRequest`,
 `assertEffectBoundary` and `recordTerminal`. That adapter must validate canonical admission, lease, exact
 executable/lockfile hashes, policy pins, target, correlation and current ownership
 before credential access. It must independently admit the exact request digest,
@@ -24,9 +24,10 @@ to exist. Structured connection settings require TLS certificate verification,
 an explicit CA, bounded timeouts and no privileged role memberships. Do not supply
 service-role credentials, connection strings or browser-accessible settings.
 
-The trusted host pins two separate repositories: Socials numeric ID `1301080630`
-and Platform numeric ID `1304203342`. Tokens are obtained separately by numeric ID.
-Only `api.github.com` fixed repository paths are fetched. Redirects, changed repo
+The trusted host pins the private Socials repository, numeric ID `1301080630`.
+Only its fixed `api.github.com` repository paths are fetched; public visibility
+is refused. Platform remains the independent policy owner, but its public
+contract repository must never hold private runtime display-policy content. Redirects, changed repo
 identity, non-main lineage, symlinks/submodules/executable files, truncated trees,
 duplicate paths, unexpected types, oversized bytes and blob/hash drift fail closed.
 Payload JSON uses the pinned duplicate-key-rejecting parser and full schemas.
@@ -60,13 +61,34 @@ At most 256 files, 256 associations, 256 KiB per file and 768 KiB aggregate are
 accepted. Empty coverage requires an explicitly complete manifest; this initial
 producer denominator is not full ATLAS or archived-work acceptance.
 
-Platform independently publishes
-`operations/policies/socials-redaction.v1.json` with exactly `schema`
-(`platform.operations-redaction.v1`), `registry_revision`, `redaction_revision`,
-`mapping_version`, `max_observation_age_seconds` and `redactions`. Redaction entries
-use the pinned projection contract and exact snapshot digests. Neither a Socials
-manifest nor a source title approves display content. Both artifact paths are
-future owner-adoption work, not claims about current main branches.
+Platform independently approves the policy and holds it in the canonical host's
+private, Git-excluded runtime store. Public Platform/ATLAS repositories contain
+only code and contracts. No producer response or caller path chooses policy.
+
+Policy pins have exactly `kind: host-private-v1`, `sha256`, `registryRevision`,
+`redactionRevision`, and `approvalReceiptSha256`. Revisions are 40-hex contract
+identities; they are not assumed to be Git commits. The full SHA256 pins exact
+bytes. Legacy public-Git policy pins fail closed.
+
+`gate.readPolicy` must validate the independently completed native approval's
+origin, Platform ownership, exact scope, policy SHA256/revisions and current
+canonical admission. It resolves only the host's fixed private content-addressed
+store, rejects symlinks/reparse paths and drift, and returns bounded bytes plus
+the independently validated approval-receipt digest. The adapter checks both
+hashes and closed structures. A callback echoing a supplied digest is not proof
+of approval. `assertEffectBoundary` must recheck this exact binding before effect.
+The source adapter is unusable for live intake until this canonical host
+implementation is independently verified; no no-op or environment-flag gate is
+an acceptable replacement. The shared 60-second deadline begins before policy
+acquisition and includes policy validation, source credentials and retrieval.
+
+The policy body has exactly `schema` (`platform.operations-redaction.v1`),
+`registry_revision`, `redaction_revision`, `mapping_version`,
+`max_observation_age_seconds` and `redactions`. Dispositions bind exact snapshot
+digests to independently reviewed display fields. Neither producer content nor
+a source title approves its own display. Source trust receipts retain hashes and
+revisions only; policy bytes and evidence locators remain private. Operator grants,
+policy/control installation and live consumer acceptance remain separate work.
 
 ## Reconstruction and effect semantics
 
@@ -99,5 +121,5 @@ transport/storage tests do not prove GitHub credentials or master installation.
 
 Failure mode: accepting producer-supplied redaction or discarding prior conflict
 history can turn valid-looking hashes into a false healthy projection. The fixed
-two-repository intake and full-history tests are the prevention contract. Keep
+private-producer/independent-policy intake and full-history tests are the prevention contract. Keep
 these rules in this runbook and its tests when adding another producer.

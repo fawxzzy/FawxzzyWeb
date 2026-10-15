@@ -9,14 +9,15 @@ import { hash, reject } from '../../src/server/operations/runtime.mjs';
  * from this source-tested adapter; callers cannot infer installation from it.
  */
 export async function ingestOnce({ gate, store, pins, correlation, tokenForRepository, fetcher, clock = () => new Date() }) {
-  if (!gate || !['assertPreflight', 'readControlState', 'admitRequest', 'assertEffectBoundary', 'recordTerminal'].every((n) => typeof gate[n] === 'function')) reject('CANONICAL_GATE_REQUIRED');
+  if (!gate || !['assertPreflight', 'readPolicy', 'readControlState', 'admitRequest', 'assertEffectBoundary', 'recordTerminal'].every((n) => typeof gate[n] === 'function')) reject('CANONICAL_GATE_REQUIRED');
   const scope = { target: 'bxtcuhkotumitoqtrcej', writerScope: 'platform.private-operations.ingest', correlation, pinsDigest: hash(JSON.stringify(pins)) };
   await gate.assertPreflight(scope); // Before any token or database acquisition.
   let prepared; let terminal;
   try {
     const expected = await gate.readControlState();
     const reconstruction = await store.reconstruction(expected.generation);
-    const source = await readTrustedSources({ pins, tokenForRepository, fetcher, clock });
+    const source = await readTrustedSources({ pins, tokenForRepository, fetcher, clock,
+      readPolicy: ({ pins: policyPins, signal }) => gate.readPolicy({ ...scope, policyPins, signal }) });
     prepared = await prepareIngestion({ source, reconstruction, correlation, expected, now: clock().toISOString() });
     if (expected.registry_revision !== prepared.registryRevision || expected.redaction_revision !== prepared.redactionRevision) reject('POLICY_DRIFT');
     // A separate canonical policy writer installs the exact DB admission; the
