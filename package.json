@@ -27,7 +27,7 @@
     "test:project-board-owner-export": "node --test tests/project-board-owner-export.test.mjs && npm run data:project-board-owner:check",
     "smoke:lifeline": "node scripts/smoke-lifeline.mjs",
     "deploy:production": "node scripts/deploy-production.mjs",
-    "test:operations-ingest": "node --test tests/operations-ingest.test.mjs",
+    "test:operations-ingest": "node --test tests/operations-ingest.test.mjs tests/operations-host-runner.test.mjs",
     "verify": "npm run lint && npm run test:operations-ingest && npm run test:auth-key-guard && npm run test:deployment-binding && npm run test:runtime-hygiene && npm run test:style-architecture && npm run test:release-evidence && npm run test:project-board-owner-export && npm run build && npm run test:discovery-performance && npm run smoke:lifeline && npm run test:visual-regression && npm run test:e2e"
   },
   "dependencies": {

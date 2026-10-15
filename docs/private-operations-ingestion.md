@@ -1,5 +1,18 @@
 # Private operations ingestion
 
+## Canonical host process bridge
+
+`scripts/operations/canonical-host-runner.mjs` is the bounded stdin/stdout entry
+for ATLAS's private-operations host. It wires the six callbacks to the parent and
+the reviewed control/store adapters, with one admission, one execution, exact
+acknowledgements and finite deadlines. It has no web route, timer or environment
+authorization. The parent supplies scoped credentials through a private pipe only
+after canonical admission; tokens can be used only for the fixed Socials source.
+Private policy crosses the pipe as bounded bytes after native content approval.
+The executable has no test mode or injectable CLI driver. In-process factory
+injection is limited to disposable tests. Source publication does not activate
+policy, create credentials, admit a request or establish live runtime acceptance.
+
 This source connects immutable repository retrieval, the reviewed Platform
 projection, complete retained history and the R002 transactional storage contract.
 It is host-only code. It adds no route, timer, database installation, credential,
