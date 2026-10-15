@@ -22,10 +22,40 @@ function guard(request, route) {
     : origin === ORIGIN;
   if (url.origin !== ORIGIN || url.pathname !== `/api/operations/${route}` || url.search || url.hash || url.username || url.password
     || !validOrigin || request.headers.get('x-fawxzzy-operations') !== '1'
-    || !methods.includes(request.method) || request.body !== null
+    || !methods.includes(request.method)
     || (request.headers.has('content-length') && request.headers.get('content-length') !== '0')
     || request.headers.has('transfer-encoding') || request.headers.get('sec-fetch-mode') === 'navigate'
     || (request.headers.has('sec-fetch-site') && request.headers.get('sec-fetch-site') !== 'same-origin')) fail('OPS_REQUEST_DENIED');
+}
+
+async function requireEmptyBody(request) {
+  if (request.signal.aborted || request.bodyUsed) fail('OPS_REQUEST_DENIED');
+  if (request.body === null) return;
+  if (request.method === 'GET' || request.body.locked) fail('OPS_REQUEST_DENIED');
+  // A server may represent a zero-byte POST/DELETE as a stream. Prove EOF
+  // before reading configuration or credentials; never accept a claimed zero
+  // Content-Length in place of the actual payload check.
+  const reader = request.body.getReader(); let timer; let abort; let emptyChunks = 0;
+  const deadline = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('body timeout')), 1000);
+    abort = () => reject(new Error('body aborted'));
+    request.signal.addEventListener('abort', abort, { once: true });
+  });
+  try {
+    for (;;) {
+      const { done, value } = await Promise.race([reader.read(), deadline]);
+      if (request.signal.aborted) fail('OPS_REQUEST_DENIED');
+      if (done) return;
+      if (!(value instanceof Uint8Array) || value.byteLength !== 0 || ++emptyChunks > 16) fail('OPS_REQUEST_DENIED');
+    }
+  } catch {
+    // Cancellation itself may never settle. It must not delay the denial.
+    void reader.cancel().catch(() => {});
+    fail('OPS_REQUEST_DENIED');
+  } finally {
+    clearTimeout(timer); request.signal.removeEventListener('abort', abort);
+    try { reader.releaseLock(); } catch { /* Pending reads remain canceled. */ }
+  }
 }
 
 // Trusted module injection is used by deterministic tests, never request data.
@@ -34,6 +64,7 @@ export function createConsumerHandler(dependencies) {
     let mutation = false;
     try {
       guard(request, route);
+      await requireEmptyBody(request);
       const handle = readHandle(request);
       const deps = typeof dependencies === 'function' ? dependencies() : dependencies;
       const identity = await (deps.authenticate ?? authenticate)(request, deps.auth, deps.authOptions);

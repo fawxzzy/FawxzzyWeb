@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import http from 'node:http';
+import { Readable } from 'node:stream';
+import { once } from 'node:events';
 import { authenticate, MASTER, COOKIE, handleDigest, newHandle, readHandle, boundedAuthJson } from '../src/server/operations/consumer-auth.mjs';
 import { createConsumerHandler, validateView, operationsHandler } from '../src/server/operations/consumer-http.mjs';
 import { createConsumerStore, boundedRpcJson, INPUT_LIMIT } from '../src/server/operations/consumer-store.mjs';
@@ -144,6 +147,88 @@ test('unsupported methods, body-bearing session requests, missing and duplicate 
   assert.equal((await f.handler(request(), 'read')).status, 403);
   const h = newHandle(); assert.throws(() => readHandle(request('read', 'GET', { headers: { Cookie: `${COOKIE}=${h}; ${COOKIE}=${h}` } })), /OPS_ACCESS_DENIED/u);
   assert.equal(f.calls.length, 0);
+});
+
+for (const method of ['POST', 'DELETE']) {
+  for (const length of [undefined, '0']) {
+    test(`${method} accepts proven empty streams with Content-Length ${String(length)}`, async () => {
+      const f = fixture(); const headers = { Cookie: `${COOKIE}=${newHandle()}` };
+      if (method === 'POST') delete headers.Cookie;
+      if (length !== undefined) headers['Content-Length'] = length;
+      const req = request('session', method, { headers, duplex: 'half', body: new ReadableStream({ start(c) { c.enqueue(new Uint8Array(0)); c.close(); } }) });
+      assert.notEqual(req.body, null);
+      const res = await f.handler(req, 'session'); assert.equal(res.status, 204);
+      assert.equal(f.calls.length, 1); assert.equal(f.calls[0][0], method === 'POST' ? 'open' : 'close');
+    });
+  }
+}
+
+for (const [name, stream] of Object.entries({
+  'nonempty despite claimed zero length': () => new ReadableStream({ start(c) { c.enqueue(new Uint8Array([1])); c.close(); } }),
+  'nonempty after empty chunk': () => new ReadableStream({ start(c) { c.enqueue(new Uint8Array(0)); c.enqueue(new Uint8Array([1])); c.close(); } }),
+  'wrong chunk type': () => new ReadableStream({ start(c) { c.enqueue(''); c.close(); } }),
+  'too many empty chunks': () => new ReadableStream({ pull(c) { c.enqueue(new Uint8Array(0)); } }),
+  'stream failure': () => new ReadableStream({ start(c) { c.error(new Error('PRIVATE')); } }),
+})) test(`empty-body guard rejects ${name} before configuration/Auth/DB`, async () => {
+  let calls = 0; const handler = createConsumerHandler(() => { calls++; throw new Error('NO'); });
+  const res = await handler(request('session', 'POST', { headers: { 'Content-Length': '0' }, body: stream(), duplex: 'half' }), 'session');
+  assert.equal(res.status, 403); assert.deepEqual(await res.json(), { error: 'OPS_REQUEST_DENIED' }); assert.equal(calls, 0);
+});
+
+test('stalled empty body and nonsettling cancellation have a finite denial', async () => {
+  let calls = 0; const handler = createConsumerHandler(() => { calls++; throw new Error('NO'); });
+  const start = performance.now();
+  const body = new ReadableStream({ pull() { return new Promise(() => {}); }, cancel() { return new Promise(() => {}); } });
+  const res = await handler(request('session', 'POST', { body, duplex: 'half' }), 'session');
+  assert.equal(res.status, 403); assert.deepEqual(await res.json(), { error: 'OPS_REQUEST_DENIED' }); assert.equal(calls, 0);
+  assert.ok(performance.now() - start < 3000);
+});
+
+test('aborted, already consumed, or locked bodies cannot reach Auth', async () => {
+  let calls = 0; const handler = createConsumerHandler(() => { calls++; throw new Error('NO'); });
+  const empty = () => new ReadableStream({ start(c) { c.close(); } });
+  const controller = new AbortController(); controller.abort();
+  const aborted = request('session', 'POST', { body: empty(), duplex: 'half', signal: controller.signal });
+  const used = request('session', 'POST', { body: empty(), duplex: 'half' }); await used.text();
+  const locked = request('session', 'POST', { body: empty(), duplex: 'half' }); const reader = locked.body.getReader();
+  for (const req of [aborted, used, locked]) assert.deepEqual(await (await handler(req, 'session')).json(), { error: 'OPS_REQUEST_DENIED' });
+  reader.releaseLock(); assert.equal(calls, 0);
+});
+
+test('abort during an empty stream read denies without waiting for its producer', async () => {
+  let calls = 0; const handler = createConsumerHandler(() => { calls++; throw new Error('NO'); });
+  const controller = new AbortController(); const req = request('session', 'POST', { body: new ReadableStream(), duplex: 'half', signal: controller.signal });
+  const result = handler(req, 'session'); controller.abort();
+  assert.deepEqual(await (await result).json(), { error: 'OPS_REQUEST_DENIED' }); assert.equal(calls, 0);
+});
+
+test('invalid framing and origin reject without pulling even a stalled body', async () => {
+  for (const headers of [{ 'Content-Length': '1' }, { 'Content-Length': '00' }, { 'Transfer-Encoding': 'chunked' }, { Origin: 'https://wrong.invalid' }]) {
+    let calls = 0; const handler = createConsumerHandler(() => { calls++; throw new Error('NO'); });
+    const res = await handler(request('session', 'POST', { headers, body: new ReadableStream(), duplex: 'half' }), 'session');
+    assert.deepEqual(await res.json(), { error: 'OPS_REQUEST_DENIED' }); assert.equal(calls, 0);
+  }
+});
+
+test('real loopback zero-byte HTTP POST and DELETE reach Auth; payload and foreign origin do not', async () => {
+  let authCalls = 0; const observed = [];
+  const handler = createConsumerHandler({ authenticate: async () => { authCalls++; throw Object.assign(new Error('denied'), { code: 'OPS_ACCESS_DENIED' }); } });
+  const server = http.createServer(async (incoming, outgoing) => {
+    const req = new Request('https://account.fawxzzy.com/api/operations/session', { method: incoming.method, headers: incoming.headers, body: Readable.toWeb(incoming), duplex: 'half' });
+    observed.push({ method: incoming.method, body: req.body !== null });
+    const res = await handler(req, 'session'); outgoing.writeHead(res.status, Object.fromEntries(res.headers)); outgoing.end(await res.text());
+  });
+  try {
+    server.listen(0, '127.0.0.1'); await once(server, 'listening');
+    const send = (method, payload = '', origin = 'https://account.fawxzzy.com') => new Promise((resolve, reject) => {
+      const req = http.request({ host: '127.0.0.1', port: server.address().port, method, agent: false, headers: { Origin: origin, 'X-Fawxzzy-Operations': '1', 'Content-Length': Buffer.byteLength(payload), 'Sec-Fetch-Site': 'same-origin', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Dest': 'empty' } }, (res) => {
+        let value = ''; res.on('data', (b) => { value += b.toString(); }); res.on('end', () => resolve({ status: res.statusCode, value: JSON.parse(value) }));
+      }); req.on('error', reject); req.end(payload);
+    });
+    for (const method of ['POST', 'DELETE']) assert.deepEqual(await send(method), { status: 403, value: { error: 'OPS_ACCESS_DENIED' } });
+    for (const [payload, origin] of [['x', 'https://account.fawxzzy.com'], ['', 'https://wrong.invalid']]) assert.deepEqual(await send('POST', payload, origin), { status: 403, value: { error: 'OPS_REQUEST_DENIED' } });
+    assert.equal(authCalls, 2); assert.equal(observed.length, 4); assert.ok(observed.every((x) => x.body));
+  } finally { server.closeAllConnections(); await new Promise((resolve) => server.close(resolve)); }
 });
 test('existing cookie cannot be silently replaced; production default is disabled', async () => {
   const f = fixture(); const res = await f.handler(request('session', 'POST', { headers: { Cookie: `${COOKIE}=${newHandle()}` } }), 'session');
