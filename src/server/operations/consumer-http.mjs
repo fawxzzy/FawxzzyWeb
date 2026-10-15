@@ -5,7 +5,7 @@ import { exactOrder } from './ordering.mjs';
 const ORIGIN = 'https://account.fawxzzy.com';
 const HEADERS = { 'Cache-Control': 'no-store, max-age=0', 'Content-Type': 'application/json; charset=utf-8',
   'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer',
-  'X-Content-Type-Options': 'nosniff', Vary: 'Authorization, Cookie, Origin' };
+  'X-Content-Type-Options': 'nosniff', Vary: 'Authorization, Cookie, Origin, Sec-Fetch-Site, Sec-Fetch-Mode, Sec-Fetch-Dest' };
 const fields = (x, keys) => x && typeof x === 'object' && !Array.isArray(x)
   && Object.keys(x).length === keys.length && keys.every((k) => Object.hasOwn(x, k));
 const text = (x, max) => typeof x === 'string' && x.length > 0 && x.length <= max && !/[\u0000-\u001f\u007f]/u.test(x);
@@ -58,8 +58,17 @@ export function validateView(value) {
 
 function guard(request, route) {
   const url = new URL(request.url); const methods = route === 'session' ? ['POST', 'DELETE'] : ['GET'];
+  const origin = request.headers.get('origin');
+  // Browsers normally omit Origin on same-origin GET. Require their exact
+  // fetch context instead; it supplements, never replaces, Auth/session checks.
+  const validOrigin = route === 'read' && request.method === 'GET'
+    ? (origin === null || origin === ORIGIN)
+      && request.headers.get('sec-fetch-site') === 'same-origin'
+      && ['cors', 'same-origin'].includes(request.headers.get('sec-fetch-mode'))
+      && request.headers.get('sec-fetch-dest') === 'empty'
+    : origin === ORIGIN;
   if (url.origin !== ORIGIN || url.pathname !== `/api/operations/${route}` || url.search || url.hash || url.username || url.password
-    || request.headers.get('origin') !== ORIGIN || request.headers.get('x-fawxzzy-operations') !== '1'
+    || !validOrigin || request.headers.get('x-fawxzzy-operations') !== '1'
     || !methods.includes(request.method) || request.body !== null
     || (request.headers.has('content-length') && request.headers.get('content-length') !== '0')
     || request.headers.has('transfer-encoding') || request.headers.get('sec-fetch-mode') === 'navigate'

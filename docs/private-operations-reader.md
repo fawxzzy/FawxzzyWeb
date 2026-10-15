@@ -7,8 +7,13 @@ alone does not activate a reader.
 
 ## HTTP contract
 
-- Exact `https://account.fawxzzy.com` origin and paths, matching `Origin`,
-  `X-Fawxzzy-Operations: 1`, no query/body/navigation.
+- Exact `https://account.fawxzzy.com` URL origin and paths,
+  `X-Fawxzzy-Operations: 1`, no query/body/navigation. Session POST/DELETE require
+  matching `Origin`. Read GET requires browser Fetch Metadata: `Sec-Fetch-Site:
+  same-origin`, `Sec-Fetch-Mode: cors` or `same-origin`, and `Sec-Fetch-Dest: empty`.
+  GET may omit `Origin`, as browsers normally do; a supplied value must match.
+  Missing or malformed metadata denies even with matching Origin. These checks
+  supplement bearer/live Auth and session authorization, never replace them.
 - `POST /api/operations/session` opens; an existing cookie returns 409 and must be
   closed first. `DELETE` closes. `GET /api/operations/read` returns only the closed
   redacted projection contract. Actions remain disabled.
@@ -63,3 +68,15 @@ those separate acceptance checks and current installation/exposure proof.
 Run `npm run test:operations-consumer` (included in `npm run verify`). The historical
 direct-PG foundation's parser/audit tests are superseded by fixed-RPC tests because
 that credential transport has been removed, not waived.
+
+Regression rule: Node-created Request objects can synthesize browser-forbidden
+headers and conceal transport incompatibilities. The Chromium/WebKit
+`operations-request-metadata.spec.ts` fixture sends real same-origin GETs through
+the production guard with actual browser Origin/Fetch Metadata. Its URL, cookie,
+Auth and store are synthetic; it does not establish genuine user acceptance.
+See the [Fetch Origin rules](https://fetch.spec.whatwg.org/#origin-header).
+
+The vendored `platform-runtime` subtree is hash-pinned to upstream bytes.
+Repository `.gitattributes` forces LF checkouts only in that subtree, including
+on Windows with `core.autocrlf=true`. Keep the pins intact; a line-ending mismatch
+is a checkout failure, not permission to recompute hashes.

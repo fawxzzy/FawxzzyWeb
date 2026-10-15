@@ -14,7 +14,8 @@ const token = jwt();
 function request(route = 'read', method = 'GET', extra = {}) {
   const { headers = {}, url, ...rest } = extra;
   return new Request(url ?? `https://account.fawxzzy.com/api/operations/${route}`, { method,
-    headers: { Origin: 'https://account.fawxzzy.com', 'X-Fawxzzy-Operations': '1', Authorization: `Bearer ${token}`, ...headers }, ...rest });
+    headers: { Origin: 'https://account.fawxzzy.com', 'X-Fawxzzy-Operations': '1', Authorization: `Bearer ${token}`,
+      'Sec-Fetch-Site': 'same-origin', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Dest': 'empty', ...headers }, ...rest });
 }
 const provider = () => Response.json({ id: identity.subject, is_anonymous: false, user_metadata: { admin: true } });
 const authOptions = { now: () => now, fetchImpl: async () => provider() };
@@ -82,6 +83,45 @@ test('read and close revalidate bearer and bind digest to the current account/se
   const closed = await f.handler(request('session', 'DELETE', { headers }), 'session');
   assert.notEqual(f.calls[2][1], original); assert.match(closed.headers.get('set-cookie'), /Path=\/; Max-Age=0; Secure; HttpOnly; SameSite=Strict/u);
 });
+
+for (const mode of ['cors', 'same-origin']) {
+  test(`browser GET without Origin accepts exact ${mode} fetch context and still validates Auth/session`, async () => {
+    const f = fixture(); const raw = newHandle();
+    const req = request('read', 'GET', { headers: { Cookie: `${COOKIE}=${raw}`, 'Sec-Fetch-Mode': mode } });
+    req.headers.delete('origin');
+    const res = await f.handler(req, 'read');
+    assert.equal(res.status, 200); assert.deepEqual(await res.json(), view);
+    assert.deepEqual(f.calls, [['read', handleDigest(raw, identity)]]);
+    assert.match(res.headers.get('vary'), /Sec-Fetch-Site, Sec-Fetch-Mode, Sec-Fetch-Dest/u);
+    req.headers.delete('authorization');
+    assert.equal((await f.handler(req, 'read')).status, 403); assert.equal(f.calls.length, 1);
+  });
+}
+for (const [header, values] of Object.entries({
+  'Origin': ['', 'null', 'https://evil.invalid', 'https://account.fawxzzy.com.evil.invalid'],
+  'Sec-Fetch-Site': [null, '', 'same-site', 'cross-site', 'none', 'same-origin, cross-site', 'Same-Origin'],
+  'Sec-Fetch-Mode': [null, '', 'navigate', 'no-cors', 'websocket', 'cors, same-origin', 'CORS'],
+  'Sec-Fetch-Dest': [null, '', 'document', 'iframe', 'image', 'empty, document', 'Empty'],
+})) {
+  for (const value of values) {
+    test(`GET rejects ${header}=${String(value)} before credentials or store`, async () => {
+      let configReads = 0; const handler = createConsumerHandler(() => { configReads++; throw new Error('NO'); });
+      for (const suppliedOrigin of [false, true]) {
+        const req = request(); if (!suppliedOrigin) req.headers.delete('origin');
+        if (value === null) req.headers.delete(header); else req.headers.set(header, value);
+        assert.equal((await handler(req, 'read')).status, 403);
+      }
+      assert.equal(configReads, 0);
+    });
+  }
+}
+for (const method of ['POST', 'DELETE']) {
+  test(`${method} session never uses the GET absent-Origin allowance`, async () => {
+    let configReads = 0; const handler = createConsumerHandler(() => { configReads++; throw new Error('NO'); });
+    const req = request('session', method); req.headers.delete('origin');
+    assert.equal((await handler(req, 'session')).status, 403); assert.equal(configReads, 0);
+  });
+}
 test('uncertain session mutation is never retried and clears cookie without disclosing errors', async () => {
   const f = fixture(); let effects = 0;
   f.deps.store.open = async () => { effects++; throw new Error('PRIVATE_SECRET_CREDENTIAL'); };
