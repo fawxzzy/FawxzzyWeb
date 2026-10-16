@@ -89,6 +89,8 @@ test('timed expiry and pagehide clear the rendered observation without backgroun
 });
 
 test('denial, failed acknowledgment and explicit reconciliation never auto-open a session', async ({ page }) => {
+  // Match the passing visual test: Safari smooth scrolling can keep controls unstable.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   const f = await fixture(page); f.setDenied(true); await page.goto('/operations?auth_test=session');
   await page.getByRole('button', { name: 'Check access' }).click();
   await expect(page.getByRole('status')).toContainText('Private access is not available'); expect(f.calls).toHaveLength(1);
@@ -102,6 +104,8 @@ test('denial, failed acknowledgment and explicit reconciliation never auto-open 
 });
 
 test('nonhealthy response and durable Auth change erase rendered work immediately', async ({ page }) => {
+  // The security assertions do not depend on motion or animated scrolling.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   const f = await fixture(page); await page.goto('/operations?auth_test=session');
   await page.getByRole('button', { name: 'Check access' }).click();
   await expect(page.getByRole('region', { name: 'Work overview' })).toBeVisible();
