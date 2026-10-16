@@ -6,7 +6,7 @@ Repository ownership, repository naming, and repository-relative source paths de
 
 ## Current selection
 
-The current source contains one FawxzzyWeb-owned card: the source-proven `/projects` consumer and guarded publication lane. It remains blocked on the canonical Mazer owner export. The already-complete Fitness export is evidence, not duplicated Fitness work.
+The current source contains the existing `FW-PROJECTS-001` card for the source-proven `/projects` consumer and guarded publication lane. Its recorded blocker is the canonical Mazer owner export; that dated blocker requires a current readback before disposition. It also contains `FW-ANALYTICS-001`, an unadopted planning candidate with `public_safe: false` that is held for governed intake and excluded from public publication. The already-complete Fitness export is evidence, not duplicated Fitness work.
 
 The producer can now validate and deterministically export additional `FW-` owner cards without changing the existing card's ID or content. A new card needs an explicit `public_safe` decision; omission is accepted only for the original `FW-PROJECTS-001` source record to preserve its existing export. A `false` decision stays in the owner export for governed intake; a `true` decision still needs the public projection owner's approval before website publication. Duplicate and cross-owner IDs fail closed. The existing `in-progress`, `planning`, and `blocked` lifecycle scope is retained; `ready`, `review`, and `completed` require an explicit source-scope update before use. Priority, lifecycle, source revision and source references stay attached to each exported card.
 
