@@ -44,9 +44,9 @@ function isCompleted(card: Card) {
   return completedStates.has(card.lifecycle);
 }
 
-function CardItem({ card, onSelect }: { card: Card; onSelect: (card: Card) => void }) {
+function CardItem({ card, onSelect }: { card: Card; onSelect: (card: Card, trigger: HTMLButtonElement) => void }) {
   return (
-    <button className="project-card" data-lifecycle={card.lifecycle} onClick={() => onSelect(card)} type="button">
+    <button className="project-card" data-lifecycle={card.lifecycle} onClick={(event) => onSelect(card, event.currentTarget)} type="button">
       <span className="project-card__meta">
         <span>{card.id}</span>
         <span>{titleCase(card.workType)}</span>
@@ -66,7 +66,7 @@ function CardItem({ card, onSelect }: { card: Card; onSelect: (card: Card) => vo
   );
 }
 
-function CardGroups({ cards, grouped, onSelect }: { cards: Card[]; grouped: boolean; onSelect: (card: Card) => void }) {
+function CardGroups({ cards, grouped, onSelect }: { cards: Card[]; grouped: boolean; onSelect: (card: Card, trigger: HTMLButtonElement) => void }) {
   if (cards.length === 0) return <p className="project-stage__empty">No cards at this stage.</p>;
   if (!grouped) return <>{cards.map((card) => <CardItem card={card} key={cardKey(card)} onSelect={onSelect} />)}</>;
   const names = [...new Set(cards.map((card) => card.component || "Other"))].sort();
@@ -91,10 +91,18 @@ export function ProjectBoard({ publicBoardState }: { publicBoardState?: PublicBo
   const [query, setQuery] = useState("");
   const [showCompleted, setShowCompleted] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const workspace = useRef<HTMLElement>(null);
+  const dialog = useRef<HTMLElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
+  const returnFocus = useRef<HTMLButtonElement | null>(null);
   const board = boards.find((item) => item.id === boardId) ?? boards[0];
   const selected = resolveVisibleSelection(allCards, selectedKey) as Card | null;
-  const selectCard = (card: Card) => setSelectedKey(cardKey(card));
+  const dialogOpen = Boolean(selected);
+  const selectCard = (card: Card, trigger?: HTMLButtonElement) => {
+    if (trigger) returnFocus.current = trigger;
+    setSelectedKey(cardKey(card));
+  };
+  const closeCard = () => setSelectedKey(null);
   const normalized = query.trim().toLowerCase();
   const source = (board?.cards ?? []) as Card[];
   const cards = normalized ? source.filter((card) =>
@@ -108,17 +116,40 @@ export function ProjectBoard({ publicBoardState }: { publicBoardState?: PublicBo
     return target !== null && cardKey(target) === cardKey(selected);
   })) : [];
   useEffect(() => {
-    if (!selected) return;
+    if (!dialogOpen) {
+      if (returnFocus.current) {
+        const fallback = workspace.current?.querySelector<HTMLButtonElement>('.project-tab[aria-pressed="true"]');
+        (returnFocus.current.isConnected ? returnFocus.current : fallback)?.focus();
+        returnFocus.current = null;
+      }
+      return;
+    }
     closeButton.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSelectedKey(null);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setSelectedKey(null);
+      }
+      if (event.key !== "Tab" || !dialog.current) return;
+      const focusable = [...dialog.current.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')];
+      const first = focusable[0];
+      const last = focusable.at(-1);
+      if (!first || !last) return;
+      const inside = dialog.current.contains(document.activeElement);
+      if (event.shiftKey && (!inside || document.activeElement === first)) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (!inside || document.activeElement === last)) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [selected]);
+  }, [dialogOpen, selectedKey]);
 
   return (
-    <section aria-label="Project boards" className="project-workspace">
+    <section aria-label="Project boards" className="project-workspace" ref={workspace}>
       <div className="project-board-shell">
         <div className="project-board-toolbar">
           <div>
@@ -181,10 +212,10 @@ export function ProjectBoard({ publicBoardState }: { publicBoardState?: PublicBo
       </div>
 
       {selected ? (
-        <div className="project-detail-backdrop" onMouseDown={() => setSelectedKey(null)}>
+        <div className="project-detail-backdrop" onMouseDown={closeCard}>
           <section aria-labelledby="project-detail-title" aria-modal="true" className="project-detail"
-            onMouseDown={(event) => event.stopPropagation()} role="dialog">
-            <button aria-label="Close card details" className="project-detail__close" onClick={() => setSelectedKey(null)} ref={closeButton} type="button">×</button>
+            onMouseDown={(event) => event.stopPropagation()} ref={dialog} role="dialog">
+            <button aria-label="Close card details" className="project-detail__close" onClick={closeCard} ref={closeButton} type="button">×</button>
             <p className="eyebrow">{selected.component || board?.name} · {selected.id}</p>
             <h2 id="project-detail-title">{selected.title}</h2>
             <p>{selected.summary}</p>
