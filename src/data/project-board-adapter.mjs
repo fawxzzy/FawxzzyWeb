@@ -135,6 +135,9 @@ export function validateFourBoardSnapshot(snapshot, { allowEmptyPreview = false 
 
 export function initialBoardState(snapshot) {
   validateFourBoardSnapshot(snapshot, { allowEmptyPreview: true });
+  if (!snapshot.publicationReady && snapshot.boards.some((board) => board.cards.length > 0)) {
+    throw new Error("Unapproved preview contains cards");
+  }
   return {
     health: "stale",
     lastAccepted: structuredClone(snapshot),

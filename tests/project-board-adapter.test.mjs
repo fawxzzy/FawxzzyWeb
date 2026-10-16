@@ -57,8 +57,12 @@ test("empty public placeholder is visible but never authoritative", () => {
   assert.throws(() => initialBoardState(invalidApproval), /Empty public projection/);
 });
 
+test("unapproved nonempty initial preview cannot expose cards", () => {
+  assert.throws(() => initialBoardState(fixture), /Unapproved preview contains cards/);
+});
+
 test("accepted revision is idempotent and preserves successful freshness on repeat", () => {
-  const initial = initialBoardState(fixture);
+  const initial = initialBoardState(preview);
   const accepted = applyBoardEnvelope(initial, envelope(approved));
   assert.equal(boardView(accepted).authoritative, true);
   assert.equal(accepted.projectionRevision, "rev-1");
@@ -68,7 +72,7 @@ test("accepted revision is idempotent and preserves successful freshness on repe
 });
 
 test("same revision and watermark accept reordered object keys as identical content", () => {
-  const accepted = applyBoardEnvelope(initialBoardState(fixture), envelope(approved));
+  const accepted = applyBoardEnvelope(initialBoardState(preview), envelope(approved));
   const reordered = JSON.parse(JSON.stringify(approved, (_key, value) => value && !Array.isArray(value)
     && typeof value === "object" ? Object.fromEntries(Object.entries(value).reverse()) : value));
   const repeated = applyBoardEnvelope(accepted, envelope(reordered));
@@ -122,7 +126,7 @@ test("public payload rejects private or omitted relationship identifiers", () =>
 });
 
 test("stale or forked revision retains data but removes current-truth authority", () => {
-  const accepted = applyBoardEnvelope(initialBoardState(fixture), envelope(approved));
+  const accepted = applyBoardEnvelope(initialBoardState(preview), envelope(approved));
   const stale = applyBoardEnvelope(accepted, envelope(approved, "rev-2", "rev-0"));
   assert.equal(stale.projectionRevision, "rev-1");
   assert.equal(stale.lastSuccessfulAt, accepted.lastSuccessfulAt);
@@ -135,7 +139,7 @@ test("stale or forked revision retains data but removes current-truth authority"
 });
 
 test("backdated same-revision replay never restores current-truth authority", () => {
-  const accepted = applyBoardEnvelope(initialBoardState(fixture), envelope(approved));
+  const accepted = applyBoardEnvelope(initialBoardState(preview), envelope(approved));
   for (const held of [
     applyBoardEnvelope(accepted, { ...envelope(approved), health: "stale" }),
     applyBoardEnvelope(accepted, envelope(approved, "rev-2", "rev-0")),
@@ -151,7 +155,7 @@ test("backdated same-revision replay never restores current-truth authority", ()
 });
 
 test("same revision with changed content is incompatible and exposes no cards", () => {
-  const accepted = applyBoardEnvelope(initialBoardState(fixture), envelope(approved));
+  const accepted = applyBoardEnvelope(initialBoardState(preview), envelope(approved));
   const changed = copy(approved);
   changed.boards[0].cards[0].title += " changed";
   const conflict = applyBoardEnvelope(accepted, envelope(changed));
@@ -161,7 +165,7 @@ test("same revision with changed content is incompatible and exposes no cards", 
 });
 
 test("empty, malformed, or unavailable refresh preserves last accepted data and freshness privately", () => {
-  const accepted = applyBoardEnvelope(initialBoardState(fixture), envelope(approved));
+  const accepted = applyBoardEnvelope(initialBoardState(preview), envelope(approved));
   const empty = copy(approved);
   for (const board of empty.boards) board.cards = [];
   for (const candidate of [envelope(empty, "rev-2", "rev-1"), { ...envelope(approved), schema: "unknown" }]) {
@@ -193,7 +197,7 @@ test("public snapshot validator rejects private fields and duplicate source iden
 });
 
 test("unapproved preview cannot be promoted to authoritative current state", () => {
-  const state = applyBoardEnvelope(initialBoardState(fixture), envelope(fixture));
+  const state = applyBoardEnvelope(initialBoardState(preview), envelope(fixture));
   assert.equal(state.health, "incompatible");
   assert.equal(state.reason, "PUBLICATION_NOT_APPROVED");
   assert.deepEqual(boardView(state).boards, []);
@@ -231,7 +235,7 @@ test("renderer follows a supplied validated state and shows honest freshness", a
       boardView, initialBoardState, resolveCardReference, resolveDetailDependency, resolveVisibleSelection,
     };
     if (specifier === "@/data/project-board-label.mjs") return { projectBoardLabel };
-    if (specifier === "@/data/project-board-preview.generated.json") return fixture;
+    if (specifier === "@/data/project-board-preview.generated.json") return preview;
     throw new Error(`Unexpected renderer import: ${specifier}`);
   };
   new Function("require", "module", "exports", compiled)(componentRequire, componentModule, componentModule.exports);
@@ -253,7 +257,7 @@ test("renderer follows a supplied validated state and shows honest freshness", a
   changed.boards[0].cards[0].title = "Synthetic accepted board revision";
   changed.boards[0].cards[0].lifecycle = "in_progress";
   for (const card of changed.boards[0].cards) card.sourceRevision = `sha256:${"1".repeat(64)}`;
-  const accepted = applyBoardEnvelope(initialBoardState(fixture), envelope(changed));
+  const accepted = applyBoardEnvelope(initialBoardState(preview), envelope(changed));
   const acceptedMarkup = render(accepted);
   assert.match(acceptedMarkup, /Synthetic accepted board revision/);
   assert.match(acceptedMarkup, /data-lifecycle="in_progress"/);
@@ -329,7 +333,7 @@ for (const [label, change] of [
 
 test("reject nonexistent envelope generation day before freshness acceptance", () => {
   const invalid = { ...envelope(approved), generatedAt: "2026-02-30T12:00:00Z" };
-  const result = applyBoardEnvelope(initialBoardState(fixture), invalid);
+  const result = applyBoardEnvelope(initialBoardState(preview), invalid);
   assert.equal(result.health, "incompatible");
   assert.equal(result.reason, "INVALID_ENVELOPE");
   assert.deepEqual(boardView(result).boards, []);
@@ -339,7 +343,7 @@ test("reject timezone-free card and envelope timestamps", () => {
   const unzonedCard = copy(approved);
   unzonedCard.boards[0].cards[0].updatedAt = "2026-10-13T19:00:00";
   assert.throws(() => validateFourBoardSnapshot(unzonedCard), /Invalid public card/);
-  const unzonedEnvelope = applyBoardEnvelope(initialBoardState(fixture), {
+  const unzonedEnvelope = applyBoardEnvelope(initialBoardState(preview), {
     ...envelope(approved), generatedAt: "2026-10-13T19:00:00.000",
   });
   assert.equal(unzonedEnvelope.health, "incompatible");
@@ -352,17 +356,17 @@ test("valid leap dates and UTC offsets remain accepted", () => {
   valid.preparedAt = "2000-02-29";
   valid.boards[0].cards[0].updatedAt = "2024-02-29T23:30:00-05:00";
   assert.doesNotThrow(() => validateFourBoardSnapshot(valid));
-  const result = applyBoardEnvelope(initialBoardState(fixture), {
+  const result = applyBoardEnvelope(initialBoardState(preview), {
     ...envelope(valid), generatedAt: "2024-02-29T12:00:00+02:00",
   });
   assert.equal(result.health, "healthy");
 });
 
 test("cold and missed-revision clients retain the catch-up guard", () => {
-  const cold = applyBoardEnvelope(initialBoardState(fixture), envelope(approved, "rev-3", "rev-2"));
+  const cold = applyBoardEnvelope(initialBoardState(preview), envelope(approved, "rev-3", "rev-2"));
   assert.equal(cold.reason, "STALE_OR_FORKED_REVISION");
   assert.equal(cold.projectionRevision, null);
-  const accepted = applyBoardEnvelope(initialBoardState(fixture), envelope(approved));
+  const accepted = applyBoardEnvelope(initialBoardState(preview), envelope(approved));
   const missed = applyBoardEnvelope(accepted, envelope(approved, "rev-3", "rev-2"));
   assert.equal(missed.reason, "STALE_OR_FORKED_REVISION");
   assert.equal(missed.projectionRevision, "rev-1");
