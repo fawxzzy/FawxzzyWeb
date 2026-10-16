@@ -1,20 +1,20 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_trove_owner_fd7b13efb817",
+  "export_id": "pbe_trove_owner_82376349d503",
   "project_id": "trove",
   "board_id": "discordos:project-feedback:trove",
   "owner": "trove",
   "adapter_id": "fawxzzyweb-owner-source-v1",
-  "source_revision": "sha256:fd7b13efb817c1951ec1af4e28866f952640b16170d7cd7a90876b3a6273f7b0",
-  "generated_at": "2026-09-15T01:41:16.000Z",
+  "source_revision": "sha256:82376349d503a5c3825d80af8419440e360dd43be534a6a078eb9327803d3d4d",
+  "generated_at": "2026-10-16T01:27:12.356Z",
   "sources": [
     {
       "source_id": "fawxzzyweb-owner-work",
       "kind": "json",
       "repository": "FawxzzyWeb",
       "path": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json",
-      "revision": "sha256:41fafc20144518b505bb560c1ff0ec160e28bcde06cb14fc50e6b0a1bc056f5f",
-      "observed_at": "2026-09-15T01:41:16.000Z"
+      "revision": "sha256:a53c9c05a21f58c82475fedb7e073bfb9bf3f9ff4832e031da1e5346ea1c37e9",
+      "observed_at": "2026-10-16T01:27:12.356Z"
     },
     {
       "source_id": "fawxzzyweb-owner-export-adapter",
@@ -22,7 +22,7 @@
       "repository": "FawxzzyWeb",
       "path": "repos/FawxzzyWeb/scripts/export-project-board-owner.mjs",
       "revision": "sha256:0d1e37bcad57a016d52d04aaff0c9744f95defffa2b4eb4d8a9b7df8b9dc01c1",
-      "observed_at": "2026-09-15T01:41:16.000Z"
+      "observed_at": "2026-10-16T01:27:12.356Z"
     },
     {
       "source_id": "fawxzzyweb-product-identity",
@@ -30,10 +30,84 @@
       "repository": "FawxzzyWeb",
       "path": "repos/FawxzzyWeb/src/config/product.ts",
       "revision": "sha256:191520ba158b6d8a8953bfaa87f8d113c98f775f1deb23f53217183df88b93bb",
-      "observed_at": "2026-09-15T01:41:16.000Z"
+      "observed_at": "2026-10-16T01:27:12.356Z"
     }
   ],
   "cards": [
+    {
+      "idempotency_key": "pbk_trove_fw-analytics-001_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FW-ANALYTICS-001",
+        "project_id": "trove",
+        "board_id": "discordos:project-feedback:trove",
+        "title": "Traffic Analytics and Live Active-User Counter",
+        "description": "Prepare Web-first privacy-safe historical traffic and ephemeral active-presence measurement, with a shared contract for future Fitness and Mazer reuse.",
+        "card_type": "feature",
+        "lifecycle": "planning",
+        "priority": "low",
+        "owner": "trove",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-10-16T01:27:12.356Z",
+        "source_ref": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json#FW-ANALYTICS-001",
+        "extensions": {
+          "public_safe": false,
+          "source_baseline_commit": "af6a2076712ce7517b1e021bf4841048f6f97085"
+        }
+      },
+      "source": {
+        "source_id": "fawxzzyweb-owner-work",
+        "source_ref": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json#FW-ANALYTICS-001",
+        "source_status": "current",
+        "source_updated_at": "2026-10-16T01:27:12.356Z"
+      },
+      "content": {
+        "summary": "Prepare Web-first privacy-safe historical traffic and ephemeral active-presence measurement, with a shared contract for future Fitness and Mazer reuse.",
+        "objective": "Define truthful traffic and active-now measurements and an internal-facing view with explicit privacy, freshness, provider, and product acceptance boundaries.",
+        "acceptance_criteria": [
+          "1. Specify the Web-first historical traffic and active-now product outcome, with future Fitness/Mazer reuse documented as a shared measurement contract rather than separate duplicate Web-parent cards.",
+          "2. Define visitor, page-view, session, registered-account, active-product-user and active-now terms, units, deduplication rules and time zones so labels cannot imply that concurrent sessions equal people or account totals.",
+          "3. Show privacy-safe visitor totals for today, trailing 7 days and trailing 30 days, with explicit aggregation and unavailable/stale states.",
+          "4. Show page views and popular pages from canonical safe routes, with a stated treatment of redirects, bots and repeated views.",
+          "5. Show referrer summaries only where privacy policy and the selected source permit them; avoid raw identifying URL or query values.",
+          "6. Show aggregate device/browser trends only at a safe granularity and suppress or omit small/private segments as required by the approved public/private policy.",
+          "7. Provide an active-now total and per-app counts under one consistent contract, initially for Web and extendable to Fitness/Mazer, without treating registered accounts as active presence.",
+          "8. Count visible active sessions from an authoritative presence snapshot with explicit expiry, disconnect, reconnect and cross-tab behavior; recalculate from current state rather than accumulating join/leave deltas as a durable counter.",
+          "9. Deduplicate an authenticated user across active connections where appropriate and an anonymous browser within its permitted session scope. Define exactly what is counted when user identity is unavailable; publish no presence identities.",
+          "10. Keep presence payloads minimal and ephemeral. Exclude names, email, IP, precise location, raw user agents, private routes, free-form text and other personally identifying information from the displayed counts and client-visible state.",
+          "11. Keep provider credentials and privileged Supabase access server-only. Any browser read uses an authorized, sanitized aggregate interface with explicit access policy and no direct private board-table exposure.",
+          "12. Reconcile the already-written first-party analytics source and its closed event vocabulary with the proposed Vercel option, including whether existing data can supply the requested history and which single source is authoritative for each metric. Provider setup, cost and retention remain separate decisions.",
+          "13. Deliver an internal-facing view and verify count accuracy, freshness, resilience to presence churn, privacy, accessibility and narrow-screen presentation with realistic multi-session cases. A public badge is optional only after its own validation and approval.",
+          "14. Return source, integration, release and product acceptance evidence separately. Do not mark the card complete from local source, a preview, an analytics dashboard screenshot, or a deployed count without the corresponding approved live readback and receiving proof."
+        ],
+        "discoveries": [
+          "This is an unadopted owner-source proposal. FW-ANALYTICS-001 is proposed pending current canonical equivalence checking, owner adoption, and exact card save/readback.",
+          "Fitness FF-ANALYTICS-001 and FF-SOC-002 are related distinct outcomes; their identities, dependencies, and acceptance remain with Fitness.",
+          "The existing first-party analytics contract must be reconciled before any provider or metric implementation decision. Public projection is not approved."
+        ],
+        "next_actions": [
+          "Have the Web source owner and sole Platform writer check current canonical equivalents before adopting or assigning the final stable Web card identity.",
+          "Return the reviewed source/export identity and proposed card identity for owner intake.",
+          "After exact canonical authority is established, verify real card save/readback and return integration, release, and product acceptance evidence separately."
+        ],
+        "blockers": [
+          "Current canonical equivalence, owner adoption, and exact card save/readback are not yet verified.",
+          "Metric implementation, provider setup, cost, retention, and public/private access decisions require their separate reviewed scope."
+        ],
+        "evidence": [
+          "planning/project-board-owner-source.v1.json#FW-ANALYTICS-001",
+          "docs/first-party-analytics.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
     {
       "idempotency_key": "pbk_trove_fw-projects-001_v1",
       "record_kind": "project-work",
@@ -102,8 +176,8 @@
     }
   ],
   "extensions": {
-    "source_work_item_count": 1,
-    "exported_card_count": 1,
+    "source_work_item_count": 2,
+    "exported_card_count": 2,
     "excluded_record_count": 3,
     "excluded_record_identities": [
       "SOC-024",
