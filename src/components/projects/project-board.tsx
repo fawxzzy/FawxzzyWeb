@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { productIdentity } from "@/config/product";
 import { boardView, initialBoardState, resolveCardReference, resolveDetailDependency, resolveVisibleSelection } from "@/data/project-board-adapter.mjs";
+import { projectBoardLabel } from "@/data/project-board-label.mjs";
 import preview from "@/data/project-board-preview.generated.json";
 
 const stages = [
@@ -97,6 +99,7 @@ export function ProjectBoard({ publicBoardState }: { publicBoardState?: PublicBo
   const returnFocus = useRef<HTMLButtonElement | null>(null);
   const board = boards.find((item) => item.id === boardId) ?? boards[0];
   const selected = resolveVisibleSelection(allCards, selectedKey) as Card | null;
+  const selectedBoard = selected ? boards.find((item) => (item.cards as Card[]).some((card) => cardKey(card) === cardKey(selected))) : null;
   const dialogOpen = Boolean(selected);
   const selectCard = (card: Card, trigger?: HTMLButtonElement) => {
     if (trigger) returnFocus.current = trigger;
@@ -154,7 +157,7 @@ export function ProjectBoard({ publicBoardState }: { publicBoardState?: PublicBo
         <div className="project-board-toolbar">
           <div>
             <p className="eyebrow">Public view · Fawxzzy project boards</p>
-            <h1>{board?.name ?? "Project boards unavailable"}</h1>
+            <h1>{board ? projectBoardLabel(board, productIdentity.publicName) : "Project boards unavailable"}</h1>
             <p className="project-board-toolbar__rule">Public board view. Full account access uses a separate owner-only surface.</p>
             <p>{activeCards.length} open · {completedCards.length} completed</p>
             <p aria-live="polite" className="project-board-toolbar__rule">
@@ -177,9 +180,9 @@ export function ProjectBoard({ publicBoardState }: { publicBoardState?: PublicBo
 
         <nav aria-label="Project boards" className="project-tabs">
           {boards.map((item) => (
-            <button aria-label={`${item.name}, ${item.cards.length} cards`} aria-pressed={item.id === board?.id}
+            <button aria-label={`${projectBoardLabel(item, productIdentity.publicName)}, ${item.cards.length} cards`} aria-pressed={item.id === board?.id}
               className="project-tab" key={item.id} onClick={() => { setBoardId(item.id); setShowCompleted(false); }} type="button">
-              <span>{item.name}</span><strong>{item.cards.length}</strong>
+              <span>{projectBoardLabel(item, productIdentity.publicName)}</span><strong>{item.cards.length}</strong>
             </button>
           ))}
         </nav>
@@ -216,7 +219,7 @@ export function ProjectBoard({ publicBoardState }: { publicBoardState?: PublicBo
           <section aria-labelledby="project-detail-title" aria-modal="true" className="project-detail"
             onMouseDown={(event) => event.stopPropagation()} ref={dialog} role="dialog">
             <button aria-label="Close card details" className="project-detail__close" onClick={closeCard} ref={closeButton} type="button">×</button>
-            <p className="eyebrow">{selected.component || board?.name} · {selected.id}</p>
+            <p className="eyebrow">{selected.component || (selectedBoard ? projectBoardLabel(selectedBoard, productIdentity.publicName) : "")} · {selected.id}</p>
             <h2 id="project-detail-title">{selected.title}</h2>
             <p>{selected.summary}</p>
             <div className="project-detail__dependencies"><h3>Depends on</h3>

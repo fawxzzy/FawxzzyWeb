@@ -28,7 +28,9 @@ function nonempty(value) {
 }
 
 function instant(value) {
-  const date = typeof value === "string" ? /^(\d{4})-(\d{2})-(\d{2})T/.exec(value) : null;
+  const date = typeof value === "string"
+    ? /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-](?:0\d|1[0-4]):[0-5]\d)$/.exec(value)
+    : null;
   if (!date || !Number.isFinite(Date.parse(value))) return false;
   const year = Number(date[1]);
   const month = Number(date[2]);
@@ -177,6 +179,9 @@ export function applyBoardEnvelope(state, envelope) {
     if (canonicalContent(envelope.snapshot) !== canonicalContent(state.lastAccepted)
       || envelope.sourceWatermark !== state.sourceWatermark) {
       return hold("incompatible", "REVISION_CONTENT_CONFLICT");
+    }
+    if (state.lastSuccessfulAt && Date.parse(envelope.generatedAt) < Date.parse(state.lastSuccessfulAt)) {
+      return hold("reconciling", "BACKDATED_GENERATION");
     }
     return state.health === "healthy" ? state : { ...state, health: "healthy", reason: null };
   }

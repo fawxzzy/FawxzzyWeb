@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { projectBoardLabel } from "../src/data/project-board-label.mjs";
 
 const preview = JSON.parse(await readFile("src/data/project-board-preview.generated.json", "utf8"));
 
@@ -22,4 +23,10 @@ test("public placeholder contains no owner, provider, or private payload fields"
     assert(!text.includes(`"${field}"`), `unapproved field found: ${field}`);
   }
   assert(!/discord\.com\/channels\//i.test(text), "provider URL found");
+});
+
+test("Web board display label follows product identity instead of source name", () => {
+  const web = preview.boards.find((board) => board.id === "trove");
+  assert.equal(projectBoardLabel({ ...web, name: "outdated source name" }, "Future Name"), "Future Name Web");
+  assert.equal(projectBoardLabel(preview.boards[1], "Future Name"), "Mazer");
 });

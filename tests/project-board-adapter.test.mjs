@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import test from "node:test";
 import { applyBoardEnvelope, boardView, initialBoardState, resolveCardReference, resolveDetailDependency, resolveVisibleSelection, validateFourBoardSnapshot } from "../src/data/project-board-adapter.mjs";
+import { projectBoardLabel } from "../src/data/project-board-label.mjs";
 
 const require = createRequire(import.meta.url);
 
@@ -133,6 +134,22 @@ test("stale or forked revision retains data but removes current-truth authority"
   assert.equal(recovered.lastSuccessfulAt, accepted.lastSuccessfulAt);
 });
 
+test("backdated same-revision replay never restores current-truth authority", () => {
+  const accepted = applyBoardEnvelope(initialBoardState(fixture), envelope(approved));
+  for (const held of [
+    applyBoardEnvelope(accepted, { ...envelope(approved), health: "stale" }),
+    applyBoardEnvelope(accepted, envelope(approved, "rev-2", "rev-0")),
+  ]) {
+    const replay = applyBoardEnvelope(held, {
+      ...envelope(approved), generatedAt: "2026-10-12T19:00:00.000Z",
+    });
+    assert.equal(replay.health, "reconciling");
+    assert.equal(replay.reason, "BACKDATED_GENERATION");
+    assert.equal(boardView(replay).authoritative, false);
+    assert.equal(replay.lastSuccessfulAt, accepted.lastSuccessfulAt);
+  }
+});
+
 test("same revision with changed content is incompatible and exposes no cards", () => {
   const accepted = applyBoardEnvelope(initialBoardState(fixture), envelope(approved));
   const changed = copy(approved);
@@ -186,6 +203,16 @@ test("renderer follows a supplied validated state and shows honest freshness", a
   const typescript = require("typescript");
   const React = require("react");
   const { renderToStaticMarkup } = require("react-dom/server");
+  let hookIndex = 0;
+  let selectedForRender = null;
+  const rendererReact = {
+    ...React,
+    useState(initial) {
+      const [value, setValue] = React.useState(initial);
+      hookIndex += 1;
+      return [hookIndex === 4 && selectedForRender ? selectedForRender : value, setValue];
+    },
+  };
   const source = await readFile("src/components/projects/project-board.tsx", "utf8");
   const compiled = typescript.transpileModule(source, {
     compilerOptions: {
@@ -197,17 +224,23 @@ test("renderer follows a supplied validated state and shows honest freshness", a
   }).outputText;
   const componentModule = { exports: {} };
   const componentRequire = (specifier) => {
-    if (specifier === "react") return React;
+    if (specifier === "react") return rendererReact;
     if (specifier === "react/jsx-runtime") return require("react/jsx-runtime");
+    if (specifier === "@/config/product") return { productIdentity: { publicName: "Fawxzzy" } };
     if (specifier === "@/data/project-board-adapter.mjs") return {
       boardView, initialBoardState, resolveCardReference, resolveDetailDependency, resolveVisibleSelection,
     };
+    if (specifier === "@/data/project-board-label.mjs") return { projectBoardLabel };
     if (specifier === "@/data/project-board-preview.generated.json") return fixture;
     throw new Error(`Unexpected renderer import: ${specifier}`);
   };
   new Function("require", "module", "exports", compiled)(componentRequire, componentModule, componentModule.exports);
   const { ProjectBoard } = componentModule.exports;
-  const render = (state) => renderToStaticMarkup(React.createElement(ProjectBoard, state ? { publicBoardState: state } : {}));
+  const render = (state, selectedKey = null) => {
+    hookIndex = 0;
+    selectedForRender = selectedKey;
+    return renderToStaticMarkup(React.createElement(ProjectBoard, state ? { publicBoardState: state } : {}));
+  };
 
   const previewMarkup = render();
   assert.match(previewMarkup, /Live master sync is pending/);
@@ -216,6 +249,7 @@ test("renderer follows a supplied validated state and shows honest freshness", a
   assert.match(previewMarkup, /Fawxzzy Fitness/);
 
   const changed = copy(approved);
+  changed.boards[2].name = "outdated source label";
   changed.boards[0].cards[0].title = "Synthetic accepted board revision";
   changed.boards[0].cards[0].lifecycle = "in_progress";
   for (const card of changed.boards[0].cards) card.sourceRevision = `sha256:${"1".repeat(64)}`;
@@ -224,6 +258,11 @@ test("renderer follows a supplied validated state and shows honest freshness", a
   assert.match(acceptedMarkup, /Synthetic accepted board revision/);
   assert.match(acceptedMarkup, /data-lifecycle="in_progress"/);
   assert.match(acceptedMarkup, /Public board snapshot accepted 2026-10-13T19:00:00.000Z/);
+  assert.match(acceptedMarkup, /Fawxzzy Web, 1 cards/);
+  assert.doesNotMatch(acceptedMarkup, /outdated source label/);
+  const webDetailMarkup = render(accepted, "trove:SYNTHETIC-WEB-001");
+  assert.match(webDetailMarkup, /Fawxzzy Web · SYNTHETIC-WEB-001/);
+  assert.doesNotMatch(webDetailMarkup, /outdated source label/);
   assert.doesNotMatch(acceptedMarkup, /Live master sync is pending/);
 
   const repeat = applyBoardEnvelope(accepted, envelope(changed));
@@ -294,6 +333,18 @@ test("reject nonexistent envelope generation day before freshness acceptance", (
   assert.equal(result.health, "incompatible");
   assert.equal(result.reason, "INVALID_ENVELOPE");
   assert.deepEqual(boardView(result).boards, []);
+});
+
+test("reject timezone-free card and envelope timestamps", () => {
+  const unzonedCard = copy(approved);
+  unzonedCard.boards[0].cards[0].updatedAt = "2026-10-13T19:00:00";
+  assert.throws(() => validateFourBoardSnapshot(unzonedCard), /Invalid public card/);
+  const unzonedEnvelope = applyBoardEnvelope(initialBoardState(fixture), {
+    ...envelope(approved), generatedAt: "2026-10-13T19:00:00.000",
+  });
+  assert.equal(unzonedEnvelope.health, "incompatible");
+  assert.equal(unzonedEnvelope.reason, "INVALID_ENVELOPE");
+  assert.deepEqual(boardView(unzonedEnvelope).boards, []);
 });
 
 test("valid leap dates and UTC offsets remain accepted", () => {
