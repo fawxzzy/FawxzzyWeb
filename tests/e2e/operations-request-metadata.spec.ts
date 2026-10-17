@@ -11,6 +11,7 @@ test('real browser same-origin GET metadata reaches the guarded reader without O
   const view = { health: 'stale', authoritative: false, actions_enabled: false,
     projection_revision: null, source_watermark: [], cards: [] };
   const handler = createConsumerHandler({
+    ownerSubject: '11111111-1111-4111-8111-111111111111',
     authenticate: async () => { authCalls++; return {
       subject: '11111111-1111-4111-8111-111111111111',
       session: '22222222-2222-4222-8222-222222222222',

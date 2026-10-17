@@ -30,7 +30,7 @@ const view = { health: 'healthy', authoritative: true, actions_enabled: false, p
 const clone = (x) => structuredClone(x);
 function fixture(overrides = {}) {
   const calls = [];
-  const deps = { auth: config, authOptions, now: () => now,
+  const deps = { auth: config, authOptions, ownerSubject: identity.subject, now: () => now,
     store: { async open(...args) { calls.push(['open', ...args]); }, async close(...args) { calls.push(['close', ...args]); },
       async read(...args) { calls.push(['read', ...args]); return clone(view); } }, ...overrides };
   return { handler: createConsumerHandler(deps), calls, deps };
@@ -75,16 +75,33 @@ test('opaque cookie has all host attributes; DB gets only digest and verified id
   const raw = set.split(';')[0].split('=')[1]; assert.equal(f.calls[0][1], handleDigest(raw, identity));
   assert.deepEqual(f.calls[0][2], identity); assert.ok(!JSON.stringify(f.calls).includes(raw));
 });
+test('another authenticated subject and an absent owner binding cannot read or open private work', async () => {
+  const raw = newHandle(); const headers = { Cookie: `${COOKIE}=${raw}` };
+  const other = fixture({ ownerSubject: identity.session });
+  for (const [route, method] of [['read', 'GET'], ['session', 'POST']]) {
+    const res = await other.handler(request(route, method, { headers: method === 'GET' ? headers : {} }), route);
+    assert.equal(res.status, 403);
+    assert.deepEqual(await res.json(), { error: 'OPS_ACCESS_DENIED' });
+    assert.match(res.headers.get('cache-control'), /no-store/u);
+    assert.equal(res.headers.get('vary')?.includes('Authorization'), true);
+  }
+  assert.deepEqual(other.calls, []);
+  const unbound = fixture({ ownerSubject: undefined });
+  const res = await unbound.handler(request('read', 'GET', { headers }), 'read');
+  assert.equal(res.status, 503);
+  assert.deepEqual(await res.json(), { error: 'OPS_UNAVAILABLE' });
+  assert.deepEqual(unbound.calls, []);
+});
 test('read and close revalidate bearer and bind digest to the current account/session', async () => {
   const raw = newHandle(); const f = fixture(); const headers = { Cookie: `${COOKIE}=${raw}` };
   assert.equal((await f.handler(request('read', 'GET', { headers }), 'read')).status, 200);
   const original = f.calls[0][1]; assert.equal(original, handleDigest(raw, identity));
   f.deps.authenticate = async () => ({ ...identity, subject: identity.session });
-  assert.equal((await f.handler(request('read', 'GET', { headers }), 'read')).status, 200);
-  assert.notEqual(f.calls[1][1], original);
+  assert.equal((await f.handler(request('read', 'GET', { headers }), 'read')).status, 403);
+  assert.equal(f.calls.length, 1);
   f.deps.authenticate = async () => ({ ...identity, session: identity.subject });
   const closed = await f.handler(request('session', 'DELETE', { headers }), 'session');
-  assert.notEqual(f.calls[2][1], original); assert.match(closed.headers.get('set-cookie'), /Path=\/; Max-Age=0; Secure; HttpOnly; SameSite=Strict/u);
+  assert.notEqual(f.calls[1][1], original); assert.match(closed.headers.get('set-cookie'), /Path=\/; Max-Age=0; Secure; HttpOnly; SameSite=Strict/u);
 });
 
 for (const mode of ['cors', 'same-origin']) {
@@ -212,7 +229,8 @@ test('invalid framing and origin reject without pulling even a stalled body', as
 
 test('real loopback zero-byte HTTP POST and DELETE reach Auth; payload and foreign origin do not', async () => {
   let authCalls = 0; const observed = [];
-  const handler = createConsumerHandler({ authenticate: async () => { authCalls++; throw Object.assign(new Error('denied'), { code: 'OPS_ACCESS_DENIED' }); } });
+  const handler = createConsumerHandler({ ownerSubject: identity.subject,
+    authenticate: async () => { authCalls++; throw Object.assign(new Error('denied'), { code: 'OPS_ACCESS_DENIED' }); } });
   const server = http.createServer(async (incoming, outgoing) => {
     const req = new Request('https://account.fawxzzy.com/api/operations/session', { method: incoming.method, headers: incoming.headers, body: Readable.toWeb(incoming), duplex: 'half' });
     observed.push({ method: incoming.method, body: req.body !== null });
@@ -277,7 +295,7 @@ test('three fixed RPCs forward only the Auth-validated bearer and public key', a
   assert.deepEqual(JSON.parse(calls[2][1].body), { handle_digest: digest });
 });
 test('handler validates Auth before constructing the per-request transport', async () => {
-  const calls = []; const deps = { auth: config, now: () => now,
+  const calls = []; const deps = { auth: config, ownerSubject: identity.subject, now: () => now,
     authOptions: { now: () => now, fetchImpl: async (_, init) => { calls.push(['auth', init.headers.Authorization]); return provider(); } },
     storeOptions: { fetchImpl: async (_, init) => { calls.push(['rpc', init.headers.Authorization]); return Response.json({ status: 'opened' }); } } };
   const handler = createConsumerHandler(deps);
@@ -337,7 +355,7 @@ test('RPC deadline covers nonsettling fetch, stream and cancellation', async () 
   }
 });
 test('RPC read cannot bypass closed display validation', async () => {
-  const handler = createConsumerHandler({ auth: config, authOptions,
+  const handler = createConsumerHandler({ auth: config, authOptions, ownerSubject: identity.subject,
     storeOptions: { fetchImpl: async () => Response.json({ ...view, private: 'secret' }) } });
   const res = await handler(request('read', 'GET', { headers: { Cookie: `${COOKIE}=${newHandle()}` } }), 'read');
   assert.equal(res.status, 503); assert.deepEqual(await res.json(), { error: 'OPS_UNAVAILABLE' });

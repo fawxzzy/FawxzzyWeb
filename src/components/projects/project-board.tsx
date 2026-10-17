@@ -158,7 +158,7 @@ export function ProjectBoard({ publicBoardState }: { publicBoardState?: PublicBo
           <div>
             <p className="eyebrow">Public view · Fawxzzy project boards</p>
             <h1>{board ? projectBoardLabel(board, productIdentity.publicName) : "Project boards unavailable"}</h1>
-            <p className="project-board-toolbar__rule">Public board view. Full account access uses a separate owner-only surface.</p>
+            <p className="project-board-toolbar__rule">Public boards stay visible. Private work appears here after account access is verified.</p>
             <p>{activeCards.length} open · {completedCards.length} completed</p>
             <p aria-live="polite" className="project-board-toolbar__rule">
               {view.reason === "STATIC_PREVIEW_NOT_CURRENT_TRUTH"

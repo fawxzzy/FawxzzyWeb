@@ -249,7 +249,7 @@ test("renderer follows a supplied validated state and shows honest freshness", a
   const previewMarkup = render();
   assert.match(previewMarkup, /Live master sync is pending/);
   assert.match(previewMarkup, /Public view.*Fawxzzy project boards/);
-  assert.match(previewMarkup, /Public board view. Full account access/);
+  assert.match(previewMarkup, /Public boards stay visible. Private work appears here after account access is verified/);
   assert.match(previewMarkup, /Fawxzzy Fitness/);
 
   const changed = copy(approved);

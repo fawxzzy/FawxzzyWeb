@@ -1125,7 +1125,7 @@ test("public navigation exposes the shared account host without duplicating auth
   );
   await expect(navigation.getByRole("link", { name: "Projects", exact: true })).toHaveAttribute(
     "href",
-    "/projects",
+    `${accountContract.canonicalOrigin}/projects`,
   );
   await expect(navigation.getByRole("link", { name: "Account", exact: true })).toHaveAttribute(
     "href",

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { isLocalAuthTestOrigin } from '@/config/account';
-import { resolvePortalAuthAdapter } from '@/lib/auth/browser-adapter';
+import { resolvePortalAuthAdapter, type PortalAuthAdapter } from '@/lib/auth/browser-adapter';
 import { createOperationsReader, type OperationsReader, type ReaderState } from '@/lib/operations/reader-client.mjs';
 import styles from './private-operations.module.css';
 
@@ -24,9 +24,11 @@ const messages: Record<string, string> = {
   expired: 'The observation expired and was cleared. Refresh to check again.',
 };
 
-export function PrivateOperations() {
+export function PrivateOperations({ projectView = false }: { projectView?: boolean } = {}) {
   const [state, setState] = useState<ReaderState>(initial);
   const reader = useRef<OperationsReader | null>(null);
+  const adapter = useRef<PortalAuthAdapter | null>(null);
+  const attemptedGeneration = useRef<string | null>(null);
   useEffect(() => {
     const resolution = resolvePortalAuthAdapter(window.location);
     if (resolution.status !== 'ready') {
@@ -34,6 +36,7 @@ export function PrivateOperations() {
       queueMicrotask(() => setState({ ...initial, status: 'unavailable' }));
       return;
     }
+    adapter.current = resolution.adapter;
     const controller = createOperationsReader({ adapter: resolution.adapter, origin: window.location.origin,
       localTest: resolution.adapter.kind === 'test' && isLocalAuthTestOrigin(window.location.origin) });
     reader.current = controller;
@@ -48,13 +51,60 @@ export function PrivateOperations() {
     controller.setVisible(document.visibilityState === 'visible');
     void controller.start();
     return () => {
-      unsubscribe(); controller.dispose(); reader.current = null;
+      unsubscribe(); controller.dispose(); reader.current = null; adapter.current = null;
       document.removeEventListener('visibilitychange', visibility);
       window.removeEventListener('pagehide', hide); window.removeEventListener('pageshow', show);
       window.removeEventListener('focus', check); window.removeEventListener('storage', check);
     };
   }, []);
+  useEffect(() => {
+    if (!projectView || !state.signedIn || state.pending) return;
+    const controller = reader.current;
+    const currentAdapter = adapter.current;
+    const generation = currentAdapter?.getAuthGeneration();
+    if (!controller || !currentAdapter || !generation || attemptedGeneration.current === generation) return;
+    attemptedGeneration.current = generation;
+    const current = () => reader.current === controller && currentAdapter.getAuthGeneration() === generation;
+    // First reconcile an existing cookie. Only a definite denial may try one
+    // session open; uncertainty stops, and the server denies a foreign subject.
+    void (async () => {
+      await controller.refresh();
+      if (!current()) return;
+      const checked = controller.getSnapshot();
+      if (checked.status !== 'denied' || checked.session !== 'closed' || checked.uncertain) return;
+      await controller.open();
+      if (current() && controller.getSnapshot().status === 'opened') await controller.refresh();
+    })().catch(() => undefined);
+  }, [projectView, state.pending, state.signedIn, state.status]);
   const disabled = !state.signedIn || state.pending;
+  if (projectView) {
+    // This client-only slot never serializes private data into the public page
+    // HTML. The existing account-origin endpoint still verifies Auth, the
+    // caller-bound cookie, operator grant, and a no-store private response.
+    if (!state.signedIn && state.status !== 'signed-out') return null;
+    return (
+      <section aria-label="Private projects" className={styles.root}>
+        <div className={styles.panel}>
+          <h2>Private work</h2>
+          {state.signedIn
+            ? <p role="status" aria-live="polite">{state.view ? 'Your private cards are available for this verified session.' : messages[state.status] ?? messages.unavailable}</p>
+            : <p>Sign in to your Fawxzzy account to check private work. <a href="/login">Sign in</a></p>}
+        </div>
+        {state.view ? (
+          <section aria-label="Private project cards" className={styles.overview}>
+            {state.view.cards.length === 0 ? <p>No private cards in this observation.</p> : (
+              <ul className={styles.cards}>{state.view.cards.map((card) => (
+                <li className={styles.card} key={card.stable_id}>
+                  <p className={styles.lifecycle}>{card.lifecycle.replaceAll('_', ' ')}</p>
+                  <h3>{card.title}</h3><p className={styles.owner}>Owner: {card.owner_role}</p>
+                </li>
+              ))}</ul>
+            )}
+          </section>
+        ) : null}
+      </section>
+    );
+  }
   return (
     <section className={styles.root} aria-label="Private workspace">
       <div className={styles.panel}>
