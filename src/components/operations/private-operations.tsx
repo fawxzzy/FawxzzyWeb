@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { isLocalAuthTestOrigin } from '@/config/account';
-import { resolvePortalAuthAdapter } from '@/lib/auth/browser-adapter';
+import { resolvePortalAuthAdapter, type PortalAuthAdapter } from '@/lib/auth/browser-adapter';
 import { createOperationsReader, type OperationsReader, type ReaderState } from '@/lib/operations/reader-client.mjs';
 import styles from './private-operations.module.css';
 
@@ -16,6 +16,7 @@ const messages: Record<string, string> = {
   opened: 'Private session opened. Refresh the overview when you are ready.',
   closed: 'Private session closed. The overview has been cleared.',
   denied: 'Private access is not available for this session. No work is displayed.',
+  'session-missing': 'Opening your private session to check your work.',
   unknown: 'The request outcome could not be confirmed. Check access after the request finishes before changing the session.',
   healthy: 'A recent observation of your work. This page does not update automatically.',
   stale: 'The work overview is out of date. No work is displayed.',
@@ -24,9 +25,12 @@ const messages: Record<string, string> = {
   expired: 'The observation expired and was cleared. Refresh to check again.',
 };
 
-export function PrivateOperations() {
+export function PrivateOperations({ projectView = false }: { projectView?: boolean } = {}) {
   const [state, setState] = useState<ReaderState>(initial);
+  const [resumeEpoch, setResumeEpoch] = useState(0);
   const reader = useRef<OperationsReader | null>(null);
+  const adapter = useRef<PortalAuthAdapter | null>(null);
+  const attemptedGeneration = useRef<string | null>(null);
   useEffect(() => {
     const resolution = resolvePortalAuthAdapter(window.location);
     if (resolution.status !== 'ready') {
@@ -34,27 +38,95 @@ export function PrivateOperations() {
       queueMicrotask(() => setState({ ...initial, status: 'unavailable' }));
       return;
     }
+    adapter.current = resolution.adapter;
     const controller = createOperationsReader({ adapter: resolution.adapter, origin: window.location.origin,
       localTest: resolution.adapter.kind === 'test' && isLocalAuthTestOrigin(window.location.origin) });
     reader.current = controller;
     const unsubscribe = controller.subscribe(() => setState(controller.getSnapshot()));
-    const visibility = () => controller.setVisible(document.visibilityState === 'visible');
-    const hide = () => controller.setVisible(false);
-    const show = () => controller.setVisible(document.visibilityState === 'visible');
+    let visible = true;
+    let resumeEligible = false;
+    const setVisibility = (nextVisible: boolean) => {
+      if (nextVisible === visible) return;
+      if (!nextVisible) {
+        const snapshot = controller.getSnapshot();
+        resumeEligible = snapshot.status === 'healthy' || snapshot.status === 'expired'
+          || attemptedGeneration.current === null;
+      } else if (resumeEligible) {
+        // A real return to this tab may reconcile once. A denied or uncertain
+        // request stays held for explicit user action in the same Auth generation.
+        attemptedGeneration.current = null;
+        setResumeEpoch((value) => value + 1);
+      }
+      visible = nextVisible;
+      controller.setVisible(nextVisible);
+    };
+    const visibility = () => setVisibility(document.visibilityState === 'visible');
+    const hide = () => setVisibility(false);
+    const show = () => setVisibility(document.visibilityState === 'visible');
     const check = () => controller.checkDisplay();
     document.addEventListener('visibilitychange', visibility);
     window.addEventListener('pagehide', hide); window.addEventListener('pageshow', show);
     window.addEventListener('focus', check); window.addEventListener('storage', check);
-    controller.setVisible(document.visibilityState === 'visible');
+    setVisibility(document.visibilityState === 'visible');
     void controller.start();
     return () => {
-      unsubscribe(); controller.dispose(); reader.current = null;
+      unsubscribe(); controller.dispose(); reader.current = null; adapter.current = null;
       document.removeEventListener('visibilitychange', visibility);
       window.removeEventListener('pagehide', hide); window.removeEventListener('pageshow', show);
       window.removeEventListener('focus', check); window.removeEventListener('storage', check);
     };
   }, []);
+  useEffect(() => {
+    if (!projectView || !state.signedIn || state.pending || document.visibilityState !== 'visible') return;
+    const controller = reader.current;
+    const currentAdapter = adapter.current;
+    const generation = currentAdapter?.getAuthGeneration();
+    if (!controller || !currentAdapter || !generation || attemptedGeneration.current === generation) return;
+    attemptedGeneration.current = generation;
+    const current = () => reader.current === controller && currentAdapter.getAuthGeneration() === generation;
+    // First reconcile an existing cookie. Only the verified owner's exact
+    // missing-session response may trigger one open. Every other denial stops.
+    void (async () => {
+      await controller.refresh();
+      if (!current()) return;
+      const checked = controller.getSnapshot();
+      if (checked.status !== 'session-missing' || checked.session !== 'closed' || checked.uncertain) return;
+      await controller.open();
+      if (current() && controller.getSnapshot().status === 'opened') await controller.refresh();
+    })().catch(() => undefined);
+  }, [projectView, resumeEpoch, state.pending, state.signedIn, state.status]);
   const disabled = !state.signedIn || state.pending;
+  if (projectView) {
+    // This client-only slot never serializes private data into the public page
+    // HTML. The existing account-origin endpoint still verifies Auth, the
+    // caller-bound cookie, operator grant, and a no-store private response.
+    if (!state.signedIn && state.status !== 'signed-out') return null;
+    return (
+      <section aria-label="Private projects" className={styles.root}>
+        <div className={styles.panel}>
+          <h2>Private work</h2>
+          {state.signedIn
+            ? <p role="status" aria-live="polite">{state.view ? 'Your private cards are available for this verified session.' : messages[state.status] ?? messages.unavailable}</p>
+            : <p>Sign in to your Fawxzzy account to check private work. <a href="/login?returnTo=%2Fprojects">Sign in</a></p>}
+          {state.signedIn && !state.view
+            ? <button type="button" disabled={state.pending} onClick={() => { void reader.current?.refresh(); }}>Refresh private work</button>
+            : null}
+        </div>
+        {state.view ? (
+          <section aria-label="Private project cards" className={styles.overview}>
+            {state.view.cards.length === 0 ? <p>No private cards in this observation.</p> : (
+              <ul className={styles.cards}>{state.view.cards.map((card) => (
+                <li className={styles.card} key={card.stable_id}>
+                  <p className={styles.lifecycle}>{card.lifecycle.replaceAll('_', ' ')}</p>
+                  <h3>{card.title}</h3><p className={styles.owner}>Owner: {card.owner_role}</p>
+                </li>
+              ))}</ul>
+            )}
+          </section>
+        ) : null}
+      </section>
+    );
+  }
   return (
     <section className={styles.root} aria-label="Private workspace">
       <div className={styles.panel}>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AmbientBrandBackground } from "@/components/ambient/ambient-brand-background";
 import { ProjectBoard } from "@/components/projects/project-board";
+import { PrivateOperations } from "@/components/operations/private-operations";
 import { SiteNav } from "@/components/site/site-nav";
 
 export const metadata: Metadata = {
@@ -16,6 +17,7 @@ export default function ProjectsPage() {
       <div className="shell-container projects-shell">
         <SiteNav current="projects" />
         <ProjectBoard />
+        <PrivateOperations projectView />
       </div>
     </main>
   );

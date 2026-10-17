@@ -4,6 +4,7 @@ import { validateView } from '../../lib/operations/display-contract.mjs';
 export { validateView } from '../../lib/operations/display-contract.mjs';
 
 const ORIGIN = 'https://account.fawxzzy.com';
+const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/u;
 const HEADERS = { 'Cache-Control': 'no-store, max-age=0', 'Content-Type': 'application/json; charset=utf-8',
   'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'", 'Referrer-Policy': 'no-referrer',
   'X-Content-Type-Options': 'nosniff', Vary: 'Authorization, Cookie, Origin, Sec-Fetch-Site, Sec-Fetch-Mode, Sec-Fetch-Dest' };
@@ -67,7 +68,12 @@ export function createConsumerHandler(dependencies) {
       await requireEmptyBody(request);
       const handle = readHandle(request);
       const deps = typeof dependencies === 'function' ? dependencies() : dependencies;
+      // A live Auth session is necessary but does not make every signed-in
+      // account the private owner. This server-only subject is an additional
+      // fail-closed boundary before any private session or read reaches RPC.
+      if (!UUID.test(deps.ownerSubject ?? '')) fail('OPS_UNAVAILABLE');
       const identity = await (deps.authenticate ?? authenticate)(request, deps.auth, deps.authOptions);
+      if (identity.subject !== deps.ownerSubject) fail('OPS_ACCESS_DENIED');
       const store = deps.store ?? createConsumerStore(deps.auth, request.headers.get('authorization'), deps.storeOptions);
       if (route === 'session' && request.method === 'POST') {
         // One current session per browser cookie. Explicitly close before reopen.
@@ -79,7 +85,10 @@ export function createConsumerHandler(dependencies) {
         await store.open(handleDigest(raw, identity), identity);
         return response(204, null, { 'Set-Cookie': cookie(raw, age) });
       }
-      if (!handle) fail('OPS_ACCESS_DENIED');
+      // Only an authenticated owner with no cookie gets the signal that may
+      // prompt the Projects client to open one session. Other denials stay
+      // indistinguishable and never authorize that automatic mutation.
+      if (!handle) fail(route === 'read' ? 'OPS_SESSION_MISSING' : 'OPS_ACCESS_DENIED');
       const digest = handleDigest(handle, identity);
       if (route === 'session') {
         mutation = true; await store.close(digest);
@@ -87,9 +96,11 @@ export function createConsumerHandler(dependencies) {
       }
       return response(200, validateView(await store.read(digest)));
     } catch (error) {
-      const code = ['OPS_ACCESS_DENIED', 'OPS_REQUEST_DENIED'].includes(error?.code) ? error.code : 'OPS_UNAVAILABLE';
+      const code = ['OPS_ACCESS_DENIED', 'OPS_REQUEST_DENIED', 'OPS_SESSION_MISSING'].includes(error?.code)
+        ? error.code : 'OPS_UNAVAILABLE';
       return response(code === 'OPS_UNAVAILABLE' ? 503 : 403, { error: code },
-        mutation || code === 'OPS_ACCESS_DENIED' ? { 'Set-Cookie': clearCookie() } : {});
+        mutation || code === 'OPS_ACCESS_DENIED' || code === 'OPS_SESSION_MISSING'
+          ? { 'Set-Cookie': clearCookie() } : {});
     }
   };
 }
@@ -98,7 +109,8 @@ function environmentDependencies() {
   // Explicitly off by default. RPC installation, exposure, operator grant and
   // deployment are separate acceptance steps. Only a publishable key is used.
   if (process.env.OPERATIONS_READER_ENABLED !== 'true') fail('OPS_UNAVAILABLE');
-  return { auth: { url: MASTER, publishableKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY } };
+  return { auth: { url: MASTER, publishableKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY },
+    ownerSubject: process.env.OPERATIONS_OWNER_SUBJECT };
 }
 export const operationsHandler = createConsumerHandler(environmentDependencies);
 export { COOKIE };
