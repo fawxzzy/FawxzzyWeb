@@ -505,6 +505,15 @@ test("Mazer OAuth is the only internal product return target", () => {
   );
 });
 
+test("Projects return stays on the account origin only for website sign-in", () => {
+  const website = accountExperienceContexts.website;
+  const fitness = accountExperienceContexts.fitness;
+  expect(sanitizeReturnTarget("/projects")).toBe("/projects");
+  expect(sanitizeReturnTarget("/projects?token=secret")).toBe("/account");
+  expect(sanitizePostAuthReturnTarget("/projects", website)).toBe("/projects");
+  expect(sanitizePostAuthReturnTarget("/projects", fitness)).toBe("https://fitness.fawxzzy.com/");
+});
+
 const utilityRoutes = accountRoutes;
 
 const syntheticPublishableKey = `sb_publishable_${"a-b_".repeat(5)}ab_${"c-d_".repeat(2)}`;
@@ -767,6 +776,7 @@ test("public Supabase key admission fails closed before live adapter creation", 
 test("return targets fail closed unless they exactly match the contract", () => {
   for (const allowed of [
     "/account",
+    "/projects",
     "/reset-password?recovery=1",
     "https://fawxzzy.com/",
     "https://fitness.fawxzzy.com/",
@@ -783,6 +793,7 @@ test("return targets fail closed unless they exactly match the contract", () => 
     "/account?access_token=secret",
     "/reset-password?recovery=1&code=secret",
     "/login",
+    "/projects?private=1",
     "https://user@example.com/",
     "https://fitness.fawxzzy.com.evil.test/",
     "https://fitness.fawxzzy.com/?code=secret",
@@ -1663,6 +1674,15 @@ test("successful website login records the canonical public destination", async 
   await page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" }).click();
   await expect.poll(() => page.locator("html").getAttribute("data-post-auth-destination"))
     .toBe("https://fawxzzy.com/?signedIn=1");
+});
+
+test("Projects sign-in returns to the same account-origin page", async ({ page }) => {
+  await page.goto("/login?auth_test=success&returnTo=%2Fprojects");
+  await page.getByLabel("Email or username").fill("fawxzzy");
+  await page.getByLabel("Password", { exact: true }).fill("short");
+  await page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" }).click();
+  await expect.poll(() => page.locator("html").getAttribute("data-post-auth-destination"))
+    .toBe("/projects");
 });
 
 test("contextual login records only a closed product continuation", async ({ page }) => {

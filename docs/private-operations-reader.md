@@ -98,7 +98,9 @@ The private reader connects only from the exact account origin using the
 existing Auth adapter. Operator access still depends on server and database
 checks; signing in alone does not grant it. The loopback-only `auth_test`
 adapter is used for local browser fixtures; synthetic credentials are never
-sent to a live provider. The Projects view makes one current-session read after
+sent to a live provider. The Projects sign-in link uses the exact allowlisted
+`/projects` return target on the account origin; other product contexts retain
+their own return rules. The Projects view makes one current-session read after
 verified sign-in. If that proves no session exists, it can open once and read
 again. Other denial, uncertainty, or a nonhealthy projection stops the automatic
 path. There is no polling, card write action, or reverse editor.
@@ -111,8 +113,11 @@ strict UTF-8 JSON and the same display validator used by the server.
 A healthy result is displayed for at most 60 seconds. Its timer only erases it.
 Auth events (including same-user events),
 generation changes, page hiding, pagehide, unmount, failed refresh and nonhealthy
-results erase private cards. A new page visit can make one automatic read for its
-current Auth generation. Cards render escaped text. The Projects view does not
+results erase private cards. A new page visit or return after a healthy or expired
+observation can make one automatic read for its current Auth generation. A denied
+or uncertain result does not automatically retry on tab return. Expired work may
+also be refreshed explicitly; there is no background polling. Cards render escaped
+text. The Projects view does not
 expose evidence handles, workflow write controls, or raw internal JSON.
 
 Every asynchronous operation captures the user, a nonnull durable Auth

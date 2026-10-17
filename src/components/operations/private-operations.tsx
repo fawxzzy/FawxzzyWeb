@@ -26,6 +26,7 @@ const messages: Record<string, string> = {
 
 export function PrivateOperations({ projectView = false }: { projectView?: boolean } = {}) {
   const [state, setState] = useState<ReaderState>(initial);
+  const [resumeEpoch, setResumeEpoch] = useState(0);
   const reader = useRef<OperationsReader | null>(null);
   const adapter = useRef<PortalAuthAdapter | null>(null);
   const attemptedGeneration = useRef<string | null>(null);
@@ -41,14 +42,31 @@ export function PrivateOperations({ projectView = false }: { projectView?: boole
       localTest: resolution.adapter.kind === 'test' && isLocalAuthTestOrigin(window.location.origin) });
     reader.current = controller;
     const unsubscribe = controller.subscribe(() => setState(controller.getSnapshot()));
-    const visibility = () => controller.setVisible(document.visibilityState === 'visible');
-    const hide = () => controller.setVisible(false);
-    const show = () => controller.setVisible(document.visibilityState === 'visible');
+    let visible = true;
+    let resumeEligible = false;
+    const setVisibility = (nextVisible: boolean) => {
+      if (nextVisible === visible) return;
+      if (!nextVisible) {
+        const snapshot = controller.getSnapshot();
+        resumeEligible = snapshot.status === 'healthy' || snapshot.status === 'expired'
+          || attemptedGeneration.current === null;
+      } else if (resumeEligible) {
+        // A real return to this tab may reconcile once. A denied or uncertain
+        // request stays held for explicit user action in the same Auth generation.
+        attemptedGeneration.current = null;
+        setResumeEpoch((value) => value + 1);
+      }
+      visible = nextVisible;
+      controller.setVisible(nextVisible);
+    };
+    const visibility = () => setVisibility(document.visibilityState === 'visible');
+    const hide = () => setVisibility(false);
+    const show = () => setVisibility(document.visibilityState === 'visible');
     const check = () => controller.checkDisplay();
     document.addEventListener('visibilitychange', visibility);
     window.addEventListener('pagehide', hide); window.addEventListener('pageshow', show);
     window.addEventListener('focus', check); window.addEventListener('storage', check);
-    controller.setVisible(document.visibilityState === 'visible');
+    setVisibility(document.visibilityState === 'visible');
     void controller.start();
     return () => {
       unsubscribe(); controller.dispose(); reader.current = null; adapter.current = null;
@@ -58,7 +76,7 @@ export function PrivateOperations({ projectView = false }: { projectView?: boole
     };
   }, []);
   useEffect(() => {
-    if (!projectView || !state.signedIn || state.pending) return;
+    if (!projectView || !state.signedIn || state.pending || document.visibilityState !== 'visible') return;
     const controller = reader.current;
     const currentAdapter = adapter.current;
     const generation = currentAdapter?.getAuthGeneration();
@@ -75,7 +93,7 @@ export function PrivateOperations({ projectView = false }: { projectView?: boole
       await controller.open();
       if (current() && controller.getSnapshot().status === 'opened') await controller.refresh();
     })().catch(() => undefined);
-  }, [projectView, state.pending, state.signedIn, state.status]);
+  }, [projectView, resumeEpoch, state.pending, state.signedIn, state.status]);
   const disabled = !state.signedIn || state.pending;
   if (projectView) {
     // This client-only slot never serializes private data into the public page
@@ -88,7 +106,10 @@ export function PrivateOperations({ projectView = false }: { projectView?: boole
           <h2>Private work</h2>
           {state.signedIn
             ? <p role="status" aria-live="polite">{state.view ? 'Your private cards are available for this verified session.' : messages[state.status] ?? messages.unavailable}</p>
-            : <p>Sign in to your Fawxzzy account to check private work. <a href="/login">Sign in</a></p>}
+            : <p>Sign in to your Fawxzzy account to check private work. <a href="/login?returnTo=%2Fprojects">Sign in</a></p>}
+          {state.signedIn && !state.view
+            ? <button type="button" disabled={state.pending} onClick={() => { void reader.current?.refresh(); }}>Refresh private work</button>
+            : null}
         </div>
         {state.view ? (
           <section aria-label="Private project cards" className={styles.overview}>

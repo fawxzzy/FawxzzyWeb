@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const title = 'PRIVATE_ZAC_CARD_TITLE';
+const title = 'PRIVATE_ZAC_CARD_TITLE <img src=x onerror=alert(1)>';
 const producer = 'github-repository:1301080630';
 const privateView = {
   health: 'healthy', authoritative: true, actions_enabled: false,
@@ -47,6 +47,8 @@ test('Projects stays visible signed out; HTML and public boards contain no priva
   await expect(page.getByRole('navigation', { name: 'Project boards' }).getByRole('button')).toHaveCount(4);
   await expect(page.getByRole('region', { name: 'Private project cards' })).toHaveCount(0);
   await expect(page.getByText(title)).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Private projects' }).getByRole('link', { name: 'Sign in' }))
+    .toHaveAttribute('href', '/login?returnTo=%2Fprojects');
   expect(fixture.calls).toEqual([]);
   expect(fixture.external).toEqual([]);
 });
@@ -56,6 +58,7 @@ test('verified owner sees private cards automatically on the same Projects page;
   await page.goto('/projects?auth_test=session');
   const privateCards = page.getByRole('region', { name: 'Private project cards' });
   await expect(privateCards.getByRole('heading', { name: title })).toBeVisible();
+  await expect(privateCards.locator('img')).toHaveCount(0);
   await expect(page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Projects' })).toBeVisible();
   expect(fixture.calls).toEqual([
     'GET /api/operations/read', 'POST /api/operations/session', 'GET /api/operations/read',
@@ -65,6 +68,12 @@ test('verified owner sees private cards automatically on the same Projects page;
   expect(stored).not.toContain(title);
   await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide')));
   await expect(privateCards).toHaveCount(0);
+  await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow')));
+  await expect(privateCards.getByRole('heading', { name: title })).toBeVisible();
+  expect(fixture.calls).toEqual([
+    'GET /api/operations/read', 'POST /api/operations/session', 'GET /api/operations/read',
+    'GET /api/operations/read',
+  ]);
   expect(fixture.external).toEqual([]);
 });
 
@@ -75,6 +84,9 @@ test('another signed-in account gets no private card or count and cannot cause a
   await expect(privateArea.getByRole('status')).toContainText('Private access is not available');
   await expect(page.getByRole('region', { name: 'Private project cards' })).toHaveCount(0);
   await expect(page.getByText(title)).toHaveCount(0);
+  expect(fixture.calls).toEqual(['GET /api/operations/read', 'POST /api/operations/session']);
+  await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide')));
+  await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow')));
   expect(fixture.calls).toEqual(['GET /api/operations/read', 'POST /api/operations/session']);
   expect(fixture.external).toEqual([]);
 });
@@ -88,6 +100,8 @@ test('expiry, changed Auth generation and revoked access erase private data with
   await page.clock.fastForward(60_001);
   await expect(privateCards).toHaveCount(0);
   expect(fixture.calls).toHaveLength(3);
+  await page.getByRole('button', { name: 'Refresh private work' }).click();
+  await expect(privateCards.getByRole('heading', { name: title })).toBeVisible();
   await page.reload();
   await expect(privateCards.getByRole('heading', { name: title })).toBeVisible();
   await page.evaluate(() => {

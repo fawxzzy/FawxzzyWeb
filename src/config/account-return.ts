@@ -23,6 +23,7 @@ const EXACT_EXTERNAL_RETURN_TARGETS = new Set([
 const EXACT_INTERNAL_RETURN_TARGETS = new Set<string>([
   accountContract.accountPath,
   accountContract.recoveryPath,
+  "/projects",
   "/oauth/authorize",
 ]);
 
@@ -100,6 +101,9 @@ export function sanitizePostAuthReturnTarget(
   context: AccountExperienceContext,
 ) {
   const sanitized = sanitizeReturnTarget(rawTarget);
+  if (context.id === "website" && sanitized === "/projects") {
+    return sanitized;
+  }
   if (context.id === "mazer" && sanitized === "/oauth/authorize") {
     return sanitized;
   }
