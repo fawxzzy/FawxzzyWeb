@@ -14,6 +14,7 @@ export default function robots(): MetadataRoute.Robots {
         "/auth/",
         "/login",
         "/reset-password",
+        "/projects",
         productIdentity.legacyCatalogPath,
       ],
     },

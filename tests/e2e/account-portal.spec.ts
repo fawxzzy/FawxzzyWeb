@@ -1123,11 +1123,15 @@ test("public navigation exposes the shared account host without duplicating auth
     "href",
     "/apps",
   );
+  await expect(navigation.getByRole("link", { name: "Projects", exact: true })).toHaveAttribute(
+    "href",
+    "/projects",
+  );
   await expect(navigation.getByRole("link", { name: "Account", exact: true })).toHaveAttribute(
     "href",
     accountUrls.account,
   );
-  await expect(navigation.locator("a")).toHaveCount(4);
+  await expect(navigation.locator("a")).toHaveCount(5);
 });
 
 test("login accepts a legacy short password and maps adapter errors safely", async ({ browserName, page }) => {
