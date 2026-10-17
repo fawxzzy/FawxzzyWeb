@@ -179,6 +179,11 @@ export function createOperationsReader({ adapter, origin, localTest = false,
         const value = await readResponseJson(response, current); assertCurrent();
         const finalSession = await adapter.getSession(); assertCurrent();
         if (finalSession?.userId !== capturedUser) reject();
+        if (response.status === 403 && action === 'read' && value
+          && Object.keys(value).length === 1 && value.error === 'OPS_SESSION_MISSING') {
+          gate.uncertain = false;
+          erase({ status: 'session-missing', session: 'closed' }); return;
+        }
         if (response.status === 403 && value && Object.keys(value).length === 1 && value.error === 'OPS_ACCESS_DENIED') {
           // This exact server response clears the cookie. It never auto-opens.
           gate.uncertain = false;

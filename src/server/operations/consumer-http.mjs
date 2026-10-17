@@ -85,7 +85,10 @@ export function createConsumerHandler(dependencies) {
         await store.open(handleDigest(raw, identity), identity);
         return response(204, null, { 'Set-Cookie': cookie(raw, age) });
       }
-      if (!handle) fail('OPS_ACCESS_DENIED');
+      // Only an authenticated owner with no cookie gets the signal that may
+      // prompt the Projects client to open one session. Other denials stay
+      // indistinguishable and never authorize that automatic mutation.
+      if (!handle) fail(route === 'read' ? 'OPS_SESSION_MISSING' : 'OPS_ACCESS_DENIED');
       const digest = handleDigest(handle, identity);
       if (route === 'session') {
         mutation = true; await store.close(digest);
@@ -93,9 +96,11 @@ export function createConsumerHandler(dependencies) {
       }
       return response(200, validateView(await store.read(digest)));
     } catch (error) {
-      const code = ['OPS_ACCESS_DENIED', 'OPS_REQUEST_DENIED'].includes(error?.code) ? error.code : 'OPS_UNAVAILABLE';
+      const code = ['OPS_ACCESS_DENIED', 'OPS_REQUEST_DENIED', 'OPS_SESSION_MISSING'].includes(error?.code)
+        ? error.code : 'OPS_UNAVAILABLE';
       return response(code === 'OPS_UNAVAILABLE' ? 503 : 403, { error: code },
-        mutation || code === 'OPS_ACCESS_DENIED' ? { 'Set-Cookie': clearCookie() } : {});
+        mutation || code === 'OPS_ACCESS_DENIED' || code === 'OPS_SESSION_MISSING'
+          ? { 'Set-Cookie': clearCookie() } : {});
     }
   };
 }

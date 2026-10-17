@@ -159,6 +159,20 @@ test('denied reads also hold cookie-changing transport across remount', async ()
   await work; assert.equal(gate.uncertain, true); b.respond(async () => Response.json({ error: 'OPS_ACCESS_DENIED' }, { status: 403 }));
   await b.reader.refresh(); assert.equal(gate.uncertain, false); assert.equal(b.reader.getSnapshot().status, 'denied'); assert.equal(b.calls.length, 1); b.reader.dispose();
 });
+test('only an exact missing-session read response is distinguishable from access denial', async () => {
+  const f = fixture(); await f.reader.start();
+  f.respond(async () => Response.json({ error: 'OPS_SESSION_MISSING' }, { status: 403 }));
+  await f.reader.refresh();
+  assert.equal(f.reader.getSnapshot().status, 'session-missing');
+  assert.equal(f.reader.getSnapshot().session, 'closed');
+  assert.equal(f.gate.uncertain, false);
+  f.respond(async () => Response.json({ error: 'OPS_ACCESS_DENIED' }, { status: 403 }));
+  await f.reader.refresh();
+  assert.equal(f.reader.getSnapshot().status, 'denied');
+  assert.equal(f.reader.getSnapshot().session, 'closed');
+  assert.deepEqual(f.calls.map(([, init]) => init.method), ['GET', 'GET']);
+  f.reader.dispose();
+});
 test('timeout never assumes abort canceled a mutation, and does not retry', async () => {
   const f = fixture(); await f.reader.start(); const pending = deferred(); f.respond(() => pending.promise);
   const work = f.reader.open(); await flush(); f.timers.tick(10_000); await work;

@@ -25,8 +25,10 @@ async function privateFixture(page: Page, { deny = false } = {}) {
     expect(request.headers()['x-fawxzzy-operations']).toBe('1');
     expect(request.headers().authorization).toBe('Bearer local-session-oauth-token-1234567890');
     const headers = { 'Cache-Control': 'no-store, max-age=0' };
-    if (denied || (request.method() === 'GET' && !opened)) {
+    if (denied) {
       await route.fulfill({ status: 403, headers, json: { error: 'OPS_ACCESS_DENIED' } });
+    } else if (request.method() === 'GET' && !opened) {
+      await route.fulfill({ status: 403, headers, json: { error: 'OPS_SESSION_MISSING' } });
     } else if (request.method() === 'POST') {
       opened = true;
       await route.fulfill({ status: 204, headers });
@@ -84,10 +86,10 @@ test('another signed-in account gets no private card or count and cannot cause a
   await expect(privateArea.getByRole('status')).toContainText('Private access is not available');
   await expect(page.getByRole('region', { name: 'Private project cards' })).toHaveCount(0);
   await expect(page.getByText(title)).toHaveCount(0);
-  expect(fixture.calls).toEqual(['GET /api/operations/read', 'POST /api/operations/session']);
+  expect(fixture.calls).toEqual(['GET /api/operations/read']);
   await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide')));
   await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow')));
-  expect(fixture.calls).toEqual(['GET /api/operations/read', 'POST /api/operations/session']);
+  expect(fixture.calls).toEqual(['GET /api/operations/read']);
   expect(fixture.external).toEqual([]);
 });
 

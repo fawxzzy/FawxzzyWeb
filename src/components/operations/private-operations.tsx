@@ -16,6 +16,7 @@ const messages: Record<string, string> = {
   opened: 'Private session opened. Refresh the overview when you are ready.',
   closed: 'Private session closed. The overview has been cleared.',
   denied: 'Private access is not available for this session. No work is displayed.',
+  'session-missing': 'Opening your private session to check your work.',
   unknown: 'The request outcome could not be confirmed. Check access after the request finishes before changing the session.',
   healthy: 'A recent observation of your work. This page does not update automatically.',
   stale: 'The work overview is out of date. No work is displayed.',
@@ -83,13 +84,13 @@ export function PrivateOperations({ projectView = false }: { projectView?: boole
     if (!controller || !currentAdapter || !generation || attemptedGeneration.current === generation) return;
     attemptedGeneration.current = generation;
     const current = () => reader.current === controller && currentAdapter.getAuthGeneration() === generation;
-    // First reconcile an existing cookie. Only a definite denial may try one
-    // session open; uncertainty stops, and the server denies a foreign subject.
+    // First reconcile an existing cookie. Only the verified owner's exact
+    // missing-session response may trigger one open. Every other denial stops.
     void (async () => {
       await controller.refresh();
       if (!current()) return;
       const checked = controller.getSnapshot();
-      if (checked.status !== 'denied' || checked.session !== 'closed' || checked.uncertain) return;
+      if (checked.status !== 'session-missing' || checked.session !== 'closed' || checked.uncertain) return;
       await controller.open();
       if (current() && controller.getSnapshot().status === 'opened') await controller.refresh();
     })().catch(() => undefined);

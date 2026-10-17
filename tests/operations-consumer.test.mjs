@@ -92,6 +92,20 @@ test('another authenticated subject and an absent owner binding cannot read or o
   assert.deepEqual(await res.json(), { error: 'OPS_UNAVAILABLE' });
   assert.deepEqual(unbound.calls, []);
 });
+test('only the verified owner without a read cookie receives the missing-session signal', async () => {
+  const owner = fixture();
+  const absent = await owner.handler(request('read', 'GET'), 'read');
+  assert.equal(absent.status, 403);
+  assert.deepEqual(await absent.json(), { error: 'OPS_SESSION_MISSING' });
+  assert.match(absent.headers.get('set-cookie'), /Max-Age=0/u);
+  assert.deepEqual(owner.calls, []);
+
+  const other = fixture({ ownerSubject: identity.session });
+  const denied = await other.handler(request('read', 'GET'), 'read');
+  assert.equal(denied.status, 403);
+  assert.deepEqual(await denied.json(), { error: 'OPS_ACCESS_DENIED' });
+  assert.deepEqual(other.calls, []);
+});
 test('read and close revalidate bearer and bind digest to the current account/session', async () => {
   const raw = newHandle(); const f = fixture(); const headers = { Cookie: `${COOKIE}=${raw}` };
   assert.equal((await f.handler(request('read', 'GET', { headers }), 'read')).status, 200);
