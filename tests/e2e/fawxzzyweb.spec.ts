@@ -103,7 +103,7 @@ test("root is the canonical Fawxzzy experience", async ({ page }) => {
   );
   await expect(page.getByRole("link", { name: "Fawxzzy home" })).toHaveAttribute("href", "/");
   await expect(page.locator('a[aria-current="page"]')).toHaveCount(1);
-  await expect(page.locator(".site-nav__links a")).toHaveCount(3);
+  await expect(page.locator(".site-nav__links a")).toHaveCount(4);
   await expect(
     page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Account" }),
   ).toHaveAttribute("href", "https://account.fawxzzy.com/account");

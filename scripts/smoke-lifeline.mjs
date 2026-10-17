@@ -7,7 +7,10 @@ import { assertSiteSmoke } from "./assert-site-smoke.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
 const startEntrypoint = path.join(repoRoot, "scripts", "start-static.mjs");
-const port = 3210;
+const port = process.env.FAWXZZYWEB_TEST_PORT ?? "3210";
+if (!["3210", "4312"].includes(port)) {
+  throw new Error("FAWXZZYWEB_TEST_PORT must be 3210 or 4312");
+}
 const baseUrl = `http://127.0.0.1:${port}`;
 
 function startServer() {

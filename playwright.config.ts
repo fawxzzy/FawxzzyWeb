@@ -1,5 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const testPort = process.env.FAWXZZYWEB_TEST_PORT ?? "3210";
+if (!["3210", "4312"].includes(testPort)) {
+  throw new Error("FAWXZZYWEB_TEST_PORT must be 3210 or 4312");
+}
+const testOrigin = `http://127.0.0.1:${testPort}`;
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: false,
@@ -8,7 +14,7 @@ export default defineConfig({
   workers: 1,
   reporter: "list",
   use: {
-    baseURL: "http://127.0.0.1:3210",
+    baseURL: testOrigin,
     trace: "retain-on-failure",
   },
   projects: [
@@ -22,8 +28,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run start -- --host 127.0.0.1 --port 3210",
-    url: "http://127.0.0.1:3210/healthz.json",
+    command: `npm run start -- --host 127.0.0.1 --port ${testPort}`,
+    url: `${testOrigin}/healthz.json`,
     reuseExistingServer: false,
     timeout: 30_000,
   },

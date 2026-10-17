@@ -5,7 +5,7 @@
   "board_id": "discordos:project-feedback:trove",
   "owner": "trove",
   "state": "active",
-  "updated_at": "2026-09-15T01:41:16.000Z",
+  "updated_at": "2026-10-16T01:27:12.356Z",
   "source_baseline": {
     "repository": "fawxzzy/FawxzzyWeb",
     "commit": "af6a2076712ce7517b1e021bf4841048f6f97085",
@@ -55,6 +55,53 @@
         "docs/architecture/FAWXZZYWEB-OPERATIONAL-IDENTITY-COMPATIBILITY.md"
       ],
       "updated_at": "2026-09-15T01:41:16.000Z"
+    },
+    {
+      "id": "FW-ANALYTICS-001",
+      "title": "Traffic Analytics and Live Active-User Counter",
+      "record_kind": "project-work",
+      "card_type": "feature",
+      "lifecycle": "planning",
+      "priority": "low",
+      "public_safe": false,
+      "summary": "Prepare Web-first privacy-safe historical traffic and ephemeral active-presence measurement, with a shared contract for future Fitness and Mazer reuse.",
+      "objective": "Define truthful traffic and active-now measurements and an internal-facing view with explicit privacy, freshness, provider, and product acceptance boundaries.",
+      "acceptance_criteria": [
+        "1. Specify the Web-first historical traffic and active-now product outcome, with future Fitness/Mazer reuse documented as a shared measurement contract rather than separate duplicate Web-parent cards.",
+        "2. Define visitor, page-view, session, registered-account, active-product-user and active-now terms, units, deduplication rules and time zones so labels cannot imply that concurrent sessions equal people or account totals.",
+        "3. Show privacy-safe visitor totals for today, trailing 7 days and trailing 30 days, with explicit aggregation and unavailable/stale states.",
+        "4. Show page views and popular pages from canonical safe routes, with a stated treatment of redirects, bots and repeated views.",
+        "5. Show referrer summaries only where privacy policy and the selected source permit them; avoid raw identifying URL or query values.",
+        "6. Show aggregate device/browser trends only at a safe granularity and suppress or omit small/private segments as required by the approved public/private policy.",
+        "7. Provide an active-now total and per-app counts under one consistent contract, initially for Web and extendable to Fitness/Mazer, without treating registered accounts as active presence.",
+        "8. Count visible active sessions from an authoritative presence snapshot with explicit expiry, disconnect, reconnect and cross-tab behavior; recalculate from current state rather than accumulating join/leave deltas as a durable counter.",
+        "9. Deduplicate an authenticated user across active connections where appropriate and an anonymous browser within its permitted session scope. Define exactly what is counted when user identity is unavailable; publish no presence identities.",
+        "10. Keep presence payloads minimal and ephemeral. Exclude names, email, IP, precise location, raw user agents, private routes, free-form text and other personally identifying information from the displayed counts and client-visible state.",
+        "11. Keep provider credentials and privileged Supabase access server-only. Any browser read uses an authorized, sanitized aggregate interface with explicit access policy and no direct private board-table exposure.",
+        "12. Reconcile the already-written first-party analytics source and its closed event vocabulary with the proposed Vercel option, including whether existing data can supply the requested history and which single source is authoritative for each metric. Provider setup, cost and retention remain separate decisions.",
+        "13. Deliver an internal-facing view and verify count accuracy, freshness, resilience to presence churn, privacy, accessibility and narrow-screen presentation with realistic multi-session cases. A public badge is optional only after its own validation and approval.",
+        "14. Return source, integration, release and product acceptance evidence separately. Do not mark the card complete from local source, a preview, an analytics dashboard screenshot, or a deployed count without the corresponding approved live readback and receiving proof."
+      ],
+      "discoveries": [
+        "This is an unadopted owner-source proposal. FW-ANALYTICS-001 is proposed pending current canonical equivalence checking, owner adoption, and exact card save/readback.",
+        "Fitness FF-ANALYTICS-001 and FF-SOC-002 are related distinct outcomes; their identities, dependencies, and acceptance remain with Fitness.",
+        "The existing first-party analytics contract must be reconciled before any provider or metric implementation decision. Public projection is not approved."
+      ],
+      "next_actions": [
+        "Have the Web source owner and sole Platform writer check current canonical equivalents before adopting or assigning the final stable Web card identity.",
+        "Return the reviewed source/export identity and proposed card identity for owner intake.",
+        "After exact canonical authority is established, verify real card save/readback and return integration, release, and product acceptance evidence separately."
+      ],
+      "blockers": [
+        "Current canonical equivalence, owner adoption, and exact card save/readback are not yet verified.",
+        "Metric implementation, provider setup, cost, retention, and public/private access decisions require their separate reviewed scope."
+      ],
+      "dependencies": [],
+      "evidence": [
+        "planning/project-board-owner-source.v1.json#FW-ANALYTICS-001",
+        "docs/first-party-analytics.md"
+      ],
+      "updated_at": "2026-10-16T01:27:12.356Z"
     }
   ],
   "excluded_records": [

@@ -1,0 +1,28 @@
+{
+  "schema": "fawxzzy.project-board.public-preview.v1",
+  "preparedAt": "2026-10-14",
+  "publicationReady": false,
+  "sourceKind": "empty public placeholder; no real card content approved",
+  "boards": [
+    {
+      "id": "fitness",
+      "name": "Fawxzzy Fitness",
+      "cards": []
+    },
+    {
+      "id": "mazer",
+      "name": "Mazer",
+      "cards": []
+    },
+    {
+      "id": "trove",
+      "name": "Fawxzzy Web",
+      "cards": []
+    },
+    {
+      "id": "atlas-stack",
+      "name": "Atlas Stack",
+      "cards": []
+    }
+  ]
+}

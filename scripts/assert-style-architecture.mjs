@@ -10,6 +10,7 @@ const ownership = [
   ["../styles/page-families/product-detail.css", "Wave 2A"],
   ["../styles/page-families/studio-public.css", "Wave 1"],
   ["../styles/page-families/editorial.css", "Wave 2B"],
+  ["../styles/page-families/project-board.css", ".projects-page"],
 ];
 const expectedManifest = [
   '@import "tailwindcss";',
