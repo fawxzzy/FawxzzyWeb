@@ -16,8 +16,7 @@ export default function ProjectsPage() {
       <AmbientBrandBackground intensity="soft" particleCount={5} />
       <div className="shell-container projects-shell">
         <SiteNav current="projects" />
-        <ProjectBoard />
-        <PrivateOperations projectView />
+        <ProjectBoard privateBoardSlot={<PrivateOperations projectView />} />
       </div>
     </main>
   );

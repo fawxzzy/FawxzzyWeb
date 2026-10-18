@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { isLocalAuthTestOrigin } from '@/config/account';
 import { resolvePortalAuthAdapter, type PortalAuthAdapter } from '@/lib/auth/browser-adapter';
 import { createOperationsReader, type OperationsReader, type ReaderState } from '@/lib/operations/reader-client.mjs';
+import { PrivateProjectCard } from '@/components/projects/private-project-card';
 import styles from './private-operations.module.css';
 
 const initial: ReaderState = { status: 'loading', session: 'unverified', signedIn: false,
@@ -28,6 +29,7 @@ const messages: Record<string, string> = {
 export function PrivateOperations({ projectView = false }: { projectView?: boolean } = {}) {
   const [state, setState] = useState<ReaderState>(initial);
   const [resumeEpoch, setResumeEpoch] = useState(0);
+  const [portalAdapter, setPortalAdapter] = useState<PortalAuthAdapter | null>(null);
   const reader = useRef<OperationsReader | null>(null);
   const adapter = useRef<PortalAuthAdapter | null>(null);
   const attemptedGeneration = useRef<string | null>(null);
@@ -39,6 +41,8 @@ export function PrivateOperations({ projectView = false }: { projectView?: boole
       return;
     }
     adapter.current = resolution.adapter;
+    let mounted = true;
+    queueMicrotask(() => { if (mounted) setPortalAdapter(resolution.adapter); });
     const controller = createOperationsReader({ adapter: resolution.adapter, origin: window.location.origin,
       localTest: resolution.adapter.kind === 'test' && isLocalAuthTestOrigin(window.location.origin) });
     reader.current = controller;
@@ -70,6 +74,7 @@ export function PrivateOperations({ projectView = false }: { projectView?: boole
     setVisibility(document.visibilityState === 'visible');
     void controller.start();
     return () => {
+      mounted = false;
       unsubscribe(); controller.dispose(); reader.current = null; adapter.current = null;
       document.removeEventListener('visibilitychange', visibility);
       window.removeEventListener('pagehide', hide); window.removeEventListener('pageshow', show);
@@ -106,24 +111,13 @@ export function PrivateOperations({ projectView = false }: { projectView?: boole
         <div className={styles.panel}>
           <h2>Private work</h2>
           {state.signedIn
-            ? <p role="status" aria-live="polite">{state.view ? 'Your private cards are available for this verified session.' : messages[state.status] ?? messages.unavailable}</p>
+            ? <p role="status" aria-live="polite">{state.view ? "You're signed in. Private project cards are not available yet." : messages[state.status] ?? messages.unavailable}</p>
             : <p>Sign in to your Fawxzzy account to check private work. <a href="/login?returnTo=%2Fprojects">Sign in</a></p>}
           {state.signedIn && !state.view
             ? <button type="button" disabled={state.pending} onClick={() => { void reader.current?.refresh(); }}>Refresh private work</button>
             : null}
         </div>
-        {state.view ? (
-          <section aria-label="Private project cards" className={styles.overview}>
-            {state.view.cards.length === 0 ? <p>No private cards in this observation.</p> : (
-              <ul className={styles.cards}>{state.view.cards.map((card) => (
-                <li className={styles.card} key={card.stable_id}>
-                  <p className={styles.lifecycle}>{card.lifecycle.replaceAll('_', ' ')}</p>
-                  <h3>{card.title}</h3><p className={styles.owner}>Owner: {card.owner_role}</p>
-                </li>
-              ))}</ul>
-            )}
-          </section>
-        ) : null}
+        {state.view && state.session === 'open' ? <PrivateProjectCard adapter={portalAdapter} enabled={false} /> : null}
       </section>
     );
   }

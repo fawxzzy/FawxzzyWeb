@@ -26,11 +26,12 @@
     "data:project-board-owner:check": "node scripts/export-project-board-owner.mjs --check",
     "test:project-board-owner-export": "node --test tests/project-board-owner-export.test.mjs && npm run data:project-board-owner:check",
     "test:project-board-preview": "node --test tests/project-board-preview.test.mjs tests/project-board-adapter.test.mjs tests/project-board-public-read.test.mjs",
+    "test:private-project-card": "node --test tests/private-project-card.test.mjs tests/projects-release-smoke.test.mjs",
     "smoke:lifeline": "node scripts/smoke-lifeline.mjs",
     "deploy:production": "node scripts/deploy-production.mjs",
     "test:operations-consumer": "node --test tests/operations-consumer.test.mjs tests/operations-reader-client.test.mjs",
     "test:operations-ingest": "node --test tests/operations-ingest.test.mjs tests/operations-host-runner.test.mjs && npm run test:operations-consumer",
-    "verify": "npm run lint && npm run test:operations-ingest && npm run test:auth-key-guard && npm run test:deployment-binding && npm run test:runtime-hygiene && npm run test:style-architecture && npm run test:release-evidence && npm run test:project-board-owner-export && npm run test:project-board-preview && npm run build && npm run test:discovery-performance && npm run smoke:lifeline && npm run test:visual-regression && npm run test:e2e"
+    "verify": "npm run lint && npm run test:operations-ingest && npm run test:private-project-card && npm run test:auth-key-guard && npm run test:deployment-binding && npm run test:runtime-hygiene && npm run test:style-architecture && npm run test:release-evidence && npm run test:project-board-owner-export && npm run test:project-board-preview && npm run build && npm run test:discovery-performance && npm run smoke:lifeline && npm run test:visual-regression && npm run test:e2e"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.109.0",
