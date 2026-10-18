@@ -17,7 +17,11 @@ async function privateFixture(page: Page, { deny = false } = {}) {
   let denied = deny;
   const calls: string[] = [];
   const external: string[] = [];
+  const privateCardCalls: string[] = [];
   await page.route('https://**/*', (route) => { external.push(new URL(route.request().url()).origin); return route.abort(); });
+  await page.route('http://127.0.0.1:3210/api/projects/private-card', (route) => {
+    privateCardCalls.push(route.request().method()); return route.abort();
+  });
   await page.route('http://127.0.0.1:3210/api/operations/**', async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
@@ -36,10 +40,17 @@ async function privateFixture(page: Page, { deny = false } = {}) {
       await route.fulfill({ status: 200, headers, json: privateView });
     }
   });
-  return { calls, external, setDenied(value: boolean) { denied = value; } };
+  return { calls, external, privateCardCalls, setDenied(value: boolean) { denied = value; } };
 }
 
-test('Projects stays visible signed out; HTML and public boards contain no private card', async ({ page }) => {
+async function selectWebBoard(page: Page, afterFakeClock = false) {
+  const button = page.getByRole('navigation', { name: 'Project boards' }).getByRole('button', { name: /Fawxzzy Web/u });
+  // Playwright's installed clock can leave WebKit's action-stability timer paused after reload.
+  if (afterFakeClock) await button.evaluate((element: HTMLButtonElement) => element.click());
+  else await button.click();
+}
+
+test('signed-out Projects keeps public boards separate from the dormant private Web slot', async ({ page }) => {
   const fixture = await privateFixture(page);
   const response = await page.request.get('/projects?auth_test=success');
   expect(response.ok()).toBe(true);
@@ -49,18 +60,27 @@ test('Projects stays visible signed out; HTML and public boards contain no priva
   await expect(page.getByRole('navigation', { name: 'Project boards' }).getByRole('button')).toHaveCount(4);
   await expect(page.getByRole('region', { name: 'Private project cards' })).toHaveCount(0);
   await expect(page.getByText(title)).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Private projects' })).toHaveCount(0);
+  await selectWebBoard(page);
   await expect(page.getByRole('region', { name: 'Private projects' }).getByRole('link', { name: 'Sign in' }))
     .toHaveAttribute('href', '/login?returnTo=%2Fprojects');
+  await page.getByRole('navigation', { name: 'Project boards' }).getByRole('button', { name: /Mazer/u }).click();
+  await expect(page.getByRole('region', { name: 'Private projects' })).toHaveCount(0);
   expect(fixture.calls).toEqual([]);
+  expect(fixture.privateCardCalls).toEqual([]);
   expect(fixture.external).toEqual([]);
 });
 
-test('verified owner sees private cards automatically on the same Projects page; leaving clears them', async ({ page }) => {
+test('verified owner sees pending Web card state, never the legacy Operations fixture', async ({ page }) => {
   const fixture = await privateFixture(page);
   await page.goto('/projects?auth_test=session');
+  await selectWebBoard(page);
   const privateCards = page.getByRole('region', { name: 'Private project cards' });
-  await expect(privateCards.getByRole('heading', { name: title })).toBeVisible();
-  await expect(privateCards.locator('img')).toHaveCount(0);
+  const privateArea = page.getByRole('region', { name: 'Private projects' });
+  await expect(privateArea.getByRole('status')).toContainText("You're signed in");
+  await expect(privateCards).toHaveCount(0);
+  await expect(page.getByText(title)).toHaveCount(0);
+  expect(fixture.privateCardCalls).toEqual([]);
   await expect(page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Projects' })).toBeVisible();
   expect(fixture.calls).toEqual([
     'GET /api/operations/read', 'POST /api/operations/session', 'GET /api/operations/read',
@@ -69,54 +89,70 @@ test('verified owner sees private cards automatically on the same Projects page;
   const stored = await page.evaluate(() => JSON.stringify({ ...localStorage, ...sessionStorage }));
   expect(stored).not.toContain(title);
   await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide')));
-  await expect(privateCards).toHaveCount(0);
+  await expect(privateArea.getByRole('status')).not.toContainText("You're signed in");
   await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow')));
-  await expect(privateCards.getByRole('heading', { name: title })).toBeVisible();
+  await expect(privateArea.getByRole('status')).toContainText("You're signed in");
   expect(fixture.calls).toEqual([
     'GET /api/operations/read', 'POST /api/operations/session', 'GET /api/operations/read',
     'GET /api/operations/read',
   ]);
+  await expect(privateCards).toHaveCount(0);
+  await expect(page.getByText(title)).toHaveCount(0);
   expect(fixture.external).toEqual([]);
 });
 
-test('another signed-in account gets no private card or count and cannot cause an open retry loop', async ({ page }) => {
+test('foreign account gets no private Web card or open retry loop', async ({ page }) => {
   const fixture = await privateFixture(page, { deny: true });
   await page.goto('/projects?auth_test=session');
+  await selectWebBoard(page);
   const privateArea = page.getByRole('region', { name: 'Private projects' });
   await expect(privateArea.getByRole('status')).toContainText('Private access is not available');
   await expect(page.getByRole('region', { name: 'Private project cards' })).toHaveCount(0);
   await expect(page.getByText(title)).toHaveCount(0);
   expect(fixture.calls).toEqual(['GET /api/operations/read']);
+  expect(fixture.privateCardCalls).toEqual([]);
   await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide')));
   await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow')));
   expect(fixture.calls).toEqual(['GET /api/operations/read']);
   expect(fixture.external).toEqual([]);
 });
 
-test('expiry, changed Auth generation and revoked access erase private data without shared-page leakage', async ({ page }) => {
+test('expiry, Auth change and revocation clear verified Web state without legacy payload', async ({ page }) => {
   await page.clock.install();
   const fixture = await privateFixture(page);
   await page.goto('/projects?auth_test=session');
+  await selectWebBoard(page);
+  const privateArea = page.getByRole('region', { name: 'Private projects' });
   const privateCards = page.getByRole('region', { name: 'Private project cards' });
-  await expect(privateCards.getByRole('heading', { name: title })).toBeVisible();
+  await expect(privateArea.getByRole('status')).toContainText("You're signed in");
+  await expect(privateCards).toHaveCount(0);
   await page.clock.fastForward(60_001);
   await expect(privateCards).toHaveCount(0);
+  await expect(privateArea.getByRole('status')).not.toContainText("You're signed in");
   expect(fixture.calls).toHaveLength(3);
   await page.getByRole('button', { name: 'Refresh private work' }).click();
-  await expect(privateCards.getByRole('heading', { name: title })).toBeVisible();
+  await expect(privateArea.getByRole('status')).toContainText("You're signed in");
+  await page.clock.resume();
   await page.reload();
-  await expect(privateCards.getByRole('heading', { name: title })).toBeVisible();
+  await selectWebBoard(page, true);
+  await expect(privateArea.getByRole('status')).toContainText("You're signed in");
   await page.evaluate(() => {
     localStorage.setItem('fawxzzy.account.auth-generation.v1', 'changed-in-local-fixture');
     window.dispatchEvent(new StorageEvent('storage', { key: 'fawxzzy.account.auth-generation.v1' }));
   });
+  await expect(privateArea.getByRole('status')).not.toContainText("You're signed in");
   await expect(privateCards).toHaveCount(0);
   fixture.setDenied(true);
   await page.reload();
+  await selectWebBoard(page, true);
   await expect(page.getByRole('region', { name: 'Private projects' }).getByRole('status')).toContainText('Private access is not available');
   await expect(privateCards).toHaveCount(0);
   const html = await (await page.request.get('/projects?auth_test=session')).text();
   expect(html).not.toContain(title);
   expect(html).not.toContain(privateView.cards[0].stable_id);
+  const stored = await page.evaluate(() => JSON.stringify({ ...localStorage, ...sessionStorage }));
+  expect(stored).not.toContain(title);
+  expect(stored).not.toContain(privateView.cards[0].stable_id);
+  expect(fixture.privateCardCalls).toEqual([]);
   expect(fixture.external).toEqual([]);
 });

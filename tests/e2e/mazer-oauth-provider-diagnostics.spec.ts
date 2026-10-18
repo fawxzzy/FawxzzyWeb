@@ -82,7 +82,7 @@ const failures: Array<{ name: string; stage: string; make: () => Promise<Respons
   { name: "JSON", stage: "response_json", make: async () => new Response(sensitive) },
   { name: "contract", stage: "response_contract", make: async () => Response.json({ private: sensitive }) },
   { name: "redirect", stage: "redirect_contract", make: async () => Response.json({ redirect_url: `https://attacker.example.test/${sensitive}` }) },
-  { name: "unexpected", stage: "unexpected", make: async () => ({ get ok() { throw new Error(sensitive); } } as Response) },
+  { name: "unexpected", stage: "unexpected", make: async () => ({ get ok() { throw new Error(sensitive); } } as unknown as Response) },
 ];
 
 for (const operation of ["read", "approve", "deny"] as const) {

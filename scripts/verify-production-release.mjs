@@ -21,6 +21,7 @@ const smokeRoutes = [
   "/apps/mazer",
   "/discover",
   "/login",
+  "/projects",
   "/account",
   "/auth/callback",
   "/auth/confirm",
@@ -33,6 +34,8 @@ const smokeRoutes = [
 ];
 const accountRoutes = [
   "/login",
+  "/login?returnTo=%2Fprojects",
+  "/projects",
   "/account",
   "/auth/callback",
   "/auth/confirm",
@@ -99,6 +102,24 @@ export function hasExactCanonicalLink(html, expectedCanonical) {
   });
   return canonicalLinks.length === 1
     && canonicalLinks[0].getAttribute("href") === expectedCanonical;
+}
+
+export function verifyProjectsPublicHtml(html) {
+  const document = htmlParser.parse(html);
+  const robots = document.querySelector('head > meta[name="robots"]')?.getAttribute('content') ?? '';
+  const boards = document.querySelectorAll('.project-tab').map((tab) => ({
+    name: tab.querySelector('span')?.text.trim(),
+    count: tab.querySelector('strong')?.text.trim(),
+  }));
+  const expected = ['Fawxzzy Fitness', 'Mazer', 'Fawxzzy Web', 'Atlas Stack'];
+  if (!robots.split(',').some((part) => part.trim().toLowerCase() === 'noindex')
+    || boards.length !== expected.length
+    || boards.some((board, index) => board.name !== expected[index] || board.count !== '0')
+    || document.querySelectorAll('.project-card').length !== 0
+    || html.includes('FW-ANALYTICS-001') || html.includes('FF-WEB-ANALYTICS-001')) {
+    throw new Error('Projects public HTML is not the approved noindex four-board empty view.');
+  }
+  return { noindex: true, boardCount: boards.length, publicCardCount: 0 };
 }
 
 function readLogCount(deploymentId, filterArgs) {
@@ -187,10 +208,13 @@ export async function verifyProductionRelease({ deploymentId, expectedCommit, so
   }
 
   const smoke = [];
+  const projectsSmoke = [];
   for (const route of smokeRoutes) {
     const response = await fetchWithTimeout(`https://fawxzzy.com${route}`, { redirect: "follow" });
     smoke.push({ route, status: response.status, url: response.url });
     if (response.status !== 200) throw new Error(`Production smoke failed for ${route}: ${response.status}`);
+    if (route === '/projects') projectsSmoke.push({ origin: 'https://fawxzzy.com',
+      ...verifyProjectsPublicHtml(await response.text()) });
   }
 
   const accountSmoke = [];
@@ -202,6 +226,23 @@ export async function verifyProductionRelease({ deploymentId, expectedCommit, so
     if (response.status !== 200 || !hasExactCanonicalLink(html, expectedCanonical)) {
       throw new Error(`Account-origin smoke failed for ${route}.`);
     }
+    if (route === '/projects') projectsSmoke.push({ origin: 'https://account.fawxzzy.com',
+      ...verifyProjectsPublicHtml(html) });
+  }
+
+  const privateMissing = await fetchWithTimeout('https://account.fawxzzy.com/api/projects/private-card', {
+    headers: { 'Sec-Fetch-Site': 'same-origin', 'Sec-Fetch-Mode': 'cors',
+      'Sec-Fetch-Dest': 'empty', 'X-Fawxzzy-Private-Card': '1' },
+    redirect: 'manual',
+  });
+  const privateApi = { case: 'signed_out_private_card', status: privateMissing.status,
+    cacheControl: privateMissing.headers.get('cache-control') };
+  let privateError;
+  try { privateError = JSON.parse(await privateMissing.text()); } catch { privateError = null; }
+  if (![403, 503].includes(privateApi.status) || !privateApi.cacheControl?.includes('no-store')
+    || !privateError || Object.keys(privateError).length !== 1
+    || !['CARD_ACCESS_DENIED', 'CARD_UNAVAILABLE'].includes(privateError.error)) {
+    throw new Error('Signed-out private card endpoint did not fail closed without caching.');
   }
 
   const legalSmoke = [];
@@ -291,7 +332,7 @@ export async function verifyProductionRelease({ deploymentId, expectedCommit, so
       rollbackDeploymentId,
       rollbackReadyState: rollbackDeployment.readyState,
     },
-    verification: { smoke, accountSmoke, legalSmoke, pendingApi, wwwRedirect: 308, ranges, logs },
+    verification: { smoke, projectsSmoke, accountSmoke, privateApi, legalSmoke, pendingApi, wwwRedirect: 308, ranges, logs },
   };
 
   const targetPath = receiptPath ?? path.join(repoRoot, "visual-evidence", expectedCommit, "production-release-receipt.json");
