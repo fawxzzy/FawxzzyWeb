@@ -16,7 +16,7 @@
     "evidence:visual": "node scripts/capture-visual-evidence.mjs",
     "test:e2e": "playwright test",
     "test:auth-key-guard": "node scripts/test-public-auth-key-guard.mjs",
-    "test:deployment-binding": "node scripts/test-deployment-binding.mjs",
+    "test:deployment-binding": "node scripts/test-deployment-binding.mjs && node --test scripts/test-production-recovery.mjs",
     "test:discovery-performance": "node scripts/assert-discovery-performance.mjs",
     "test:release-evidence": "node scripts/assert-release-evidence.mjs",
     "test:runtime-hygiene": "node scripts/assert-runtime-hygiene.mjs",

@@ -5,6 +5,7 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import htmlParser from "next/dist/compiled/node-html-parser/index.js";
+import { assertCanonicalAliasBindings } from "./recover-production-release.mjs";
 import {
   VERCEL_PRODUCTION_CONTRACT,
   assertRemoteProject,
@@ -313,6 +314,18 @@ export async function verifyProductionRelease({ deploymentId, expectedCommit, so
     serverErrors: readLogCount(deploymentId, ["--status-code", "5xx"]),
   };
   if (logs.errors || logs.serverErrors) throw new Error("Production runtime logs contain release errors.");
+
+  const finalProject = assertRemoteProject(runVercelJson([
+    "api", `/v9/projects/${VERCEL_PRODUCTION_CONTRACT.projectId}`,
+    "--scope", VERCEL_PRODUCTION_CONTRACT.teamSlug, "--raw",
+  ]));
+  if (finalProject.targets?.production?.id !== deploymentId) {
+    throw new Error("Production target drifted during acceptance; no success receipt was written.");
+  }
+  assertCanonicalAliasBindings(runVercelJson([
+    "api", `/v4/aliases?projectId=${VERCEL_PRODUCTION_CONTRACT.projectId}`,
+    "--scope", VERCEL_PRODUCTION_CONTRACT.teamSlug, "--raw",
+  ]), deploymentId);
 
   const receipt = {
     schemaVersion: 1,

@@ -60,6 +60,32 @@ The prior production deployment is recorded as the rollback candidate. Output is
 written to the ignored exact-commit visual-evidence folder. The wrapper does not
 authorize a deployment; it only enforces and records an already approved one.
 
+The wrapper verifies the retained rollback deployment is READY on the exact
+project and all three canonical aliases currently bind to it before invoking
+the deploy command. It captures the CLI's deployment
+URL, resolves that URL to one provider deployment, and requires the expected
+project, production target, source commit, and unique invocation identity. A
+missing or mismatched URL, another writer's target, or an unobserved cutover is
+an uncertain effect hold
+and cannot be retried from this wrapper.
+
+If the command fails or post-deployment acceptance fails after the wrapper
+observes its own exact production target, it makes one rollback request to the
+captured prior deployment. It first checks that the current target is still its
+candidate, then
+requires the prior target and all three canonical aliases to read back on the
+prior deployment. A different target, incomplete alias read, failed rollback,
+or exhausted observation window is an explicit recovery hold; the wrapper must
+not roll back another writer's deployment or claim production was restored.
+The acceptance verifier repeats target and alias readback just before writing
+its terminal success receipt. A collision-free writer reservation must span
+both the release and any rollback; target reads alone cannot close the race
+between observation and provider effect.
+The CLI can fail before it emits a URL even if the provider accepted an effect.
+That uncertain outcome still requires exact provider reconciliation before any
+retry or release-complete claim. The recovery guard does not replace the
+separate production authorization and writer reservation.
+
 ## Task-owned workspace teardown
 
 Release workspaces are created only below the governed temporary workspace root.

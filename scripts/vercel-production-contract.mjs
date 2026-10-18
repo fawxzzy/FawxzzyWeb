@@ -137,7 +137,24 @@ export function assertRemoteProject(project) {
   return project;
 }
 
-export function createDeploymentInvocation(expectedCommit) {
+export function assertDeploymentCandidate(deployment, { deploymentUrl, expectedCommit, releaseAttemptId }) {
+  const hostname = /^https:\/\/[a-z0-9.-]+\.vercel\.app\/?$/u.test(deploymentUrl ?? "")
+    ? new URL(deploymentUrl).hostname : null;
+  if (!hostname || !/^dpl_[A-Za-z0-9]+$/u.test(deployment?.id ?? "")
+    || deployment.url !== hostname
+    || deployment.projectId !== VERCEL_PRODUCTION_CONTRACT.projectId
+    || deployment.target !== "production"
+    || deployment.meta?.githubCommitSha !== expectedCommit
+    || deployment.meta?.atlasReleaseAttempt !== releaseAttemptId) {
+    throw new Error("The deployment URL does not identify the exact expected production candidate.");
+  }
+  return deployment;
+}
+
+export function createDeploymentInvocation(expectedCommit, releaseAttemptId) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u.test(releaseAttemptId ?? "")) {
+    throw new Error("Production deployment requires one exact invocation identity.");
+  }
   return {
     command: getCommand("vercel"),
     args: [
@@ -148,6 +165,8 @@ export function createDeploymentInvocation(expectedCommit) {
       VERCEL_PRODUCTION_CONTRACT.teamSlug,
       "--meta",
       `githubCommitSha=${expectedCommit}`,
+      "--meta",
+      `atlasReleaseAttempt=${releaseAttemptId}`,
       "--meta",
       "githubCommitRef=main",
       "--meta",

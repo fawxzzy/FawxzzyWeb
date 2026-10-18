@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import {
   VERCEL_PRODUCTION_CONTRACT,
   assertCiRun,
+  assertDeploymentCandidate,
   assertReleaseSource,
   assertRemoteProject,
   assertVercelBinding,
@@ -128,8 +129,23 @@ try {
     /unavailable on PATH/,
   );
 
-  const invocation = createDeploymentInvocation(head);
+  const releaseAttemptId = "12345678-1234-4123-8123-123456789abc";
+  const invocation = createDeploymentInvocation(head, releaseAttemptId);
   assert.deepEqual(invocation.args.slice(0, 3), ["deploy", "--prod", "--yes"]);
+  assert(invocation.args.includes(`atlasReleaseAttempt=${releaseAttemptId}`));
+  assert.throws(() => createDeploymentInvocation(head, "invalid"), /invocation identity/);
+  const candidate = {
+    id: "dpl_Example123", url: "example-fawxzzy.vercel.app",
+    projectId: VERCEL_PRODUCTION_CONTRACT.projectId, target: "production",
+    meta: { githubCommitSha: head, atlasReleaseAttempt: releaseAttemptId },
+  };
+  const candidateArgs = {
+    deploymentUrl: `https://${candidate.url}`, expectedCommit: head, releaseAttemptId,
+  };
+  assert.equal(assertDeploymentCandidate(candidate, candidateArgs).id, candidate.id);
+  assert.throws(() => assertDeploymentCandidate({ ...candidate, url: "other.vercel.app" }, candidateArgs), /exact expected/);
+  assert.throws(() => assertDeploymentCandidate({ ...candidate, projectId: "prj_other" }, candidateArgs), /exact expected/);
+  assert.throws(() => assertDeploymentCandidate({ ...candidate, meta: { ...candidate.meta, atlasReleaseAttempt: "other" } }, candidateArgs), /exact expected/);
   assert.equal(invocation.env.VERCEL_ORG_ID, VERCEL_PRODUCTION_CONTRACT.teamId);
   assert.equal(invocation.env.VERCEL_PROJECT_ID, VERCEL_PRODUCTION_CONTRACT.projectId);
   assert(!invocation.args.includes("link"));
