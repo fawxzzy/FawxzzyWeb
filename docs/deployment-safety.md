@@ -1,94 +1,117 @@
 # FawxzzyWeb production deployment safety
 
-Production releases must use `npm run deploy:production`; raw `vercel deploy
---prod` is not an admitted FawxzzyWeb release path. Merge and deployment remain
-separate operator decisions.
+## Current boundary
 
-## Committed destination contract
+PR92 exposes a **pure observation validator**, not a release executor. Both
+`npm run deploy:production` (including its former dry-run) and the verification
+CLI fail before provider access. `--confirm-production`, a JSON frame, or a
+reservation ID does not grant execution authority. The legacy recovery callback
+API always holds before calling a callback. No Web module deploys, rolls back,
+queries a provider, fetches a production URL, or writes a release receipt.
 
-- GitHub repository: `fawxzzy/FawxzzyWeb`
-- Vercel team: `team_CMJn7MvzFZZBnhNnjVUZF2RD` (`fawxzzy`)
-- Vercel project: `prj_vhUyajI4AL6BgCF40VnKtdxrBLuV` (`fawxzzyweb`)
-- Required production aliases: `fawxzzy.com`, `www.fawxzzy.com`, and
-  `account.fawxzzy.com`
+Canonical Ops owns native/policy validation, one retained writer claim, source
+and executable checks, subprocesses, raw capture, durable journal, phase order,
+acceptance and any separately authorized rollback. Its currently accepted
+source-only consumer still returns `HOLD_WEB_VALIDATOR_UNAVAILABLE`; the Web
+bridge does not remove that hold. Source preparation, installation, source
+publication, deployment and actual user acceptance remain separate gates.
 
-`.vercel/project.json` remains ignored workspace state. Its team, project, and
-name must match the committed contract before any build or upload. The wrapper
-never links a project. A missing link therefore fails closed instead of letting
-the Vercel CLI infer or create a replacement project.
+## Destination and exact source
 
-## Dry-run preflight
+The read-only committed `vercel-production-contract.mjs` defines repository
+`fawxzzy/FawxzzyWeb`, project `prj_vhUyajI4AL6BgCF40VnKtdxrBLuV`, team
+`team_CMJn7MvzFZZBnhNnjVUZF2RD`, and the three production aliases
+`fawxzzy.com`, `www.fawxzzy.com`, `account.fawxzzy.com`. Local `.vercel` and
+credentials remain ignored state; the bridge neither reads nor changes them.
+The future Ops executor must verify the exact reviewed commit/tree, clean
+source, successful exact-main push CI, installed dependency bytes, team/project,
+complete aliases and known-good rollback before an effect. Production and
+publication conditions are not satisfied by fixture success.
 
-From a clean checkout of the exact intended main commit:
+## Pure phase protocol
 
-```text
-npm run deploy:production -- --dry-run --expected-commit <40-hex-sha> --ci-run-id <successful-exact-main-run>
-```
+Fixed invocation: `node scripts/deploy-production.mjs --phase-bridge-stdio`.
+It accepts one UTF-8 JSON object at EOF, optionally one trailing LF, bounded to
+2 MiB and nesting depth 32. The wire encoding is canonical JSON: recursively
+sorted object keys, no insignificant whitespace, JSON.stringify-compatible
+string escaping, safe integer numbers only. Duplicate properties, alternate
+encodings, invalid Unicode, unknown fields and extra frames fail with nonzero
+exit, no stdout and fixed `HOLD_PHASE_VALIDATION_FAILED` stderr. Neither error
+text nor a parser stack may reflect input. A leading UTF-8 BOM is rejected. Emit Python frames with sorted keys, compact separators and
+`ensure_ascii=False`; all numeric observations must be safe integers.
 
-The dry-run verifies the local binding, clean checkout, exact HEAD, reachability
-from `origin/main`, a successful `push` CI run whose branch is exactly `main`
-and whose head is the exact release commit, live Vercel team/project identity,
-current production deployment, and rollback candidate. A pull-request,
-workflow-dispatch, or non-main run for the same SHA is not release evidence. The
-dry-run performs no deployment.
+Closed request keys: `schema`, `request_id`, `phase`, `manifest_sha256`,
+`identity`, `observations`. Schema is `atlas.web.release-phase.v1`; request ID is
+an ASCII identifier of at most 128 characters; manifest digest is lowercase
+SHA256. Phases: `validate_candidate`, `validate_acceptance`,
+`validate_rollback_readback`. No provider-effect phase exists. One canonical
+response preserves schema, request ID, phase, digest and identity, plus
+`status: VALID` and a semantic `result`. This response is **data validation**,
+not authority, provider provenance or an installed release receipt.
 
-On Windows, the wrapper resolves the installed CLI form from `PATH` in fail-closed
-order (`.exe`, then `.cmd`, then an exact command match). This supports the native
-GitHub CLI executable and the npm-installed Vercel command without assuming that
-both tools use the same shim extension. A missing CLI stops before provider access.
+Identity has exactly: `repository` (lowercase), `packetId`, `reservationId`,
+`attemptId`, `commit`, `tree`, `teamId`, `projectId`, `productionAliases`,
+`candidateDeploymentId`, `candidateUrl`, `rollbackDeploymentId`,
+`rollbackCommit`, `rollbackTree`. All except the alias array are strings.
+Candidate and rollback IDs differ. The manifest binds these values; Ops must
+independently check that the selected Git commits really have the stated trees.
 
-## Authorized release
+Project observations have `id`, `name`, `accountId`,
+`productionDeploymentId`. Deployment observations have `id`, `url` (hostname),
+`projectId`, `teamId`, `target`, `readyState`, `commit`, `tree`, `attemptId`
+(null for the retained rollback). These are **normalized projections**: Ops must
+produce and validate them from its captured provider/Git evidence. In
+particular, a provider metadata echo is not proof of the executed source.
+Aliases have the exact three `{alias, deploymentId}` entries and
+`pagination: {next: null}`; Ops proves full capture before normalization.
 
-After separate current production authorization:
+Candidate bundle: `project`, `deployment`, `aliases`. Rollback bundle:
+`project`, `rollbackDeployment`, `aliases`. Acceptance bundle adds the full
+candidate and rollback observations, plus `smoke`, `account`, `legal`,
+`privateApi`, `pendingApi`, `www`, `ranges`, `logs`, `finalProject`,
+`finalAliases`. Route groups are complete ordered arrays from the exported
+frozen route lists; each entry has `route`, `status`, `url`, `bodyDigest`. Digest is lowercase
+SHA256 of the actual captured HTTP entity-body bytes after content decoding,
+before UTF-8 or HTML normalization. Only the 13 account/legal/Projects records
+also carry `html`; it is forbidden on other public route records. HTML must
+roundtrip those same UTF-8 bytes, match its digest, fit 96 KiB raw and 112 KiB
+JSON-encoded per body. This limits all 13 HTML strings to at most 1456 KiB
+encoded, leaving room under the unchanged 2 MiB total frame bound. Private API
+also binds its included minimal JSON body to `bodyDigest`; pending API, redirect
+and range records carry a digest without body text. Digest format alone cannot
+authenticate omitted bodies: Ops must compare every digest to its raw capture,
+including non-HTML records, before invoking the bridge. Preserve
+all canonical HTML, empty four-board/noindex, signed-out minimal denial,
+wrong-origin/missing-cookie denial, redirect, exact byte-range, empty runtime
+error counts and final target/alias predicates. Tests demonstrate complete
+bundle construction and each closed shape. No credentials/private card payload
+belong in a frame. All passed observations may still be forged by a caller;
+Ops must reject frames not derived from its own exact captured operations.
+Ops also verifies capture timestamps, actual clock and the action deadline; a
+matching frame or digest cannot establish freshness.
 
-```text
-npm run deploy:production -- --expected-commit <40-hex-sha> --ci-run-id <run-id> --confirm-production fawxzzyweb
-```
+## Remaining execution and recovery gates
 
-The wrapper exports the exact Vercel team and project IDs to the CLI, disables
-interactive inference, deploys the verified commit, and then requires:
+Before a live release, Ops must independently admit and install its actual
+native validator/executor, supported Windows durable write-once start, full
+phase journal, candidate capture and same-reservation exclusion during waits.
+The provider fence must be established separately; a target read followed by
+an unconditional effect does not provide compare-and-swap. Canonical
+cooperative exclusion does not prove exclusion of ungoverned provider writers.
 
-- the expected READY production deployment and source commit;
-- the existing project and all required aliases;
-- 200 responses for the governed public, account, Auth, compatibility, health,
-  manifest, robots, and sitemap routes;
-- the exact `www` canonical redirect;
-- 206 trailer byte-range delivery;
-- zero production error and 5xx logs.
+The CLI rollback timeout only bounds observation: the provider action can
+continue. Keep the claim on unknown effect, partial journal, missing candidate
+or turn/target drift; never automatically replay deploy or rollback. A rollback
+also disables production auto-assignment until a later promotion. Such a
+promotion is a distinct authorized effect, not part of alias readback.
+References: [rollback CLI](https://vercel.com/docs/cli/rollback#timeout),
+[Instant Rollback](https://vercel.com/docs/instant-rollback).
 
-The prior production deployment is recorded as the rollback candidate. Output is
-written to the ignored exact-commit visual-evidence folder. The wrapper does not
-authorize a deployment; it only enforces and records an already approved one.
+## Source verification and rollback
 
-The wrapper verifies the retained rollback deployment is READY on the exact
-project and all three canonical aliases currently bind to it before invoking
-the deploy command. It captures the CLI's deployment
-URL, resolves that URL to one provider deployment, and requires the expected
-project, production target, source commit, and unique invocation identity. A
-missing or mismatched URL, another writer's target, or an unobserved cutover is
-an uncertain effect hold
-and cannot be retried from this wrapper.
-
-If the command fails or post-deployment acceptance fails after the wrapper
-observes its own exact production target, it makes one rollback request to the
-captured prior deployment. It first checks that the current target is still its
-candidate, then
-requires the prior target and all three canonical aliases to read back on the
-prior deployment. A different target, incomplete alias read, failed rollback,
-or exhausted observation window is an explicit recovery hold; the wrapper must
-not roll back another writer's deployment or claim production was restored.
-The acceptance verifier repeats target and alias readback just before writing
-its terminal success receipt. A collision-free writer reservation must span
-both the release and any rollback; target reads alone cannot close the race
-between observation and provider effect.
-The CLI can fail before it emits a URL even if the provider accepted an effect.
-That uncertain outcome still requires exact provider reconciliation before any
-retry or release-complete claim. The recovery guard does not replace the
-separate production authorization and writer reservation.
-
-## Task-owned workspace teardown
-
-Release workspaces are created only below the governed temporary workspace root.
-Do not bypass cleanup guards. Remove task-owned `.vercel` state and the worktree
-only through the established path-verified teardown flow; never target the
-canonical checkout or its preserved stash.
+Run `node --test scripts/test-production-recovery.mjs`, then `npm run verify`.
+Fixtures use child-process, network and receipt-write traps; they do not access
+a provider or demonstrate real deployment/user acceptance. Retain the prior
+reviewed source commit/tree and exact five preimages for scoped source
+rollback. Preserve unrelated work, local linkage, backups and canonical Root
+index. Use existing verified worktree teardown; do not delete runtime evidence.
