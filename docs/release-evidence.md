@@ -67,7 +67,28 @@ reviewed head, merge commit, Vercel deployment ID/URL, aliases, smoke result, an
 preserved rollback deployment. Automation records evidence; it never grants the
 deployment decision.
 
-Production execution uses the fail-closed wrapper documented in
-`docs/deployment-safety.md`. The wrapper requires the committed team/project
-identity, a clean exact-main source commit, and a successful exact-commit CI run
-before it can invoke Vercel. It never links or creates a project.
+## Source installation and production-release freeze
+
+The current Web release module is the pure observation validator documented in
+`docs/deployment-safety.md`. It never invokes Vercel. `npm run deploy:production`,
+its former dry-run, the verification CLI, and legacy rollback callbacks are
+intentionally disabled before provider effects. There is no supported Web live
+deploy or rollback command until a separately reviewed Ops replacement is
+installed and admitted. Source installation deliberately preserves this
+production-release freeze; it does not claim that the replacement is live.
+
+Ready and merge may be evaluated as source installation only, using independent
+exact-head review, current CI, merge-composite evidence, writer exclusion,
+retained source rollback preimages, and fresh confirmation that neither Git
+integration nor CI triggers deployment. Source installation does not update the
+existing public deployment or grant any provider effect. The prior callable
+legacy implementation remains Git history for governed source comparison or
+revert, never an authorized production fallback.
+
+Known Web and inspected Ops fixture consumers use the pure bridge. External or
+manual consumers outside that inspected scope remain unknown and are not
+claimed migrated. Before a live release, Ops must separately establish its
+installed native validator/executor, trusted observations, durable recovery
+journal, effect-scoped writer and provider fence, exact preimages, acceptance,
+rollback/readback, and action-specific authority. Platform card/projection and
+real user acceptance remain separate product gates.

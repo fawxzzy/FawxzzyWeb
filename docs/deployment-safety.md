@@ -11,10 +11,23 @@ queries a provider, fetches a production URL, or writes a release receipt.
 
 Canonical Ops owns native/policy validation, one retained writer claim, source
 and executable checks, subprocesses, raw capture, durable journal, phase order,
-acceptance and any separately authorized rollback. Its currently accepted
-source-only consumer still returns `HOLD_WEB_VALIDATOR_UNAVAILABLE`; the Web
-bridge does not remove that hold. Source preparation, installation, source
-publication, deployment and actual user acceptance remain separate gates.
+acceptance and any separately authorized rollback. Its accepted fixture
+consumers demonstrate source validation only. No installed supported live
+release or rollback executor is accepted; native execution, trusted capture,
+durable Windows recovery and the provider fence remain separate held gates.
+The Web bridge does not satisfy them.
+
+A separately reviewed source-only installation may install this fail-closed
+boundary while production release remains intentionally frozen. There is no
+supported Web deploy, dry-run or rollback command until the actual Ops
+replacement is installed and admitted. Ready/merge require their own exact-head
+source lifecycle checks, merge-composite proof and preserved source rollback;
+they do not require claiming live replacement or product acceptance. Neither
+source installation nor merge grants deployment. The committed Git deployment
+switch must remain disabled, and CI must remain free of deployment effects.
+External operator callers outside the inspected source remain unknown, not
+migrated. Source preparation, installation, publication, deployment and actual
+user acceptance remain separate gates.
 
 ## Destination and exact source
 
