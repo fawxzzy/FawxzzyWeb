@@ -1,20 +1,11 @@
 #!/usr/bin/env node
-import { execFileSync } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
-import process from "node:process";
-import { fileURLToPath, pathToFileURL } from "node:url";
-import htmlParser from "next/dist/compiled/node-html-parser/index.js";
-import {
-  VERCEL_PRODUCTION_CONTRACT,
-  assertRemoteProject,
-  getCommand,
-  parseNamedArguments,
-  runJsonCommand,
-} from "./vercel-production-contract.mjs";
+import { pathToFileURL } from 'node:url';
+import { createHash } from 'node:crypto';
+import htmlParser from 'next/dist/compiled/node-html-parser/index.js';
+import { assertKeys, assertReleaseIdentity, assertProjectObservation, assertDeploymentObservation,
+  assertCanonicalAliasBindings, requireCondition } from './recover-production-release.mjs';
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const smokeRoutes = [
+export const smokeRoutes = Object.freeze([
   "/",
   "/apps",
   "/apps/fitness",
@@ -31,8 +22,8 @@ const smokeRoutes = [
   "/manifest.webmanifest",
   "/robots.txt",
   "/sitemap.xml",
-];
-const accountRoutes = [
+]);
+export const accountRoutes = Object.freeze([
   "/login",
   "/login?returnTo=%2Fprojects",
   "/projects",
@@ -41,21 +32,13 @@ const accountRoutes = [
   "/auth/confirm",
   "/reset-password?recovery=1",
   "/oauth/authorize",
-];
-const legalRoutes = [
+]);
+export const legalRoutes = Object.freeze([
   "/privacy",
   "/terms",
   "/legal/mazer/privacy",
   "/legal/mazer/terms",
-];
-
-function runVercelJson(args) {
-  return runJsonCommand(getCommand("vercel"), args, { cwd: repoRoot });
-}
-
-async function fetchWithTimeout(url, options = {}) {
-  return fetch(url, { ...options, signal: AbortSignal.timeout(20_000) });
-}
+]);
 
 function hasDuplicateCanonicalAttribute(rawAttributes) {
   const counts = new Map([["href", 0], ["rel", 0]]);
@@ -122,233 +105,121 @@ export function verifyProjectsPublicHtml(html) {
   return { noindex: true, boardCount: boards.length, publicCardCount: 0 };
 }
 
-function readLogCount(deploymentId, filterArgs) {
-  const output = execFileSync(getCommand("vercel"), [
-    "logs",
-    deploymentId,
-    "--scope",
-    VERCEL_PRODUCTION_CONTRACT.teamSlug,
-    "--since",
-    "30m",
-    "--no-follow",
-    "--limit",
-    "100",
-    "--json",
-    ...filterArgs,
-  ], {
-    cwd: repoRoot,
-    encoding: "utf8",
-    windowsHide: true,
-    stdio: ["ignore", "pipe", "pipe"],
-    shell: process.platform === "win32",
-  }).trim();
-  return output ? output.split(/\r?\n/).filter(Boolean).length : 0;
+
+// Final response URLs after following the exact committed public redirects.
+const publicRedirectResponses = Object.freeze({
+  '/apps/fitness': 'https://fitness.fawxzzy.com/',
+  '/apps/mazer': 'https://mazer.fawxzzy.com/',
+  '/discover': 'https://fawxzzy.com/?compatibility=discover',
+  '/trove': 'https://fawxzzy.com/apps?compatibility=trove',
+});
+
+function assertObservationUrl(url, route, origins, kind) {
+  let parsed;
+  try { parsed = new URL(url); } catch { throw new Error('Invalid observed response URL.'); }
+  const redirect = kind === 'public' ? publicRedirectResponses[route] : undefined;
+  const expected = new URL(redirect ?? route, 'https://fawxzzy.com');
+  requireCondition((redirect ? url === expected.href : origins.includes(parsed.origin))
+    && parsed.pathname === expected.pathname
+    && parsed.search === expected.search && !parsed.hash && !parsed.username && !parsed.password,
+  'Observed response URL is not an admitted route.');
 }
 
-export async function verifyProductionRelease({ deploymentId, expectedCommit, sourceTree, rollbackDeploymentId, receiptPath }) {
-  if (!/^dpl_[A-Za-z0-9]+$/.test(deploymentId ?? "")) {
-    throw new Error("--deployment-id must identify one exact Vercel deployment.");
-  }
-  if (!/^[0-9a-f]{40}$/.test(expectedCommit ?? "")) {
-    throw new Error("--expected-commit must be an exact 40-character lowercase Git commit.");
-  }
-  if (!/^dpl_[A-Za-z0-9]+$/.test(rollbackDeploymentId ?? "")) {
-    throw new Error("--rollback-deployment must identify one exact rollback deployment.");
-  }
-  const project = assertRemoteProject(runVercelJson([
-    "api",
-    `/v9/projects/${VERCEL_PRODUCTION_CONTRACT.projectId}`,
-    "--scope",
-    VERCEL_PRODUCTION_CONTRACT.teamSlug,
-    "--raw",
-  ]));
-  const deployment = runVercelJson([
-    "api",
-    `/v13/deployments/${deploymentId}`,
-    "--scope",
-    VERCEL_PRODUCTION_CONTRACT.teamSlug,
-    "--raw",
-  ]);
-  const rollbackDeployment = runVercelJson([
-    "api",
-    `/v13/deployments/${rollbackDeploymentId}`,
-    "--scope",
-    VERCEL_PRODUCTION_CONTRACT.teamSlug,
-    "--raw",
-  ]);
+export const MAX_HTML_BYTES = 96 * 1024;
+export const MAX_HTML_JSON_BYTES = 112 * 1024;
 
-  if (deployment.id !== deploymentId || deployment.target !== "production" || deployment.readyState !== "READY") {
-    throw new Error("The resulting deployment is not the expected READY production deployment.");
-  }
-  if (deployment.meta?.githubCommitSha !== expectedCommit) {
-    throw new Error("The resulting deployment does not identify the expected source commit.");
-  }
-  if (project.targets?.production?.id !== deploymentId) {
-    throw new Error("The FawxzzyWeb production target does not point to the resulting deployment.");
-  }
-  if (rollbackDeployment.id !== rollbackDeploymentId || rollbackDeployment.readyState !== "READY") {
-    throw new Error("The captured rollback deployment is not READY.");
-  }
+function assertBodyDigest(digest, body) {
+  requireCondition(typeof digest === 'string' && /^[0-9a-f]{64}$/u.test(digest),
+    'Missing or malformed captured body digest.');
+  if (body !== undefined) requireCondition(createHash('sha256').update(body, 'utf8').digest('hex') === digest,
+    'Supplied body does not match its captured digest.');
+}
 
-  const aliasResponse = runVercelJson([
-    "api",
-    `/v4/aliases?projectId=${VERCEL_PRODUCTION_CONTRACT.projectId}`,
-    "--scope",
-    VERCEL_PRODUCTION_CONTRACT.teamSlug,
-    "--raw",
-  ]);
-  if (!Array.isArray(aliasResponse.aliases) || aliasResponse.pagination?.next) {
-    throw new Error("The authoritative Vercel alias readback is incomplete.");
-  }
-  const aliases = aliasResponse.aliases
-    .filter((binding) => binding.deploymentId === deploymentId)
-    .map((binding) => binding.alias);
-  for (const alias of VERCEL_PRODUCTION_CONTRACT.productionAliases) {
-    if (!aliases.includes(alias)) throw new Error(`Required production alias is missing: ${alias}`);
-  }
-
-  const smoke = [];
-  const projectsSmoke = [];
-  for (const route of smokeRoutes) {
-    const response = await fetchWithTimeout(`https://fawxzzy.com${route}`, { redirect: "follow" });
-    smoke.push({ route, status: response.status, url: response.url });
-    if (response.status !== 200) throw new Error(`Production smoke failed for ${route}: ${response.status}`);
-    if (route === '/projects') projectsSmoke.push({ origin: 'https://fawxzzy.com',
-      ...verifyProjectsPublicHtml(await response.text()) });
-  }
-
-  const accountSmoke = [];
-  for (const route of accountRoutes) {
-    const response = await fetchWithTimeout(`https://account.fawxzzy.com${route}`, { redirect: "follow" });
-    const html = await response.text();
-    const expectedCanonical = `https://account.fawxzzy.com${route.split("?")[0]}`;
-    accountSmoke.push({ route, status: response.status, url: response.url, expectedCanonical });
-    if (response.status !== 200 || !hasExactCanonicalLink(html, expectedCanonical)) {
-      throw new Error(`Account-origin smoke failed for ${route}.`);
+function assertRouteGroup(observations, expected, kind) {
+  requireCondition(Array.isArray(observations) && observations.length === expected.length,
+    `Incomplete ${kind} route observations.`);
+  observations.forEach((observation, index) => {
+    const route = expected[index];
+    const needsHtml = kind !== 'public' || route === '/projects';
+    assertKeys(observation, ['route', 'status', 'url', 'bodyDigest', ...(needsHtml ? ['html'] : [])],
+      `${kind} route observation`);
+    requireCondition(observation.route === route && observation.status === 200,
+      `Invalid or reordered ${kind} route observation.`);
+    if (needsHtml) requireCondition(typeof observation.html === 'string'
+      && Buffer.byteLength(observation.html) <= MAX_HTML_BYTES
+      && Buffer.byteLength(JSON.stringify(observation.html)) <= MAX_HTML_JSON_BYTES,
+    'HTML observation exceeds its text or encoded byte budget.');
+    assertBodyDigest(observation.bodyDigest, needsHtml ? observation.html : undefined);
+    const account = kind === 'account';
+    const legal = kind === 'legal';
+    const origins = account ? ['https://account.fawxzzy.com']
+      : (legal || accountRoutes.includes(route)) ? ['https://fawxzzy.com', 'https://account.fawxzzy.com']
+        : ['https://fawxzzy.com'];
+    assertObservationUrl(observation.url, route, origins, kind);
+    if (account || legal) {
+      const canonical = `${legal ? 'https://fawxzzy.com' : 'https://account.fawxzzy.com'}${route.split('?')[0]}`;
+      requireCondition(hasExactCanonicalLink(observation.html, canonical), `${kind} canonical HTML is invalid.`);
     }
-    if (route === '/projects') projectsSmoke.push({ origin: 'https://account.fawxzzy.com',
-      ...verifyProjectsPublicHtml(html) });
-  }
-
-  const privateMissing = await fetchWithTimeout('https://account.fawxzzy.com/api/projects/private-card', {
-    headers: { 'Sec-Fetch-Site': 'same-origin', 'Sec-Fetch-Mode': 'cors',
-      'Sec-Fetch-Dest': 'empty', 'X-Fawxzzy-Private-Card': '1' },
-    redirect: 'manual',
+    if (route === '/projects') verifyProjectsPublicHtml(observation.html);
   });
-  const privateApi = { case: 'signed_out_private_card', status: privateMissing.status,
-    cacheControl: privateMissing.headers.get('cache-control') };
-  let privateError;
-  try { privateError = JSON.parse(await privateMissing.text()); } catch { privateError = null; }
-  if (![403, 503].includes(privateApi.status) || !privateApi.cacheControl?.includes('no-store')
-    || !privateError || Object.keys(privateError).length !== 1
-    || !['CARD_ACCESS_DENIED', 'CARD_UNAVAILABLE'].includes(privateError.error)) {
-    throw new Error('Signed-out private card endpoint did not fail closed without caching.');
-  }
+}
 
-  const legalSmoke = [];
-  for (const route of legalRoutes) {
-    const response = await fetchWithTimeout(`https://account.fawxzzy.com${route}`, {
-      redirect: "follow",
-    });
-    const html = await response.text();
-    const expectedCanonical = `https://fawxzzy.com${route}`;
-    legalSmoke.push({ route, status: response.status, url: response.url, expectedCanonical });
-    if (response.status !== 200 || !hasExactCanonicalLink(html, expectedCanonical)) {
-      throw new Error(`Legal-route smoke failed for ${route}.`);
-    }
-  }
-
-  const pendingEndpoint = "https://account.fawxzzy.com/api/account/mazer-oauth-pending";
-  const pendingMissing = await fetchWithTimeout(pendingEndpoint, { redirect: "manual" });
-  const pendingWrongOrigin = await fetchWithTimeout(pendingEndpoint, {
-    body: "{}",
-    headers: { "Content-Type": "application/json", Origin: "https://hostile.example" },
-    method: "POST",
-    redirect: "manual",
+export function verifyProductionRelease(input) {
+  assertKeys(input, ['identity', 'observations'], 'pure acceptance input');
+  const { identity, observations: o } = input;
+  assertReleaseIdentity(identity);
+  assertKeys(o, ['project', 'deployment', 'rollbackDeployment', 'aliases', 'smoke', 'account', 'legal',
+    'privateApi', 'pendingApi', 'www', 'ranges', 'logs', 'finalProject', 'finalAliases'], 'acceptance observations');
+  assertProjectObservation(o.project, identity.candidateDeploymentId);
+  assertDeploymentObservation(o.deployment, identity);
+  assertDeploymentObservation(o.rollbackDeployment, identity, true);
+  assertCanonicalAliasBindings(o.aliases, identity.candidateDeploymentId);
+  assertRouteGroup(o.smoke, smokeRoutes, 'public');
+  assertRouteGroup(o.account, accountRoutes, 'account');
+  assertRouteGroup(o.legal, legalRoutes, 'legal');
+  assertKeys(o.privateApi, ['status', 'cacheControl', 'body', 'bodyDigest'], 'signed-out private API');
+  requireCondition([403, 503].includes(o.privateApi.status) && typeof o.privateApi.cacheControl === 'string'
+    && o.privateApi.cacheControl.split(',').some((token) => token.trim().toLowerCase() === 'no-store')
+    && typeof o.privateApi.body === 'string' && Buffer.byteLength(o.privateApi.body) <= 256,
+  'Signed-out private card observation did not fail closed.');
+  assertBodyDigest(o.privateApi.bodyDigest, o.privateApi.body);
+  let error;
+  try { error = JSON.parse(o.privateApi.body); } catch { throw new Error('Invalid private denial JSON.'); }
+  assertKeys(error, ['error'], 'private denial');
+  requireCondition(['CARD_ACCESS_DENIED', 'CARD_UNAVAILABLE'].includes(error.error)
+    && o.privateApi.body === JSON.stringify(error), 'Private denial must be minimal canonical JSON.');
+  requireCondition(Array.isArray(o.pendingApi) && o.pendingApi.length === 2, 'Incomplete pending API observations.');
+  o.pendingApi.forEach((item, index) => {
+    assertKeys(item, ['case', 'status', 'cacheControl', 'bodyDigest'], 'pending API observation');
+    assertBodyDigest(item.bodyDigest);
+    requireCondition(item.case === ['missing_host_only_cookie', 'wrong_origin'][index]
+      && item.status === [404, 403][index] && typeof item.cacheControl === 'string'
+      && item.cacheControl.split(',').some((token) => token.trim().toLowerCase() === 'no-store'),
+    'Pending API observation is not the exact denied case.');
   });
-  const pendingApi = [
-    {
-      case: "missing_host_only_cookie",
-      status: pendingMissing.status,
-      cacheControl: pendingMissing.headers.get("cache-control"),
-    },
-    {
-      case: "wrong_origin",
-      status: pendingWrongOrigin.status,
-      cacheControl: pendingWrongOrigin.headers.get("cache-control"),
-    },
-  ];
-  for (const proof of pendingApi) {
-    const expectedStatus = proof.case === "missing_host_only_cookie" ? 404 : 403;
-    if (proof.status !== expectedStatus || !proof.cacheControl?.includes("no-store")) {
-      throw new Error(`Mazer pending API contract failed for ${proof.case}.`);
-    }
-  }
-
-  const www = await fetchWithTimeout("https://www.fawxzzy.com/", { redirect: "manual" });
-  if (www.status !== 308 || www.headers.get("location") !== "https://fawxzzy.com/") {
-    throw new Error("The www canonical redirect is not exact.");
-  }
-
-  const ranges = [];
-  for (const route of ["/apps/fitness/trailer.mp4", "/apps/mazer/trailer.mp4"]) {
-    const response = await fetchWithTimeout(`https://fawxzzy.com${route}`, {
-      headers: { Range: "bytes=0-1023" },
-    });
-    const proof = {
-      route,
-      status: response.status,
-      contentType: response.headers.get("content-type"),
-      contentRange: response.headers.get("content-range"),
-      contentLength: response.headers.get("content-length"),
-    };
-    ranges.push(proof);
-    if (proof.status !== 206 || proof.contentType !== "video/mp4" || proof.contentLength !== "1024") {
-      throw new Error(`Trailer range proof failed for ${route}.`);
-    }
-  }
-
-  const logs = {
-    errors: readLogCount(deploymentId, ["--level", "error"]),
-    serverErrors: readLogCount(deploymentId, ["--status-code", "5xx"]),
-  };
-  if (logs.errors || logs.serverErrors) throw new Error("Production runtime logs contain release errors.");
-
-  const receipt = {
-    schemaVersion: 1,
-    status: "production_verified",
-    generatedAt: new Date().toISOString(),
-    repository: VERCEL_PRODUCTION_CONTRACT.repository,
-    source: { commit: expectedCommit, tree: sourceTree ?? null },
-    provider: {
-      teamId: VERCEL_PRODUCTION_CONTRACT.teamId,
-      projectId: VERCEL_PRODUCTION_CONTRACT.projectId,
-      projectName: VERCEL_PRODUCTION_CONTRACT.projectName,
-    },
-    release: {
-      deploymentId,
-      deploymentUrl: deployment.url,
-      aliases,
-      rollbackDeploymentId,
-      rollbackReadyState: rollbackDeployment.readyState,
-    },
-    verification: { smoke, projectsSmoke, accountSmoke, privateApi, legalSmoke, pendingApi, wwwRedirect: 308, ranges, logs },
-  };
-
-  const targetPath = receiptPath ?? path.join(repoRoot, "visual-evidence", expectedCommit, "production-release-receipt.json");
-  await mkdir(path.dirname(targetPath), { recursive: true });
-  await writeFile(targetPath, `${JSON.stringify(receipt, null, 2)}\n`, "utf8");
-  return { receipt, receiptPath: targetPath };
+  assertKeys(o.www, ['status', 'location', 'bodyDigest'], 'www redirect');
+  assertBodyDigest(o.www.bodyDigest);
+  requireCondition(o.www.status === 308 && o.www.location === 'https://fawxzzy.com/', 'Invalid www redirect.');
+  const trailers = ['/apps/fitness/trailer.mp4', '/apps/mazer/trailer.mp4'];
+  requireCondition(Array.isArray(o.ranges) && o.ranges.length === trailers.length, 'Incomplete range observations.');
+  o.ranges.forEach((item, index) => {
+    assertKeys(item, ['route', 'status', 'contentType', 'contentRange', 'contentLength', 'bodyDigest'], 'range observation');
+    assertBodyDigest(item.bodyDigest);
+    const range = /^bytes 0-1023\/([0-9]+)$/u.exec(item.contentRange ?? '');
+    requireCondition(item.route === trailers[index] && item.status === 206 && item.contentType === 'video/mp4'
+      && item.contentLength === '1024' && range !== null && Number.isSafeInteger(Number(range[1]))
+      && Number(range[1]) >= 1024, 'Invalid or reordered trailer byte range.');
+  });
+  assertKeys(o.logs, ['errors', 'serverErrors'], 'runtime log counts');
+  requireCondition(o.logs.errors === 0 && o.logs.serverErrors === 0, 'Runtime error observations are not empty.');
+  assertProjectObservation(o.finalProject, identity.candidateDeploymentId);
+  assertCanonicalAliasBindings(o.finalAliases, identity.candidateDeploymentId);
+  return { status: 'acceptance_observations_valid', candidateDeploymentId: identity.candidateDeploymentId,
+    rollbackDeploymentId: identity.rollbackDeploymentId, publicRoutes: smokeRoutes.length,
+    accountRoutes: accountRoutes.length, legalRoutes: legalRoutes.length };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const { values } = parseNamedArguments(process.argv.slice(2));
-  const result = await verifyProductionRelease({
-    deploymentId: values.get("--deployment-id"),
-    expectedCommit: values.get("--expected-commit"),
-    sourceTree: values.get("--source-tree"),
-    rollbackDeploymentId: values.get("--rollback-deployment"),
-    receiptPath: values.get("--receipt"),
-  });
-  console.log(JSON.stringify(result, null, 2));
+  process.stderr.write('HOLD_DIRECT_PRODUCTION_VERIFICATION_DISABLED\n');
+  process.exitCode = 1;
 }
