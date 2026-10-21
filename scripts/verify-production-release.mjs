@@ -106,11 +106,21 @@ export function verifyProjectsPublicHtml(html) {
 }
 
 
-function assertObservationUrl(url, route, origins) {
+// Final response URLs after following the exact committed public redirects.
+const publicRedirectResponses = Object.freeze({
+  '/apps/fitness': 'https://fitness.fawxzzy.com/',
+  '/apps/mazer': 'https://mazer.fawxzzy.com/',
+  '/discover': 'https://fawxzzy.com/?compatibility=discover',
+  '/trove': 'https://fawxzzy.com/apps?compatibility=trove',
+});
+
+function assertObservationUrl(url, route, origins, kind) {
   let parsed;
   try { parsed = new URL(url); } catch { throw new Error('Invalid observed response URL.'); }
-  const expected = new URL(route === '/trove' ? '/apps' : route, 'https://fawxzzy.com');
-  requireCondition(origins.includes(parsed.origin) && parsed.pathname === expected.pathname
+  const redirect = kind === 'public' ? publicRedirectResponses[route] : undefined;
+  const expected = new URL(redirect ?? route, 'https://fawxzzy.com');
+  requireCondition((redirect ? url === expected.href : origins.includes(parsed.origin))
+    && parsed.pathname === expected.pathname
     && parsed.search === expected.search && !parsed.hash && !parsed.username && !parsed.password,
   'Observed response URL is not an admitted route.');
 }
@@ -145,7 +155,7 @@ function assertRouteGroup(observations, expected, kind) {
     const origins = account ? ['https://account.fawxzzy.com']
       : (legal || accountRoutes.includes(route)) ? ['https://fawxzzy.com', 'https://account.fawxzzy.com']
         : ['https://fawxzzy.com'];
-    assertObservationUrl(observation.url, route, origins);
+    assertObservationUrl(observation.url, route, origins, kind);
     if (account || legal) {
       const canonical = `${legal ? 'https://fawxzzy.com' : 'https://account.fawxzzy.com'}${route.split('?')[0]}`;
       requireCondition(hasExactCanonicalLink(observation.html, canonical), `${kind} canonical HTML is invalid.`);

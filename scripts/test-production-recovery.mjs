@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { VERCEL_PRODUCTION_CONTRACT as contract } from './vercel-production-contract.mjs';
@@ -26,12 +27,18 @@ const deployment = (rollback = false) => ({ id: rollback ? identity.rollbackDepl
   tree: rollback ? identity.rollbackTree : identity.tree, attemptId: rollback ? null : identity.attemptId });
 const page = (canonical) => `<html><head>${canonical ? `<link rel="canonical" href="${canonical}">` : ''}<meta name="robots" content="noindex, nofollow"></head><body>${['Fawxzzy Fitness', 'Mazer', 'Fawxzzy Web', 'Atlas Stack'].map((name) => `<button class="project-tab"><span>${name}</span><strong>0</strong></button>`).join('')}</body></html>`;
 const digest = (body) => createHash('sha256').update(body, 'utf8').digest('hex');
+const followedPublicRedirects = {
+  '/apps/fitness': 'https://fitness.fawxzzy.com/',
+  '/apps/mazer': 'https://mazer.fawxzzy.com/',
+  '/discover': 'https://fawxzzy.com/?compatibility=discover',
+  '/trove': 'https://fawxzzy.com/apps?compatibility=trove',
+};
 function routes(list, kind, padding = 0) {
   return list.map((route) => {
     const body = page(kind === 'public' ? null : `${kind === 'account' ? 'https://account.fawxzzy.com' : 'https://fawxzzy.com'}${route.split('?')[0]}`)
       + 'x'.repeat(padding);
     return { route, status: 200,
-      url: new URL(route === '/trove' ? '/apps' : route,
+      url: new URL((kind === 'public' ? followedPublicRedirects[route] : undefined) ?? route,
         kind === 'account' ? 'https://account.fawxzzy.com' : 'https://fawxzzy.com').href,
       bodyDigest: digest(body), ...(kind !== 'public' || route === '/projects' ? { html: body } : {}) };
   });
@@ -118,6 +125,37 @@ test('complete route sets reject omitted, duplicate, reordered, extra and foreig
       (o) => { o[0].extra = true; }]) {
       const o = acceptance(); change(o[group]); assert.throws(() => runAcceptance(o));
     }
+  }
+});
+
+test('followed public redirects match committed destinations and reject substituted responses', () => {
+  const config = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
+  for (const [route, finalUrl] of Object.entries(followedPublicRedirects)) {
+    const redirect = config.redirects.find((entry) => entry.source === route);
+    assert(redirect, `Missing committed redirect for ${route}`);
+    assert.equal(new URL(redirect.destination, 'https://fawxzzy.com').href, finalUrl);
+    const valid = acceptance();
+    const index = valid.smoke.findIndex((entry) => entry.route === route);
+    assert.equal(valid.smoke[index].url, finalUrl);
+    assert.equal(runAcceptance(valid).status, 'acceptance_observations_valid');
+    const destination = new URL(finalUrl);
+    const wrongPath = new URL(finalUrl); wrongPath.pathname = '/wrong';
+    const wrongQuery = new URL(finalUrl); wrongQuery.search = '?wrong=1';
+    const extraQuery = new URL(finalUrl); extraQuery.searchParams.append('extra', '1');
+    const foreignOrigin = new URL(finalUrl); foreignOrigin.hostname = 'hostile.example';
+    const credentials = new URL(finalUrl); credentials.username = 'user';
+    for (const badUrl of [new URL(route, 'https://fawxzzy.com').href, wrongPath.href,
+      wrongQuery.href, extraQuery.href, foreignOrigin.href, credentials.href, `${destination.href}#extra`,
+      `${destination.href}#`, destination.href.replace('https://', 'https://@')]) {
+      const invalid = acceptance(); invalid.smoke[index].url = badUrl;
+      assert.throws(() => runAcceptance(invalid), /admitted route/u, `${route}: ${badUrl}`);
+    }
+    for (const status of [301, 302, 307, 308]) {
+      const invalid = acceptance(); invalid.smoke[index].status = status;
+      assert.throws(() => runAcceptance(invalid), /route observation/u);
+    }
+    const wrongRoute = acceptance(); wrongRoute.smoke[index].route = destination.pathname;
+    assert.throws(() => runAcceptance(wrongRoute), /route observation/u);
   }
 });
 
