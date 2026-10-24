@@ -121,6 +121,7 @@ export function createPrivateCardOwnerService({ ownerSubject, ownerSession, auth
         if (seal.value !== plan.inputDigest) return await status('seal_unknown');
         await status('sealed'); fresh(); planPins();
         await status('apply_pending');
+        fresh(); planPins();
         const applied = await store.apply(clone(plan.payload));
         if (applied.state === 'unknown') return await status('apply_unknown');
         if (applied.state !== 'committed') return await status('apply_rejected');

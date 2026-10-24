@@ -127,6 +127,18 @@ test('journal claim failure prevents seal and loss after seal never reopens the 
   await assert.rejects(lost.service.apply(lost.request()), { message: 'CARD_UNAVAILABLE' });
   await assert.rejects(lost.service.apply(lost.request())); assert.deepEqual(lost.calls, ['seal']);
 });
+test('authorization expiry during pending journal persistence prevents writer call', async () => {
+  const f = fixture(); const originalSet = f.journal.set;
+  f.journal.set = async (key, value) => {
+    await originalSet(key, value);
+    if (value.state === 'apply_pending') f.setTime(1900000);
+  };
+  await assert.rejects(f.service.apply(f.request()), { message: 'CARD_UNAVAILABLE' });
+  assert.deepEqual(f.calls, ['seal']);
+  assert.equal(f.entries.get('web_batch').state, 'apply_pending');
+  await assert.rejects(f.service.apply(f.request()));
+  assert.deepEqual(f.calls, ['seal']);
+});
 test('independent host binding is mandatory; inconsistent selection/plan/membership/body pins deny before role calls', async () => {
   const base = fixture();
   for (const changes of [{ verifyHostBinding: async () => false },
