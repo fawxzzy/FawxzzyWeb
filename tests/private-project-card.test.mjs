@@ -5,6 +5,30 @@ import { createPrivateCardHandler, createPrivateCardStore, privateCardHandler } 
 import { selectedPrivateCard } from '../src/server/projects/selected-private-card.mjs';
 import { readPrivateProjectCard } from '../src/lib/projects/private-card-reader.mjs';
 
+test('admitted server role service is optional and browser output is independently minimized', async () => {
+  const display = { stable_id: 'FF-WEB-ANALYTICS-001', version: 1, body_digest: `sha256:${'c'.repeat(64)}`,
+    board: 'fawxzzyweb', board_revision: `sha256:${'b'.repeat(64)}`, source_revision: 'a'.repeat(40),
+    title: 'Traffic Analytics', summary: 'Private plan', lifecycle: 'planning' };
+  let calls = 0;
+  const f = fixture({ ownerService: { read: async (r) => { assert.ok(r instanceof Request); calls++; return display; } } });
+  const response = await f.handler(request());
+  assert.equal(response.status, 200); assert.deepEqual(await response.json(), display);
+  assert.match(response.headers.get('cache-control'), /no-store/u); assert.equal(calls, 1); assert.equal(f.reads(), 0);
+  const leaking = fixture({ ownerService: { read: async () => ({ ...display, body: 'PRIVATE_BODY' }) } });
+  const denied = await leaking.handler(request()); assert.equal(denied.status, 503);
+  assert.equal(JSON.stringify(await denied.json()).includes('PRIVATE_BODY'), false);
+});
+
+test('signed-out, foreign and pending mapping deny before role-service invocation', async () => {
+  let calls = 0; const ownerService = { read: async () => { calls++; throw new Error('PRIVATE_TOKEN'); } };
+  const signedOut = fixture({ ownerService }); const absent = request(); absent.headers.delete('cookie');
+  assert.equal((await signedOut.handler(absent)).status, 403);
+  const foreign = fixture({ ownerService, authenticate: async () => ({ subject: session, session, expires: 1100 }) });
+  assert.equal((await foreign.handler(request())).status, 403);
+  const pending = fixture({ ownerService, mapping: selectedPrivateCard });
+  assert.equal((await pending.handler(request())).status, 503); assert.equal(calls, 0);
+});
+
 const ORIGIN = 'https://account.fawxzzy.com';
 const owner = '11111111-1111-1111-1111-111111111111';
 const session = '22222222-2222-2222-2222-222222222222';
