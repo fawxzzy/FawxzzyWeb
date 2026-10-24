@@ -131,7 +131,7 @@ try {
 
   const releaseAttemptId = "12345678-1234-4123-8123-123456789abc";
   const invocation = createDeploymentInvocation(head, releaseAttemptId);
-  assert.deepEqual(invocation.args.slice(0, 3), ["deploy", "--prod", "--yes"]);
+  assert.deepEqual(invocation.args.slice(0, 4), ["deploy", "--prod", "--yes", "--skip-domain"]);
   assert(invocation.args.includes(`atlasReleaseAttempt=${releaseAttemptId}`));
   assert.throws(() => createDeploymentInvocation(head, "invalid"), /invocation identity/);
   const candidate = {
