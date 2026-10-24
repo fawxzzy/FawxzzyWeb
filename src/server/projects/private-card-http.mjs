@@ -62,6 +62,17 @@ export function validatePrivateCardResponse(value, mapping) {
     title: value.body.title, summary: value.body.summary, lifecycle: value.body.lifecycle };
 }
 
+// Optional admitted server-only role service. Validate its minimized output
+// again at the browser boundary; never serialize an arbitrary service result.
+export function validatePrivateCardDisplay(value, mapping) {
+  if (!exactKeys(value, ['stable_id', 'version', 'body_digest', 'board', 'board_revision',
+    'source_revision', 'title', 'summary', 'lifecycle']) || value.board !== mapping?.board) fail('CARD_UNAVAILABLE');
+  return validatePrivateCardResponse({ stable_id: value.stable_id, version: value.version,
+    body_digest: value.body_digest, board_revision: value.board_revision, source_revision: value.source_revision,
+    body: { stable_id: value.stable_id, visibility: 'PRIVATE', source_card_id: mapping.sourceId,
+      title: value.title, summary: value.summary, lifecycle: value.lifecycle } }, mapping);
+}
+
 async function boundedJson(response, signal) {
   const length = response.headers.get('content-length');
   if (!/^application\/json(?:\s*;|$)/iu.test(response.headers.get('content-type') ?? '')
@@ -129,10 +140,13 @@ export function createPrivateCardHandler(dependencies) {
         || request.signal.aborted) fail('CARD_ACCESS_DENIED');
       const digest = handleDigest(handle, identity);
       if (inFlightDigests.has(digest) || inFlightDigests.size >= MAX_IN_FLIGHT) fail('CARD_UNAVAILABLE');
-      const read = deps.read ?? createPrivateCardStore(deps.auth, request.headers.get('authorization'), deps.storeOptions);
+      const read = deps.ownerService ? () => deps.ownerService.read(request)
+        : deps.read ?? createPrivateCardStore(deps.auth, request.headers.get('authorization'), deps.storeOptions);
       inFlightDigests.add(digest);
       try {
-        const card = validatePrivateCardResponse(await read(digest), deps.mapping);
+        const value = await read(digest);
+        const card = deps.ownerService ? validatePrivateCardDisplay(value, deps.mapping)
+          : validatePrivateCardResponse(value, deps.mapping);
         if (identity.expires <= Math.floor((deps.now ?? Date.now)() / 1000) || request.signal.aborted) fail('CARD_UNAVAILABLE');
         return json(200, card);
       } finally { inFlightDigests.delete(digest); }
