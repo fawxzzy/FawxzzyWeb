@@ -162,6 +162,8 @@ export function createDeploymentInvocation(expectedCommit, releaseAttemptId) {
       "--prod",
       "--yes",
       "--skip-domain",
+      "--format",
+      "json",
       "--scope",
       VERCEL_PRODUCTION_CONTRACT.teamSlug,
       "--meta",
