@@ -35,6 +35,28 @@ When the environment variable is absent, the client performs no network request.
 The website client also emits only from the canonical `fawxzzy.com` and `www.fawxzzy.com`
 origins. Account and other subdomains do not send storefront analytics.
 
+## Aggregate projection source contract
+
+The pure `projectAnalyticsSnapshot` contract accepts a complete aggregate for one closed UTC
+window, with `windowStart`, `windowEnd`, a source freshness timestamp `asOf`, and rows containing
+only a known event, known product, and nonnegative safe-integer count. A caller supplies the
+current UTC time and its maximum allowed source age. The contract rejects missing or invalid
+freshness, unknown labels, duplicate event/product rows, extra fields, invalid time ordering,
+and unsafe counts. A valid empty row set represents a measured zero for that complete window;
+an absent or stale source never does.
+
+`pageViews` sums only `page_view` rows, both overall and for `web`, `fitness`, and `mazer`.
+Navigation events cannot establish people, sessions, or live presence. `uniqueVisitors`,
+`sessions`, and `activeNow` therefore remain explicitly unavailable, even when page-view
+aggregates are fresh. Visitor and session metrics require a separately reviewed identifier,
+consent, retention, bot, and cross-tab contract. Active presence additionally requires a
+reviewed heartbeat and expiry contract. No such collector or provider contract is installed by
+this source-only projection.
+
+The projection is not a live counter, public API, board value, or deployment claim. It is a
+validation boundary for a future approved aggregate reader. Provider activation, private-card
+adoption, public rendering, and observed browser acceptance remain separate decisions.
+
 ## Compatibility retirement
 
 `/discover`, `/trove`, and the old Fitness and Mazer Vercel origins remain compatibility redirects.
