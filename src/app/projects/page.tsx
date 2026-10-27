@@ -1,14 +1,14 @@
-import type { Metadata } from "next";
 import { AmbientBrandBackground } from "@/components/ambient/ambient-brand-background";
 import { ProjectBoard } from "@/components/projects/project-board";
 import { PrivateOperations } from "@/components/operations/private-operations";
 import { SiteNav } from "@/components/site/site-nav";
+import { accountPageMetadata } from "@/lib/account-metadata";
 
-export const metadata: Metadata = {
-  title: "Projects",
-  description: "A public project-board space awaiting approved source data.",
-  robots: { index: false, follow: false },
-};
+export const metadata = accountPageMetadata(
+  "Projects",
+  "A public project-board space awaiting approved source data.",
+  "/projects",
+);
 
 export default function ProjectsPage() {
   return (
