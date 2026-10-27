@@ -21,4 +21,8 @@ test("four project boards show an empty public placeholder without actual cards"
     await expect(page.getByRole("dialog")).toHaveCount(0);
   }
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+  await expect(page.locator('head > link[rel="canonical"]')).toHaveAttribute(
+    "href",
+    "https://account.fawxzzy.com/projects",
+  );
 });
