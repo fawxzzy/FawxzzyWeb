@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { stripTypeScriptTypes } from "node:module";
 import test from "node:test";
+import vm from "node:vm";
 
 import {
   analyticsEvents,
@@ -103,12 +106,86 @@ test("unsafe totals reject instead of overflowing", () => {
   assert.throws(() => projectAnalyticsSnapshot(value, options), /safe integer range/);
 });
 
-test("the existing closed event and route vocabulary remains unchanged", () => {
+test("the closed event vocabulary and canonical website routes stay explicit", () => {
   assert.deepEqual(analyticsEvents, [
     "page_view", "tiktok_open", "catalog_app_view", "app_launch", "compatibility_visit",
   ]);
   assert.deepEqual(analyticsProducts, ["web", "fitness", "mazer"]);
   assert.equal(isAnalyticsEvent("unique_visitor"), false);
+  assert.equal(normalizeAnalyticsRoute("/projects"), "/projects");
   assert.equal(normalizeAnalyticsRoute("/apps/fitness"), "/apps");
+  assert.equal(normalizeAnalyticsRoute("/apps/mazer"), "/apps");
   assert.equal(normalizeAnalyticsRoute("/trove"), "/");
+});
+
+const edgeSource = await readFile(
+  new URL("../supabase/functions/first-party-analytics/index.ts", import.meta.url),
+  "utf8",
+);
+
+function edgeHarness() {
+  const imports = (edgeSource.match(/^import [^\r\n]*;\r?$/gm) ?? []).map((line) => line.trimEnd());
+  assert.deepEqual(imports, [
+    'import "jsr:@supabase/functions-js/edge-runtime.d.ts";',
+    'import { createClient } from "npm:@supabase/supabase-js@2";',
+  ], "the handler has only the two reviewed imports, both replaced with local stubs");
+  const executable = stripTypeScriptTypes(edgeSource.replace(/^import [^\r\n]*;\r?\n/gm, ""));
+  const inserts = [];
+  let handler;
+  vm.runInNewContext(executable, {
+    Deno: {
+      env: { get: (key) => key === "SUPABASE_URL" ? "https://stub.invalid" : "stub-role-key" },
+      serve: (callback) => { handler = callback; },
+    },
+    Response,
+    createClient: () => ({
+      schema: (schema) => {
+        assert.equal(schema, "fawxzzy_analytics");
+        return {
+          from: (table) => {
+            assert.equal(table, "events");
+            return { insert: async (row) => { inserts.push(row); return { error: null }; } };
+          },
+        };
+      },
+    }),
+  }, { filename: "first-party-analytics/index.ts" });
+  assert.equal(typeof handler, "function", "test runs the actual Deno.serve handler");
+  return { handler, inserts };
+}
+
+function edgeRequest(payload, origin = "https://fawxzzy.com") {
+  return new Request("https://collector.invalid/", {
+    method: "POST",
+    headers: { "content-type": "application/json", origin },
+    body: JSON.stringify(payload),
+  });
+}
+
+test("actual Edge handler accepts one Web projects page view", async () => {
+  const { handler, inserts } = edgeHarness();
+  const response = await handler(edgeRequest({ event: "page_view", product: "web", route: "/projects" }));
+  assert.equal(response.status, 202);
+  assert.equal(inserts.length, 1);
+  assert.equal(inserts[0].route, "/projects");
+  assert.equal(inserts[0].product, "web");
+  assert.equal(inserts[0].event_name, "page_view");
+  assert.deepEqual(Object.keys(inserts[0]).sort(), [
+    "app", "compatibility_source", "event_name", "product", "route",
+  ]);
+});
+
+test("actual Edge handler rejects unknown, forged, extra-field and disallowed-origin requests", async () => {
+  const cases = [
+    [{ event: "page_view", product: "web", route: "/unknown" }, "https://fawxzzy.com", 400],
+    [{ event: "page_view", product: "fitness", route: "/projects" }, "https://fawxzzy.com", 400],
+    [{ event: "page_view", product: "web", route: "/projects", accountId: "private" }, "https://fawxzzy.com", 400],
+    [{ event: "page_view", product: "web", route: "/projects" }, "https://untrusted.invalid", 403],
+  ];
+  for (const [payload, origin, status] of cases) {
+    const { handler, inserts } = edgeHarness();
+    const response = await handler(edgeRequest(payload, origin));
+    assert.equal(response.status, status, JSON.stringify(payload));
+    assert.equal(inserts.length, 0, JSON.stringify(payload));
+  }
 });

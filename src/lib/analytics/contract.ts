@@ -28,7 +28,7 @@ export type AnalyticsEnvelope = {
   route: string;
 };
 
-const allowedRoutes = new Set(["/", "/apps"]);
+const allowedRoutes = new Set(["/", "/apps", "/projects"]);
 const retiredDetailRoutes = new Set(["/apps/fitness", "/apps/mazer"]);
 
 export function normalizeAnalyticsRoute(pathname: string) {

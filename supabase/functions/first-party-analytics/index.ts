@@ -14,7 +14,7 @@ const events = new Set([
   "app_launch",
   "compatibility_visit",
 ]);
-const routes = new Set(["/", "/apps", "/apps/fitness", "/apps/mazer", "app"]);
+const routes = new Set(["/", "/apps", "/projects", "/apps/fitness", "/apps/mazer", "app"]);
 const apps = new Set(["fitness", "mazer"]);
 const products = new Set(["web", "fitness", "mazer"]);
 const compatibilitySources = new Set([
