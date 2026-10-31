@@ -5,6 +5,10 @@ import { isLocalAuthTestOrigin } from '@/config/account';
 import { resolvePortalAuthAdapter, type PortalAuthAdapter } from '@/lib/auth/browser-adapter';
 import { createOperationsReader, type OperationsReader, type ReaderState } from '@/lib/operations/reader-client.mjs';
 import { PrivateProjectCard } from '@/components/projects/private-project-card';
+import {
+  emitAccountProjectsPageView,
+  shouldCountAccountProjectsPageView,
+} from '@/components/analytics/first-party-analytics';
 import styles from './private-operations.module.css';
 
 const initial: ReaderState = { status: 'loading', session: 'unverified', signedIn: false,
@@ -26,13 +30,23 @@ const messages: Record<string, string> = {
   expired: 'The observation expired and was cleared. Refresh to check again.',
 };
 
-export function PrivateOperations({ projectView = false }: { projectView?: boolean } = {}) {
+export function PrivateOperations({
+  projectView = false,
+  active = true,
+}: { projectView?: boolean; active?: boolean } = {}) {
   const [state, setState] = useState<ReaderState>(initial);
   const [resumeEpoch, setResumeEpoch] = useState(0);
   const [portalAdapter, setPortalAdapter] = useState<PortalAuthAdapter | null>(null);
   const reader = useRef<OperationsReader | null>(null);
   const adapter = useRef<PortalAuthAdapter | null>(null);
   const attemptedGeneration = useRef<string | null>(null);
+  const activeRef = useRef(active);
+  const syncVisibility = useRef<(() => void) | null>(null);
+  const countedView = useRef(false);
+  const localLateSignInTest = typeof window !== 'undefined'
+    && isLocalAuthTestOrigin(window.location.origin)
+    && new URLSearchParams(window.location.search).get('auth_test') === 'success'
+    && new URLSearchParams(window.location.search).get('late_sign_in') === '1';
   useEffect(() => {
     const resolution = resolvePortalAuthAdapter(window.location);
     if (resolution.status !== 'ready') {
@@ -47,9 +61,11 @@ export function PrivateOperations({ projectView = false }: { projectView?: boole
       localTest: resolution.adapter.kind === 'test' && isLocalAuthTestOrigin(window.location.origin) });
     reader.current = controller;
     const unsubscribe = controller.subscribe(() => setState(controller.getSnapshot()));
-    let visible = true;
+    let visible = activeRef.current && document.visibilityState === 'visible';
+    if (!visible) controller.setVisible(false);
     let resumeEligible = false;
     const setVisibility = (nextVisible: boolean) => {
+      nextVisible = nextVisible && activeRef.current;
       if (nextVisible === visible) return;
       if (!nextVisible) {
         const snapshot = controller.getSnapshot();
@@ -68,6 +84,7 @@ export function PrivateOperations({ projectView = false }: { projectView?: boole
     const hide = () => setVisibility(false);
     const show = () => setVisibility(document.visibilityState === 'visible');
     const check = () => controller.checkDisplay();
+    syncVisibility.current = () => setVisibility(document.visibilityState === 'visible');
     document.addEventListener('visibilitychange', visibility);
     window.addEventListener('pagehide', hide); window.addEventListener('pageshow', show);
     window.addEventListener('focus', check); window.addEventListener('storage', check);
@@ -75,6 +92,7 @@ export function PrivateOperations({ projectView = false }: { projectView?: boole
     void controller.start();
     return () => {
       mounted = false;
+      syncVisibility.current = null;
       unsubscribe(); controller.dispose(); reader.current = null; adapter.current = null;
       document.removeEventListener('visibilitychange', visibility);
       window.removeEventListener('pagehide', hide); window.removeEventListener('pageshow', show);
@@ -82,7 +100,18 @@ export function PrivateOperations({ projectView = false }: { projectView?: boole
     };
   }, []);
   useEffect(() => {
-    if (!projectView || !state.signedIn || state.pending || document.visibilityState !== 'visible') return;
+    activeRef.current = active;
+    if (!active) attemptedGeneration.current = null;
+    syncVisibility.current?.();
+  }, [active]);
+  useEffect(() => {
+    if (countedView.current || !shouldCountAccountProjectsPageView(
+      projectView, state.signedIn, state.status,
+    )) return;
+    if (emitAccountProjectsPageView()) countedView.current = true;
+  }, [projectView, state.signedIn, state.status]);
+  useEffect(() => {
+    if (!projectView || !active || !state.signedIn || state.pending || document.visibilityState !== 'visible') return;
     const controller = reader.current;
     const currentAdapter = adapter.current;
     const generation = currentAdapter?.getAuthGeneration();
@@ -99,9 +128,10 @@ export function PrivateOperations({ projectView = false }: { projectView?: boole
       await controller.open();
       if (current() && controller.getSnapshot().status === 'opened') await controller.refresh();
     })().catch(() => undefined);
-  }, [projectView, resumeEpoch, state.pending, state.signedIn, state.status]);
+  }, [projectView, active, resumeEpoch, state.pending, state.signedIn, state.status]);
   const disabled = !state.signedIn || state.pending;
   if (projectView) {
+    if (!active) return null;
     // This client-only slot never serializes private data into the public page
     // HTML. The existing account-origin endpoint still verifies Auth, the
     // caller-bound cookie, operator grant, and a no-store private response.
@@ -113,6 +143,11 @@ export function PrivateOperations({ projectView = false }: { projectView?: boole
           {state.signedIn
             ? <p role="status" aria-live="polite">{state.view ? "You're signed in. Private project cards are not available yet." : messages[state.status] ?? messages.unavailable}</p>
             : <p>Sign in to your Fawxzzy account to check private work. <a href="/login?returnTo=%2Fprojects">Sign in</a></p>}
+          {!state.signedIn && localLateSignInTest
+            ? <button type="button" onClick={() => {
+              void adapter.current?.signIn('late-session@example.test', 'local-test-password').catch(() => undefined);
+            }}>Complete local sign-in</button>
+            : null}
           {state.signedIn && !state.view
             ? <button type="button" disabled={state.pending} onClick={() => { void reader.current?.refresh(); }}>Refresh private work</button>
             : null}

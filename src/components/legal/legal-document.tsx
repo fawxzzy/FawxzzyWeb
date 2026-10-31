@@ -5,6 +5,7 @@ import { legalCenter, type LegalDocument as LegalDocumentDefinition } from "@/co
 import { productIdentity } from "@/config/product";
 
 export function LegalDocument({ document }: { document: LegalDocumentDefinition }) {
+  const updated = "lastUpdated" in document ? document.lastUpdated : legalCenter.lastUpdated;
   return (
     <main className="legal-page app-theme-fawxzzy" id="main-content">
       <AmbientBrandBackground intensity="soft" particleCount={8} pulseEnabled={false} />
@@ -22,8 +23,8 @@ export function LegalDocument({ document }: { document: LegalDocumentDefinition 
             <p>{document.description}</p>
             <p className="legal-document__updated">
               Last updated{" "}
-              <time dateTime={legalCenter.lastUpdated.dateTime}>
-                {legalCenter.lastUpdated.label}
+              <time dateTime={updated.dateTime}>
+                {updated.label}
               </time>
             </p>
           </header>

@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
 import test from "node:test";
 import vm from "node:vm";
+import ts from "typescript";
 
 import {
   analyticsEvents,
@@ -118,6 +119,75 @@ test("the closed event vocabulary and canonical website routes stay explicit", (
   assert.equal(normalizeAnalyticsRoute("/trove"), "/");
 });
 
+const clientSource = await readFile(
+  new URL("../src/components/analytics/first-party-analytics.tsx", import.meta.url),
+  "utf8",
+);
+
+function accountClientHarness(origin, pathname, endpoint = "https://collector.invalid") {
+  const compiled = ts.transpileModule(clientSource, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  const sent = [];
+  const moduleShim = { exports: {} };
+  vm.runInNewContext(compiled, {
+    exports: moduleShim.exports,
+    module: moduleShim,
+    require: (name) => {
+      if (name === "react") return { useEffect() {} };
+      if (name === "@/lib/analytics/contract") return {};
+      if (name === "@/config/account") return {
+        isLocalAuthTestOrigin: (origin) => ["http://localhost:3210", "http://127.0.0.1:3210"].includes(origin),
+      };
+      throw new Error(`unreviewed client import: ${name}`);
+    },
+    process: { env: { NEXT_PUBLIC_FAWXZZY_ANALYTICS_URL: endpoint } },
+    window: { location: { origin, pathname, href: `${origin}${pathname}` } },
+    fetch: (url, options) => { sent.push({ url, options }); return Promise.resolve({ ok: true }); },
+    URL,
+  }, { filename: "first-party-analytics.tsx" });
+  return { client: moduleShim.exports, sent };
+}
+
+test("account client counts only a resolved signed-in Projects view", () => {
+  const { client } = accountClientHarness("https://account.fawxzzy.com", "/projects");
+  for (const status of ["loading", "unknown", "unavailable", "signed-out"]) {
+    assert.equal(client.shouldCountAccountProjectsPageView(true, true, status), false, status);
+  }
+  assert.equal(client.shouldCountAccountProjectsPageView(false, true, "idle"), false);
+  assert.equal(client.shouldCountAccountProjectsPageView(true, false, "idle"), false);
+  assert.equal(client.shouldCountAccountProjectsPageView(true, true, "unavailable"), false);
+  assert.equal(client.shouldCountAccountProjectsPageView(true, true, "unknown"), false);
+  // A late transition from signed-out to the adapter's known session is eligible once.
+  assert.equal(client.shouldCountAccountProjectsPageView(true, false, "signed-out"), false);
+  assert.equal(client.shouldCountAccountProjectsPageView(true, true, "idle"), true);
+});
+
+test("actual account helper sends only the exact configured origin and path tuple", () => {
+  for (const [origin, pathname, endpoint, accepted] of [
+    ["https://account.fawxzzy.com", "/projects", "https://collector.invalid", true],
+    ["http://127.0.0.1:3210", "/projects?auth_test=session", "https://collector.invalid", true],
+    ["https://fawxzzy.com", "/projects", "https://collector.invalid", false],
+    ["https://account.fawxzzy.com", "/account", "https://collector.invalid", false],
+    ["https://account.fawxzzy.com", "/projects/", "https://collector.invalid", false],
+    ["http://127.0.0.1:3210", "/projects", "https://collector.invalid", false],
+    ["http://127.0.0.1:3210", "/projects?auth_test=success", "https://collector.invalid", false],
+    ["http://127.0.0.1:3210", "/account?auth_test=session", "https://collector.invalid", false],
+    ["https://account.fawxzzy.com", "/projects", "", false],
+  ]) {
+    const { client, sent } = accountClientHarness(origin, pathname, endpoint);
+    assert.equal(client.emitAccountProjectsPageView(), accepted, `${origin}${pathname}`);
+    assert.equal(sent.length, Number(accepted));
+    if (accepted) {
+      assert.equal(sent[0].url, "https://collector.invalid");
+      assert.deepEqual(JSON.parse(sent[0].options.body), {
+        event: "page_view", product: "web", route: "/projects",
+      });
+      assert.equal(sent[0].options.credentials, "omit");
+    }
+  }
+});
+
 const edgeSource = await readFile(
   new URL("../supabase/functions/first-party-analytics/index.ts", import.meta.url),
   "utf8",
@@ -173,6 +243,43 @@ test("actual Edge handler accepts one Web projects page view", async () => {
   assert.deepEqual(Object.keys(inserts[0]).sort(), [
     "app", "compatibility_source", "event_name", "product", "route",
   ]);
+});
+
+test("actual Edge handler accepts only the identifier-free signed-in Projects tuple", async () => {
+  const { handler, inserts } = edgeHarness();
+  const response = await handler(edgeRequest(
+    { event: "page_view", product: "web", route: "/projects" },
+    "https://account.fawxzzy.com",
+  ));
+  assert.equal(response.status, 202);
+  assert.equal(inserts.length, 1);
+  assert.deepEqual(Object.keys(inserts[0]).sort(), [
+    "app", "compatibility_source", "event_name", "product", "route",
+  ]);
+  assert.equal(inserts[0].event_name, "page_view");
+  assert.equal(inserts[0].product, "web");
+  assert.equal(inserts[0].route, "/projects");
+  assert.equal(inserts[0].app, null);
+  assert.equal(inserts[0].compatibility_source, null);
+});
+
+test("actual Edge handler rejects every other account-origin envelope", async () => {
+  const origin = "https://account.fawxzzy.com";
+  const cases = [
+    { event: "page_view", product: "web", route: "/" },
+    { event: "page_view", product: "web", route: "/account" },
+    { event: "page_view", product: "fitness", route: "/projects" },
+    { event: "app_launch", product: "web", route: "/projects" },
+    { event: "page_view", product: "web", route: "/projects", app: "fitness" },
+    { event: "page_view", product: "web", route: "/projects", compatibility: "fitness" },
+    { event: "page_view", product: "web", route: "/projects", accountId: "private" },
+  ];
+  for (const payload of cases) {
+    const { handler, inserts } = edgeHarness();
+    const response = await handler(edgeRequest(payload, origin));
+    assert.equal(response.status, 400, JSON.stringify(payload));
+    assert.equal(inserts.length, 0, JSON.stringify(payload));
+  }
 });
 
 test("actual Edge handler rejects unknown, forged, extra-field and disallowed-origin requests", async () => {

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { ReactNode } from "react";
+import { cloneElement, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactElement } from "react";
 import { productIdentity } from "@/config/product";
 import { boardView, initialBoardState, resolveCardReference, resolveDetailDependency, resolveVisibleSelection } from "@/data/project-board-adapter.mjs";
 import { projectBoardLabel } from "@/data/project-board-label.mjs";
@@ -86,7 +86,7 @@ function CardGroups({ cards, grouped, onSelect }: { cards: Card[]; grouped: bool
 // The page uses the dated preview until an approved public transport supplies
 // state advanced through applyBoardEnvelope. This component does not fetch.
 export function ProjectBoard({ publicBoardState, privateBoardSlot }: {
-  publicBoardState?: PublicBoardState; privateBoardSlot?: ReactNode;
+  publicBoardState?: PublicBoardState; privateBoardSlot?: ReactElement<{ active?: boolean }>;
 } = {}) {
   const previewState = useMemo(() => initialBoardState(preview), []);
   const view = boardView(publicBoardState ?? previewState);
@@ -217,7 +217,7 @@ export function ProjectBoard({ publicBoardState, privateBoardSlot }: {
         </section>
         {/* The proposed private membership fawxzzyweb maps to this existing
             Web display tab, whose historical public source id is trove. */}
-        {board?.id === "trove" ? privateBoardSlot : null}
+        {privateBoardSlot ? cloneElement(privateBoardSlot, { active: board?.id === "trove" }) : null}
       </div>
 
       {selected ? (
