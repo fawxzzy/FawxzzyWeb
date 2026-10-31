@@ -10,7 +10,8 @@ The client may send only:
 
 - event: `page_view`, `tiktok_open`, `catalog_app_view`, `app_launch`, or `compatibility_visit`
 - product: `web`, `fitness`, or `mazer`
-- canonical route: `/`, `/apps`, or the fixed app route `app`; retired website detail paths normalize to `/apps`
+- canonical website route: `/`, `/apps`, or `/projects`; retired website detail paths normalize to `/apps`
+- fixed app route: `app` for legacy Fitness and Mazer compatibility visits
 - optional app: `fitness` or `mazer`
 - optional compatibility source: `discover`, `trove`, `fitness_legacy_origin`, or
   `mazer_legacy_origin`
@@ -20,9 +21,21 @@ does not store IP addresses, user agents, referrers, arbitrary URLs, account IDs
 The table lives in a private schema, is not granted to `anon` or `authenticated`, and is writable
 only through the bounded Edge Function.
 
+`/projects` is a closed website route. The public client preserves it for `page_view` instead of
+counting it as `/`. The account Projects page sends one `page_view` for each signed-in page mount,
+including a late sign-in, after the existing account reader establishes signed-in state. Board
+switches and private-card refreshes do not add views. The event contains only `page_view`, `web`,
+and `/projects`; it carries no account identifier, session, private-card data, query, app, or
+compatibility source. The account origin can send only this exact tuple; Origin restricts transport
+and is not proof of authentication. The global storefront listener remains disabled on account pages.
+Local browser tests exercise this path only on an approved loopback origin with the existing
+`auth_test=session` synthetic adapter; that branch is unavailable on deployed origins.
+Unknown website paths still normalize to `/`, and unknown collector routes are rejected.
+
 ## Activation boundary
 
-Source presence does not mean provider activation. Activation requires separately authorized:
+The `/projects` client and Edge changes here are source-only. Source presence does not mean
+provider activation. Activation requires separately authorized:
 
 1. migration application to the bound Supabase project;
 2. deployment of `first-party-analytics` with JWT verification disabled because it is a public,
@@ -32,8 +45,9 @@ Source presence does not mean provider activation. Activation requires separatel
 4. new reviewed production deployments and live readback for every instrumented product.
 
 When the environment variable is absent, the client performs no network request.
-The website client also emits only from the canonical `fawxzzy.com` and `www.fawxzzy.com`
-origins. Account and other subdomains do not send storefront analytics.
+The storefront client emits only from canonical `fawxzzy.com` and `www.fawxzzy.com` origins.
+The account origin has only the separate signed-in Projects page-view path. Other account pages
+and subdomains do not send storefront analytics.
 
 ## Aggregate projection source contract
 

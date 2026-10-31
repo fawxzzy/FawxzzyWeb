@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { isLocalAuthTestOrigin } from "@/config/account";
 import {
   isAnalyticsEvent,
   normalizeAnalyticsRoute,
@@ -24,6 +25,33 @@ function emit(payload: AnalyticsEnvelope) {
     method: "POST",
     mode: "cors",
   });
+}
+
+export function emitAccountProjectsPageView() {
+  const location = new URL(window.location.href);
+  const canonicalAccountOrigin = location.origin === "https://account.fawxzzy.com";
+  const testScenario = location.searchParams.get("auth_test");
+  const syntheticAuthTest = isLocalAuthTestOrigin(location.origin) && (
+    testScenario === "session" ||
+    (testScenario === "success" && location.searchParams.get("late_sign_in") === "1")
+  );
+  if (
+    !endpoint ||
+    (!canonicalAccountOrigin && !syntheticAuthTest) ||
+    location.pathname !== "/projects"
+  ) return false;
+
+  emit({ event: "page_view", product: "web", route: "/projects" });
+  return true;
+}
+
+export function shouldCountAccountProjectsPageView(
+  projectView: boolean,
+  signedIn: boolean,
+  status: string,
+) {
+  return projectView && signedIn &&
+    !["loading", "unknown", "unavailable", "signed-out"].includes(status);
 }
 
 function analyticsEnvelope(event: AnalyticsEnvelope["event"], target?: Element) {

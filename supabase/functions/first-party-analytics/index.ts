@@ -4,6 +4,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const allowedOrigins = new Set([
   "https://fawxzzy.com",
   "https://www.fawxzzy.com",
+  "https://account.fawxzzy.com",
   "https://fitness.fawxzzy.com",
   "https://mazer.fawxzzy.com",
 ]);
@@ -14,7 +15,7 @@ const events = new Set([
   "app_launch",
   "compatibility_visit",
 ]);
-const routes = new Set(["/", "/apps", "/apps/fitness", "/apps/mazer", "app"]);
+const routes = new Set(["/", "/apps", "/projects", "/apps/fitness", "/apps/mazer", "app"]);
 const apps = new Set(["fitness", "mazer"]);
 const products = new Set(["web", "fitness", "mazer"]);
 const compatibilitySources = new Set([
@@ -123,6 +124,13 @@ Deno.serve(async (request) => {
   ) {
     return response(origin, 400);
   }
+
+  if (
+    origin === "https://account.fawxzzy.com" &&
+    (payload.event !== "page_view" || payload.product !== "web" ||
+      payload.route !== "/projects" || payload.app !== undefined ||
+      payload.compatibility !== undefined)
+  ) return response(origin, 400);
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
