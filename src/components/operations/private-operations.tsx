@@ -37,6 +37,7 @@ export function PrivateOperations({
   const [state, setState] = useState<ReaderState>(initial);
   const [resumeEpoch, setResumeEpoch] = useState(0);
   const [portalAdapter, setPortalAdapter] = useState<PortalAuthAdapter | null>(null);
+  const [cardReady, setCardReady] = useState(false);
   const reader = useRef<OperationsReader | null>(null);
   const adapter = useRef<PortalAuthAdapter | null>(null);
   const attemptedGeneration = useRef<string | null>(null);
@@ -141,7 +142,7 @@ export function PrivateOperations({
         <div className={styles.panel}>
           <h2>Private work</h2>
           {state.signedIn
-            ? <p role="status" aria-live="polite">{state.view ? "You're signed in. Private project cards are not available yet." : messages[state.status] ?? messages.unavailable}</p>
+            ? <p role="status" aria-live="polite">{state.view ? (cardReady ? "You're signed in. Your private project card is shown below." : "You're signed in. Private project cards are not available yet.") : messages[state.status] ?? messages.unavailable}</p>
             : <p>Sign in to your Fawxzzy account to check private work. <a href="/login?returnTo=%2Fprojects">Sign in</a></p>}
           {!state.signedIn && localLateSignInTest
             ? <button type="button" onClick={() => {
@@ -152,7 +153,7 @@ export function PrivateOperations({
             ? <button type="button" disabled={state.pending} onClick={() => { void reader.current?.refresh(); }}>Refresh private work</button>
             : null}
         </div>
-        {state.view && state.session === 'open' ? <PrivateProjectCard adapter={portalAdapter} enabled={false} /> : null}
+        {state.view && state.session === 'open' ? <PrivateProjectCard adapter={portalAdapter} enabled onReady={setCardReady} /> : null}
       </section>
     );
   }
