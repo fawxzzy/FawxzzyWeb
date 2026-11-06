@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { COOKIE, newHandle } from '../src/server/operations/consumer-auth.mjs';
-import { createPrivateCardHandler, createPrivateCardStore, privateCardHandler } from '../src/server/projects/private-card-http.mjs';
+import { createPrivateCardHandler, createPrivateCardStore, privateCardHandler,
+  validatePrivateCardDisplay, validatePrivateCardResponse } from '../src/server/projects/private-card-http.mjs';
 import { selectedPrivateCard } from '../src/server/projects/selected-private-card.mjs';
 import { readPrivateProjectCard } from '../src/lib/projects/private-card-reader.mjs';
 
@@ -25,7 +26,7 @@ test('signed-out, foreign and pending mapping deny before role-service invocatio
   assert.equal((await signedOut.handler(absent)).status, 403);
   const foreign = fixture({ ownerService, authenticate: async () => ({ subject: session, session, expires: 1100 }) });
   assert.equal((await foreign.handler(request())).status, 403);
-  const pending = fixture({ ownerService, mapping: selectedPrivateCard });
+  const pending = fixture({ ownerService, mapping: { ...selectedPrivateCard, status: 'PENDING_CANONICAL_EQUIVALENCE' } });
   assert.equal((await pending.handler(request())).status, 503); assert.equal(calls, 0);
 });
 
@@ -39,7 +40,7 @@ const card = () => ({ stable_id: mapping.proposedStableId, version: 1,
   body_digest: `sha256:${'c'.repeat(64)}`, board_revision: mapping.boardRevision,
   source_revision: mapping.sourceRevision,
   body: { stable_id: mapping.proposedStableId, visibility: 'PRIVATE',
-    source_card_id: mapping.sourceId, title: 'Traffic Analytics', summary: 'Private plan',
+    source_card_id: mapping.sourceId, board: mapping.board, title: 'Traffic Analytics', summary: 'Private plan',
     lifecycle: 'planning', criteria: ['not sent to browser'] } });
 function request(raw = newHandle(), extra = {}) {
   return new Request(`${ORIGIN}/api/projects/private-card`, { headers: {
@@ -57,8 +58,6 @@ function fixture(options = {}) {
 }
 
 test('unadopted mapping, absent cookie and wrong owner do not reach the card RPC', async () => {
-  assert.equal(selectedPrivateCard.status, 'PENDING_CANONICAL_EQUIVALENCE');
-  assert.equal(selectedPrivateCard.boardRevision, null);
   assert.equal((await privateCardHandler(request())).status, 403);
   const pending = fixture({ mapping: { ...mapping, status: 'PENDING_CANONICAL_EQUIVALENCE' } });
   assert.equal((await pending.handler(request())).status, 503);
@@ -193,4 +192,101 @@ test('browser reader sends a single same-origin no-store request and rejects cha
     fetchImpl: async () => { generation = 'g2'; return Response.json(display); } }));
   await assert.rejects(readPrivateProjectCard({ adapter, origin: 'https://fawxzzy.com',
     fetchImpl: () => { throw new Error('MUST_NOT_FETCH'); } }));
+});
+
+// First private card (FW-ANALYTICS-001 -> FF-WEB-ANALYTICS-001). The shipped
+// mapping is ACCEPTED; everything below proves the route still fails closed.
+const SELECTED_BOARD_REVISION = 'sha256:39f3fd99ab531bd576dce3618e033d33762ba0d738bd23274eac97e9d2a921ad';
+const SELECTED_SOURCE = '4495db9c42dcba75adf8ddeaf87ababd6485417f';
+const selectedCard = () => ({ stable_id: 'FF-WEB-ANALYTICS-001', version: 1,
+  body_digest: `sha256:${'c'.repeat(64)}`, board_revision: SELECTED_BOARD_REVISION, source_revision: SELECTED_SOURCE,
+  body: { stable_id: 'FF-WEB-ANALYTICS-001', visibility: 'PRIVATE', source_card_id: 'FW-ANALYTICS-001',
+    board: 'fawxzzyweb', board_revision: SELECTED_BOARD_REVISION, title: 'Traffic Analytics', summary: 'Private plan',
+    lifecycle: 'planning', criteria: ['not sent to browser'], dependency_ids: [] } });
+function shipped(options = {}) {
+  let reads = 0; const { read = async () => selectedCard(), ...rest } = options;
+  const f = fixture({ mapping: selectedPrivateCard, read: async (digest) => { reads++; return read(digest); }, ...rest });
+  return { handler: f.handler, reads: () => reads };
+}
+
+test('shipped mapping is the exact reviewed one-card selection', () => {
+  assert.deepEqual({ ...selectedPrivateCard }, { status: 'ACCEPTED', sourceId: 'FW-ANALYTICS-001',
+    proposedStableId: 'FF-WEB-ANALYTICS-001', board: 'fawxzzyweb', sourceRevision: SELECTED_SOURCE,
+    boardRevision: SELECTED_BOARD_REVISION });
+  assert.equal(Object.isFrozen(selectedPrivateCard), true);
+});
+
+test('owner with a valid reader payload gets one minimized card under the shipped mapping', async () => {
+  const f = shipped(); const response = await f.handler(request());
+  assert.equal(response.status, 200); assert.equal(f.reads(), 1);
+  const value = await response.json();
+  assert.equal(value.stable_id, 'FF-WEB-ANALYTICS-001'); assert.equal(value.board_revision, SELECTED_BOARD_REVISION);
+  assert.equal(value.source_revision, SELECTED_SOURCE);
+  assert.equal(Object.hasOwn(value, 'body'), false);
+  assert.equal(JSON.stringify(value).includes('not sent to browser'), false);
+});
+
+test('non-owner and signed-out callers get nothing private under the shipped mapping', async () => {
+  const foreign = shipped({ authenticate: async () => ({ subject: session, session, expires: 1100 }) });
+  const denied = await foreign.handler(request());
+  assert.equal(denied.status, 403); assert.deepEqual(await denied.json(), { error: 'CARD_ACCESS_DENIED' });
+  assert.equal(foreign.reads(), 0);
+  const signedOut = shipped(); const absent = request(); absent.headers.delete('cookie');
+  assert.equal((await signedOut.handler(absent)).status, 403); assert.equal(signedOut.reads(), 0);
+});
+
+test('mismatched board revision, source revision, stable id or reader error fail closed', async () => {
+  const wrongBoard = { ...selectedCard(), board_revision: `sha256:${'0'.repeat(64)}` };
+  const wrongSource = { ...selectedCard(), source_revision: 'f'.repeat(40) };
+  const wrongId = { ...selectedCard(), stable_id: 'FF-OTHER-001', body: { ...selectedCard().body, stable_id: 'FF-OTHER-001' } };
+  const wrongBodyBoard = { ...selectedCard(), body: { ...selectedCard().body, board: 'atlas-stack' } };
+  const noBodyBoard = (() => { const c = selectedCard(); delete c.body.board; return c; })();
+  const wrongBodySource = { ...selectedCard(), body: { ...selectedCard().body, source_card_id: 'FW-OTHER-001' } };
+  // R112 returns this exact object when subject hash, grant epoch, body digest or provenance mismatch.
+  for (const payload of [wrongBoard, wrongSource, wrongId, wrongBodyBoard, noBodyBoard, wrongBodySource, { error: 'CARD_UNAVAILABLE' }, null, {}]) {
+    const f = shipped({ read: async () => payload });
+    const result = await f.handler(request());
+    assert.equal(result.status, 503);
+    assert.deepEqual(await result.json(), { error: 'CARD_UNAVAILABLE' });
+  }
+});
+
+test('absent reader RPC (PostgREST 404 or non-JSON) yields CARD_UNAVAILABLE and no private text', async () => {
+  for (const upstream of [
+    () => Response.json({ code: 'PGRST202', message: 'Could not find the function' }, { status: 404 }),
+    () => new Response('<html>nope</html>', { status: 200, headers: { 'content-type': 'text/html' } }),
+    () => { throw new Error('network'); },
+  ]) {
+    const f = createPrivateCardHandler({ mapping: selectedPrivateCard, ownerSubject: owner, now: () => 1_000_000,
+      authenticate: async () => ({ subject: owner, session, expires: 1100 }),
+      auth: { url: 'https://bxtcuhkotumitoqtrcej.supabase.co', publishableKey: `sb_publishable_${'x'.repeat(20)}` },
+      storeOptions: { fetchImpl: async () => upstream() } });
+    const result = await f(request());
+    assert.equal(result.status, 503);
+    assert.deepEqual(await result.json(), { error: 'CARD_UNAVAILABLE' });
+  }
+});
+
+test('server rejects a body whose board differs from the mapping (display and RPC paths)', async () => {
+  const bad = { ...selectedCard(), body: { ...selectedCard().body, board: 'atlas-stack' } };
+  assert.throws(() => validatePrivateCardResponse(bad, selectedPrivateCard), { code: 'CARD_UNAVAILABLE' });
+  assert.equal(validatePrivateCardResponse(selectedCard(), selectedPrivateCard).board, 'fawxzzyweb');
+  const display = { stable_id: 'FF-WEB-ANALYTICS-001', version: 1, body_digest: `sha256:${'c'.repeat(64)}`,
+    board: 'atlas-stack', board_revision: SELECTED_BOARD_REVISION, source_revision: SELECTED_SOURCE,
+    title: 'Traffic Analytics', summary: 'Private plan', lifecycle: 'planning' };
+  assert.throws(() => validatePrivateCardDisplay(display, selectedPrivateCard), { code: 'CARD_UNAVAILABLE' });
+  assert.equal(validatePrivateCardDisplay({ ...display, board: 'fawxzzyweb' }, selectedPrivateCard).board, 'fawxzzyweb');
+});
+
+test('a hung reader RPC or hung browser request times out as CARD_UNAVAILABLE', async () => {
+  const hang = () => new Promise(() => {});
+  const store = createPrivateCardStore({ url: 'https://bxtcuhkotumitoqtrcej.supabase.co',
+    publishableKey: `sb_publishable_${'x'.repeat(20)}` }, 'Bearer aaa.bbb.ccc', { fetchImpl: hang, timeoutMs: 25 });
+  await assert.rejects(store(`sha256:${'e'.repeat(64)}`), { code: 'CARD_UNAVAILABLE' });
+  const adapter = { kind: 'supabase', getAuthGeneration: () => 'g1',
+    getSession: async () => ({ userId: owner }), getOAuthAccessToken: async () => 'bearer-for-source-test' };
+  const started = Date.now();
+  await assert.rejects(readPrivateProjectCard({ adapter, origin: ORIGIN, fetchImpl: hang, timeoutMs: 25 }),
+    /CARD_UNAVAILABLE/u);
+  assert.ok(Date.now() - started < 2000);
 });

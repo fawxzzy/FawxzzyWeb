@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { PortalAuthAdapter } from '@/lib/auth/browser-adapter';
+import { isLocalAuthTestOrigin } from '@/config/account';
 import { readPrivateProjectCard } from '@/lib/projects/private-card-reader.mjs';
 import styles from '../operations/private-operations.module.css';
 
@@ -12,11 +13,18 @@ type DisplayCard = {
 
 // Mounted only after the existing Operations session is verified. The server
 // still independently authenticates the caller and owner for every read.
-export function PrivateProjectCard({ adapter, enabled }: { adapter: PortalAuthAdapter | null; enabled: boolean }) {
+// Fail closed: while loading, on any error, and for anyone the server does not
+// serve, this renders nothing at all, so the page is exactly what it was before
+// the card existed. Only a fully validated owner payload shows a card.
+export function PrivateProjectCard({ adapter, enabled, onReady }: {
+  adapter: PortalAuthAdapter | null; enabled: boolean; onReady?: (ready: boolean) => void;
+}) {
   const [card, setCard] = useState<DisplayCard | null>(null);
   const [status, setStatus] = useState<'loading' | 'unavailable' | 'ready'>('loading');
   const [refresh, setRefresh] = useState(0);
   const activeRead = useRef<AbortController | null>(null);
+  const visible = enabled && status === 'ready' && card !== null;
+  useEffect(() => { onReady?.(visible); return () => onReady?.(false); }, [visible, onReady]);
   useEffect(() => {
     if (!enabled || !adapter) return;
     const check = () => {
@@ -38,23 +46,22 @@ export function PrivateProjectCard({ adapter, enabled }: { adapter: PortalAuthAd
     activeRead.current = controller;
     let current = true;
     queueMicrotask(() => { if (current) { setCard(null); setStatus('loading'); } });
-    void readPrivateProjectCard({ adapter, origin: window.location.origin, signal: controller.signal })
+    void readPrivateProjectCard({ adapter, origin: window.location.origin, signal: controller.signal,
+      localTest: adapter.kind === 'test' && isLocalAuthTestOrigin(window.location.origin) })
       .then((value: DisplayCard) => { if (current) { setCard(value); setStatus('ready'); } })
       .catch(() => { if (current) { setCard(null); setStatus('unavailable'); } });
     return () => { current = false; controller.abort(); if (activeRead.current === controller) activeRead.current = null; };
   }, [adapter, enabled, refresh]);
-  if (!enabled) return null;
+  if (!visible || !card) return null;
   return (
     <section aria-label="Canonical private project card" className={styles.overview}>
       <h3>Private project card</h3>
-      {card && status === 'ready' ? (
-        <article className={styles.card}>
-          <p className={styles.owner}>Fawxzzy Web · Private</p>
-          <p className={styles.lifecycle}>{card.lifecycle}</p>
-          <h4>{card.title}</h4><p>{card.summary}</p>
-          <p className={styles.note}>Card {card.stable_id} | Revision {card.version}</p>
-        </article>
-      ) : <p role="status">{status === 'loading' ? 'Checking the current private card.' : 'Private card unavailable for this session.'}</p>}
+      <article className={styles.card}>
+        <p className={styles.owner}>Fawxzzy Web · Private</p>
+        <p className={styles.lifecycle}>{card.lifecycle}</p>
+        <h4>{card.title}</h4><p>{card.summary}</p>
+        <p className={styles.note}>Card {card.stable_id} | Revision {card.version}</p>
+      </article>
       <button type="button" onClick={() => setRefresh((value) => value + 1)}>Refresh private card</button>
     </section>
   );

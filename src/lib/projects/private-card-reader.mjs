@@ -5,6 +5,7 @@ const SHA = /^sha256:[a-f0-9]{64}$/u;
 const CARD = /^FF-[A-Z0-9][A-Z0-9-]*$/u;
 const COMMIT = /^[a-f0-9]{40}$/u;
 const LOCAL = new Set(['http://localhost:3000', 'http://127.0.0.1:3000',
+  'http://localhost:3210', 'http://127.0.0.1:3210',
   'http://localhost:4312', 'http://127.0.0.1:4312']);
 const unavailable = () => { throw new Error('CARD_UNAVAILABLE'); };
 const exactKeys = (value, names) => value && typeof value === 'object' && !Array.isArray(value)

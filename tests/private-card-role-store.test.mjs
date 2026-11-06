@@ -15,7 +15,7 @@ const session = '22222222-2222-2222-2222-222222222222';
 const mapping = { status: 'ACCEPTED', sourceId: 'FW-ANALYTICS-001', proposedStableId: 'FF-WEB-ANALYTICS-001',
   board: 'fawxzzyweb', sourceRevision: 'a'.repeat(40), boardRevision: digest('b') };
 const body = { stable_id: mapping.proposedStableId, version: 1, visibility: 'PRIVATE',
-  source_card_id: mapping.sourceId, title: 'Traffic', summary: 'Plan', lifecycle: 'planning', criteria: ['PRIVATE_BODY'] };
+  source_card_id: mapping.sourceId, board: mapping.board, title: 'Traffic', summary: 'Plan', lifecycle: 'planning', criteria: ['PRIVATE_BODY'] };
 function fixture(overrides = {}) {
   let time = 1000000; const calls = []; const entries = new Map();
   const membership = { board: mapping.board, stableId: mapping.proposedStableId, version: 1,
