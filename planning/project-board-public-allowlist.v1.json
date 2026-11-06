@@ -1,12 +1,12 @@
 {
   "schema": "fawxzzyweb.project-board.public-allowlist.v1",
-  "approvedOn": "2026-11-05",
+  "approvedOn": "2026-11-06",
   "approval": "Owner decision: public boards carry already-public roadmap and backlog cards. Merging a change to this file is the owner approval for the listed card ids; nothing absent from include is ever published.",
   "sources": [
     {
       "board": "fitness",
       "path": "planning/board-sources/fitness.project-board.owner-export.v1.json",
-      "sha256": "1e5de305340af9722bca4c4cd145f870e0a035aeb81e784ebe39b2b53de128fc",
+      "sha256": "6ec9619cc1fe40635fa1b6d3ead2937f819f91da2a9cb67592248a2a8884d98f",
       "sourceProjectId": "fitness"
     },
     {
@@ -54,7 +54,9 @@
   ],
   "include": {
     "fitness": [
+      "FF-ACCOUNT-003",
       "FF-ANALYTICS-001",
+      "FF-AUTH-001",
       "FF-ENGINE-001",
       "FF-ENGINE-002",
       "FF-GAM-001",
@@ -62,11 +64,14 @@
       "FF-ONBOARD-001",
       "FF-PWA-003",
       "FF-QA-002",
+      "FF-QA-003",
       "FF-RECAP-001",
+      "FF-RELIABILITY-001",
       "FF-RET-001",
       "FF-RET-002",
       "FF-RET-003",
       "FF-RET-004",
+      "FF-RET-005",
       "FF-ROUTINE-001",
       "FF-SESSION-001",
       "FF-SESSION-002",
@@ -130,6 +135,10 @@
     {
       "id": "FW-ANALYTICS-001",
       "reason": "owner export marks public_safe:false"
+    },
+    {
+      "id": "FF-ACCOUNT-002",
+      "reason": "portal handoff was fixed 2026-11-06 after the source card was written (shows planning); hold until the owner export is refreshed"
     },
     {
       "id": "FF-MKT-001",
