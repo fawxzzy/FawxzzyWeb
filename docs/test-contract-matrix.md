@@ -7,6 +7,7 @@
 | Unified discovery | truthful app/TikTok assertions plus redirect config | Home hierarchy, lightweight Discover fallback, WCAG, overflow | `/` and `/discover` on all four emulated UI target classes |
 | Utility/Auth | origin, return, PKCE, password, error, cooldown contracts | Login/confirm/callback/reset states, WCAG, errors | four Auth routes on all four emulated UI target classes |
 | Account | session, capability, username, service-state contracts | signed-out/unavailable state, WCAG, overflow | `/account` on all four emulated UI target classes |
+| Projects | public snapshot, adapter, fail-closed private-card reader, canonical/noindex metadata | main-site and account-host nav, canonical `https://fawxzzy.com/projects`, off-account-origin sign-in link with no reader call | `/projects` |
 | Compatibility | canonical and reversible Trove assertions | redirect/canonical/no runtime errors | `/trove` on all four emulated UI target classes |
 | System/404 | shared recovery state and static-export output | no runtime errors, WCAG, overflow | real 404 surface on all four emulated UI target classes |
 | Discovery and SEO | exact sitemap/robots, canonical social metadata, sanitized Organization/WebSite/SoftwareApplication/ItemList JSON-LD | public-route metadata and noindex exclusions | Home, Apps, Discover, Trove |

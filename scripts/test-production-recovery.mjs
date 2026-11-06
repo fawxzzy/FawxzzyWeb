@@ -35,7 +35,7 @@ const followedPublicRedirects = {
 };
 function routes(list, kind, padding = 0) {
   return list.map((route) => {
-    const body = page(kind === 'public' ? null : `${kind === 'account' ? 'https://account.fawxzzy.com' : 'https://fawxzzy.com'}${route.split('?')[0]}`)
+    const body = page(kind === 'public' ? null : `${kind === 'account' && route !== '/projects' ? 'https://account.fawxzzy.com' : 'https://fawxzzy.com'}${route.split('?')[0]}`)
       + 'x'.repeat(padding);
     return { route, status: 200,
       url: new URL((kind === 'public' ? followedPublicRedirects[route] : undefined) ?? route,

@@ -70,6 +70,30 @@ async function selectWebBoard(page: Page, afterFakeClock = false) {
   else await button.click();
 }
 
+test('main-site Projects offers only a plain sign-in link and never starts the private reader', async ({ page }) => {
+  const foreign: string[] = [];
+  // Serve the static export under the main-site origin; every other HTTPS origin is refused.
+  await page.route('https://**/*', (route) => { foreign.push(new URL(route.request().url()).origin); return route.abort(); });
+  await page.route('https://fawxzzy.com/**', async (route) => {
+    const url = new URL(route.request().url());
+    await route.fulfill({ response: await route.fetch({ url: `http://127.0.0.1:3210${url.pathname}${url.search}` }) });
+  });
+  await page.goto('https://fawxzzy.com/projects');
+  await expect(page.locator('head > link[rel="canonical"]')).toHaveAttribute('href', 'https://fawxzzy.com/projects');
+  const nav = page.getByRole('navigation', { name: 'Primary' });
+  await expect(nav.getByRole('link', { name: 'Projects', exact: true })).toHaveAttribute('href', '/projects');
+  await expect(page.getByRole('navigation', { name: 'Project boards' }).getByRole('button')).toHaveCount(4);
+  await selectWebBoard(page);
+  const privateArea = page.getByRole('region', { name: 'Private projects' });
+  await expect(privateArea.getByRole('link', { name: 'Sign in to see private work' }))
+    .toHaveAttribute('href', 'https://account.fawxzzy.com/login?returnTo=%2Fprojects');
+  await expect(privateArea.getByRole('button')).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Canonical private project card' })).toHaveCount(0);
+  // The storefront listener may count the public page view; nothing else leaves the page, and
+  // in particular the account origin is never contacted.
+  expect(foreign.filter((origin) => origin !== 'https://collector.invalid')).toEqual([]);
+});
+
 test('signed-out Projects keeps public boards separate from the dormant private Web slot', async ({ page }) => {
   const fixture = await privateFixture(page);
   const response = await page.request.get('/projects?auth_test=success');

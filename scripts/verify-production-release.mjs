@@ -157,7 +157,9 @@ function assertRouteGroup(observations, expected, kind) {
         : ['https://fawxzzy.com'];
     assertObservationUrl(observation.url, route, origins, kind);
     if (account || legal) {
-      const canonical = `${legal ? 'https://fawxzzy.com' : 'https://account.fawxzzy.com'}${route.split('?')[0]}`;
+      // Projects is a main-site page: the account host serves the same page but canonicalizes to the apex.
+      const mainSite = legal || route === '/projects';
+      const canonical = `${mainSite ? 'https://fawxzzy.com' : 'https://account.fawxzzy.com'}${route.split('?')[0]}`;
       requireCondition(hasExactCanonicalLink(observation.html, canonical), `${kind} canonical HTML is invalid.`);
     }
     if (route === '/projects') verifyProjectsPublicHtml(observation.html);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { isLocalAuthTestOrigin } from '@/config/account';
+import { isLiveAccountAdapterOrigin, isLocalAuthTestOrigin, privateProjectsSignInUrl } from '@/config/account';
 import { resolvePortalAuthAdapter, type PortalAuthAdapter } from '@/lib/auth/browser-adapter';
 import { createOperationsReader, type OperationsReader, type ReaderState } from '@/lib/operations/reader-client.mjs';
 import { PrivateProjectCard } from '@/components/projects/private-project-card';
@@ -38,6 +38,9 @@ export function PrivateOperations({
   const [resumeEpoch, setResumeEpoch] = useState(0);
   const [portalAdapter, setPortalAdapter] = useState<PortalAuthAdapter | null>(null);
   const [cardReady, setCardReady] = useState(false);
+  // Auth lives only on the account origin. On any other host (the main site)
+  // the private region is a plain link to sign in there; the reader never runs.
+  const [offAccountOrigin, setOffAccountOrigin] = useState(false);
   const reader = useRef<OperationsReader | null>(null);
   const adapter = useRef<PortalAuthAdapter | null>(null);
   const attemptedGeneration = useRef<string | null>(null);
@@ -52,7 +55,11 @@ export function PrivateOperations({
     const resolution = resolvePortalAuthAdapter(window.location);
     if (resolution.status !== 'ready') {
       // Match asynchronous adapter initialization without doing work at render.
-      queueMicrotask(() => setState({ ...initial, status: 'unavailable' }));
+      const offOrigin = !isLiveAccountAdapterOrigin(window.location.origin);
+      queueMicrotask(() => {
+        setState({ ...initial, status: 'unavailable' });
+        if (offOrigin) setOffAccountOrigin(true);
+      });
       return;
     }
     adapter.current = resolution.adapter;
@@ -133,6 +140,16 @@ export function PrivateOperations({
   const disabled = !state.signedIn || state.pending;
   if (projectView) {
     if (!active) return null;
+    if (offAccountOrigin) {
+      return (
+        <section aria-label="Private projects" className={styles.root}>
+          <div className={styles.panel}>
+            <h2>Private work</h2>
+            <p><a href={privateProjectsSignInUrl}>Sign in to see private work</a></p>
+          </div>
+        </section>
+      );
+    }
     // This client-only slot never serializes private data into the public page
     // HTML. The existing account-origin endpoint still verifies Auth, the
     // caller-bound cookie, operator grant, and a no-store private response.

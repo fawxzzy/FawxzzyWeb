@@ -100,7 +100,9 @@ checks; signing in alone does not grant it. The loopback-only `auth_test`
 adapter is used for local browser fixtures; synthetic credentials are never
 sent to a live provider. The Projects sign-in link uses the exact allowlisted
 `/projects` return target on the account origin; other product contexts retain
-their own return rules. The Projects view makes one current-session read after
+their own return rules. The same page on the main site (`fawxzzy.com/projects`)
+never starts the reader: its private region is only a `Sign in to see private
+work` link to `https://account.fawxzzy.com/login?returnTo=%2Fprojects`. The Projects view makes one current-session read after
 verified sign-in. If that proves no session exists, it can open once and read
 again. Other denial, uncertainty, or a nonhealthy projection stops the automatic
 path. There is no polling, card write action, or reverse editor.

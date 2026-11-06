@@ -55,6 +55,6 @@ test("four project boards show the owner-approved public cards and keep private 
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
   await expect(page.locator('head > link[rel="canonical"]')).toHaveAttribute(
     "href",
-    "https://account.fawxzzy.com/projects",
+    "https://fawxzzy.com/projects",
   );
 });
