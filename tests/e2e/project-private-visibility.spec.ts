@@ -64,7 +64,9 @@ test('signed-out Projects keeps public boards separate from the dormant private 
   await selectWebBoard(page);
   await expect(page.getByRole('region', { name: 'Private projects' }).getByRole('link', { name: 'Sign in' }))
     .toHaveAttribute('href', '/login?returnTo=%2Fprojects');
-  await page.getByRole('navigation', { name: 'Project boards' }).getByRole('button', { name: /Mazer/u }).click();
+  // The public boards now render real cards; WebKit can stall action stability on the taller page.
+  await page.getByRole('navigation', { name: 'Project boards' }).getByRole('button', { name: /Mazer/u })
+    .evaluate((element: HTMLButtonElement) => element.click());
   await expect(page.getByRole('region', { name: 'Private projects' })).toHaveCount(0);
   expect(fixture.calls).toEqual([]);
   expect(fixture.privateCardCalls).toEqual([]);

@@ -1,12 +1,12 @@
 import { AmbientBrandBackground } from "@/components/ambient/ambient-brand-background";
-import { ProjectBoard } from "@/components/projects/project-board";
+import { PublicProjectBoard } from "@/components/projects/public-project-board";
 import { PrivateOperations } from "@/components/operations/private-operations";
 import { SiteNav } from "@/components/site/site-nav";
 import { accountPageMetadata } from "@/lib/account-metadata";
 
 export const metadata = accountPageMetadata(
   "Projects",
-  "A public project-board space awaiting approved source data.",
+  "Public project boards with owner-approved roadmap and backlog cards.",
   "/projects",
 );
 
@@ -16,7 +16,7 @@ export default function ProjectsPage() {
       <AmbientBrandBackground intensity="soft" particleCount={5} />
       <div className="shell-container projects-shell">
         <SiteNav current="projects" />
-        <ProjectBoard privateBoardSlot={<PrivateOperations projectView />} />
+        <PublicProjectBoard privateBoardSlot={<PrivateOperations projectView />} />
       </div>
     </main>
   );

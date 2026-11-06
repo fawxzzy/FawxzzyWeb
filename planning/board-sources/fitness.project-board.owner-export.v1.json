@@ -1,0 +1,1424 @@
+{
+  "contract_version": "atlas.project-board.owner-export.v1",
+  "export_id": "pbe_fitness_owner_registry_041d8ee0c428",
+  "project_id": "fitness",
+  "board_id": "fitness:project-feedback:fitness-active",
+  "owner": "fitness",
+  "adapter_id": "fitness-owner-registry-v1",
+  "source_revision": "sha256:041d8ee0c428d346745b930d66f9234a8a1a5f9fb188a778cee47137ce989434",
+  "generated_at": "2026-07-15T20:22:00.000Z",
+  "sources": [
+    {
+      "source_id": "fitness-owner-work-registry",
+      "kind": "json",
+      "repository": "fawxzzy-fitness",
+      "path": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json",
+      "revision": "sha256:4dd8610a253815cddae5357a8773e63018364c591f6b160328428622f74da670",
+      "observed_at": "2026-07-15T20:22:00.000Z"
+    },
+    {
+      "source_id": "fitness-feedback-monetization-roadmap",
+      "kind": "generated",
+      "repository": "fawxzzy-fitness",
+      "path": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs",
+      "revision": "sha256:78aa8b8300f0c21258144da0a5bdd6fdc4c9ff1337e265b2552094ebf3505ba6",
+      "observed_at": "2026-07-15T20:22:00.000Z"
+    },
+    {
+      "source_id": "fitness-session-timer-roadmap",
+      "kind": "generated",
+      "repository": "fawxzzy-fitness",
+      "path": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs",
+      "revision": "sha256:58b1235add45e05d51712f433e2e67d4536b878f4edfad6ab6908d9402c55bcc",
+      "observed_at": "2026-07-15T20:22:00.000Z"
+    },
+    {
+      "source_id": "fitness-owner-export-adapter",
+      "kind": "generated",
+      "repository": "fawxzzy-fitness",
+      "path": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs",
+      "revision": "sha256:9d36fbdb772498cbde79f7024ce539aa8d2a23b08da4608adad42666908300f3",
+      "observed_at": "2026-07-15T20:22:00.000Z"
+    }
+  ],
+  "cards": [
+    {
+      "idempotency_key": "pbk_fitness_ff-analytics-001_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-ANALYTICS-001",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Add Active User and Product Usage Statistics",
+        "description": "Track enough usage to understand activation and retention.",
+        "card_type": "feature",
+        "lifecycle": "planning",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-BETA-001"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-09T23:41:16.303Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-ANALYTICS-001",
+        "extensions": {
+          "owner_status": "confirmed",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-ANALYTICS-001",
+        "source_status": "current",
+        "source_updated_at": "2026-07-09T23:41:16.303Z"
+      },
+      "content": {
+        "summary": "Track enough usage to understand activation and retention.",
+        "objective": "Track enough usage to understand activation and retention.",
+        "acceptance_criteria": [
+          "Tracks signup or account creation if applicable.",
+          "Tracks routine creation.",
+          "Tracks workout completion.",
+          "Tracks progression use and visibility.",
+          "Tracks install and onboarding completion if applicable.",
+          "Admin or operator view or export exists.",
+          "Privacy Policy reflects analytics or events if used.",
+          "Analytics stay scoped to bounded product and operator visibility rather than vague surveillance or pseudo-coaching claims."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-analytics-002_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-ANALYTICS-002",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Plan Premium Cycle Analytics Experience",
+        "description": "Plan premium cycle analytics around useful, trustworthy training insight before introducing any gated History UI. Do not render locked placeholder metrics or preview-only boxes without real analytics behind them.",
+        "card_type": "feature",
+        "lifecycle": "planning",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-HISTORY-001",
+          "FF-MON-003"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-15T00:49:00.000Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-ANALYTICS-002",
+        "extensions": {
+          "owner_status": "planning",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-ANALYTICS-002",
+        "source_status": "current",
+        "source_updated_at": "2026-07-15T00:49:00.000Z"
+      },
+      "content": {
+        "summary": "Plan premium cycle analytics around useful, trustworthy training insight before introducing any gated History UI. Do not render locked placeholder metrics or preview-only boxes without real analytics behind them.",
+        "objective": "Plan premium cycle analytics around useful, trustworthy training insight before introducing any gated History UI. Do not render locked placeholder metrics or preview-only boxes without real analytics behind them.",
+        "acceptance_criteria": [
+          "No premium analytics UI renders until the underlying metrics and user value are defined.",
+          "History does not show empty locked metric boxes or preview-placement-only copy.",
+          "The plan identifies the real cycle insights, source data, calculation rules, and free-versus-paid boundary.",
+          "Any future surface follows the compact History card language and earns its vertical space.",
+          "The experience does not claim personalized coaching, readiness scoring, or predictions without validated product truth.",
+          "The lane stays separate from operator analytics and the broader workout-engine recommendation system."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-beta-001_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-BETA-001",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Run 10-20 Real User Beta Before Paid Push",
+        "description": "Validate that real people can use the app and understand the value after the MVP soft-launch beta gate was explicitly deferred.",
+        "card_type": "feature",
+        "lifecycle": "planning",
+        "priority": "high",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-CORE-001",
+          "FF-CORE-002",
+          "FF-PWA-001"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-09T23:42:53.268Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-BETA-001",
+        "extensions": {
+          "owner_status": "confirmed",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-BETA-001",
+        "source_status": "current",
+        "source_updated_at": "2026-07-09T23:42:53.268Z"
+      },
+      "content": {
+        "summary": "Validate that real people can use the app and understand the value after the MVP soft-launch beta gate was explicitly deferred.",
+        "objective": "Validate that real people can use the app and understand the value after the MVP soft-launch beta gate was explicitly deferred.",
+        "acceptance_criteria": [
+          "Operator MVP risk acceptance for skipping pre-launch beta is recorded.",
+          "Recruit 10-20 testers after MVP soft launch.",
+          "Tester cohort source and target feedback window are defined.",
+          "Track onboarding completion.",
+          "Track first routine created or selected.",
+          "Track first workout completed.",
+          "Track whether progression recommendation is understood.",
+          "Capture top friction points.",
+          "Convert findings into Feedback Board cards.",
+          "Convert findings into post-launch fixes, growth improvements, or rollback triggers if severe.",
+          "The beta lane stays a structured learning pass rather than turning into a vague launch or growth campaign."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-engine-001_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-ENGINE-001",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Build Curated Workout Engine V1",
+        "description": "Create a simple guided program generator so users can get a routine without designing one manually.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "high",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-CORE-001",
+          "FF-CORE-002"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-13T04:31:19.434Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-ENGINE-001",
+        "extensions": {
+          "owner_status": "fawxzzy_review",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-ENGINE-001",
+        "source_status": "current",
+        "source_updated_at": "2026-07-13T04:31:19.434Z"
+      },
+      "content": {
+        "summary": "Create a simple guided program generator so users can get a routine without designing one manually.",
+        "objective": "Create a simple guided program generator so users can get a routine without designing one manually.",
+        "acceptance_criteria": [
+          "User answers goal.",
+          "User answers days per week.",
+          "User answers equipment available.",
+          "User answers experience level.",
+          "User answers session length.",
+          "App generates a routine.",
+          "Generated routine uses the progression system.",
+          "User can edit generated routine before saving.",
+          "Generated output is deterministic and testable.",
+          "V1 stays curated and bounded rather than pretending to be open-ended AI coaching."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-engine-002_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-ENGINE-002",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Expand Curated Workout Engine Beyond V1",
+        "description": "Improve the workout engine with smarter recommendations after the V1 generator exists.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-ENGINE-001",
+          "FF-RET-004"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-13T04:31:19.434Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-ENGINE-002",
+        "extensions": {
+          "owner_status": "fawxzzy_review",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-ENGINE-002",
+        "source_status": "current",
+        "source_updated_at": "2026-07-13T04:31:19.434Z"
+      },
+      "content": {
+        "summary": "Improve the workout engine with smarter recommendations after the V1 generator exists.",
+        "objective": "Improve the workout engine with smarter recommendations after the V1 generator exists.",
+        "acceptance_criteria": [
+          "Uses workout history where appropriate.",
+          "Can adjust based on missed workouts or failed targets.",
+          "Can suggest swaps based on equipment or fatigue.",
+          "Recommendation reasons are visible to the user.",
+          "Does not create opaque magic behavior.",
+          "Does not silently absorb separate timer, recovery, or coaching lanes into one opaque engine feature."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-gam-001_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-GAM-001",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Add Achievements and Badges",
+        "description": "Add lightweight achievements after core retention loops exist.",
+        "card_type": "feature",
+        "lifecycle": "in-progress",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-RET-002",
+          "FF-RET-004"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-15T15:10:00.000Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-GAM-001",
+        "extensions": {
+          "owner_status": "in_progress",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-GAM-001",
+        "source_status": "current",
+        "source_updated_at": "2026-07-15T15:10:00.000Z"
+      },
+      "content": {
+        "summary": "Add lightweight achievements after core retention loops exist.",
+        "objective": "Add lightweight achievements after core retention loops exist.",
+        "acceptance_criteria": [
+          "Badge triggers are deterministic.",
+          "Badges do not encourage unsafe training.",
+          "Initial badge set is small.",
+          "User can see earned badges.",
+          "Future badge additions are easy.",
+          "Badge unlocks use bounded training or consistency events rather than opaque scoring.",
+          "V1 stays separate from progression recommendations, social pressure, and noisy notification debt."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-gam-002_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-GAM-002",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Expand Achievements and Earned Notifications",
+        "description": "Plan a richer deterministic achievements phase and once-only earned notifications after the current achievement review is accepted.",
+        "card_type": "feature",
+        "lifecycle": "planning",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-GAM-001"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-15T15:20:00.000Z",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-GAM-002",
+        "extensions": {
+          "owner_status": "planning",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-GAM-002",
+        "source_status": "current",
+        "source_updated_at": "2026-07-15T15:20:00.000Z"
+      },
+      "content": {
+        "summary": "Plan a richer deterministic achievements phase and once-only earned notifications after the current achievement review is accepted.",
+        "objective": "Plan a richer deterministic achievements phase and once-only earned notifications after the current achievement review is accepted.",
+        "acceptance_criteria": [
+          "Milestone unlock rules remain deterministic and safe.",
+          "Notifications are deduplicated and consent-aware.",
+          "No public achievement feed or social-pressure loop is introduced."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-mkt-001_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-MKT-001",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Founding User Launch Plan",
+        "description": "Create the first small monetization push after launch blockers are done.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "high",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-MON-001",
+          "FF-QA-001"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-13T04:31:19.434Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-MKT-001",
+        "extensions": {
+          "owner_status": "fawxzzy_review",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-MKT-001",
+        "source_status": "current",
+        "source_updated_at": "2026-07-13T04:31:19.434Z"
+      },
+      "content": {
+        "summary": "Create the first small monetization push after launch blockers are done.",
+        "objective": "Create the first small monetization push after launch blockers are done.",
+        "acceptance_criteria": [
+          "Target first audience is defined.",
+          "Initial launch batch size and channel mix are defined.",
+          "Launch message is drafted.",
+          "Demo screenshots or short clips are prepared.",
+          "Feedback collection path is ready.",
+          "Support and contact path is clear.",
+          "Go or no-go checklist references Monetization Readiness Gate.",
+          "Initial push stays supportable by the current operator without assuming paid acquisition or broad influencer scope."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-onboard-001_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-ONBOARD-001",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Ship Curated Onboarding Intake And Generator Handoff",
+        "description": "Turn the dormant curated onboarding flow into a real first-time guided setup lane that captures training goal, experience, equipment, schedule, preferences, and constraints, persists the intake per member, and hands the bounded payload to the curated engine contract without pretending generation exists when it does not.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "high",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-CORE-002",
+          "FF-ENGINE-001"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-13T04:31:19.434Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-ONBOARD-001",
+        "extensions": {
+          "owner_status": "fawxzzy_review",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-ONBOARD-001",
+        "source_status": "current",
+        "source_updated_at": "2026-07-13T04:31:19.434Z"
+      },
+      "content": {
+        "summary": "Turn the dormant curated onboarding flow into a real first-time guided setup lane that captures training goal, experience, equipment, schedule, preferences, and constraints, persists the intake per member, and hands the bounded payload to the curated engine contract without pretending generation exists when it does not.",
+        "objective": "Turn the dormant curated onboarding flow into a real first-time guided setup lane that captures training goal, experience, equipment, schedule, preferences, and constraints, persists the intake per member, and hands the bounded payload to the curated engine contract without pretending generation exists when it does not.",
+        "acceptance_criteria": [
+          "A first-time guided onboarding route exists behind a deterministic feature flag until rollout is approved.",
+          "The flow collects goal, experience, equipment, schedule, preferences, and constraints in a bounded multi-step intake.",
+          "Draft intake state persists per member so the flow can be resumed safely.",
+          "Review step shows the saved intake before handoff.",
+          "Generation handoff state is explicit: queued, ready, failed, or not implemented.",
+          "The flow does not fake a generated plan when engine output is unavailable.",
+          "The handoff payload matches one typed engine contract and stays inspectable in tests.",
+          "Users can still fall back to manual routine creation when curated generation is not ready."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-pwa-003_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-PWA-003",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Expand Earned Install Promotion Moments",
+        "description": "Expand the earned install prompt beyond the first shipped post-workout moment so install asks happen after real product value and only on supported device paths. This should remain a capability-aware promotion lane, not a return to install-first gating.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-PWA-001",
+          "FF-PWA-002"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-13T04:31:19.434Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-PWA-003",
+        "extensions": {
+          "owner_status": "fawxzzy_review",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-PWA-003",
+        "source_status": "current",
+        "source_updated_at": "2026-07-13T04:31:19.434Z"
+      },
+      "content": {
+        "summary": "Expand the earned install prompt beyond the first shipped post-workout moment so install asks happen after real product value and only on supported device paths. This should remain a capability-aware promotion lane, not a return to install-first gating.",
+        "objective": "Expand the earned install prompt beyond the first shipped post-workout moment so install asks happen after real product value and only on supported device paths. This should remain a capability-aware promotion lane, not a return to install-first gating.",
+        "acceptance_criteria": [
+          "Install promotion can trigger from more than one earned product moment such as repeated usage, workout completion, or stable return behavior.",
+          "Prompts remain capability-aware and platform-aware.",
+          "Normal supported browser paths are not blocked behind install-first gating.",
+          "iOS Safari and in-app-browser fallback guidance remains available when needed.",
+          "Prompt timing stays inspectable and gateable through a deterministic product flag or equivalent bounded control.",
+          "The lane does not regress into install-first interruption for authenticated users."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-qa-002_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-QA-002",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Harden Atlas Contracts and CI Environment Verification",
+        "description": "Keep Fitness contract exports and environment verification deterministic across local and hosted CI.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "high",
+        "owner": "fitness",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-07-14T19:01:32.756Z",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-QA-002",
+        "extensions": {
+          "owner_status": "fawxzzy_review",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-QA-002",
+        "source_status": "current",
+        "source_updated_at": "2026-07-14T19:01:32.756Z"
+      },
+      "content": {
+        "summary": "Keep Fitness contract exports and environment verification deterministic across local and hosted CI.",
+        "objective": "Keep Fitness contract exports and environment verification deterministic across local and hosted CI.",
+        "acceptance_criteria": [
+          "Environment classification is deterministic.",
+          "Contract export and check commands produce stable results.",
+          "Hosted checks remain linked to their exact source identity."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-recap-001_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-RECAP-001",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Ship Shareable Workout Recap Artifacts",
+        "description": "Generate one deterministic workout recap artifact from completed session truth so users can review, share, or export a clean summary without building a social feed. The artifact should highlight workout summary, PR moments, and consistency signals when grounded in real data.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "high",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-HISTORY-001",
+          "FF-RET-004"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-13T04:31:19.434Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-RECAP-001",
+        "extensions": {
+          "owner_status": "fawxzzy_review",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-RECAP-001",
+        "source_status": "current",
+        "source_updated_at": "2026-07-13T04:31:19.434Z"
+      },
+      "content": {
+        "summary": "Generate one deterministic workout recap artifact from completed session truth so users can review, share, or export a clean summary without building a social feed. The artifact should highlight workout summary, PR moments, and consistency signals when grounded in real data.",
+        "objective": "Generate one deterministic workout recap artifact from completed session truth so users can review, share, or export a clean summary without building a social feed. The artifact should highlight workout summary, PR moments, and consistency signals when grounded in real data.",
+        "acceptance_criteria": [
+          "A completed session can produce one recap artifact from deterministic session truth.",
+          "The recap can surface workout summary, PR moments, and bounded consistency or streak callouts where data supports them.",
+          "Recap output is available only through explicit share or export surfaces, not a social feed.",
+          "Generation can run through the existing post-session follow-up lane without blocking session completion.",
+          "History or session detail can render the recap artifact when the feature flag is enabled.",
+          "Low-data sessions degrade gracefully without fake highlights.",
+          "The lane does not introduce comments, discovery, follow graphs, or moderation-heavy surfaces."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-ret-001_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-RET-001",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Add Calendar View",
+        "description": "Give users a visual way to see training consistency over time.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "high",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-MON-001"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-13T04:31:19.434Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-RET-001",
+        "extensions": {
+          "owner_status": "fawxzzy_review",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-RET-001",
+        "source_status": "current",
+        "source_updated_at": "2026-07-13T04:31:19.434Z"
+      },
+      "content": {
+        "summary": "Give users a visual way to see training consistency over time.",
+        "objective": "Give users a visual way to see training consistency over time.",
+        "acceptance_criteria": [
+          "Calendar shows completed workout days.",
+          "Calendar links to session history where possible.",
+          "Calendar uses completed session truth as the source of record.",
+          "Empty states are clear.",
+          "Mobile layout is usable.",
+          "Date and time handling is reliable.",
+          "V1 stays a personal history surface rather than turning into a social or notification feature."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-ret-002_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-RET-002",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Add Workout Streaks",
+        "description": "Add simple streak tracking to increase habit formation.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "high",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-RET-001"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-13T04:31:19.434Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-RET-002",
+        "extensions": {
+          "owner_status": "fawxzzy_review",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-RET-002",
+        "source_status": "current",
+        "source_updated_at": "2026-07-13T04:31:19.434Z"
+      },
+      "content": {
+        "summary": "Add simple streak tracking to increase habit formation.",
+        "objective": "Add simple streak tracking to increase habit formation.",
+        "acceptance_criteria": [
+          "Current streak is shown.",
+          "Best streak is shown if data supports it.",
+          "Streak calculation rules are documented.",
+          "Missed and rest days are handled deterministically.",
+          "Edge cases around time zones are covered.",
+          "Planned non-training days do not silently break the streak model by accident.",
+          "V1 does not depend on push notifications, shame loops, or social pressure tactics."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-ret-003_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-RET-003",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Add Consistency Heatmap",
+        "description": "Add GitHub-style workout consistency visualization.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "high",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-RET-001"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-13T04:31:19.434Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-RET-003",
+        "extensions": {
+          "owner_status": "fawxzzy_review",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-RET-003",
+        "source_status": "current",
+        "source_updated_at": "2026-07-13T04:31:19.434Z"
+      },
+      "content": {
+        "summary": "Add GitHub-style workout consistency visualization.",
+        "objective": "Add GitHub-style workout consistency visualization.",
+        "acceptance_criteria": [
+          "Heatmap shows completed workout activity by day.",
+          "Intensity or count is represented if supported.",
+          "Mobile behavior is acceptable.",
+          "Empty states are motivating rather than sad.",
+          "Uses existing session history without duplicating source data.",
+          "If intensity exists, it is derived from deterministic session truth rather than vague readiness or effort scoring."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-ret-004_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-RET-004",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Add Weekly and Monthly Progress Summaries",
+        "description": "Create periodic summaries that make progress feel real.",
+        "card_type": "feature",
+        "lifecycle": "in-progress",
+        "priority": "high",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-CORE-001"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-15T14:30:00.000Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-RET-004",
+        "extensions": {
+          "owner_status": "in_progress",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-RET-004",
+        "source_status": "current",
+        "source_updated_at": "2026-07-15T14:30:00.000Z"
+      },
+      "content": {
+        "summary": "Create periodic summaries that make progress feel real.",
+        "objective": "Create periodic summaries that make progress feel real.",
+        "acceptance_criteria": [
+          "Weekly summary exists.",
+          "Monthly summary exists.",
+          "Shows completed sessions.",
+          "Shows volume or exercise progress if available.",
+          "Shows progression wins and other deterministic training trends where available.",
+          "Handles low-data states gracefully."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-routine-001_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-ROUTINE-001",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Add Optional Planned Workout Days",
+        "description": "Distinguish optional workout days from required and rest days without weakening adherence, missed-day, or streak truth.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-07-15T18:00:00.000Z",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-ROUTINE-001",
+        "extensions": {
+          "owner_status": "review",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-ROUTINE-001",
+        "source_status": "current",
+        "source_updated_at": "2026-07-15T18:00:00.000Z"
+      },
+      "content": {
+        "summary": "Distinguish optional workout days from required and rest days without weakening adherence, missed-day, or streak truth.",
+        "objective": "Distinguish optional workout days from required and rest days without weakening adherence, missed-day, or streak truth.",
+        "acceptance_criteria": [
+          "Routine setup distinguishes required, optional, and rest days.",
+          "Skipped optional days do not count as missed required sessions.",
+          "Completed optional workouts contribute normal session and progression truth."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-session-001_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-SESSION-001",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Add Per-Exercise Exercise Timer System",
+        "description": "Add a deterministic per-exercise timer system to session logging for exercises the user wants to time while they are actively performing them. The timer should be optional when an exercise is added, belong to the session exercise rather than the whole workout, appear during Current Session logging when enabled, and persist bounded timer outcomes for later analytics and history reuse.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "high",
+        "owner": "fitness",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-07-15T20:22:00.000Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs#FF-SESSION-001",
+        "extensions": {
+          "owner_status": "review",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs#FF-SESSION-001",
+        "source_status": "current",
+        "source_updated_at": "2026-07-15T20:22:00.000Z"
+      },
+      "content": {
+        "summary": "Add a deterministic per-exercise timer system to session logging for exercises the user wants to time while they are actively performing them. The timer should be optional when an exercise is added, belong to the session exercise rather than the whole workout, appear during Current Session logging when enabled, and persist bounded timer outcomes for later analytics and history reuse.",
+        "objective": "Add a deterministic per-exercise timer system to session logging for exercises the user wants to time while they are actively performing them. The timer should be optional when an exercise is added, belong to the session exercise rather than the whole workout, appear during Current Session logging when enabled, and persist bounded timer outcomes for later analytics and history reuse.",
+        "acceptance_criteria": [
+          "A session exercise can carry an optional exercise-timer setting.",
+          "The timer is configured per exercise rather than only as a global app preference.",
+          "Timer-enabled exercises show timer behavior only where the user enabled it.",
+          "Timer UX fits the existing current-session page family without adding modal clutter or route detours.",
+          "The timer is for timing the exercise itself, not for implicitly becoming a rest timer between sets.",
+          "Timer completion creates deterministic session data that can be queried later.",
+          "History and analytics can distinguish exercises with timer-backed duration behavior from exercises without it.",
+          "The lane does not silently expand into rest guidance, notifications, coaching, or smartwatch behavior."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-session-002_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-SESSION-002",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Add Exercise Timer Toggle When Adding an Exercise",
+        "description": "Add a switch control in the add-exercise flow that enables or disables an exercise timer for that exercise in the current session. If enabled, the add flow should support a bounded timer configuration such as a target duration or timer mode. If disabled, the exercise should behave exactly like today with no timer UI added later in session logging.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "high",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-SESSION-001"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-13T04:33:22.350Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs#FF-SESSION-002",
+        "extensions": {
+          "owner_status": "fawxzzy_review",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs#FF-SESSION-002",
+        "source_status": "current",
+        "source_updated_at": "2026-07-13T04:33:22.350Z"
+      },
+      "content": {
+        "summary": "Add a switch control in the add-exercise flow that enables or disables an exercise timer for that exercise in the current session. If enabled, the add flow should support a bounded timer configuration such as a target duration or timer mode. If disabled, the exercise should behave exactly like today with no timer UI added later in session logging.",
+        "objective": "Add a switch control in the add-exercise flow that enables or disables an exercise timer for that exercise in the current session. If enabled, the add flow should support a bounded timer configuration such as a target duration or timer mode. If disabled, the exercise should behave exactly like today with no timer UI added later in session logging.",
+        "acceptance_criteria": [
+          "Add Exercise exposes a switch such as Exercise Timer.",
+          "The control is off by default unless a later product decision explicitly changes that default.",
+          "When off, the session exercise behaves exactly like the current product.",
+          "When on, the created session exercise stores timer-enabled state.",
+          "When on, the user can choose or inherit a bounded timer configuration appropriate for the exercise.",
+          "The add flow remains mobile-usable and does not crowd existing measurement controls."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-session-003_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-SESSION-003",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Show Live Per-Exercise Timer During Current Session Logging",
+        "description": "When a timer-enabled exercise is open in Current Session, show the timer control in the logger surface for that exercise. The user should be able to start, pause, resume, reset, or dismiss the timer while performing the exercise without affecting the saved set truth. If a target duration exists, completion should surface a clear done-state cue for that exercise.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "high",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-SESSION-002"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-13T04:33:22.350Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs#FF-SESSION-003",
+        "extensions": {
+          "owner_status": "fawxzzy_review",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs#FF-SESSION-003",
+        "source_status": "current",
+        "source_updated_at": "2026-07-13T04:33:22.350Z"
+      },
+      "content": {
+        "summary": "When a timer-enabled exercise is open in Current Session, show the timer control in the logger surface for that exercise. The user should be able to start, pause, resume, reset, or dismiss the timer while performing the exercise without affecting the saved set truth. If a target duration exists, completion should surface a clear done-state cue for that exercise.",
+        "objective": "When a timer-enabled exercise is open in Current Session, show the timer control in the logger surface for that exercise. The user should be able to start, pause, resume, reset, or dismiss the timer while performing the exercise without affecting the saved set truth. If a target duration exists, completion should surface a clear done-state cue for that exercise.",
+        "acceptance_criteria": [
+          "Timer-enabled exercises show an exercise-timer control in the current logger.",
+          "The timer can be started, paused, resumed, or reset without leaving the logger.",
+          "Timer actions do not block set logging.",
+          "The timer can be manually restarted or reset.",
+          "If the exercise has a target duration, completion visibly marks the timer as done for that exercise.",
+          "The timer surface works on mobile and does not push the logger's core measurement inputs out of reach.",
+          "Exercises without timer-enabled state show no new timer clutter."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-session-004_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-SESSION-004",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Persist Exercise Timer Outcomes Into Session Analytics",
+        "description": "Persist exercise-timer configuration and usable outcome data into session truth. At minimum, store whether the exercise used a timer, the configured timer target or mode when present, and enough completed timing data to support later summaries and comparisons. This must survive session completion and be available to history-family loaders without reconstructing timer behavior from fragile client-only state.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "high",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-SESSION-003"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-13T04:33:22.350Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs#FF-SESSION-004",
+        "extensions": {
+          "owner_status": "fawxzzy_review",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs#FF-SESSION-004",
+        "source_status": "current",
+        "source_updated_at": "2026-07-13T04:33:22.350Z"
+      },
+      "content": {
+        "summary": "Persist exercise-timer configuration and usable outcome data into session truth. At minimum, store whether the exercise used a timer, the configured timer target or mode when present, and enough completed timing data to support later summaries and comparisons. This must survive session completion and be available to history-family loaders without reconstructing timer behavior from fragile client-only state.",
+        "objective": "Persist exercise-timer configuration and usable outcome data into session truth. At minimum, store whether the exercise used a timer, the configured timer target or mode when present, and enough completed timing data to support later summaries and comparisons. This must survive session completion and be available to history-family loaders without reconstructing timer behavior from fragile client-only state.",
+        "acceptance_criteria": [
+          "Session exercise truth stores timer-enabled state.",
+          "Session exercise truth stores configured timer target or timer mode when present.",
+          "Logged exercise-timer outcomes are stored in a bounded, queryable shape.",
+          "Completed session reads can load timer-backed duration data.",
+          "Export and analytics paths can include timer-backed session information when in scope.",
+          "The persistence model is additive, migration-safe, and consistent with existing session truth patterns."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-session-005_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-SESSION-005",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Add Separate Recovery And Rest Recommendation Layer",
+        "description": "Add a separate backend and product lane for recovery summaries, rest recommendations, and next-set prompts. This may use set timestamps, session history, and any later bounded timing truth, but it must remain a separate concern from the toggleable exercise timer feature. The app can later surface deterministic guidance such as likely rest windows or recovery patterns without redefining the user-facing exercise timer as a rest timer.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-SESSION-004"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-13T04:33:22.350Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs#FF-SESSION-005",
+        "extensions": {
+          "owner_status": "fawxzzy_review",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs#FF-SESSION-005",
+        "source_status": "current",
+        "source_updated_at": "2026-07-13T04:33:22.350Z"
+      },
+      "content": {
+        "summary": "Add a separate backend and product lane for recovery summaries, rest recommendations, and next-set prompts. This may use set timestamps, session history, and any later bounded timing truth, but it must remain a separate concern from the toggleable exercise timer feature. The app can later surface deterministic guidance such as likely rest windows or recovery patterns without redefining the user-facing exercise timer as a rest timer.",
+        "objective": "Add a separate backend and product lane for recovery summaries, rest recommendations, and next-set prompts. This may use set timestamps, session history, and any later bounded timing truth, but it must remain a separate concern from the toggleable exercise timer feature. The app can later surface deterministic guidance such as likely rest windows or recovery patterns without redefining the user-facing exercise timer as a rest timer.",
+        "acceptance_criteria": [
+          "History can summarize recovery or rest behavior without rewriting the scope of the exercise timer cards.",
+          "Current Session can surface simple recovery-aware prompts through a separate recommendation layer when enough data exists.",
+          "Prompts remain deterministic and explainable from stored session truth.",
+          "Analytics can distinguish exercise timing data from recovery or rest recommendation data.",
+          "Low-data or no-data cases fail gracefully without fake precision.",
+          "The lane does not introduce coaching, medical, or AI-heavy claims."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-soc-001_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-SOC-001",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Explore Social Features",
+        "description": "Explore friends, groups, and sharing after the core paid product is working.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "low",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-LEGAL-001",
+          "FF-MON-001"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-13T04:31:19.434Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-SOC-001",
+        "extensions": {
+          "owner_status": "fawxzzy_review",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-SOC-001",
+        "source_status": "current",
+        "source_updated_at": "2026-07-13T04:31:19.434Z"
+      },
+      "content": {
+        "summary": "Explore friends, groups, and sharing after the core paid product is working.",
+        "objective": "Explore friends, groups, and sharing after the core paid product is working.",
+        "acceptance_criteria": [
+          "Define whether social means friends, groups, shared routines, leaderboards, or progress sharing.",
+          "Privacy implications are documented.",
+          "Abuse and moderation implications are documented.",
+          "First MVP slice is proposed before implementation.",
+          "The first slice does not reopen monetization, moderation, or legal scope accidentally."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-soc-002_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-SOC-002",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Show Live Active User Presence on Today",
+        "description": "Show a privacy-preserving aggregate active-user count on Today without exposing individual identities.",
+        "card_type": "feature",
+        "lifecycle": "planning",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-ANALYTICS-001",
+          "FF-SOC-001"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-14T22:23:17.502Z",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-SOC-002",
+        "extensions": {
+          "owner_status": "confirmed",
+          "public_safe": true
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-SOC-002",
+        "source_status": "current",
+        "source_updated_at": "2026-07-14T22:23:17.502Z"
+      },
+      "content": {
+        "summary": "Show a privacy-preserving aggregate active-user count on Today without exposing individual identities.",
+        "objective": "Show a privacy-preserving aggregate active-user count on Today without exposing individual identities.",
+        "acceptance_criteria": [
+          "Presence counting rules are deterministic.",
+          "Only aggregate presence is exposed.",
+          "Unavailable and stale states never present false precision."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    }
+  ],
+  "extensions": {
+    "source_work_item_count": 39,
+    "exported_card_count": 24,
+    "excluded_completed_card_count": 15,
+    "selected_owner_snapshot_record_count": 55,
+    "excluded_unstable_or_nonfitness_record_count": 18,
+    "deferred_board_journal_event_count": 38,
+    "deferred_board_journal_public_stable_additions": 2,
+    "deferred_board_journal_security_incident_exclusions": 1,
+    "deferred_board_journal_selection": "root schemaVersion equals atlas.board-card-journal.v1",
+    "deferred_board_journal_digest_algorithm": "sha256 of ordinal filename|lowercase-file-sha256 lines joined with LF and no terminal LF",
+    "deferred_board_journal_sha256": "182178ae89a240bfaabb4c57bc406b38fc7b2ec4edb58a34b6e11dd5b92f9fca",
+    "research_candidate_count": 64,
+    "research_candidate_exported_count": 0,
+    "research_stable_id_overlap_count": 0,
+    "research_disposition": "planning-only candidates require explicit owner adoption before export",
+    "private_records_included": false,
+    "external_system_identifiers_included": false
+  }
+}
