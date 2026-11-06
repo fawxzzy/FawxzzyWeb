@@ -1,6 +1,7 @@
 import { AmbientBrandBackground } from "@/components/ambient/ambient-brand-background";
 import { SiteNav } from "@/components/site/site-nav";
 import { StaticLink } from "@/components/site/static-link";
+import { publicProjectsUrl } from "@/config/account";
 import { productIdentity } from "@/config/product";
 
 type AccountPageShellProps = {
@@ -30,7 +31,7 @@ export function AccountPageShell({
     >
       {utility ? null : <AmbientBrandBackground intensity="soft" particleCount={10} pulseEnabled={false} />}
       <div className={`shell-container account-shell${utility ? " account-shell--utility" : ""}`}>
-        {utility ? null : <SiteNav current="account" />}
+        {utility ? null : <SiteNav current="account" projectsHref={publicProjectsUrl} />}
         {utility ? (
           <div className="account-utility-layout">{children}</div>
         ) : (

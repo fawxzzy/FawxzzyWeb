@@ -84,14 +84,19 @@ Projects boards at `/projects` (canonical `https://fawxzzy.com/projects`, kept `
 `https://account.fawxzzy.com` is only for the account, log in, sign out, reset, and auth screens.
 
 The shared navigation links Projects origin-relatively (`/projects`), so the storefront opens
-`fawxzzy.com/projects`; the account-host auth screens carry no site navigation. The same static
+`fawxzzy.com/projects`. The account-host shell (`AccountPageShell`) passes the absolute main-site
+URL, so any account-host page that renders the site navigation sends Projects to
+`https://fawxzzy.com/projects`; the login, confirm, callback, reset and `/account` screens are the
+utility variant and render no site navigation today. Shared error and 404 pages use the
+origin-relative link. The same static
 `/projects` export is served on both hosts and is not a second public surface: on the account host
 it canonicalizes to the apex and is the owner's private view. Because the Auth session lives only on
 the account origin, the private-card reader activates there alone. On every other origin the
 private region shows only a plain `Sign in to see private work` link to
 `https://account.fawxzzy.com/login?returnTo=%2Fprojects`, which returns the owner to the account-host
-Projects page. The Account page links both `Projects` (main site) and `Private projects`
-(account-host `/projects`). Moving the apex alias to a build containing this split is a separate
+Projects page. The signed-in Account panel links both `Projects` (main site) and `Private projects`
+(account-host `/projects`); neither link appears while signed out. Auth state is not shared across
+origins, so an owner signed in on the account host still sees only the sign-in link on the apex page. Moving the apex alias to a build containing this split is a separate
 release step.
 
 ## Verification contract

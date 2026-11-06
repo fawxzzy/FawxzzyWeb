@@ -317,6 +317,7 @@ test('stale overview with an open session still shows the owner card and keeps t
   await expect(page.getByText(title)).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'Private project cards' })).toHaveCount(0);
   expect(fixture.calls).toEqual(['GET /api/operations/read', 'POST /api/operations/session', 'GET /api/operations/read']);
+  expect(fixture.privateCardCalls).toHaveLength(1);
   // Hiding the tab clears it; coming back reads fresh from the owner endpoint.
   await page.evaluate(() => {
     Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
@@ -329,7 +330,28 @@ test('stale overview with an open session still shows the owner card and keeps t
     document.dispatchEvent(new Event('visibilitychange'));
   });
   await expect(canonicalCard(page)).toHaveCount(1);
+  // The card only returned because the owner endpoint and the reader were actually read again.
+  expect(fixture.privateCardCalls.length).toBeGreaterThan(1);
+  expect(fixture.calls.filter((call) => call === 'GET /api/operations/read').length).toBeGreaterThan(2);
   expect(fixture.external).toEqual([]);
+});
+
+test('stale overview card is bounded to 60 seconds and returns only after an explicit re-read', async ({ page }) => {
+  await page.clock.install();
+  const fixture = await privateFixture(page, { card: 'valid', overview: 'stale' });
+  await page.goto('/projects?auth_test=session');
+  await selectWebBoard(page);
+  await expect(canonicalCard(page)).toHaveCount(1);
+  const cardReads = fixture.privateCardCalls.length;
+  const overviewReads = fixture.calls.length;
+  await page.clock.fastForward(60_001);
+  await expect(canonicalCard(page)).toHaveCount(0);
+  await expect(page.getByText(cardTitle)).toHaveCount(0);
+  expect(fixture.calls).toHaveLength(overviewReads); // expiry never polls
+  await page.getByRole('button', { name: 'Refresh private work' }).click();
+  await expect(canonicalCard(page)).toHaveCount(1);
+  expect(fixture.privateCardCalls.length).toBeGreaterThan(cardReads);
+  expect(fixture.calls.length).toBeGreaterThan(overviewReads);
 });
 
 test('stale overview card clears when the owner session is revoked on return', async ({ page }) => {

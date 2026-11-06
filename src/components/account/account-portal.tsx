@@ -717,7 +717,7 @@ function AccountPanel({
         <div className="account-card__links">
           <a href={contextualPath("/reset-password", context)}>Reset Password</a>
         </div>
-        {context.id === "website" ? (
+        {context.id === "website" && session ? (
           <div className="account-card__links" data-account-projects-links>
             <a href={publicProjectsUrl}>Projects</a>
             <AccountTextDivider />

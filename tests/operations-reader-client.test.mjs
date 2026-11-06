@@ -254,6 +254,41 @@ test('private card gate follows the verified open session, not overview health',
   assert.equal(privateCardEligible(base), true);
   for (const patch of [{ signedIn: false }, { session: 'closed' }, { session: 'unverified' }, { status: 'expired' },
     { status: 'unknown' }, { status: 'loading' }, { status: 'opened' }, { status: 'denied' }, { status: 'idle' },
+    { status: 'session-missing' }, { status: 'closed' }, { status: 'opened', session: 'closed' },
     { pending: true }, { uncertain: true }]) assert.equal(privateCardEligible({ ...base, ...patch }), false, JSON.stringify(patch));
   assert.equal(privateCardEligible(null), false);
+});
+
+for (const health of ['stale', 'reconciling', 'incompatible', 'unavailable']) {
+  test(`${health} overview with an open session is eligible, bounded by TTL, and re-read on expiry`, async () => {
+    const f = fixture(); await f.reader.start();
+    f.respond(async (_url, config) => config.method === 'GET' ? Response.json(unhealthy(health)) : new Response(null, { status: 204 }));
+    await f.reader.refresh();
+    let snap = f.reader.getSnapshot();
+    assert.deepEqual([snap.status, snap.session, snap.view], [health, 'open', null]);
+    assert.equal(privateCardEligible(snap), true);
+    f.timers.tick(OBSERVATION_MS - 1); assert.equal(privateCardEligible(f.reader.getSnapshot()), true);
+    f.timers.tick(1); snap = f.reader.getSnapshot();
+    assert.deepEqual([snap.status, snap.session], ['expired', 'unverified']);
+    assert.equal(privateCardEligible(snap), false); assert.equal(f.calls.length, 1, 'expiry never polls');
+    // Only an explicit new read restores eligibility.
+    await f.reader.refresh(); assert.equal(privateCardEligible(f.reader.getSnapshot()), true); assert.equal(f.calls.length, 2);
+    f.reader.dispose();
+  });
+}
+test('stale open observation clears on an Auth generation change even when the session event is missed', async () => {
+  const f = fixture(); await f.reader.start();
+  f.respond(async () => Response.json(unhealthy('stale')));
+  await f.reader.refresh(); assert.equal(privateCardEligible(f.reader.getSnapshot()), true);
+  f.generation('generation-b'); // no onSessionChange event delivered
+  f.reader.checkDisplay();
+  const snap = f.reader.getSnapshot();
+  assert.deepEqual([snap.status, snap.session], ['expired', 'unverified']);
+  assert.equal(privateCardEligible(snap), false); f.reader.dispose();
+});
+test('stale open observation clears when checked while the tab is not visible', async () => {
+  const f = fixture(); await f.reader.start();
+  f.respond(async () => Response.json(unhealthy('stale')));
+  await f.reader.refresh(); f.reader.setVisible(false);
+  f.reader.checkDisplay(); assert.equal(privateCardEligible(f.reader.getSnapshot()), false); f.reader.dispose();
 });

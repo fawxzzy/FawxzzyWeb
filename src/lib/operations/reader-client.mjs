@@ -101,10 +101,13 @@ export function createOperationsReader({ adapter, origin, localTest = false,
     erase({ signedIn: Boolean(userId), session: 'unverified', status: userId ? 'idle' : 'signed-out' });
     notify(gate);
   }
+  // Any verified-open observation (healthy or not) is bounded to one visible Auth generation and
+  // OBSERVATION_MS; once it lapses the session is no longer treated as verified until re-read.
   function checkDisplay() {
-    if (state.view && (!visible || monotonic() >= displayDeadline
+    if ((state.view || state.session === 'open' && displayedGeneration !== null)
+      && (!visible || monotonic() >= displayDeadline
       || !displayedGeneration || adapter.getAuthGeneration() !== displayedGeneration)) {
-      erase({ status: 'expired' });
+      erase({ status: 'expired', session: 'unverified' });
     }
   }
   async function start() {
@@ -193,12 +196,10 @@ export function createOperationsReader({ adapter, origin, localTest = false,
         const view = validateView(value); assertCurrent();
         gate.uncertain = false;
         erase({ status: view.health, session: 'open' });
-        if (view.health === 'healthy') {
-          displayedGeneration = generation;
-          displayDeadline = monotonic() + OBSERVATION_MS;
-          emit({ view, observedAt: now() });
-          expiryTimer = setTimer(() => erase({ status: 'expired' }), OBSERVATION_MS);
-        }
+        displayedGeneration = generation;
+        displayDeadline = monotonic() + OBSERVATION_MS;
+        if (view.health === 'healthy') emit({ view, observedAt: now() });
+        expiryTimer = setTimer(() => erase({ status: 'expired', session: 'unverified' }), OBSERVATION_MS);
       } catch {
         if (sent || timedOut) gate.uncertain = true;
         if (current()) erase({ status: sent ? 'unknown' : 'unavailable', session: 'unverified' });
