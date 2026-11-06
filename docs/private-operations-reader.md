@@ -102,7 +102,12 @@ sent to a live provider. The Projects sign-in link uses the exact allowlisted
 `/projects` return target on the account origin; other product contexts retain
 their own return rules. The same page on the main site (`fawxzzy.com/projects`)
 never starts the reader: its private region is only a `Sign in to see private
-work` link to `https://account.fawxzzy.com/login?returnTo=%2Fprojects`. The Projects view makes one current-session read after
+work` link to `https://account.fawxzzy.com/login?returnTo=%2Fprojects`.
+The private project card mounts whenever the owner is signed in and the caller-bound private session is
+verified open (`src/lib/projects/private-card-gate.mjs`), even if the legacy work overview is stale,
+reconciling, incompatible or unavailable; the card still passes its own server checks (Auth, owner grant,
+caller-bound cookie, no-store). Closed, missing, denied, expired, unknown, loading, hidden-tab and
+signed-out states render no card. The Projects view makes one current-session read after
 verified sign-in. If that proves no session exists, it can open once and read
 again. Other denial, uncertainty, or a nonhealthy projection stops the automatic
 path. There is no polling, card write action, or reverse editor.

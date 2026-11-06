@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { VERCEL_PRODUCTION_CONTRACT as contract } from './vercel-production-contract.mjs';
 import { assertCanonicalAliasBindings, recoverFailedProductionRelease,
   validateCandidateObservations, validateRollbackObservations } from './recover-production-release.mjs';
-import { verifyProductionRelease, smokeRoutes, accountRoutes, legalRoutes } from './verify-production-release.mjs';
+import { verifyProductionRelease, smokeRoutes, expectedProjectsBoards, accountRoutes, legalRoutes } from './verify-production-release.mjs';
 import { canonicalJson, parsePhaseFrame, handlePhaseRequest, PHASE_SCHEMA, MAX_FRAME_BYTES } from './deploy-production.mjs';
 
 const identity = {
@@ -25,7 +25,7 @@ const deployment = (rollback = false) => ({ id: rollback ? identity.rollbackDepl
   url: rollback ? 'prior.vercel.app' : 'candidate.vercel.app', projectId: identity.projectId, teamId: identity.teamId,
   target: 'production', readyState: 'READY', commit: rollback ? identity.rollbackCommit : identity.commit,
   tree: rollback ? identity.rollbackTree : identity.tree, attemptId: rollback ? null : identity.attemptId });
-const page = (canonical) => `<html><head>${canonical ? `<link rel="canonical" href="${canonical}">` : ''}<meta name="robots" content="noindex, nofollow"></head><body>${['Fawxzzy Fitness', 'Mazer', 'Fawxzzy Web', 'Atlas Stack'].map((name) => `<button class="project-tab"><span>${name}</span><strong>0</strong></button>`).join('')}</body></html>`;
+const page = (canonical) => `<html><head>${canonical ? `<link rel="canonical" href="${canonical}">` : ''}<meta name="robots" content="noindex, nofollow"></head><body>${expectedProjectsBoards().map(({ name, count }) => `<button class="project-tab"><span>${name}</span><strong>${count}</strong></button>`).join('')}<button class="project-card" type="button"><h3>Card</h3></button></body></html>`;
 const digest = (body) => createHash('sha256').update(body, 'utf8').digest('hex');
 const followedPublicRedirects = {
   '/apps/fitness': 'https://fitness.fawxzzy.com/',

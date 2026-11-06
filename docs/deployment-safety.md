@@ -94,7 +94,7 @@ also binds its included minimal JSON body to `bodyDigest`; pending API, redirect
 and range records carry a digest without body text. Digest format alone cannot
 authenticate omitted bodies: Ops must compare every digest to its raw capture,
 including non-HTML records, before invoking the bridge. Preserve
-all canonical HTML, empty four-board/noindex, signed-out minimal denial,
+all canonical HTML, published-snapshot four-board/noindex, signed-out minimal denial,
 wrong-origin/missing-cookie denial, redirect, exact byte-range, empty runtime
 error counts and final target/alias predicates. Tests demonstrate complete
 bundle construction and each closed shape. No credentials/private card payload

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import htmlParser from 'next/dist/compiled/node-html-parser/index.js';
@@ -87,6 +88,12 @@ export function hasExactCanonicalLink(html, expectedCanonical) {
     && canonicalLinks[0].getAttribute("href") === expectedCanonical;
 }
 
+// The published board is the committed owner-approved snapshot; derive the expected tabs from it.
+export function expectedProjectsBoards() {
+  const snapshot = JSON.parse(readFileSync(new URL('../src/data/project-board-public.generated.json', import.meta.url), 'utf8'));
+  return snapshot.boards.map((board) => ({ name: board.name, count: String(board.cards.length) }));
+}
+
 export function verifyProjectsPublicHtml(html) {
   const document = htmlParser.parse(html);
   const robots = document.querySelector('head > meta[name="robots"]')?.getAttribute('content') ?? '';
@@ -94,15 +101,18 @@ export function verifyProjectsPublicHtml(html) {
     name: tab.querySelector('span')?.text.trim(),
     count: tab.querySelector('strong')?.text.trim(),
   }));
-  const expected = ['Fawxzzy Fitness', 'Mazer', 'Fawxzzy Web', 'Atlas Stack'];
+  const expected = expectedProjectsBoards();
+  // The static HTML renders only the default (first) board's open cards: at least one, never more than its total.
+  const rendered = document.querySelectorAll('.project-card').length;
+  const defaultTotal = Number(expected[0]?.count ?? 0);
   if (!robots.split(',').some((part) => part.trim().toLowerCase() === 'noindex')
     || boards.length !== expected.length
-    || boards.some((board, index) => board.name !== expected[index] || board.count !== '0')
-    || document.querySelectorAll('.project-card').length !== 0
+    || boards.some((board, index) => board.name !== expected[index].name || board.count !== expected[index].count)
+    || rendered < 1 || rendered > defaultTotal
     || html.includes('FW-ANALYTICS-001') || html.includes('FF-WEB-ANALYTICS-001')) {
-    throw new Error('Projects public HTML is not the approved noindex four-board empty view.');
+    throw new Error('Projects public HTML is not the approved noindex public board snapshot view.');
   }
-  return { noindex: true, boardCount: boards.length, publicCardCount: 0 };
+  return { noindex: true, boardCount: boards.length, publicCardCount: rendered };
 }
 
 
