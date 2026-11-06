@@ -51,12 +51,13 @@ export function validatePrivateCardResponse(value, mapping) {
     || value.source_revision !== mapping.sourceRevision
     || !value.body || typeof value.body !== 'object' || Array.isArray(value.body)
     || value.body.stable_id !== value.stable_id || value.body.visibility !== 'PRIVATE'
-    || value.body.source_card_id !== mapping.sourceId
+    || value.body.source_card_id !== mapping.sourceId || value.body.board !== mapping.board
     || typeof value.body.title !== 'string' || value.body.title.length < 1 || value.body.title.length > 160
     || typeof value.body.summary !== 'string' || value.body.summary.length > 2000
     || value.body.lifecycle !== 'planning') fail('CARD_UNAVAILABLE');
   // The SQL wrapper must verify the PostgreSQL JSONB-text body digest before
-  // returning the row. The browser receives only bounded display fields.
+  // returning the row; here body_digest is only shape-checked (sha256: + 64 hex).
+  // The browser receives only bounded display fields.
   return { stable_id: value.stable_id, version: value.version, body_digest: value.body_digest,
     board: mapping.board, board_revision: value.board_revision, source_revision: value.source_revision,
     title: value.body.title, summary: value.body.summary, lifecycle: value.body.lifecycle };
@@ -70,7 +71,7 @@ export function validatePrivateCardDisplay(value, mapping) {
   return validatePrivateCardResponse({ stable_id: value.stable_id, version: value.version,
     body_digest: value.body_digest, board_revision: value.board_revision, source_revision: value.source_revision,
     body: { stable_id: value.stable_id, visibility: 'PRIVATE', source_card_id: mapping.sourceId,
-      title: value.title, summary: value.summary, lifecycle: value.lifecycle } }, mapping);
+      board: value.board, title: value.title, summary: value.summary, lifecycle: value.lifecycle } }, mapping);
 }
 
 async function boundedJson(response, signal) {

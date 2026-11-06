@@ -14,6 +14,7 @@ const privateView = {
 
 const boardRevision = 'sha256:39f3fd99ab531bd576dce3618e033d33762ba0d738bd23274eac97e9d2a921ad';
 const cardTitle = 'FIRST_PRIVATE_CARD_TITLE';
+const canonicalCard = (page: Page) => page.getByRole('region', { name: 'Canonical private project card' });
 const privateCard = {
   stable_id: 'FF-WEB-ANALYTICS-001', version: 1, body_digest: `sha256:${'c'.repeat(64)}`, board: 'fawxzzyweb',
   board_revision: boardRevision, source_revision: '4495db9c42dcba75adf8ddeaf87ababd6485417f',
@@ -21,15 +22,18 @@ const privateCard = {
 };
 type CardReply = 'absent' | 'valid' | 'denied' | 'unavailable' | 'mismatch';
 
-async function privateFixture(page: Page, { deny = false, card = 'absent' }: { deny?: boolean; card?: CardReply } = {}) {
+async function privateFixture(page: Page, { deny = false, card = 'absent', hold = false }: { deny?: boolean; card?: CardReply; hold?: boolean } = {}) {
   let opened = false;
+  let releaseCard: () => void = () => undefined;
+  const gate = hold ? new Promise<void>((resolve) => { releaseCard = resolve; }) : Promise.resolve();
   let denied = deny;
   const calls: string[] = [];
   const external: string[] = [];
   const privateCardCalls: string[] = [];
   await page.route('https://**/*', (route) => { external.push(new URL(route.request().url()).origin); return route.abort(); });
-  await page.route('http://127.0.0.1:3210/api/projects/private-card', (route) => {
+  await page.route('http://127.0.0.1:3210/api/projects/private-card', async (route) => {
     privateCardCalls.push(route.request().method());
+    await gate;
     const headers = { 'Cache-Control': 'private, no-store, max-age=0' };
     // 'absent' models the reader RPC not being installed: the route cannot answer at all.
     if (card === 'valid') return route.fulfill({ status: 200, headers, json: privateCard });
@@ -56,7 +60,7 @@ async function privateFixture(page: Page, { deny = false, card = 'absent' }: { d
       await route.fulfill({ status: 200, headers, json: privateView });
     }
   });
-  return { calls, external, privateCardCalls, setDenied(value: boolean) { denied = value; } };
+  return { calls, external, privateCardCalls, releaseCard, setDenied(value: boolean) { denied = value; } };
 }
 
 async function selectWebBoard(page: Page, afterFakeClock = false) {
@@ -135,15 +139,51 @@ test('verified owner with a valid reader payload sees exactly the first private 
   await expect(card).toContainText('FF-WEB-ANALYTICS-001');
   await expect(privateArea.getByRole('status')).toContainText('Your private project card is shown below.');
   expect(fixture.privateCardCalls).toEqual(['GET']);
-  // The card is never in server HTML or browser storage, and the legacy fixture stays out.
-  const html = await (await page.request.get('/projects?auth_test=session')).text();
-  expect(html).not.toContain(cardTitle);
+  // The card never reaches browser storage, and the legacy fixture stays out.
   expect(await page.evaluate(() => JSON.stringify({ ...localStorage, ...sessionStorage }))).not.toContain(cardTitle);
   await expect(page.getByText(title)).toHaveCount(0);
   // Leaving the page (pagehide) clears it again.
   await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide')));
   await expect(page.getByRole('region', { name: 'Canonical private project card' })).toHaveCount(0);
   expect(fixture.external).toEqual([]);
+});
+
+test('card text appears only after the owner fetch completes, never before', async ({ page }) => {
+  // /projects is a static export, so the only meaningful boundary is the owner-authenticated fetch:
+  // hold that response, prove the page shows no card text or region, then release it.
+  const fixture = await privateFixture(page, { card: 'valid', hold: true });
+  await page.goto('/projects?auth_test=session');
+  await selectWebBoard(page);
+  const privateArea = page.getByRole('region', { name: 'Private projects' });
+  await expect(privateArea.getByRole('status')).toContainText('Private project cards are not available yet.');
+  await expect.poll(() => fixture.privateCardCalls.length).toBe(1);
+  await expect(canonicalCard(page)).toHaveCount(0);
+  await expect(page.getByText(cardTitle)).toHaveCount(0);
+  await expect(page.getByText('Checking the current private card')).toHaveCount(0);
+  expect(await page.locator('body').innerText()).not.toContain(cardTitle);
+  fixture.releaseCard();
+  await expect(canonicalCard(page)).toHaveCount(1);
+  await expect(canonicalCard(page).getByRole('heading', { name: cardTitle })).toBeVisible();
+});
+
+test('a visible card clears when the tab is hidden and returns only after a fresh owner read', async ({ page }) => {
+  const fixture = await privateFixture(page, { card: 'valid' });
+  await page.goto('/projects?auth_test=session');
+  await selectWebBoard(page);
+  await expect(canonicalCard(page)).toHaveCount(1);
+  expect(fixture.privateCardCalls).toHaveLength(1);
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect(canonicalCard(page)).toHaveCount(0);
+  await expect(page.getByText(cardTitle)).toHaveCount(0);
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect(canonicalCard(page)).toHaveCount(1);
+  expect(fixture.privateCardCalls.length).toBeGreaterThan(1);
 });
 
 for (const reply of ['denied', 'unavailable', 'mismatch'] as const) {
@@ -170,6 +210,7 @@ test('foreign account gets no private Web card or open retry loop', async ({ pag
   await expect(page.getByRole('region', { name: 'Private project cards' })).toHaveCount(0);
   await expect(page.getByText(title)).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'Canonical private project card' })).toHaveCount(0);
+  await expect(page.getByText(cardTitle)).toHaveCount(0);
   expect(fixture.calls).toEqual(['GET /api/operations/read']);
   expect(fixture.privateCardCalls).toEqual([]);
   await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide')));
@@ -180,34 +221,46 @@ test('foreign account gets no private Web card or open retry loop', async ({ pag
 
 test('expiry, Auth change and revocation clear verified Web state without legacy payload', async ({ page }) => {
   await page.clock.install();
-  const fixture = await privateFixture(page);
+  // A VISIBLE valid card must render first; each event below must then clear it.
+  const fixture = await privateFixture(page, { card: 'valid' });
   await page.goto('/projects?auth_test=session');
   await selectWebBoard(page);
   const privateArea = page.getByRole('region', { name: 'Private projects' });
   const privateCards = page.getByRole('region', { name: 'Private project cards' });
   await expect(privateArea.getByRole('status')).toContainText("You're signed in");
   await expect(privateCards).toHaveCount(0);
+  await expect(canonicalCard(page)).toHaveCount(1);
   await page.clock.fastForward(60_001);
   await expect(privateCards).toHaveCount(0);
   await expect(privateArea.getByRole('status')).not.toContainText("You're signed in");
+  await expect(canonicalCard(page)).toHaveCount(0);
+  await expect(page.getByText(cardTitle)).toHaveCount(0);
   expect(fixture.calls).toHaveLength(3);
   await page.getByRole('button', { name: 'Refresh private work' }).click();
   await expect(privateArea.getByRole('status')).toContainText("You're signed in");
+  await expect(canonicalCard(page)).toHaveCount(1);
   await page.clock.resume();
   await page.reload();
   await selectWebBoard(page, true);
   await expect(privateArea.getByRole('status')).toContainText("You're signed in");
+  await expect(canonicalCard(page)).toHaveCount(1);
   await page.evaluate(() => {
     localStorage.setItem('fawxzzy.account.auth-generation.v1', 'changed-in-local-fixture');
     window.dispatchEvent(new StorageEvent('storage', { key: 'fawxzzy.account.auth-generation.v1' }));
   });
+  // Auth generation change: the same bump a sign-out or user switch performs in the adapter.
   await expect(privateArea.getByRole('status')).not.toContainText("You're signed in");
   await expect(privateCards).toHaveCount(0);
+  await expect(canonicalCard(page)).toHaveCount(0);
+  await expect(page.getByText(cardTitle)).toHaveCount(0);
   fixture.setDenied(true);
   await page.reload();
   await selectWebBoard(page, true);
+  // Revocation: the operations reader now denies, so the previously visible card must be gone.
   await expect(page.getByRole('region', { name: 'Private projects' }).getByRole('status')).toContainText('Private access is not available');
   await expect(privateCards).toHaveCount(0);
+  await expect(canonicalCard(page)).toHaveCount(0);
+  await expect(page.getByText(cardTitle)).toHaveCount(0);
   const html = await (await page.request.get('/projects?auth_test=session')).text();
   expect(html).not.toContain(title);
   expect(html).not.toContain(privateView.cards[0].stable_id);

@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { COOKIE, newHandle } from '../src/server/operations/consumer-auth.mjs';
-import { createPrivateCardHandler, createPrivateCardStore, privateCardHandler } from '../src/server/projects/private-card-http.mjs';
+import { createPrivateCardHandler, createPrivateCardStore, privateCardHandler,
+  validatePrivateCardDisplay, validatePrivateCardResponse } from '../src/server/projects/private-card-http.mjs';
 import { selectedPrivateCard } from '../src/server/projects/selected-private-card.mjs';
 import { readPrivateProjectCard } from '../src/lib/projects/private-card-reader.mjs';
 
@@ -39,7 +40,7 @@ const card = () => ({ stable_id: mapping.proposedStableId, version: 1,
   body_digest: `sha256:${'c'.repeat(64)}`, board_revision: mapping.boardRevision,
   source_revision: mapping.sourceRevision,
   body: { stable_id: mapping.proposedStableId, visibility: 'PRIVATE',
-    source_card_id: mapping.sourceId, title: 'Traffic Analytics', summary: 'Private plan',
+    source_card_id: mapping.sourceId, board: mapping.board, title: 'Traffic Analytics', summary: 'Private plan',
     lifecycle: 'planning', criteria: ['not sent to browser'] } });
 function request(raw = newHandle(), extra = {}) {
   return new Request(`${ORIGIN}/api/projects/private-card`, { headers: {
@@ -238,9 +239,11 @@ test('mismatched board revision, source revision, stable id or reader error fail
   const wrongBoard = { ...selectedCard(), board_revision: `sha256:${'0'.repeat(64)}` };
   const wrongSource = { ...selectedCard(), source_revision: 'f'.repeat(40) };
   const wrongId = { ...selectedCard(), stable_id: 'FF-OTHER-001', body: { ...selectedCard().body, stable_id: 'FF-OTHER-001' } };
+  const wrongBodyBoard = { ...selectedCard(), body: { ...selectedCard().body, board: 'atlas-stack' } };
+  const noBodyBoard = (() => { const c = selectedCard(); delete c.body.board; return c; })();
   const wrongBodySource = { ...selectedCard(), body: { ...selectedCard().body, source_card_id: 'FW-OTHER-001' } };
   // R112 returns this exact object when subject hash, grant epoch, body digest or provenance mismatch.
-  for (const payload of [wrongBoard, wrongSource, wrongId, wrongBodySource, { error: 'CARD_UNAVAILABLE' }, null, {}]) {
+  for (const payload of [wrongBoard, wrongSource, wrongId, wrongBodyBoard, noBodyBoard, wrongBodySource, { error: 'CARD_UNAVAILABLE' }, null, {}]) {
     const f = shipped({ read: async () => payload });
     const result = await f.handler(request());
     assert.equal(result.status, 503);
@@ -262,4 +265,28 @@ test('absent reader RPC (PostgREST 404 or non-JSON) yields CARD_UNAVAILABLE and 
     assert.equal(result.status, 503);
     assert.deepEqual(await result.json(), { error: 'CARD_UNAVAILABLE' });
   }
+});
+
+test('server rejects a body whose board differs from the mapping (display and RPC paths)', async () => {
+  const bad = { ...selectedCard(), body: { ...selectedCard().body, board: 'atlas-stack' } };
+  assert.throws(() => validatePrivateCardResponse(bad, selectedPrivateCard), { code: 'CARD_UNAVAILABLE' });
+  assert.equal(validatePrivateCardResponse(selectedCard(), selectedPrivateCard).board, 'fawxzzyweb');
+  const display = { stable_id: 'FF-WEB-ANALYTICS-001', version: 1, body_digest: `sha256:${'c'.repeat(64)}`,
+    board: 'atlas-stack', board_revision: SELECTED_BOARD_REVISION, source_revision: SELECTED_SOURCE,
+    title: 'Traffic Analytics', summary: 'Private plan', lifecycle: 'planning' };
+  assert.throws(() => validatePrivateCardDisplay(display, selectedPrivateCard), { code: 'CARD_UNAVAILABLE' });
+  assert.equal(validatePrivateCardDisplay({ ...display, board: 'fawxzzyweb' }, selectedPrivateCard).board, 'fawxzzyweb');
+});
+
+test('a hung reader RPC or hung browser request times out as CARD_UNAVAILABLE', async () => {
+  const hang = () => new Promise(() => {});
+  const store = createPrivateCardStore({ url: 'https://bxtcuhkotumitoqtrcej.supabase.co',
+    publishableKey: `sb_publishable_${'x'.repeat(20)}` }, 'Bearer aaa.bbb.ccc', { fetchImpl: hang, timeoutMs: 25 });
+  await assert.rejects(store(`sha256:${'e'.repeat(64)}`), { code: 'CARD_UNAVAILABLE' });
+  const adapter = { kind: 'supabase', getAuthGeneration: () => 'g1',
+    getSession: async () => ({ userId: owner }), getOAuthAccessToken: async () => 'bearer-for-source-test' };
+  const started = Date.now();
+  await assert.rejects(readPrivateProjectCard({ adapter, origin: ORIGIN, fetchImpl: hang, timeoutMs: 25 }),
+    /CARD_UNAVAILABLE/u);
+  assert.ok(Date.now() - started < 2000);
 });
