@@ -72,6 +72,9 @@ to `tree`); acceptance recomputes it from the verifier's snapshot and requires e
 compares the rendered `/projects` board (tabs, counts, open cards and titles) to that snapshot.
 The public apex `/projects` observation must come from `https://fawxzzy.com` with canonical
 `https://fawxzzy.com/projects`. Release producers must add the new field.
+A manual flow computes it from the candidate checkout with
+`projectSnapshotDigest(loadCandidateProjectSnapshot())` (both exported by
+`scripts/verify-production-release.mjs`) and places the value next to `tree` in the release identity.
 Candidate and rollback IDs differ. The manifest binds these values; Ops must
 independently check that the selected Git commits really have the stated trees.
 
