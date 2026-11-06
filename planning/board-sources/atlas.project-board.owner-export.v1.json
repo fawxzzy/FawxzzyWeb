@@ -1,0 +1,2849 @@
+{
+  "contract_version": "atlas.project-board.owner-export.v1",
+  "export_id": "pbe_atlas_a4923021069e",
+  "project_id": "atlas",
+  "board_id": "discordos:project-feedback:atlas",
+  "owner": "stack-root",
+  "adapter_id": "atlas-full-system-registry-v1",
+  "source_revision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+  "generated_at": "2026-07-17T06:07:21Z",
+  "sources": [
+    {
+      "source_id": "atlas-full-system-registry",
+      "kind": "json",
+      "repository": "atlas-root",
+      "path": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json",
+      "revision": "sha256:4f27f5e8174ca4401e2ef564d25ed353868d043aed8e2b8d793f1ef3718e361e",
+      "observed_at": "2026-07-17T06:07:21Z"
+    },
+    {
+      "source_id": "atlas-marker-book",
+      "kind": "markdown",
+      "repository": "atlas-root",
+      "path": "docs/atlas-book/02-lanes-and-markers.md",
+      "revision": "sha256:55bc35c4c6ea4f760f52e054809532148f2b8717e91b2ef361422caaa6850470",
+      "observed_at": "2026-07-17T06:07:21Z"
+    },
+    {
+      "source_id": "atlas-runtime-placement-registry",
+      "kind": "json",
+      "repository": "atlas-root",
+      "path": "docs/registry/ATLAS-RUNTIME-PLACEMENT-REGISTRY.v1.json",
+      "revision": "sha256:0b2879c8627ff7aa8f43e9b1320fb43d7c0575f6e590057cbceacc366182691f",
+      "observed_at": "2026-07-17T06:07:21Z"
+    }
+  ],
+  "cards": [
+    {
+      "idempotency_key": "pbk_atlas_lane-archive-package-retention_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-archive-package-retention",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Archive and package retention",
+        "description": "Classify the Fitness snapshot, package-root DOCX, repos/Hard Pill To Swallow.zip, and repos/Realm Blade.zip, including their path mismatch with stack media paths that omit .zip, without reading sensitive contents.",
+        "card_type": "technical-debt",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "stack-root",
+        "dependencies": [
+          "lane-sensitive-runtime-residue-containment"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-archive-package-retention",
+        "extensions": {
+          "source_section": "backlog_candidates",
+          "source_classification": "new-discovery-retention",
+          "source_status": "candidate",
+          "measurement_unit": "retention surface",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "surfaces",
+            "value": 4,
+            "basis": "Fitness snapshot, package-root DOCX, and two .zip media/path-mismatch surfaces"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-archive-package-retention",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Classify the Fitness snapshot, package-root DOCX, repos/Hard Pill To Swallow.zip, and repos/Realm Blade.zip, including their path mismatch with stack media paths that omit .zip, without reading sensitive contents.",
+        "objective": "Classify the Fitness snapshot, package-root DOCX, repos/Hard Pill To Swallow.zip, and repos/Realm Blade.zip, including their path mismatch with stack media paths that omit .zip, without reading sensitive contents.",
+        "acceptance_criteria": [
+          "All four surfaces have explicit retention class and authorized handling",
+          "Both zip/media path mismatches are reconciled"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/audits/ATLAS-FULL-SYSTEM-OPENING-AUDIT-2026-07-12.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": "lane-workspace-branch-worktree-hygiene",
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-atlas-bootstrap-manifest-recovery-pointer_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-atlas-bootstrap-manifest-recovery-pointer",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Bootstrap Manifest and Recovery Pointer",
+        "description": "Define, implement, and prove a signed/versioned minimal Atlas recovery pointer into the distributed source hierarchy without storing all memory or granting execution authority.",
+        "card_type": "governance",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "stack-root",
+        "dependencies": [
+          "lane-creation-os-product-definition-first-wedge",
+          "lane-policy-tracing-evaluation-artifact-trust"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-16T06:13:40Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-atlas-bootstrap-manifest-recovery-pointer",
+        "extensions": {
+          "source_section": "backlog_candidates",
+          "source_classification": "creation-os-recovery-contract",
+          "source_status": "candidate",
+          "measurement_unit": "accepted bootstrap recovery contract proof",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "recovery_contract_proofs",
+            "value": null,
+            "basis": "UNKNOWN until schema, threat model, signing, recovery, rollback, and negative-conformance units are admitted."
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-atlas-bootstrap-manifest-recovery-pointer",
+        "source_status": "current",
+        "source_updated_at": "2026-07-16T06:13:40Z"
+      },
+      "content": {
+        "summary": "Define, implement, and prove a signed/versioned minimal Atlas recovery pointer into the distributed source hierarchy without storing all memory or granting execution authority.",
+        "objective": "Define, implement, and prove a signed/versioned minimal Atlas recovery pointer into the distributed source hierarchy without storing all memory or granting execution authority.",
+        "acceptance_criteria": [
+          "The ADR, threat model, schema, canonical serialization, signing, trust, rotation, and revocation decisions are accepted.",
+          "Valid, stale, tampered, revoked, missing, cyclic, and unsupported-version fixtures fail or recover deterministically.",
+          "Recovery resolves the Atlas source hierarchy and rebuilds derived indexes without copying owner truth.",
+          "Restore and rollback produce correlated receipts and grant no execution authority."
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/atlas/decisions/adr-signed-versioned-atlas-bootstrap-manifest.md",
+          "docs/architecture/STATE-AND-MEMORY-BOUNDARIES.md",
+          "docs/architecture/ATLAS-CREATION-OS-TARGET-ARCHITECTURE.md",
+          "docs/audits/ATLAS-FULL-SYSTEM-OPENING-AUDIT-2026-07-12.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-atlas-contracts-mesh_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-atlas-contracts-mesh",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Atlas contracts mesh",
+        "description": "Define and implement Contracts v2 mesh without overstating @atlas/contracts v0.1.0 or five implemented v1 families.",
+        "card_type": "governance",
+        "lifecycle": "completed",
+        "priority": null,
+        "owner": "stack-root",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-07-15T17:25:00Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-atlas-contracts-mesh",
+        "extensions": {
+          "source_section": "backlog_candidates",
+          "source_classification": "contract-implementation",
+          "source_status": "complete",
+          "measurement_unit": "schema-family acceptance",
+          "percentage": 100,
+          "completed_units": 11,
+          "denominator": {
+            "kind": "schema_families",
+            "value": 11,
+            "basis": "ComponentManifest, CardRecord, JobEnvelope, ContextPacket, WorkerLease, EvidenceBundle, ExecutionReceipt, BoardEvent, MarkerEvidence, KnowledgeCandidate, and ApprovalRecord"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "completed"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-atlas-contracts-mesh",
+        "source_status": "current",
+        "source_updated_at": "2026-07-15T17:25:00Z"
+      },
+      "content": {
+        "summary": "Define and implement Contracts v2 mesh without overstating @atlas/contracts v0.1.0 or five implemented v1 families.",
+        "objective": "Define and implement Contracts v2 mesh without overstating @atlas/contracts v0.1.0 or five implemented v1 families.",
+        "acceptance_criteria": [
+          "All eleven families have versioned schemas and valid/invalid fixtures",
+          "The validator and exports cover all eleven families",
+          "Compatibility and owner-extension rules have executable proof",
+          "At least one governed producer and consumer prove each family before completion",
+          "v1 remains accurately documented"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "packages/atlas-contracts",
+          "ops/atlas/validate_contracts_v2_adoption.mjs",
+          "ops/atlas/test_validate_contracts_v2_adoption.mjs",
+          "docs/ops/ATLAS-CONTRACTS-V2-CLUSTER-1-ADOPTION-2026-07-13.md",
+          "docs/ops/ATLAS-CONTRACTS-V2-CLUSTER-2-ADOPTION-2026-07-13.md",
+          "docs/ops/ATLAS-CONTRACTS-V2-CLUSTER-3-WORKERLEASE-ADOPTION-2026-07-15.md",
+          "docs/ops/ATLAS-CONTRACTS-V2-CLUSTER-4-CARDRECORD-BOARDEVENT-ADOPTION-2026-07-15.md",
+          "ops/atlas/marker_evidence_admission.mjs",
+          "tests/test_atlas_marker_evidence_admission.mjs",
+          "docs/ops/ATLAS-CONTRACTS-V2-CLUSTER-5-MARKEREVIDENCE-ADOPTION-2026-07-15.md",
+          "ops/atlas/knowledge_candidate_adoption.mjs",
+          "tests/test_atlas_knowledge_candidate_adoption.mjs",
+          "docs/ops/ATLAS-CONTRACTS-V2-CLUSTER-6-KNOWLEDGECANDIDATE-ADOPTION-2026-07-15.md",
+          "repos/playbook@14fce44268084bcaaab6d189b6ef18eb7a992faf",
+          "github:fawxzzy/playbook#25",
+          "github:fawxzzy/playbook@f39dbac27d9a1c706ad11dbefe7f37feeebd5c3d",
+          "docs/architecture/ATLAS-EVENT-CONTRACT.md",
+          "docs/architecture/CODEX-HANDOFF-CONTRACT.md",
+          "docs/architecture/ATLAS-CONTRACTS-V2-SCOPE.md",
+          "docs/ops/ATLAS-CONTRACTS-MESH-SCOPE-ADMISSION-2026-07-13.md",
+          "docs/ops/ATLAS-CONTRACTS-V2-CLUSTER-1-IMPLEMENTATION-2026-07-13.md",
+          "docs/ops/ATLAS-CONTRACTS-V2-CLUSTER-2-IMPLEMENTATION-2026-07-13.md",
+          "docs/ops/ATLAS-CONTRACTS-V2-CLUSTER-3-IMPLEMENTATION-2026-07-13.md",
+          "docs/ops/ATLAS-CONTRACTS-V2-CLUSTER-4-IMPLEMENTATION-2026-07-13.md",
+          "docs/ops/ATLAS-CONTRACTS-V2-CLUSTER-5-IMPLEMENTATION-2026-07-13.md",
+          "atlas-root@4baabb2317b585b3968c04e48845e32aa0cc1380",
+          "atlas-root@a64cd7a16cefea8249c76ac68fa5265224893795",
+          "repos/_stack@40ab40f",
+          "github:fawxzzy/_stack#8",
+          "repos/_stack/.codex/logs/20260715T134932158Z-atlas-contracts-v2-cluster-3-workerlease-no-change-canary-2/run.json",
+          "repos/DiscordOS@876b30e17733b6cb3c3c89a667b5d546be09b4c6",
+          "github:fawxzzy/DiscordOS#93",
+          "repos/DiscordOS@b2dbcc1a9ca66876e9c07ea8c6032701c9aaea2a"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": "lane-delivery-event-plane",
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-atlas-control-ledger_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-atlas-control-ledger",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Atlas Control ledger",
+        "description": "Design a backend-neutral thin ledger for card/job/thread/turn identity, leases, idempotency, expected board version, receipt evidence, and human acceptance.",
+        "card_type": "architecture",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "stack-root",
+        "dependencies": [
+          "lane-persistent-workspaces"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-atlas-control-ledger",
+        "extensions": {
+          "source_section": "lanes",
+          "source_classification": "proposed-control-plane",
+          "source_status": "candidate",
+          "measurement_unit": "ledger invariant",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "invariants",
+            "value": 8,
+            "basis": "the eight frozen ledger concepts"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-atlas-control-ledger",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Design a backend-neutral thin ledger for card/job/thread/turn identity, leases, idempotency, expected board version, receipt evidence, and human acceptance.",
+        "objective": "Design a backend-neutral thin ledger for card/job/thread/turn identity, leases, idempotency, expected board version, receipt evidence, and human acceptance.",
+        "acceptance_criteria": [
+          "All eight invariants have backend-neutral contracts",
+          "One accepted implementation has migration and recovery proof",
+          "SQLite is not treated as implemented before proof"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/architecture/atlas-platform-v1.md",
+          "docs/architecture/ORCHESTRATION-BOUNDARIES.md",
+          "docs/architecture/STATE-AND-MEMORY-BOUNDARIES.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-ci-delivery-health_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-ci-delivery-health",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "CI and delivery health",
+        "description": "Recover Fitness and Playbook CI and correlate Actions with delivery without treating absence or READY as health.",
+        "card_type": "governance",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "repository-owners",
+        "dependencies": [
+          "lane-playbook-demo-contract-synchronization",
+          "lane-fitness-atlas-contracts-loader",
+          "lane-fitness-playbook-runtime-artifacts"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-ci-delivery-health",
+        "extensions": {
+          "source_section": "lanes",
+          "source_classification": "owner-recovery",
+          "source_status": "candidate",
+          "measurement_unit": "failed command family",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "failure_families",
+            "value": 3,
+            "basis": "Fitness loader, Fitness Playbook artifacts, Playbook Demo synchronization"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-ci-delivery-health",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Recover Fitness and Playbook CI and correlate Actions with delivery without treating absence or READY as health.",
+        "objective": "Recover Fitness and Playbook CI and correlate Actions with delivery without treating absence or READY as health.",
+        "acceptance_criteria": [
+          "Each failure family has owner-side fix proof",
+          "Fresh default-branch runs succeed",
+          "Deployment correlation is current"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/registry/GITHUB-CONTROL-PLANE-REGISTRY.json",
+          "docs/audits/ATLAS-FULL-SYSTEM-OPENING-AUDIT-2026-07-12.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-codex-execution-contracts_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-codex-execution-contracts",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Codex execution contracts",
+        "description": "Harden task identity, requested/effective runtime receipt, repository runtime-configuration conformance, handoff, reverse receipt, steering, queueing, and acceptance contracts.",
+        "card_type": "governance",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "_stack",
+        "dependencies": [
+          "lane-atlas-control-ledger"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-codex-execution-contracts",
+        "extensions": {
+          "source_section": "lanes",
+          "source_classification": "execution-governance",
+          "source_status": "candidate",
+          "measurement_unit": "execution contract behavior",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "behaviors",
+            "value": 8,
+            "basis": "identity, runtime receipt, runtime configuration conformance, handoff, reverse receipt, steer, queue, acceptance"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-codex-execution-contracts",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Harden task identity, requested/effective runtime receipt, repository runtime-configuration conformance, handoff, reverse receipt, steering, queueing, and acceptance contracts.",
+        "objective": "Harden task identity, requested/effective runtime receipt, repository runtime-configuration conformance, handoff, reverse receipt, steering, queueing, and acceptance contracts.",
+        "acceptance_criteria": [
+          "All eight behaviors have deterministic receipts",
+          "Every governed repository config parses under the current Codex schema and inherits the full-access, no-approval default without stale hard-coded model routing",
+          "Transcript scraping remains rejected",
+          "Requested and effective runtime are never guessed"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/architecture/ATLAS-CHATGPT-CODEX-WORKFLOW.md",
+          "docs/architecture/CODEX-HANDOFF-CONTRACT.md",
+          "docs/audits/ATLAS-FULL-SYSTEM-OPENING-AUDIT-2026-07-12.md",
+          "docs/memory/profiles/zachariah_workflow_profile.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-component-generated-state-hygiene_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-component-generated-state-hygiene",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Component generated-state hygiene",
+        "description": "Classify Fitness logs/bytecode, Nat1 test outputs, root bytecode, _stack runtime/log/archive surfaces, and the new-manifest working-memory catalog projection drift.",
+        "card_type": "technical-debt",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "repository-owners",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-component-generated-state-hygiene",
+        "extensions": {
+          "source_section": "backlog_candidates",
+          "source_classification": "new-discovery-retention",
+          "source_status": "candidate",
+          "measurement_unit": "generated-state class",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "classes",
+            "value": 5,
+            "basis": "four named component residue classes plus working-memory catalog projection"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-component-generated-state-hygiene",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Classify Fitness logs/bytecode, Nat1 test outputs, root bytecode, _stack runtime/log/archive surfaces, and the new-manifest working-memory catalog projection drift.",
+        "objective": "Classify Fitness logs/bytecode, Nat1 test outputs, root bytecode, _stack runtime/log/archive surfaces, and the new-manifest working-memory catalog projection drift.",
+        "acceptance_criteria": [
+          "Five classes have ignore/retain/remove/regenerate policy and receipts"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/audits/ATLAS-FULL-SYSTEM-OPENING-AUDIT-2026-07-12.md",
+          "runtime/receipts/validation/stack-validation.latest.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": "lane-workspace-branch-worktree-hygiene",
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-creation-os-product-definition-first-wedge_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-creation-os-product-definition-first-wedge",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Creation OS Product Definition and First Wedge",
+        "description": "Ratify one product definition, the voice-capable software/app/tool builder wedge, supported artifact and repository classes, and explicit phase-one non-goals.",
+        "card_type": "governance",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "stack-root",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-07-16T06:13:40Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-creation-os-product-definition-first-wedge",
+        "extensions": {
+          "source_section": "backlog_candidates",
+          "source_classification": "creation-os-product-strategy",
+          "source_status": "candidate",
+          "measurement_unit": "operator-ratified product decision",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "product_decisions",
+            "value": null,
+            "basis": "UNKNOWN until the operator ratifies the product definition, first wedge, supported classes, and non-goals."
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-creation-os-product-definition-first-wedge",
+        "source_status": "current",
+        "source_updated_at": "2026-07-16T06:13:40Z"
+      },
+      "content": {
+        "summary": "Ratify one product definition, the voice-capable software/app/tool builder wedge, supported artifact and repository classes, and explicit phase-one non-goals.",
+        "objective": "Ratify one product definition, the voice-capable software/app/tool builder wedge, supported artifact and repository classes, and explicit phase-one non-goals.",
+        "acceptance_criteria": [
+          "The operator accepts one product definition and one first-wedge statement.",
+          "Supported repository classes, artifact types, preview types, and deployment scope are explicit.",
+          "Phase-one non-goals and owner boundaries are accepted.",
+          "The decision has a versioned source, review receipt, and change policy."
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/architecture/ATLAS-CREATION-OS-TARGET-ARCHITECTURE.md",
+          "docs/audits/ATLAS-CREATION-OS-RESEARCH-RECONCILIATION-2026-07-16.md",
+          "docs/atlas-book/13-vision-and-endgames.md",
+          "docs/atlas-book/17-creation-os-target-architecture.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-default-branch-governance_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-default-branch-governance",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Default branch governance",
+        "description": "Decide protection/ruleset posture for ten cloud repositories.",
+        "card_type": "governance",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "repository-owners",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-default-branch-governance",
+        "extensions": {
+          "source_section": "backlog_candidates",
+          "source_classification": "github-follow-up",
+          "source_status": "candidate",
+          "measurement_unit": "cloud repository",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "repositories",
+            "value": 10,
+            "basis": "ten governed cloud repos"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-default-branch-governance",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Decide protection/ruleset posture for ten cloud repositories.",
+        "objective": "Decide protection/ruleset posture for ten cloud repositories.",
+        "acceptance_criteria": [
+          "Each repo has accepted policy and endpoint proof"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/registry/GITHUB-CONTROL-PLANE-REGISTRY.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": "lane-github-control-plane-integration",
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-delivery-event-plane_v1",
+      "record_kind": "marker",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-delivery-event-plane",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Delivery event plane",
+        "description": "Extend seven generic atlas.event.v1 lifecycles with governed GitHub, Vercel, Supabase, and Discord delivery families.",
+        "card_type": "governance",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "_stack",
+        "dependencies": [
+          "lane-stack-github-event-contracts",
+          "lane-vercel-supabase-monitoring-correlation",
+          "lane-discordos-single-writer"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-delivery-event-plane",
+        "extensions": {
+          "source_section": "lanes",
+          "source_classification": "proposed-cross-plane-events",
+          "source_status": "candidate",
+          "measurement_unit": "event family",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "event_families",
+            "value": 4,
+            "basis": "GitHub, Vercel, Supabase, Discord"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-delivery-event-plane",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Extend seven generic atlas.event.v1 lifecycles with governed GitHub, Vercel, Supabase, and Discord delivery families.",
+        "objective": "Extend seven generic atlas.event.v1 lifecycles with governed GitHub, Vercel, Supabase, and Discord delivery families.",
+        "acceptance_criteria": [
+          "Four event families are schema-valid and idempotent",
+          "Delivery correlation has readback",
+          "Mutation authority remains plane-specific"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "This record is a non-executable marker parent; child outcomes remain separate."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/architecture/ATLAS-EVENT-CONTRACT.md",
+          "packages/atlas-contracts",
+          "docs/registry/GITHUB-CONTROL-PLANE-REGISTRY.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-dependabot-visibility_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-dependabot-visibility",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Dependabot visibility",
+        "description": "Resolve 403/disabled appearance while keeping alert counts unknown.",
+        "card_type": "governance",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "github-governance",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-dependabot-visibility",
+        "extensions": {
+          "source_section": "backlog_candidates",
+          "source_classification": "github-follow-up",
+          "source_status": "candidate",
+          "measurement_unit": "repository endpoint",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "endpoints",
+            "value": 10,
+            "basis": "Dependabot alerts for ten repos"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-dependabot-visibility",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Resolve 403/disabled appearance while keeping alert counts unknown.",
+        "objective": "Resolve 403/disabled appearance while keeping alert counts unknown.",
+        "acceptance_criteria": [
+          "Each endpoint returns authorized count or explicit durable unavailable state"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/registry/GITHUB-CONTROL-PLANE-REGISTRY.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": "lane-github-control-plane-integration",
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-discordos-cross-project-board-integrity_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-discordos-cross-project-board-integrity",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "DiscordOS cross-project board integrity and lifecycle repair",
+        "description": "Detect and repair lifecycle, reaction, completion movement, body, journal, encoding, duplicate, formatting, and readback drift across every governed DiscordOS project board rather than applying project-local fixes only.",
+        "card_type": "governance",
+        "lifecycle": "completed",
+        "priority": null,
+        "owner": "DiscordOS",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-07-15T11:19:51Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-discordos-cross-project-board-integrity",
+        "extensions": {
+          "source_section": "lanes",
+          "source_classification": "cross-project-live-board-repair",
+          "source_status": "complete",
+          "measurement_unit": "accepted cross-project integrity proof unit",
+          "percentage": 100,
+          "completed_units": 10,
+          "denominator": {
+            "kind": "proof_units",
+            "value": 10,
+            "basis": "inventory and stable IDs; lifecycle and Ready admission; incomplete reactions; completed reactions; shipped completion movement; body and metadata sync; work journals; encoding and formatting; cross-project adoption; single-writer idempotent readback and drift scan"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "completed"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-discordos-cross-project-board-integrity",
+        "source_status": "current",
+        "source_updated_at": "2026-07-15T11:19:51Z"
+      },
+      "content": {
+        "summary": "Detect and repair lifecycle, reaction, completion movement, body, journal, encoding, duplicate, formatting, and readback drift across every governed DiscordOS project board rather than applying project-local fixes only.",
+        "objective": "Detect and repair lifecycle, reaction, completion movement, body, journal, encoding, duplicate, formatting, and readback drift across every governed DiscordOS project board rather than applying project-local fixes only.",
+        "acceptance_criteria": [
+          "All ten proof units have current code, test, and live readback evidence across every governed board class or an explicit accepted not-applicable disposition",
+          "Incomplete cards show the canonical failure/X reaction and completed cards show the canonical success/check reaction",
+          "Shipped cards move to the Completed board and leave active boards through deterministic policy",
+          "Bodies, metadata, and work journals remain synchronized through execution",
+          "Mojibake and inconsistent formatting are prevented at input, storage, rendering, and repair boundaries",
+          "A recurring fail-closed drift scan reports zero mismatches and zero duplicate stable IDs"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/ops/DISCORDOS-CROSS-PROJECT-BOARD-INTEGRITY-MARKER-OPENING-2026-07-14.md",
+          "docs/ops/DISCORDOS-CROSS-PROJECT-BOARD-INTEGRITY-BASELINE-AUDIT-2026-07-14.md",
+          "docs/ops/DISCORDOS-MAZER-BOARD-NORMALIZATION-LIVE-REPAIR-2026-07-14.md",
+          "docs/ops/DISCORDOS-PROJECT-BOARD-ADMISSION-RECONNAISSANCE-2026-07-14.md",
+          "docs/ops/DISCORDOS-FITNESS-OWNER-IDENTITY-AND-MAZER-RERUN-RECONCILIATION-2026-07-14.md",
+          "codex-thread:019f52e6-3b96-78b0-adb4-946b475f4ba6#2026-07-14T12:32:22.847Z",
+          "codex-thread:019f58c4-4a9e-7af3-bb3e-06e199884027#2026-07-14T17:42:21-04:00",
+          "repos/DiscordOS@9f1650d685557611a78f5519ca24a2806d91d001",
+          "repos/DiscordOS@9513259aab77ae3bc24c45b9c5835246ed522e2e",
+          "github:fawxzzy/DiscordOS#63",
+          "runtime/board-integrity/mazer-normalization-2026-07-14/RECEIPT.json",
+          "runtime/board-integrity/mazer-normalization-2026-07-14/post-merge-four-card-rerun/terminal-receipt.json",
+          "runtime/board-integrity/canonical-13-board-residual-final-terminal-v3.yaml",
+          "sha256:b528078596f4bb2f11c76003a99716d4e80a97114fdde53f512118efa3590845",
+          "repos/DiscordOS@cb67748f4696c11cbdd4235b0a2f6e6d3c17a339",
+          "repos/DiscordOS@efdfa92a4f745913a9396258e9bdf506d9aae9bd",
+          "repos/socials-os@16bf6529e36af814fd370bb4e3afde2e314e30f8",
+          "atlas-root@c8c134f892f36ae1f72096b906e6314685195883",
+          "docs/ops/DISCORDOS-CROSS-PROJECT-BOARD-INTEGRITY-100-PERCENT-CLOSEOUT-2026-07-15.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": "lane-discordos-single-writer",
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-discordos-single-writer_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-discordos-single-writer",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "DiscordOS single writer",
+        "description": "Eliminate direct writer overlap and prove stable identity, title normalization, starter reaction readback, idempotency, and partial-failure semantics.",
+        "card_type": "migration",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "DiscordOS",
+        "dependencies": [
+          "lane-discordos-command-surface-convergence",
+          "lane-mazer-board-truth-reconciliation"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-discordos-single-writer",
+        "extensions": {
+          "source_section": "lanes",
+          "source_classification": "ownership-convergence",
+          "source_status": "candidate",
+          "measurement_unit": "writer contract behavior",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "behaviors",
+            "value": 6,
+            "basis": "single writer plus five board contract behaviors"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-discordos-single-writer",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Eliminate direct writer overlap and prove stable identity, title normalization, starter reaction readback, idempotency, and partial-failure semantics.",
+        "objective": "Eliminate direct writer overlap and prove stable identity, title normalization, starter reaction readback, idempotency, and partial-failure semantics.",
+        "acceptance_criteria": [
+          "All six behaviors have live safe readback proof",
+          "Fitness direct mutation is retired or mediated",
+          "Partial mutation remains incomplete"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/audits/ATLAS-FULL-SYSTEM-OPENING-AUDIT-2026-07-12.md",
+          "docs/atlas-book/06-system-ownership.md",
+          "docs/registry/GITHUB-CONTROL-PLANE-REGISTRY.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-fitness-critical-secret-containment_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-fitness-critical-secret-containment",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Fitness Critical secret containment",
+        "description": "Contain, rotate, and verify published alert #1 without exposing its value.",
+        "card_type": "reliability",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "operator-security",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-fitness-critical-secret-containment",
+        "extensions": {
+          "source_section": "backlog_candidates",
+          "source_classification": "github-follow-up-security-gate",
+          "source_status": "candidate",
+          "measurement_unit": "authorized security proof",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "proof_units",
+            "value": 3,
+            "basis": "containment, rotation, verification"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-fitness-critical-secret-containment",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Contain, rotate, and verify published alert #1 without exposing its value.",
+        "objective": "Contain, rotate, and verify published alert #1 without exposing its value.",
+        "acceptance_criteria": [
+          "Three proofs are accepted; history and closure remain separate decisions"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/registry/GITHUB-CONTROL-PLANE-REGISTRY.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": "lane-security-containment",
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-github-control-plane-integration_v1",
+      "record_kind": "marker",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-github-control-plane-integration",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "GitHub control-plane integration",
+        "description": "Integrate deterministic read-only-first inventory, parity, Actions, open work, release, protection, ruleset, security, cleanup, event, and projection evidence.",
+        "card_type": "architecture",
+        "lifecycle": "completed",
+        "priority": null,
+        "owner": "stack-root",
+        "dependencies": [
+          "lane-stack-github-event-contracts",
+          "lane-discordos-github-projections"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-14T20:24:00Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-github-control-plane-integration",
+        "extensions": {
+          "source_section": "lanes",
+          "source_classification": "remote-control-plane",
+          "source_status": "complete",
+          "measurement_unit": "accepted proof unit",
+          "percentage": 100,
+          "completed_units": 8,
+          "denominator": {
+            "kind": "proof_units",
+            "value": 8,
+            "basis": "inventory, parity, Actions, open work, release/security, cleanup, stack events, DiscordOS projection"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "completed"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-github-control-plane-integration",
+        "source_status": "current",
+        "source_updated_at": "2026-07-14T20:24:00Z"
+      },
+      "content": {
+        "summary": "Integrate deterministic read-only-first inventory, parity, Actions, open work, release, protection, ruleset, security, cleanup, event, and projection evidence.",
+        "objective": "Integrate deterministic read-only-first inventory, parity, Actions, open work, release, protection, ruleset, security, cleanup, event, and projection evidence.",
+        "acceptance_criteria": [
+          "All eight proof units have fresh accepted evidence",
+          "Unknown and denied states remain explicit",
+          "Mutations have independent authority and receipts"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "This record is a non-executable marker parent; child outcomes remain separate."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/audits/GITHUB-CONTROL-PLANE-OPENING-AUDIT-2026-07-12.md",
+          "docs/registry/GITHUB-CONTROL-PLANE-REGISTRY.json",
+          "docs/memory/initiatives/initiative-github-control-plane-integration.json",
+          "docs/ops/GITHUB-CONTROL-PLANE-EVENT-PROJECTION-CONTRACT-IMPLEMENTATION-2026-07-13.md",
+          "docs/ops/GITHUB-CONTROL-PLANE-LIVE-DISCORDOS-PROJECTION-RATCHET-2026-07-14.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-historical-task-intelligence_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-historical-task-intelligence",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Historical task intelligence",
+        "description": "Turn task history, handoffs, receipts, and accepted outcomes into queryable provenance without treating transcripts as canonical memory.",
+        "card_type": "governance",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "stack-root",
+        "dependencies": [
+          "lane-atlas-control-ledger"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-historical-task-intelligence",
+        "extensions": {
+          "source_section": "lanes",
+          "source_classification": "proposed-knowledge",
+          "source_status": "candidate",
+          "measurement_unit": "historical source class",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "source_classes",
+            "value": 4,
+            "basis": "tasks, handoffs, receipts, accepted outcomes"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-historical-task-intelligence",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Turn task history, handoffs, receipts, and accepted outcomes into queryable provenance without treating transcripts as canonical memory.",
+        "objective": "Turn task history, handoffs, receipts, and accepted outcomes into queryable provenance without treating transcripts as canonical memory.",
+        "acceptance_criteria": [
+          "Four source classes have indexed provenance",
+          "Receipts remain canonical over transcripts",
+          "Query and promotion boundaries are proven"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/memory/README.md",
+          "docs/architecture/STATE-AND-MEMORY-BOUNDARIES.md",
+          "docs/memory/profiles/zachariah_workflow_profile.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-local-branch-retention-classification_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-local-branch-retention-classification",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Local branch retention classification",
+        "description": "Read-only inventory of all observed local branches across the twelve audited local root/component repositories; classify owner, retention/collision class, and evidence before any disposition.",
+        "card_type": "research",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "repository-owners",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-local-branch-retention-classification",
+        "extensions": {
+          "source_section": "backlog_candidates",
+          "source_classification": "new-discovery-read-only-inventory",
+          "source_status": "candidate",
+          "measurement_unit": "observed local branch ref",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "branches",
+            "value": 218,
+            "basis": "218 observed local branches across the twelve audited local root/component repositories"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-local-branch-retention-classification",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Read-only inventory of all observed local branches across the twelve audited local root/component repositories; classify owner, retention/collision class, and evidence before any disposition.",
+        "objective": "Read-only inventory of all observed local branches across the twelve audited local root/component repositories; classify owner, retention/collision class, and evidence before any disposition.",
+        "acceptance_criteria": [
+          "Every ref has owner, retention/collision classification, and evidence before disposition",
+          "No cleanup authority is inferred"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/audits/ATLAS-FULL-SYSTEM-OPENING-AUDIT-2026-07-12.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": "lane-workspace-branch-worktree-hygiene",
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-marker-integrity_v1",
+      "record_kind": "marker",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-marker-integrity",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Marker integrity",
+        "description": "Keep marker names, denominators, scope, dates, receipts, and manifests coherent without rewriting history.",
+        "card_type": "governance",
+        "lifecycle": "completed",
+        "priority": null,
+        "owner": "stack-root",
+        "dependencies": [
+          "lane-owner-metric-scope-alignment",
+          "lane-mazer-board-truth-reconciliation"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-15T12:51:09Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-marker-integrity",
+        "extensions": {
+          "source_section": "lanes",
+          "source_classification": "marker-governance",
+          "source_status": "complete",
+          "measurement_unit": "marker family",
+          "percentage": 100,
+          "completed_units": 51,
+          "denominator": {
+            "kind": "marker_families",
+            "value": 51,
+            "basis": "frozen to the accepted 2026-07-12 opening audit: 11 opening unique open families + 39 opening historical locked families + one opening percentage-null GitHub initiative family"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "completed"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-marker-integrity",
+        "source_status": "current",
+        "source_updated_at": "2026-07-15T12:51:09Z"
+      },
+      "content": {
+        "summary": "Keep marker names, denominators, scope, dates, receipts, and manifests coherent without rewriting history.",
+        "objective": "Keep marker names, denominators, scope, dates, receipts, and manifests coherent without rewriting history.",
+        "acceptance_criteria": [
+          "All 51 families have scope-correct posture",
+          "Mazer metric conflicts are reconciled without false rewrite",
+          "Every moved marker has accepted receipt and manifest"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "This record is a non-executable marker parent; child outcomes remain separate."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/atlas-book/02-lanes-and-markers.md",
+          "docs/audits/ATLAS-FULL-SYSTEM-OPENING-AUDIT-2026-07-12.md",
+          "docs/memory/initiatives/continuity-manifest-atlas-full-system-re-evaluation.json",
+          "docs/ops/ATLAS-MARKER-INTEGRITY-51-FAMILY-100-PERCENT-CLOSEOUT-2026-07-15.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-operator-surface-adoption_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-operator-surface-adoption",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Operator Surface Adoption",
+        "description": "Prove four distinct operator roles without duplicate authority: Foundation portfolio, Playbook operations, Atlas Book doctrine, and _stack action routing.",
+        "card_type": "migration",
+        "lifecycle": "completed",
+        "priority": null,
+        "owner": "stack-root-and-owner-repositories",
+        "dependencies": [
+          "lane-runtime-activation-readiness",
+          "lane-runtime-correlation-reliability"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-17T01:54:51Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-operator-surface-adoption",
+        "extensions": {
+          "source_section": "lanes",
+          "source_classification": "non-duplicative-operator-surface-adoption",
+          "source_status": "complete",
+          "measurement_unit": "non-duplicative operator role",
+          "percentage": 100,
+          "completed_units": 4,
+          "denominator": {
+            "kind": "operator_roles",
+            "value": 4,
+            "basis": "Foundation portfolio; Playbook operations; Atlas Book doctrine; _stack action routing"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "completed"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-operator-surface-adoption",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T01:54:51Z"
+      },
+      "content": {
+        "summary": "Prove four distinct operator roles without duplicate authority: Foundation portfolio, Playbook operations, Atlas Book doctrine, and _stack action routing.",
+        "objective": "Prove four distinct operator roles without duplicate authority: Foundation portfolio, Playbook operations, Atlas Book doctrine, and _stack action routing.",
+        "acceptance_criteria": [
+          "Foundation remains the hosted read-only portfolio",
+          "Playbook Observer is the private local operations cockpit even while intentionally stopped/restorable",
+          "Atlas Book remains doctrine and retrieval rather than runtime state",
+          "_stack remains bounded action routing rather than product or cockpit authority",
+          "All four roles have accepted current adoption proof without authority duplication"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/registry/ATLAS-RUNTIME-PLACEMENT-REGISTRY.v1.json",
+          "docs/atlas-book/16-runtime-placement.md",
+          "docs/atlas-book/06-system-ownership.md",
+          "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md",
+          "https://fawxzzy-foundation.vercel.app",
+          "https://github.com/fawxzzy/playbook/pull/27",
+          "https://github.com/fawxzzy/_stack/pull/9"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-owner-metric-scope-alignment_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-owner-metric-scope-alignment",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Owner metric scope alignment",
+        "description": "Make owner percentages explicit by scope, date, denominator, and evidence.",
+        "card_type": "governance",
+        "lifecycle": "completed",
+        "priority": null,
+        "owner": "repository-owners",
+        "dependencies": [
+          "lane-mazer-board-truth-reconciliation"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-15T11:53:18Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-owner-metric-scope-alignment",
+        "extensions": {
+          "source_section": "backlog_candidates",
+          "source_classification": "new-discovery-marker-integrity",
+          "source_status": "complete",
+          "measurement_unit": "conflicting metric family",
+          "percentage": 100,
+          "completed_units": 2,
+          "denominator": {
+            "kind": "families",
+            "value": 2,
+            "basis": "Mazer board-count conflict and 100/96 scope mismatch"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "completed"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-owner-metric-scope-alignment",
+        "source_status": "current",
+        "source_updated_at": "2026-07-15T11:53:18Z"
+      },
+      "content": {
+        "summary": "Make owner percentages explicit by scope, date, denominator, and evidence.",
+        "objective": "Make owner percentages explicit by scope, date, denominator, and evidence.",
+        "acceptance_criteria": [
+          "Both families have scope-correct canonical rows and retained history"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/audits/ATLAS-FULL-SYSTEM-OPENING-AUDIT-2026-07-12.md",
+          "docs/ops/MAZER-BOARD-TRUTH-RECONCILIATION-100-PERCENT-CLOSEOUT-2026-07-15.md",
+          "docs/ops/OWNER-METRIC-SCOPE-ALIGNMENT-100-PERCENT-CLOSEOUT-2026-07-15.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": "lane-marker-integrity",
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-persistent-workspaces_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-persistent-workspaces",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Persistent workspaces and browser leases",
+        "description": "Define persistent workspace and browser lease identity, renewal, expiry, recovery, and collision behavior.",
+        "card_type": "architecture",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "_stack",
+        "dependencies": [
+          "lane-workspace-branch-worktree-hygiene"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-persistent-workspaces",
+        "extensions": {
+          "source_section": "lanes",
+          "source_classification": "proposed-runtime",
+          "source_status": "candidate",
+          "measurement_unit": "lease behavior",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "behaviors",
+            "value": 5,
+            "basis": "identity, renewal, expiry, recovery, collision"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-persistent-workspaces",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Define persistent workspace and browser lease identity, renewal, expiry, recovery, and collision behavior.",
+        "objective": "Define persistent workspace and browser lease identity, renewal, expiry, recovery, and collision behavior.",
+        "acceptance_criteria": [
+          "Five behaviors have executable proof",
+          "Leases do not weaken permissions",
+          "Recovery preserves owner state"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/architecture/ORCHESTRATION-BOUNDARIES.md",
+          "docs/architecture/STATE-AND-MEMORY-BOUNDARIES.md",
+          "docs/atlas-book/03-operating-model.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-playbook-universal-adoption_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-playbook-universal-adoption",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Playbook universal adoption",
+        "description": "Prove explicit Playbook doctrine and verification adoption across every declared component and command adapter, including correction of stale Mazer adoption evidence at repos/fawxzzy-mazer. The Atlas root adoption unit is now evidence-backed by source-linked Playbook registry consumption and a read-only conformance receipt, but that does not imply wider component adoption.",
+        "card_type": "migration",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "playbook",
+        "dependencies": [
+          "lane-project-command-surfaces",
+          "lane-playbook-demo-contract-synchronization"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-playbook-universal-adoption",
+        "extensions": {
+          "source_section": "lanes",
+          "source_classification": "cross-repo-adoption",
+          "source_status": "candidate",
+          "measurement_unit": "component adoption proof",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "components",
+            "value": 12,
+            "basis": "Atlas, _stack, DiscordOS, Lifeline, Playbook, Mazer, Fitness, Foundation, Trove, Stream, Nat1, Playbook Demo"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-playbook-universal-adoption",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Prove explicit Playbook doctrine and verification adoption across every declared component and command adapter, including correction of stale Mazer adoption evidence at repos/fawxzzy-mazer. The Atlas root adoption unit is now evidence-backed by source-linked Playbook registry consumption and a read-only conformance receipt, but that does not imply wider component adoption.",
+        "objective": "Prove explicit Playbook doctrine and verification adoption across every declared component and command adapter, including correction of stale Mazer adoption evidence at repos/fawxzzy-mazer. The Atlas root adoption unit is now evidence-backed by source-linked Playbook registry consumption and a read-only conformance receipt, but that does not imply wider component adoption.",
+        "acceptance_criteria": [
+          "Each component has explicit owner-side adoption or explicit non-adoption",
+          "Stale repos/fawxzzy-mazer adoption evidence is corrected",
+          "Candidate convergence contract is accepted or retired",
+          "Repo verification evidence is current",
+          "Atlas root adoption remains source-linked and evidence-backed while remaining owner-component proofs stay explicit"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "stack.yaml",
+          "docs/atlas-book/03-operating-model.md",
+          "docs/audits/ATLAS-FULL-SYSTEM-OPENING-AUDIT-2026-07-12.md",
+          "git:repos/playbook@952b63aa6457d871024a224a089c4088490d69c5:docs/doctrine/atlas-engineering-doctrine-registry.v1.json",
+          "docs/registry/ATLAS-PLAYBOOK-DOCTRINE-ADOPTION.json",
+          "docs/ops/ATLAS-PLAYBOOK-DOCTRINE-ADOPTION-2026-07-13.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-project-command-surfaces_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-project-command-surfaces",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Project command surfaces",
+        "description": "Make ATLAS MAIN, standing Mazer, standing Fitness, FAWXZZY MESSAGES, and embedded DiscordOS routing explicit and testable.",
+        "card_type": "governance",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "stack-root",
+        "dependencies": [
+          "lane-discordos-single-writer"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-project-command-surfaces",
+        "extensions": {
+          "source_section": "lanes",
+          "source_classification": "operator-surface",
+          "source_status": "candidate",
+          "measurement_unit": "command surface",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "surfaces",
+            "value": 5,
+            "basis": "ATLAS MAIN, Mazer, Fitness, FAWXZZY MESSAGES, embedded DiscordOS"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-project-command-surfaces",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Make ATLAS MAIN, standing Mazer, standing Fitness, FAWXZZY MESSAGES, and embedded DiscordOS routing explicit and testable.",
+        "objective": "Make ATLAS MAIN, standing Mazer, standing Fitness, FAWXZZY MESSAGES, and embedded DiscordOS routing explicit and testable.",
+        "acceptance_criteria": [
+          "Each surface has an explicit role and lifecycle",
+          "Gates, continuation behavior, and exact resume actions are durable",
+          "No duplicate standing conversation is created",
+          "Completed bounded tasks are archived without archiving standing surfaces"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/memory/profiles/zachariah_workflow_profile.md",
+          "docs/atlas-book/03-operating-model.md",
+          "docs/atlas-book/12-restart-and-handoff-guide.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-release-policy-and-evidence_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-release-policy-and-evidence",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Release policy and evidence",
+        "description": "Define release readiness and evidence for ten repos; zero visible releases is not readiness.",
+        "card_type": "governance",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "repository-owners",
+        "dependencies": [
+          "lane-ci-delivery-health"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-release-policy-and-evidence",
+        "extensions": {
+          "source_section": "backlog_candidates",
+          "source_classification": "github-follow-up",
+          "source_status": "candidate",
+          "measurement_unit": "cloud repository",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "repositories",
+            "value": 10,
+            "basis": "ten governed cloud repos"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-release-policy-and-evidence",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Define release readiness and evidence for ten repos; zero visible releases is not readiness.",
+        "objective": "Define release readiness and evidence for ten repos; zero visible releases is not readiness.",
+        "acceptance_criteria": [
+          "Each repo has accepted release policy and evidence state"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/registry/GITHUB-CONTROL-PLANE-REGISTRY.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": "lane-github-control-plane-integration",
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-remote-branch-cleanup-review_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-remote-branch-cleanup-review",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Remote branch cleanup review",
+        "description": "Review 80 merged remote cleanup candidates without deletion by inference.",
+        "card_type": "technical-debt",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "github-governance",
+        "dependencies": [
+          "lane-local-worktree-retention-classification"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-remote-branch-cleanup-review",
+        "extensions": {
+          "source_section": "backlog_candidates",
+          "source_classification": "github-follow-up-retention",
+          "source_status": "candidate",
+          "measurement_unit": "remote branch candidate",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "branches",
+            "value": 80,
+            "basis": "published registry candidate inventory"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-remote-branch-cleanup-review",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Review 80 merged remote cleanup candidates without deletion by inference.",
+        "objective": "Review 80 merged remote cleanup candidates without deletion by inference.",
+        "acceptance_criteria": [
+          "Every candidate has fresh exclusion-aware disposition"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/registry/GITHUB-CONTROL-PLANE-REGISTRY.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": "lane-workspace-branch-worktree-hygiene",
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-root-truth-convergence_v1",
+      "record_kind": "marker",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-root-truth-convergence",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Root truth convergence",
+        "description": "Reconcile declared, generated, locked, validation, and current checkout truth without erasing timestamped provenance.",
+        "card_type": "governance",
+        "lifecycle": "completed",
+        "priority": null,
+        "owner": "stack-root",
+        "dependencies": [
+          "lane-stack-inventory-lock-head-reconciliation"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-13T00:17:56Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-root-truth-convergence",
+        "extensions": {
+          "source_section": "lanes",
+          "source_classification": "root-governance",
+          "source_status": "complete",
+          "measurement_unit": "accepted truth assertion",
+          "percentage": 100,
+          "completed_units": 4,
+          "denominator": {
+            "kind": "assertions",
+            "value": 4,
+            "basis": "the four exact current stack-lock validation errors"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "completed"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-root-truth-convergence",
+        "source_status": "current",
+        "source_updated_at": "2026-07-13T00:17:56Z"
+      },
+      "content": {
+        "summary": "Reconcile declared, generated, locked, validation, and current checkout truth without erasing timestamped provenance.",
+        "objective": "Reconcile declared, generated, locked, validation, and current checkout truth without erasing timestamped provenance.",
+        "acceptance_criteria": [
+          "All four error assertions reconcile through canonical generated truth",
+          "A fresh validation receipt reports the resulting counts",
+          "Historical snapshots remain dated"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "This record is a non-executable marker parent; child outcomes remain separate."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "runtime/receipts/validation/stack-validation.latest.json",
+          "stack.yaml",
+          "stack.lock.yaml",
+          "docs/audits/ATLAS-FULL-SYSTEM-OPENING-AUDIT-2026-07-12.md",
+          "docs/ops/ATLAS-ROOT-TRUTH-CONVERGENCE-CHILD-LANE-RATCHET-2026-07-13.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-runtime-activation-readiness_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-runtime-activation-readiness",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Runtime Activation Readiness",
+        "description": "Prove the accepted local runtime placement through exactly eight binary gates without inferring running uptime from stopped/restorable state or starting unadmitted persistent processes.",
+        "card_type": "architecture",
+        "lifecycle": "completed",
+        "priority": null,
+        "owner": "stack-root-and-owner-repositories",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-07-17T01:54:51Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-runtime-activation-readiness",
+        "extensions": {
+          "source_section": "lanes",
+          "source_classification": "root-runtime-activation-readiness",
+          "source_status": "complete",
+          "measurement_unit": "binary activation gate",
+          "percentage": 100,
+          "completed_units": 8,
+          "denominator": {
+            "kind": "binary_gates",
+            "value": 8,
+            "basis": "placement contract; Playbook build; Observer foreground health; Lifeline build/doctor; Lifeline state placement; Lifeline supervision/restart; bounded logon-restore proof; _stack single-worker proof"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "completed"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-runtime-activation-readiness",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T01:54:51Z"
+      },
+      "content": {
+        "summary": "Prove the accepted local runtime placement through exactly eight binary gates without inferring running uptime from stopped/restorable state or starting unadmitted persistent processes.",
+        "objective": "Prove the accepted local runtime placement through exactly eight binary gates without inferring running uptime from stopped/restorable state or starting unadmitted persistent processes.",
+        "acceptance_criteria": [
+          "All eight named gates have direct accepted proof",
+          "Observer remains loopback-only, private, and currently stopped/restorable rather than claimed as continuously healthy",
+          "Lifeline state and logs remain under root runtime placement",
+          "Exactly one bounded _stack scheduled sweep is proven",
+          "Actual new-logon restoration and sustained unattended uptime remain separate UNKNOWN observations"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/registry/ATLAS-RUNTIME-PLACEMENT-REGISTRY.v1.json",
+          "docs/ops/ATLAS-RUNTIME-PLACEMENT-TRUTH-AND-ACTIVATION-MARKER-ADMISSION-2026-07-15.md",
+          "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md",
+          "https://github.com/fawxzzy/ATLAS/pull/131",
+          "https://github.com/fawxzzy/playbook/pull/27",
+          "https://github.com/fawxzzy/lifeline/pull/35",
+          "https://github.com/fawxzzy/_stack/pull/9"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-runtime-correlation-reliability_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-runtime-correlation-reliability",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Runtime Correlation Reliability",
+        "description": "Prove identity, state, and receipt correlation across exactly five deterministic bounded-worker scenarios: successful, failed, duplicate, interrupted/restarted, and stale-receipt rejection.",
+        "card_type": "architecture",
+        "lifecycle": "completed",
+        "priority": null,
+        "owner": "stack-root-and-owner-repositories",
+        "dependencies": [
+          "lane-runtime-activation-readiness"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-17T01:54:51Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-runtime-correlation-reliability",
+        "extensions": {
+          "source_section": "lanes",
+          "source_classification": "cross-runtime-correlation-reliability",
+          "source_status": "complete",
+          "measurement_unit": "correlated runtime scenario",
+          "percentage": 100,
+          "completed_units": 5,
+          "denominator": {
+            "kind": "runtime_scenarios",
+            "value": 5,
+            "basis": "successful task; failed task; duplicate task; interrupted/restarted task; stale receipt rejection"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "completed"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-runtime-correlation-reliability",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T01:54:51Z"
+      },
+      "content": {
+        "summary": "Prove identity, state, and receipt correlation across exactly five deterministic bounded-worker scenarios: successful, failed, duplicate, interrupted/restarted, and stale-receipt rejection.",
+        "objective": "Prove identity, state, and receipt correlation across exactly five deterministic bounded-worker scenarios: successful, failed, duplicate, interrupted/restarted, and stale-receipt rejection.",
+        "acceptance_criteria": [
+          "All five deterministic bounded-worker scenarios have accepted identity, state, and receipt proof",
+          "Duplicate and stale inputs fail closed",
+          "Restart lineage preserves one logical task identity",
+          "DiscordOS hosted interaction-first reliability remains a separate activation-sequence review and is not inferred from this marker"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/registry/ATLAS-RUNTIME-PLACEMENT-REGISTRY.v1.json",
+          "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md",
+          "packages/atlas-contracts",
+          "https://github.com/fawxzzy/_stack/pull/9",
+          "https://github.com/fawxzzy/_stack/blob/7aed5495d2702a653e461549877d8fa77b3a33d2/ops/codex/Test-StackInboxSweep.ps1"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-security-containment_v1",
+      "record_kind": "marker",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-security-containment",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Security containment",
+        "description": "Non-additive umbrella for four separately measured child-lane closeouts: Critical Fitness secret containment, Supabase advisor remediation, sensitive runtime residue containment, and Fitness dependency security.",
+        "card_type": "reliability",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "operator-security",
+        "dependencies": [
+          "lane-fitness-critical-secret-containment",
+          "lane-supabase-security-advisor-remediation",
+          "lane-sensitive-runtime-residue-containment",
+          "lane-fitness-dependency-security"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-security-containment",
+        "extensions": {
+          "source_section": "lanes",
+          "source_classification": "security-gated-non-additive-umbrella",
+          "source_status": "candidate",
+          "measurement_unit": "child_lane_closeouts",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "child_lane_closeouts",
+            "value": 4,
+            "basis": "Critical Fitness secret containment, Supabase advisor remediation, sensitive runtime residue containment, and Fitness dependency security; child denominators remain separate"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-security-containment",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Non-additive umbrella for four separately measured child-lane closeouts: Critical Fitness secret containment, Supabase advisor remediation, sensitive runtime residue containment, and Fitness dependency security.",
+        "objective": "Non-additive umbrella for four separately measured child-lane closeouts: Critical Fitness secret containment, Supabase advisor remediation, sensitive runtime residue containment, and Fitness dependency security.",
+        "acceptance_criteria": [
+          "All four explicitly named child lanes have their own accepted closeout",
+          "No secret value is recorded",
+          "Alert closure/history decisions are separate"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "This record is a non-executable marker parent; child outcomes remain separate."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/registry/GITHUB-CONTROL-PLANE-REGISTRY.json",
+          "docs/audits/ATLAS-FULL-SYSTEM-OPENING-AUDIT-2026-07-12.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-sensitive-runtime-residue-containment_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-sensitive-runtime-residue-containment",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Sensitive runtime residue containment",
+        "description": "Classify name-only token, cookie, snapshot metadata, and unclassified DOCX evidence without reading values.",
+        "card_type": "reliability",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "operator-security",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-sensitive-runtime-residue-containment",
+        "extensions": {
+          "source_section": "backlog_candidates",
+          "source_classification": "new-discovery-security-retention",
+          "source_status": "candidate",
+          "measurement_unit": "sensitive residue surface",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "surfaces",
+            "value": 4,
+            "basis": "four name-only evidence surfaces"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-sensitive-runtime-residue-containment",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Classify name-only token, cookie, snapshot metadata, and unclassified DOCX evidence without reading values.",
+        "objective": "Classify name-only token, cookie, snapshot metadata, and unclassified DOCX evidence without reading values.",
+        "acceptance_criteria": [
+          "Four surfaces have authorized containment/retention and no value exposure"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/audits/ATLAS-FULL-SYSTEM-OPENING-AUDIT-2026-07-12.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": "lane-security-containment",
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-source-hierarchy-doc-normalization_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-source-hierarchy-doc-normalization",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Source hierarchy documentation normalization",
+        "description": "Normalize current-sounding docs to the accepted eight-level source hierarchy.",
+        "card_type": "documentation",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "stack-root",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-source-hierarchy-doc-normalization",
+        "extensions": {
+          "source_section": "backlog_candidates",
+          "source_classification": "scope-admission-doc-normalization",
+          "source_status": "candidate",
+          "measurement_unit": "governed document",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "documents",
+            "value": null,
+            "basis": "Null until this backlog establishes the deterministic document inventory for denominator/scope admission"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-source-hierarchy-doc-normalization",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Normalize current-sounding docs to the accepted eight-level source hierarchy.",
+        "objective": "Normalize current-sounding docs to the accepted eight-level source hierarchy.",
+        "acceptance_criteria": [
+          "Deterministic document inventory establishes denominator/scope admission and every admitted document is classified"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/audits/ATLAS-FULL-SYSTEM-OPENING-AUDIT-2026-07-12.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": "lane-root-truth-convergence",
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-stack-inventory-lock-head-reconciliation_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-stack-inventory-lock-head-reconciliation",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Stack inventory, lock, and head reconciliation",
+        "description": "Resolve four exact lock/head validation errors through canonical generation.",
+        "card_type": "governance",
+        "lifecycle": "completed",
+        "priority": null,
+        "owner": "stack-root",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-07-13T00:17:56Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-stack-inventory-lock-head-reconciliation",
+        "extensions": {
+          "source_section": "backlog_candidates",
+          "source_classification": "github-follow-up",
+          "source_status": "complete",
+          "measurement_unit": "validation error",
+          "percentage": 100,
+          "completed_units": 4,
+          "denominator": {
+            "kind": "errors",
+            "value": 4,
+            "basis": "current validation receipt"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "completed"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-stack-inventory-lock-head-reconciliation",
+        "source_status": "current",
+        "source_updated_at": "2026-07-13T00:17:56Z"
+      },
+      "content": {
+        "summary": "Resolve four exact lock/head validation errors through canonical generation.",
+        "objective": "Resolve four exact lock/head validation errors through canonical generation.",
+        "acceptance_criteria": [
+          "Four errors clear in a fresh receipt"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "runtime/receipts/validation/stack-validation.latest.json",
+          "stack.lock.yaml",
+          "docs/ops/ATLAS-ROOT-TRUTH-CONVERGENCE-CHILD-LANE-RATCHET-2026-07-13.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": "lane-root-truth-convergence",
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-stream-remote-decision_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-stream-remote-decision",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Stream remote decision",
+        "description": "Choose publish, retain local-only, or archive for Stream.",
+        "card_type": "architecture",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "stack-root",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-stream-remote-decision",
+        "extensions": {
+          "source_section": "backlog_candidates",
+          "source_classification": "github-follow-up-architecture",
+          "source_status": "candidate",
+          "measurement_unit": "repository decision",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "decisions",
+            "value": 1,
+            "basis": "one local-only repo"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-stream-remote-decision",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Choose publish, retain local-only, or archive for Stream.",
+        "objective": "Choose publish, retain local-only, or archive for Stream.",
+        "acceptance_criteria": [
+          "Explicit decision and implementation receipt exist"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/audits/ATLAS-FULL-SYSTEM-OPENING-AUDIT-2026-07-12.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": "lane-workspace-branch-worktree-hygiene",
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-supabase-security-advisor-remediation_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-supabase-security-advisor-remediation",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Supabase security advisor remediation",
+        "description": "Disposition Fitness/Mazer leaked-password warnings and twelve DiscordOS advisor findings.",
+        "card_type": "reliability",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "project-owners",
+        "dependencies": [
+          "lane-fitness-critical-secret-containment"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-supabase-security-advisor-remediation",
+        "extensions": {
+          "source_section": "backlog_candidates",
+          "source_classification": "new-discovery-security",
+          "source_status": "candidate",
+          "measurement_unit": "advisor finding",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "findings",
+            "value": 14,
+            "basis": "two project warnings plus twelve DiscordOS findings"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-supabase-security-advisor-remediation",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Disposition Fitness/Mazer leaked-password warnings and twelve DiscordOS advisor findings.",
+        "objective": "Disposition Fitness/Mazer leaked-password warnings and twelve DiscordOS advisor findings.",
+        "acceptance_criteria": [
+          "All 14 have authorized remediation or accepted risk and fresh advisor proof"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/audits/ATLAS-FULL-SYSTEM-OPENING-AUDIT-2026-07-12.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": "lane-security-containment",
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-vercel-supabase-monitoring-correlation_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-vercel-supabase-monitoring-correlation",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Vercel and Supabase monitoring correlation",
+        "description": "Correlate five Vercel projects and three Supabase projects with GitHub source/run evidence and endpoint-specific unknowns.",
+        "card_type": "governance",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "stack-root",
+        "dependencies": [
+          "lane-supabase-security-advisor-remediation"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-vercel-supabase-monitoring-correlation",
+        "extensions": {
+          "source_section": "lanes",
+          "source_classification": "read-only-observability",
+          "source_status": "candidate",
+          "measurement_unit": "external project",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "projects",
+            "value": 8,
+            "basis": "five Vercel plus three Supabase projects"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-vercel-supabase-monitoring-correlation",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Correlate five Vercel projects and three Supabase projects with GitHub source/run evidence and endpoint-specific unknowns.",
+        "objective": "Correlate five Vercel projects and three Supabase projects with GitHub source/run evidence and endpoint-specific unknowns.",
+        "acceptance_criteria": [
+          "Eight projects have freshness-stamped correlation",
+          "READY/ACTIVE_HEALTHY are not promoted to release health",
+          "Unknown branch and backup states remain explicit"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/audits/ATLAS-FULL-SYSTEM-OPENING-AUDIT-2026-07-12.md",
+          "docs/registry/GITHUB-CONTROL-PLANE-REGISTRY.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_atlas_lane-workspace-branch-worktree-hygiene_v1",
+      "record_kind": "marker",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-workspace-branch-worktree-hygiene",
+        "project_id": "atlas",
+        "board_id": "discordos:project-feedback:atlas",
+        "title": "Workspace, branch, and worktree hygiene",
+        "description": "Classify 62 retention-UNKNOWN candidates, 18 dirty/44 clean split, and two missing registrations without cleanup by inference.",
+        "card_type": "technical-debt",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "repository-owners",
+        "dependencies": [
+          "lane-local-worktree-retention-classification",
+          "lane-remote-branch-cleanup-review"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-workspace-branch-worktree-hygiene",
+        "extensions": {
+          "source_section": "lanes",
+          "source_classification": "retention-governance",
+          "source_status": "candidate",
+          "measurement_unit": "candidate registration",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "registrations",
+            "value": 64,
+            "basis": "62 retention-UNKNOWN candidates plus Nat1 and Playbook Demo detached registrations"
+          },
+          "projection_role": "stack-coordination",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-workspace-branch-worktree-hygiene",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Classify 62 retention-UNKNOWN candidates, 18 dirty/44 clean split, and two missing registrations without cleanup by inference.",
+        "objective": "Classify 62 retention-UNKNOWN candidates, 18 dirty/44 clean split, and two missing registrations without cleanup by inference.",
+        "acceptance_criteria": [
+          "All 64 registrations have accepted retention class",
+          "Dirty state is preserved or explicitly resolved",
+          "Any removal has separate authority and receipt"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "This record is a non-executable marker parent; child outcomes remain separate."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/registry/GITHUB-CONTROL-PLANE-REGISTRY.json",
+          "docs/audits/ATLAS-FULL-SYSTEM-OPENING-AUDIT-2026-07-12.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    }
+  ],
+  "runtime_readback": {
+    "contract_version": "atlas.runtime-owner-export.readback.v1",
+    "source_id": "atlas-runtime-placement-registry",
+    "source_ref": "docs/registry/ATLAS-RUNTIME-PLACEMENT-REGISTRY.v1.json",
+    "source_revision": "sha256:0b2879c8627ff7aa8f43e9b1320fb43d7c0575f6e590057cbceacc366182691f",
+    "activation_sequence": [
+      "playbook-bootstrap-foreground-observer-proof",
+      "lifeline-bootstrap-state-contract",
+      "lifeline-supervised-restart",
+      "lifeline-logon-restore",
+      "stack-single-scheduled-worker",
+      "cortex-event-refresh",
+      "discordos-interaction-first-reliability-review",
+      "owner-export-integration"
+    ],
+    "activation_steps": [
+      {
+        "order": 1,
+        "id": "playbook-bootstrap-foreground-observer-proof",
+        "owner": "Playbook",
+        "packet": "Playbook bootstrap and foreground Observer health proof",
+        "status": "accepted",
+        "admission_proof": "Frozen dependency bootstrap, successful CLI invocation, and foreground GET /health on 127.0.0.1:4300 with root-runtime Observer state.",
+        "evidence_refs": [
+          "https://github.com/fawxzzy/playbook/pull/27",
+          "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+        ]
+      },
+      {
+        "order": 2,
+        "id": "lifeline-bootstrap-state-contract",
+        "owner": "Lifeline",
+        "packet": "Lifeline bootstrap and root-runtime state contract",
+        "status": "accepted",
+        "admission_proof": "Lifeline build and doctor pass, and state/log placement is bound to runtime/lifeline/playbook-observer outside both owner repositories.",
+        "evidence_refs": [
+          "https://github.com/fawxzzy/lifeline/pull/35",
+          "https://github.com/fawxzzy/playbook/pull/27"
+        ]
+      },
+      {
+        "order": 3,
+        "id": "lifeline-supervised-restart",
+        "owner": "Lifeline",
+        "packet": "Lifeline supervised restart proof",
+        "status": "accepted",
+        "admission_proof": "Observer process failure is detected, restarted once under bounded backoff, and health/readback returns with correlated state and logs.",
+        "evidence_refs": [
+          "https://github.com/fawxzzy/lifeline/pull/35",
+          "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+        ]
+      },
+      {
+        "order": 4,
+        "id": "lifeline-logon-restore",
+        "owner": "Lifeline",
+        "packet": "Lifeline current-user logon restore proof",
+        "status": "accepted",
+        "admission_proof": "Current-user logon registration targets lifeline restore and a bounded restore proof re-establishes Observer health.",
+        "evidence_refs": [
+          "https://github.com/fawxzzy/lifeline/pull/35",
+          "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+        ]
+      },
+      {
+        "order": 5,
+        "id": "stack-single-scheduled-worker",
+        "owner": "_stack",
+        "packet": "_stack single bounded scheduled sweep proof",
+        "status": "accepted",
+        "admission_proof": "Exactly one serialized RunOnce scheduled sweep proves lease, idempotency, stale-input rejection, and correlated receipt behavior.",
+        "evidence_refs": [
+          "https://github.com/fawxzzy/_stack/pull/9",
+          "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+        ]
+      },
+      {
+        "order": 6,
+        "id": "cortex-event-refresh",
+        "owner": "ATLAS root governance",
+        "packet": "Cortex event-triggered runtime read-model refresh proof",
+        "status": "accepted",
+        "admission_proof": "One explicit accepted activation-state event triggered exactly one deterministic source-only Cortex read-model refresh; identical replay was a no-op and no daemon, scheduler, standing server, or second queue was created.",
+        "evidence_refs": [
+          "ops/cortex/activation_read_model_refresh.py",
+          "runtime/cortex/events/cortex-event-refresh.step-6.accepted.v1.json",
+          "runtime/receipts/cortex/cortex-event-refresh.step-6.execution-receipt.v1.json",
+          "docs/ops/CORTEX-EVENT-TRIGGERED-RUNTIME-READ-MODEL-REFRESH-PROOF-2026-07-17.md"
+        ]
+      },
+      {
+        "order": 7,
+        "id": "discordos-interaction-first-reliability-review",
+        "owner": "DiscordOS",
+        "packet": "DiscordOS interaction-first reliability review",
+        "status": "accepted",
+        "admission_proof": "Draft, unmerged DiscordOS PR #104 at exact reviewed head c62b31e76ac0c401b0213dcd3537df86e1ab371c proves the five fixed stateful scenarios on READY Preview dpl_7zBA8ggFEATvj7tRFeS2oYf5NWXP with 31 fixture requests, 12 reads, 19 in-memory writes, zero external requests or writes, five exact readbacks, restart-lease-bound recovered publication, and deployment-bound digest; production-path adoption and real-user coverage remain UNKNOWN.",
+        "evidence_refs": [
+          "https://github.com/fawxzzy/DiscordOS/pull/104",
+          "https://github.com/fawxzzy/DiscordOS/pull/104#issuecomment-4999418558",
+          "https://github.com/fawxzzy/DiscordOS/pull/104#issuecomment-4999435354"
+        ]
+      },
+      {
+        "order": 8,
+        "id": "owner-export-integration",
+        "owner": "ATLAS root governance and owner repositories",
+        "packet": "Runtime placement owner-export integration",
+        "status": "accepted",
+        "admission_proof": "Established Atlas and Cortex owner exporters consume the validated runtime placement registry as a third governed source, preserve the frozen activation and marker identities, derive the null post-sequence selector, and pass schema, semantic, deterministic replay, source-revision, and exact generated readback checks with Discord mutation unauthorized.",
+        "evidence_refs": [
+          "ops/atlas/project_board_owner_export.py",
+          "ops/atlas/test_project_board_owner_export.py",
+          "packages/atlas-contracts/schemas/atlas.project-board.owner-export.v1.schema.json",
+          "docs/registry/project-board-owner-exports/atlas.project-board.owner-export.v1.json",
+          "docs/registry/project-board-owner-exports/cortex.project-board.owner-export.v1.json",
+          "docs/ops/ATLAS-RUNTIME-OWNER-EXPORT-INTEGRATION-2026-07-17.md"
+        ]
+      }
+    ],
+    "selector": null,
+    "marker_lanes": [
+      {
+        "id": "lane-runtime-activation-readiness",
+        "title": "Runtime Activation Readiness",
+        "percentage": 100,
+        "completed_units": 8,
+        "denominator": 8,
+        "measurement_unit": "binary activation gate",
+        "units": [
+          {
+            "id": "placement-contract",
+            "title": "placement contract",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/ATLAS/pull/131",
+              "docs/registry/ATLAS-RUNTIME-PLACEMENT-REGISTRY.v1.json"
+            ]
+          },
+          {
+            "id": "playbook-build",
+            "title": "Playbook build",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/playbook/pull/27",
+              "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+            ]
+          },
+          {
+            "id": "observer-foreground-health",
+            "title": "Observer foreground health",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/playbook/pull/27",
+              "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+            ]
+          },
+          {
+            "id": "lifeline-build-doctor",
+            "title": "Lifeline build/doctor",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/lifeline/pull/35",
+              "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+            ]
+          },
+          {
+            "id": "lifeline-state-placement",
+            "title": "Lifeline state placement",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/lifeline/pull/35",
+              "https://github.com/fawxzzy/playbook/pull/27"
+            ]
+          },
+          {
+            "id": "lifeline-supervision-restart",
+            "title": "Lifeline supervision/restart",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/lifeline/pull/35",
+              "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+            ]
+          },
+          {
+            "id": "logon-restore",
+            "title": "logon restore",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/lifeline/pull/35",
+              "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+            ]
+          },
+          {
+            "id": "stack-single-worker-proof",
+            "title": "_stack single-worker proof",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/_stack/pull/9",
+              "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "lane-runtime-correlation-reliability",
+        "title": "Runtime Correlation Reliability",
+        "percentage": 100,
+        "completed_units": 5,
+        "denominator": 5,
+        "measurement_unit": "correlated runtime scenario",
+        "units": [
+          {
+            "id": "successful-task",
+            "title": "successful task",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/_stack/pull/9",
+              "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+            ]
+          },
+          {
+            "id": "failed-task",
+            "title": "failed task",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/_stack/blob/7aed5495d2702a653e461549877d8fa77b3a33d2/ops/codex/Test-StackInboxSweep.ps1"
+            ]
+          },
+          {
+            "id": "duplicate-task",
+            "title": "duplicate task",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/_stack/blob/7aed5495d2702a653e461549877d8fa77b3a33d2/ops/codex/Test-StackInboxSweep.ps1"
+            ]
+          },
+          {
+            "id": "interrupted-restarted-task",
+            "title": "interrupted/restarted task",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/_stack/blob/7aed5495d2702a653e461549877d8fa77b3a33d2/ops/codex/Test-StackInboxSweep.ps1"
+            ]
+          },
+          {
+            "id": "stale-receipt-rejection",
+            "title": "stale receipt rejection",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/_stack/blob/7aed5495d2702a653e461549877d8fa77b3a33d2/ops/codex/Test-StackInboxSweep.ps1"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "lane-operator-surface-adoption",
+        "title": "Operator Surface Adoption",
+        "percentage": 100,
+        "completed_units": 4,
+        "denominator": 4,
+        "measurement_unit": "non-duplicative operator role",
+        "units": [
+          {
+            "id": "foundation-portfolio",
+            "title": "Foundation portfolio",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://fawxzzy-foundation.vercel.app",
+              "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+            ]
+          },
+          {
+            "id": "playbook-operations",
+            "title": "Playbook operations",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/playbook/pull/27",
+              "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+            ]
+          },
+          {
+            "id": "atlas-book-doctrine",
+            "title": "Atlas Book doctrine",
+            "status": "accepted",
+            "evidence_refs": [
+              "docs/atlas-book/README.md",
+              "docs/atlas-book/16-runtime-placement.md"
+            ]
+          },
+          {
+            "id": "stack-action-routing",
+            "title": "_stack action routing",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/_stack/pull/9",
+              "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+            ]
+          }
+        ]
+      }
+    ],
+    "status_boundaries": {
+      "unknown": [
+        "Actual restoration after a new Windows logon is UNKNOWN.",
+        "Sustained unattended Playbook Observer uptime is UNKNOWN; current state is intentionally stopped and restorable.",
+        "DiscordOS production message-command adoption of the interaction reliability contract is UNKNOWN because PR #104 remains draft and unmerged.",
+        "DiscordOS real-user interaction coverage outside the fixed Preview canary is UNKNOWN.",
+        "PostgreSQL 5432 and 5433 ownership is UNKNOWN.",
+        "The loopback browser-debugger process ownership is UNKNOWN."
+      ],
+      "pending": [],
+      "blocked": [],
+      "stale": []
+    },
+    "discord_mutation_authorized": false
+  },
+  "extensions": {
+    "selection": {
+      "top_level_lane_count": 19,
+      "marker_parent_count": 6,
+      "direct_lane_count": 13,
+      "governance_backlog_count": 17,
+      "total_record_count": 36,
+      "backlog_owner_allowlist": [
+        "github-governance",
+        "operator-security",
+        "project-owners",
+        "repository-owners",
+        "stack-root"
+      ],
+      "dedicated_subsystem_record_ids": [
+        "lane-cortex-context-synthesis",
+        "lane-cortex-boundary-decision"
+      ]
+    },
+    "priority_policy": "preserve-unknown-as-null",
+    "discord_mutation_authorized": false
+  }
+}

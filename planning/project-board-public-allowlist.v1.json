@@ -1,0 +1,231 @@
+{
+  "schema": "fawxzzyweb.project-board.public-allowlist.v1",
+  "approvedOn": "2026-11-05",
+  "approval": "Owner decision: public boards carry already-public roadmap and backlog cards. Merging a change to this file is the owner approval for the listed card ids; nothing absent from include is ever published.",
+  "sources": [
+    {
+      "board": "fitness",
+      "path": "planning/board-sources/fitness.project-board.owner-export.v1.json",
+      "sha256": "1e5de305340af9722bca4c4cd145f870e0a035aeb81e784ebe39b2b53de128fc",
+      "sourceProjectId": "fitness"
+    },
+    {
+      "board": "mazer",
+      "path": "planning/board-sources/mazer.project-board.owner-export.v1.json",
+      "sha256": "220a8fcf22c550c6bdaafdb05bd24155c75cc6df3a8b978d7ee20c31c9b22d3f",
+      "sourceProjectId": "mazer"
+    },
+    {
+      "board": "trove",
+      "path": "exports/trove.project-board.owner-export.v1.json",
+      "sha256": "133903a9b8812011c86099597906fecdb683dde76932972e043b56e120ccc3ee",
+      "sourceProjectId": "trove"
+    },
+    {
+      "board": "atlas-stack",
+      "path": "planning/board-sources/atlas.project-board.owner-export.v1.json",
+      "sha256": "3b68c5c660170f726bc7ab1abcb747a0cca3054b8b6dee9b6b4d83fa9f550d65",
+      "sourceProjectId": "atlas"
+    },
+    {
+      "board": "atlas-stack",
+      "path": "planning/board-sources/cortex.project-board.owner-export.v1.json",
+      "sha256": "480568e02d187ebdbf0a6b72210b089dbba338b5df88367bce883eff556ab488",
+      "sourceProjectId": "cortex"
+    },
+    {
+      "board": "atlas-stack",
+      "path": "planning/board-sources/foundation.project-board.owner-export.v1.json",
+      "sha256": "0649d93355823b23f66855052d157810e7ef22b0b4333f65b531bb19e701998f",
+      "sourceProjectId": "foundation"
+    },
+    {
+      "board": "atlas-stack",
+      "path": "planning/board-sources/lifeline.project-board.owner-export.v1.json",
+      "sha256": "6ee617101b8a53ae3f53554b218a25392e52c75e0ff6603f8cbc7b56b48aaf0a",
+      "sourceProjectId": "lifeline"
+    },
+    {
+      "board": "atlas-stack",
+      "path": "planning/board-sources/stack.project-board.owner-export.v1.json",
+      "sha256": "03c320bbe76b4c10a7838c11757a2e30e12a528d98954915c0dad7c7c87a7a0b",
+      "sourceProjectId": "_stack"
+    }
+  ],
+  "include": {
+    "fitness": [
+      "FF-ANALYTICS-001",
+      "FF-ENGINE-001",
+      "FF-ENGINE-002",
+      "FF-GAM-001",
+      "FF-GAM-002",
+      "FF-ONBOARD-001",
+      "FF-PWA-003",
+      "FF-QA-002",
+      "FF-RECAP-001",
+      "FF-RET-001",
+      "FF-RET-002",
+      "FF-RET-003",
+      "FF-RET-004",
+      "FF-ROUTINE-001",
+      "FF-SESSION-001",
+      "FF-SESSION-002",
+      "FF-SESSION-003",
+      "FF-SESSION-004",
+      "FF-SESSION-005",
+      "FF-SOC-002"
+    ],
+    "mazer": [
+      "MAZER-2D-001",
+      "MAZER-NATIVE-001",
+      "MAZER-WORLD-001"
+    ],
+    "trove": [
+      "FW-PROJECTS-001"
+    ],
+    "atlas": [
+      "lane-atlas-contracts-mesh",
+      "lane-atlas-control-ledger",
+      "lane-ci-delivery-health",
+      "lane-default-branch-governance",
+      "lane-marker-integrity",
+      "lane-operator-surface-adoption",
+      "lane-owner-metric-scope-alignment",
+      "lane-persistent-workspaces",
+      "lane-release-policy-and-evidence",
+      "lane-root-truth-convergence",
+      "lane-runtime-activation-readiness",
+      "lane-runtime-correlation-reliability",
+      "lane-source-hierarchy-doc-normalization",
+      "lane-stack-inventory-lock-head-reconciliation"
+    ],
+    "cortex": [
+      "lane-cortex-boundary-decision",
+      "lane-cortex-context-synthesis"
+    ],
+    "foundation": [
+      "FDN-204",
+      "FDN-301",
+      "FDN-701",
+      "FDN-801",
+      "FDN-901",
+      "FDN-GOV-001"
+    ],
+    "lifeline": [
+      "LIF-202"
+    ],
+    "_stack": [
+      "STK-SCHEDULED-INBOX-SWEEP"
+    ]
+  },
+  "exclude": [
+    {
+      "id": "FW-ANALYTICS-001",
+      "reason": "owner export marks public_safe:false"
+    },
+    {
+      "id": "FF-MKT-001",
+      "reason": "monetization/launch plan; business timing undecided"
+    },
+    {
+      "id": "FF-BETA-001",
+      "reason": "paid-push plan; business timing undecided"
+    },
+    {
+      "id": "FF-ANALYTICS-002",
+      "reason": "premium plan; business timing undecided"
+    },
+    {
+      "id": "FF-SOC-001",
+      "reason": "summary mentions the paid product (monetization timing undecided); caught by the payments screen"
+    },
+    {
+      "id": "lane-fitness-critical-secret-containment",
+      "reason": "secret containment"
+    },
+    {
+      "id": "lane-security-containment",
+      "reason": "security findings umbrella"
+    },
+    {
+      "id": "lane-sensitive-runtime-residue-containment",
+      "reason": "sensitive residue (token/cookie evidence)"
+    },
+    {
+      "id": "lane-supabase-security-advisor-remediation",
+      "reason": "provider security advisor findings"
+    },
+    {
+      "id": "lane-vercel-supabase-monitoring-correlation",
+      "reason": "provider findings"
+    },
+    {
+      "id": "lane-dependabot-visibility",
+      "reason": "security alert visibility"
+    },
+    {
+      "id": "lane-creation-os-product-definition-first-wedge",
+      "reason": "CreationOS product strategy"
+    },
+    {
+      "id": "lane-stream-remote-decision",
+      "reason": "Stream repository decision (local-only repo)"
+    },
+    {
+      "id": "lane-codex-execution-contracts",
+      "reason": "operator-internal execution governance"
+    },
+    {
+      "id": "lane-discordos-single-writer",
+      "reason": "DiscordOS lane"
+    },
+    {
+      "id": "lane-discordos-cross-project-board-integrity",
+      "reason": "DiscordOS lane"
+    },
+    {
+      "id": "lane-delivery-event-plane",
+      "reason": "DiscordOS/provider delivery events"
+    },
+    {
+      "id": "lane-github-control-plane-integration",
+      "reason": "security evidence and DiscordOS projection"
+    },
+    {
+      "id": "lane-project-command-surfaces",
+      "reason": "DiscordOS and operator command routing"
+    },
+    {
+      "id": "lane-historical-task-intelligence",
+      "reason": "task history, handoffs and transcripts"
+    },
+    {
+      "id": "lane-playbook-universal-adoption",
+      "reason": "summary contains a local repository path"
+    },
+    {
+      "id": "lane-atlas-bootstrap-manifest-recovery-pointer",
+      "reason": "recovery/signing design tied to excluded CreationOS lane"
+    },
+    {
+      "id": "lane-archive-package-retention",
+      "reason": "names personal document and archive files"
+    },
+    {
+      "id": "lane-component-generated-state-hygiene",
+      "reason": "local generated-state surfaces"
+    },
+    {
+      "id": "lane-local-branch-retention-classification",
+      "reason": "local branch inventory"
+    },
+    {
+      "id": "lane-remote-branch-cleanup-review",
+      "reason": "branch cleanup inventory"
+    },
+    {
+      "id": "lane-workspace-branch-worktree-hygiene",
+      "reason": "local worktree inventory"
+    }
+  ]
+}

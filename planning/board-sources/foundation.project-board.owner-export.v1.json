@@ -1,0 +1,369 @@
+{
+  "contract_version": "atlas.project-board.owner-export.v1",
+  "export_id": "pbe_foundation_roadmap_4355b19e43c1",
+  "project_id": "foundation",
+  "board_id": "discordos:project-feedback:foundation",
+  "owner": "foundation",
+  "adapter_id": "foundation-roadmap-v1",
+  "source_revision": "sha256:4355b19e43c17e8caa168b314e17073bad328d906701fb6a18199ad23353a9e3",
+  "generated_at": "2026-07-14T00:00:00.000Z",
+  "sources": [
+    {
+      "source_id": "foundation-roadmap",
+      "kind": "json",
+      "repository": "foundation",
+      "path": "repos/foundation/docs/roadmap/FOUNDATION_ROADMAP.json",
+      "revision": "sha256:4355b19e43c17e8caa168b314e17073bad328d906701fb6a18199ad23353a9e3",
+      "observed_at": "2026-07-14T00:00:00.000Z"
+    }
+  ],
+  "cards": [
+    {
+      "idempotency_key": "pbk_foundation_fdn-204_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FDN-204",
+        "project_id": "foundation",
+        "board_id": "discordos:project-feedback:foundation",
+        "title": "Stale-proof refresh queue",
+        "description": "Turn stale-proof classifications into a deterministic, reviewable refresh queue without granting provider or registry mutation authority.",
+        "card_type": "automation",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "foundation",
+        "dependencies": [
+          "FDN-202",
+          "FDN-203"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-14T00:00:00.000Z",
+        "source_ref": "repos/foundation/docs/roadmap/FOUNDATION_ROADMAP.json#FDN-204",
+        "extensions": {
+          "roadmap_status": "planned",
+          "roadmap_schema_version": 1
+        }
+      },
+      "source": {
+        "source_id": "foundation-roadmap",
+        "source_ref": "repos/foundation/docs/roadmap/FOUNDATION_ROADMAP.json#FDN-204",
+        "source_status": "current",
+        "source_updated_at": "2026-07-14T00:00:00.000Z"
+      },
+      "content": {
+        "summary": "Turn stale-proof classifications into a deterministic, reviewable refresh queue without granting provider or registry mutation authority.",
+        "objective": "Turn stale-proof classifications into a deterministic, reviewable refresh queue without granting provider or registry mutation authority.",
+        "acceptance_criteria": [
+          "Queue entries use stable project-scoped identities and source evidence references.",
+          "Repeated generation from unchanged inputs produces identical queue ordering and content.",
+          "Queue entries distinguish observation work from any later mutation request.",
+          "Foundation verification covers empty, current-proof, stale-proof, and conflicting-proof inputs."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/foundation/docs/operations/PROOF_REFRESH.md",
+          "repos/foundation/packages/contracts/proof-refresh-draft.schema.json",
+          "repos/foundation/scripts/render-proof-refresh-draft.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_foundation_fdn-301_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FDN-301",
+        "project_id": "foundation",
+        "board_id": "discordos:project-feedback:foundation",
+        "title": "Direct provider read adapters",
+        "description": "Add receipt-backed read-only GitHub, Vercel, and Supabase observation adapters while retaining file input as a supported fallback.",
+        "card_type": "feature",
+        "lifecycle": "intake",
+        "priority": null,
+        "owner": "foundation",
+        "dependencies": [
+          "FDN-204",
+          "FDN-205"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-14T00:00:00.000Z",
+        "source_ref": "repos/foundation/docs/roadmap/FOUNDATION_ROADMAP.json#FDN-301",
+        "extensions": {
+          "roadmap_status": "planned-later",
+          "roadmap_schema_version": 1
+        }
+      },
+      "source": {
+        "source_id": "foundation-roadmap",
+        "source_ref": "repos/foundation/docs/roadmap/FOUNDATION_ROADMAP.json#FDN-301",
+        "source_status": "current",
+        "source_updated_at": "2026-07-14T00:00:00.000Z"
+      },
+      "content": {
+        "summary": "Add receipt-backed read-only GitHub, Vercel, and Supabase observation adapters while retaining file input as a supported fallback.",
+        "objective": "Add receipt-backed read-only GitHub, Vercel, and Supabase observation adapters while retaining file input as a supported fallback.",
+        "acceptance_criteria": [
+          "Every adapter is read-only and records provider, scope, observation time, and evidence identity.",
+          "No credential value, cookie, token, or environment value is persisted in Foundation artifacts.",
+          "Unavailable or denied provider surfaces remain explicit rather than inferred.",
+          "File-based observation input remains supported and contract-compatible."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/foundation/docs/operations/PROVIDER_CAPTURE.md",
+          "repos/foundation/docs/operations/PROVIDER_OBSERVATIONS.md",
+          "repos/foundation/packages/contracts/provider-observations.schema.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_foundation_fdn-701_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FDN-701",
+        "project_id": "foundation",
+        "board_id": "discordos:project-feedback:foundation",
+        "title": "Deterministic roadmap next command",
+        "description": "Expose the stable machine roadmap through a read-only human and JSON next-work command.",
+        "card_type": "automation",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "foundation",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-07-14T00:00:00.000Z",
+        "source_ref": "repos/foundation/docs/roadmap/FOUNDATION_ROADMAP.json#FDN-701",
+        "extensions": {
+          "roadmap_status": "planned",
+          "roadmap_schema_version": 1
+        }
+      },
+      "source": {
+        "source_id": "foundation-roadmap",
+        "source_ref": "repos/foundation/docs/roadmap/FOUNDATION_ROADMAP.json#FDN-701",
+        "source_status": "current",
+        "source_updated_at": "2026-07-14T00:00:00.000Z"
+      },
+      "content": {
+        "summary": "Expose the stable machine roadmap through a read-only human and JSON next-work command.",
+        "objective": "Expose the stable machine roadmap through a read-only human and JSON next-work command.",
+        "acceptance_criteria": [
+          "foundation roadmap next reads only FOUNDATION_ROADMAP.json.",
+          "Completed work is excluded unless explicitly requested.",
+          "Human and JSON output preserve IDs, lifecycle, dependencies, unknown priority, and source revision.",
+          "Repeated reads from unchanged input produce identical ordering."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/foundation/docs/roadmap/FOUNDATION_ROADMAP.json",
+          "repos/foundation/packages/cli/bin/foundation.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_foundation_fdn-801_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FDN-801",
+        "project_id": "foundation",
+        "board_id": "discordos:project-feedback:foundation",
+        "title": "Cross-app privacy and data contracts",
+        "description": "Define reusable privacy-first data boundaries for Fitness, wellness, Mazer, Trove, and future applications.",
+        "card_type": "architecture",
+        "lifecycle": "intake",
+        "priority": null,
+        "owner": "foundation",
+        "dependencies": [
+          "FDN-401",
+          "FDN-402"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-14T00:00:00.000Z",
+        "source_ref": "repos/foundation/docs/roadmap/FOUNDATION_ROADMAP.json#FDN-801",
+        "extensions": {
+          "roadmap_status": "planned-later",
+          "roadmap_schema_version": 1
+        }
+      },
+      "source": {
+        "source_id": "foundation-roadmap",
+        "source_ref": "repos/foundation/docs/roadmap/FOUNDATION_ROADMAP.json#FDN-801",
+        "source_status": "current",
+        "source_updated_at": "2026-07-14T00:00:00.000Z"
+      },
+      "content": {
+        "summary": "Define reusable privacy-first data boundaries for Fitness, wellness, Mazer, Trove, and future applications.",
+        "objective": "Define reusable privacy-first data boundaries for Fitness, wellness, Mazer, Trove, and future applications.",
+        "acceptance_criteria": [
+          "Versioned contracts cover profile, consent, sensitive data, retention, deletion, ownership, sharing, and audit receipts.",
+          "Product-specific extensions cannot weaken shared privacy semantics.",
+          "Fixtures and verification cover allowed, denied, unknown, and revoked states."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/foundation/docs/architecture/FOUNDATION_BLUEPRINT.md",
+          "repos/foundation/docs/roadmap/FOUNDATION_ROADMAP.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_foundation_fdn-901_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FDN-901",
+        "project_id": "foundation",
+        "board_id": "discordos:project-feedback:foundation",
+        "title": "Foundation product operating layer",
+        "description": "Finish Foundation as the trusted operator dashboard for project health, data posture, deployment proof, and safe next actions.",
+        "card_type": "feature",
+        "lifecycle": "intake",
+        "priority": null,
+        "owner": "foundation",
+        "dependencies": [
+          "FDN-204",
+          "FDN-301",
+          "FDN-501",
+          "FDN-601",
+          "FDN-701",
+          "FDN-801"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-14T00:00:00.000Z",
+        "source_ref": "repos/foundation/docs/roadmap/FOUNDATION_ROADMAP.json#FDN-901",
+        "extensions": {
+          "roadmap_status": "planned-later",
+          "roadmap_schema_version": 1
+        }
+      },
+      "source": {
+        "source_id": "foundation-roadmap",
+        "source_ref": "repos/foundation/docs/roadmap/FOUNDATION_ROADMAP.json#FDN-901",
+        "source_status": "current",
+        "source_updated_at": "2026-07-14T00:00:00.000Z"
+      },
+      "content": {
+        "summary": "Finish Foundation as the trusted operator dashboard for project health, data posture, deployment proof, and safe next actions.",
+        "objective": "Finish Foundation as the trusted operator dashboard for project health, data posture, deployment proof, and safe next actions.",
+        "acceptance_criteria": [
+          "Registry, proof, deployment, data, Playbook, and Lifeline projections are current and source-linked.",
+          "The console explains blockers and recommended next actions without claiming owner authority.",
+          "Operator routing preserves approval and production deployment gates.",
+          "A complete local verification and browser proof cover the operator workflow."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/foundation/apps/console/public/foundation.projects.json",
+          "repos/foundation/apps/console/public/index.html",
+          "repos/foundation/docs/roadmap/FOUNDATION_ROADMAP.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_foundation_fdn-gov-001_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FDN-GOV-001",
+        "project_id": "foundation",
+        "board_id": "discordos:project-feedback:foundation",
+        "title": "Foundation control-plane truth reconciliation",
+        "description": "Reconcile the canonical Foundation GitHub identity and current remote evidence across config, registry, generated surfaces, fixtures, setup docs, and Atlas projection.",
+        "card_type": "migration",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "foundation",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-07-14T00:00:00.000Z",
+        "source_ref": "repos/foundation/docs/roadmap/FOUNDATION_ROADMAP.json#FDN-GOV-001",
+        "extensions": {
+          "roadmap_status": "planned",
+          "roadmap_schema_version": 1
+        }
+      },
+      "source": {
+        "source_id": "foundation-roadmap",
+        "source_ref": "repos/foundation/docs/roadmap/FOUNDATION_ROADMAP.json#FDN-GOV-001",
+        "source_status": "current",
+        "source_updated_at": "2026-07-14T00:00:00.000Z"
+      },
+      "content": {
+        "summary": "Reconcile the canonical Foundation GitHub identity and current remote evidence across config, registry, generated surfaces, fixtures, setup docs, and Atlas projection.",
+        "objective": "Reconcile the canonical Foundation GitHub identity and current remote evidence across config, registry, generated surfaces, fixtures, setup docs, and Atlas projection.",
+        "acceptance_criteria": [
+          "The canonical GitHub repository identity is verified from live remote evidence.",
+          "Foundation config, data/projects.json, generated docs, console data, fixtures, and setup guidance agree on that identity.",
+          "Historical promotion evidence remains immutable and clearly dated.",
+          "Foundation build and verify pass, and Atlas root projection is refreshed separately."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/foundation/data/projects.json",
+          "repos/foundation/docs/operations/GITHUB_SETUP.md",
+          "repos/foundation/foundation.config.json",
+          "repos/foundation/README.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    }
+  ],
+  "extensions": {
+    "source_digest": "sha256:4355b19e43c17e8caa168b314e17073bad328d906701fb6a18199ad23353a9e3",
+    "source_work_item_count": 17,
+    "exported_card_count": 6,
+    "excluded_completed_statuses": [
+      "complete"
+    ],
+    "discord_mutation_authorized": false
+  }
+}

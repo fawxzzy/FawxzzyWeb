@@ -1,0 +1,498 @@
+{
+  "contract_version": "atlas.project-board.owner-export.v1",
+  "export_id": "pbe_cortex_a4923021069e",
+  "project_id": "cortex",
+  "board_id": "discordos:project-feedback:cortex",
+  "owner": "stack-root",
+  "adapter_id": "atlas-full-system-registry-v1",
+  "source_revision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+  "generated_at": "2026-07-17T06:07:21Z",
+  "sources": [
+    {
+      "source_id": "atlas-full-system-registry",
+      "kind": "json",
+      "repository": "atlas-root",
+      "path": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json",
+      "revision": "sha256:4f27f5e8174ca4401e2ef564d25ed353868d043aed8e2b8d793f1ef3718e361e",
+      "observed_at": "2026-07-17T06:07:21Z"
+    },
+    {
+      "source_id": "atlas-marker-book",
+      "kind": "markdown",
+      "repository": "atlas-root",
+      "path": "docs/atlas-book/02-lanes-and-markers.md",
+      "revision": "sha256:55bc35c4c6ea4f760f52e054809532148f2b8717e91b2ef361422caaa6850470",
+      "observed_at": "2026-07-17T06:07:21Z"
+    },
+    {
+      "source_id": "atlas-runtime-placement-registry",
+      "kind": "json",
+      "repository": "atlas-root",
+      "path": "docs/registry/ATLAS-RUNTIME-PLACEMENT-REGISTRY.v1.json",
+      "revision": "sha256:0b2879c8627ff7aa8f43e9b1320fb43d7c0575f6e590057cbceacc366182691f",
+      "observed_at": "2026-07-17T06:07:21Z"
+    }
+  ],
+  "cards": [
+    {
+      "idempotency_key": "pbk_cortex_lane-cortex-boundary-decision_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-cortex-boundary-decision",
+        "project_id": "cortex",
+        "board_id": "discordos:project-feedback:cortex",
+        "title": "Cortex boundary decision",
+        "description": "Decide root-owned embedded Cortex versus remote repository authority.",
+        "card_type": "architecture",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "stack-root",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-cortex-boundary-decision",
+        "extensions": {
+          "source_section": "backlog_candidates",
+          "source_classification": "github-follow-up-architecture",
+          "source_status": "candidate",
+          "measurement_unit": "authority decision",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "decisions",
+            "value": 1,
+            "basis": "one unresolved Cortex boundary"
+          },
+          "projection_role": "root-owned-subsystem",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-cortex-boundary-decision",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Decide root-owned embedded Cortex versus remote repository authority.",
+        "objective": "Decide root-owned embedded Cortex versus remote repository authority.",
+        "acceptance_criteria": [
+          "Accepted decision names source, migration, and archive posture"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "docs/audits/ATLAS-FULL-SYSTEM-OPENING-AUDIT-2026-07-12.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": "lane-cortex-context-synthesis",
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_cortex_lane-cortex-context-synthesis_v1",
+      "record_kind": "marker",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "lane-cortex-context-synthesis",
+        "project_id": "cortex",
+        "board_id": "discordos:project-feedback:cortex",
+        "title": "Cortex context and synthesis",
+        "description": "Refresh Cortex read models, implement contract-frozen chat synthesis, and resolve the local-versus-remote boundary.",
+        "card_type": "architecture",
+        "lifecycle": "planning",
+        "priority": null,
+        "owner": "stack-root",
+        "dependencies": [
+          "lane-cortex-boundary-decision"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-07-17T06:07:21Z",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-cortex-context-synthesis",
+        "extensions": {
+          "source_section": "lanes",
+          "source_classification": "advisory-runtime",
+          "source_status": "candidate",
+          "measurement_unit": "accepted behavior",
+          "percentage": null,
+          "completed_units": null,
+          "denominator": {
+            "kind": "behaviors",
+            "value": 4,
+            "basis": "fresh context, routing, chat synthesis, authority boundary"
+          },
+          "projection_role": "root-owned-subsystem",
+          "seed_disposition": "current"
+        }
+      },
+      "source": {
+        "source_id": "atlas-full-system-registry",
+        "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-cortex-context-synthesis",
+        "source_status": "current",
+        "source_updated_at": "2026-07-17T06:07:21Z"
+      },
+      "content": {
+        "summary": "Refresh Cortex read models, implement contract-frozen chat synthesis, and resolve the local-versus-remote boundary.",
+        "objective": "Refresh Cortex read models, implement contract-frozen chat synthesis, and resolve the local-versus-remote boundary.",
+        "acceptance_criteria": [
+          "Four behaviors have current executable proof",
+          "Remote authority is explicitly decided",
+          "Stale runtime surfaces are reconciled"
+        ],
+        "discoveries": [
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "This record is a non-executable marker parent; child outcomes remain separate."
+        ],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "ops/cortex",
+          "runtime/cortex",
+          "docs/architecture/ATLAS-CORTEX-PLAYBOOK-CODEX.md",
+          "docs/atlas-book/13-vision-and-endgames.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    }
+  ],
+  "runtime_readback": {
+    "contract_version": "atlas.runtime-owner-export.readback.v1",
+    "source_id": "atlas-runtime-placement-registry",
+    "source_ref": "docs/registry/ATLAS-RUNTIME-PLACEMENT-REGISTRY.v1.json",
+    "source_revision": "sha256:0b2879c8627ff7aa8f43e9b1320fb43d7c0575f6e590057cbceacc366182691f",
+    "activation_sequence": [
+      "playbook-bootstrap-foreground-observer-proof",
+      "lifeline-bootstrap-state-contract",
+      "lifeline-supervised-restart",
+      "lifeline-logon-restore",
+      "stack-single-scheduled-worker",
+      "cortex-event-refresh",
+      "discordos-interaction-first-reliability-review",
+      "owner-export-integration"
+    ],
+    "activation_steps": [
+      {
+        "order": 1,
+        "id": "playbook-bootstrap-foreground-observer-proof",
+        "owner": "Playbook",
+        "packet": "Playbook bootstrap and foreground Observer health proof",
+        "status": "accepted",
+        "admission_proof": "Frozen dependency bootstrap, successful CLI invocation, and foreground GET /health on 127.0.0.1:4300 with root-runtime Observer state.",
+        "evidence_refs": [
+          "https://github.com/fawxzzy/playbook/pull/27",
+          "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+        ]
+      },
+      {
+        "order": 2,
+        "id": "lifeline-bootstrap-state-contract",
+        "owner": "Lifeline",
+        "packet": "Lifeline bootstrap and root-runtime state contract",
+        "status": "accepted",
+        "admission_proof": "Lifeline build and doctor pass, and state/log placement is bound to runtime/lifeline/playbook-observer outside both owner repositories.",
+        "evidence_refs": [
+          "https://github.com/fawxzzy/lifeline/pull/35",
+          "https://github.com/fawxzzy/playbook/pull/27"
+        ]
+      },
+      {
+        "order": 3,
+        "id": "lifeline-supervised-restart",
+        "owner": "Lifeline",
+        "packet": "Lifeline supervised restart proof",
+        "status": "accepted",
+        "admission_proof": "Observer process failure is detected, restarted once under bounded backoff, and health/readback returns with correlated state and logs.",
+        "evidence_refs": [
+          "https://github.com/fawxzzy/lifeline/pull/35",
+          "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+        ]
+      },
+      {
+        "order": 4,
+        "id": "lifeline-logon-restore",
+        "owner": "Lifeline",
+        "packet": "Lifeline current-user logon restore proof",
+        "status": "accepted",
+        "admission_proof": "Current-user logon registration targets lifeline restore and a bounded restore proof re-establishes Observer health.",
+        "evidence_refs": [
+          "https://github.com/fawxzzy/lifeline/pull/35",
+          "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+        ]
+      },
+      {
+        "order": 5,
+        "id": "stack-single-scheduled-worker",
+        "owner": "_stack",
+        "packet": "_stack single bounded scheduled sweep proof",
+        "status": "accepted",
+        "admission_proof": "Exactly one serialized RunOnce scheduled sweep proves lease, idempotency, stale-input rejection, and correlated receipt behavior.",
+        "evidence_refs": [
+          "https://github.com/fawxzzy/_stack/pull/9",
+          "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+        ]
+      },
+      {
+        "order": 6,
+        "id": "cortex-event-refresh",
+        "owner": "ATLAS root governance",
+        "packet": "Cortex event-triggered runtime read-model refresh proof",
+        "status": "accepted",
+        "admission_proof": "One explicit accepted activation-state event triggered exactly one deterministic source-only Cortex read-model refresh; identical replay was a no-op and no daemon, scheduler, standing server, or second queue was created.",
+        "evidence_refs": [
+          "ops/cortex/activation_read_model_refresh.py",
+          "runtime/cortex/events/cortex-event-refresh.step-6.accepted.v1.json",
+          "runtime/receipts/cortex/cortex-event-refresh.step-6.execution-receipt.v1.json",
+          "docs/ops/CORTEX-EVENT-TRIGGERED-RUNTIME-READ-MODEL-REFRESH-PROOF-2026-07-17.md"
+        ]
+      },
+      {
+        "order": 7,
+        "id": "discordos-interaction-first-reliability-review",
+        "owner": "DiscordOS",
+        "packet": "DiscordOS interaction-first reliability review",
+        "status": "accepted",
+        "admission_proof": "Draft, unmerged DiscordOS PR #104 at exact reviewed head c62b31e76ac0c401b0213dcd3537df86e1ab371c proves the five fixed stateful scenarios on READY Preview dpl_7zBA8ggFEATvj7tRFeS2oYf5NWXP with 31 fixture requests, 12 reads, 19 in-memory writes, zero external requests or writes, five exact readbacks, restart-lease-bound recovered publication, and deployment-bound digest; production-path adoption and real-user coverage remain UNKNOWN.",
+        "evidence_refs": [
+          "https://github.com/fawxzzy/DiscordOS/pull/104",
+          "https://github.com/fawxzzy/DiscordOS/pull/104#issuecomment-4999418558",
+          "https://github.com/fawxzzy/DiscordOS/pull/104#issuecomment-4999435354"
+        ]
+      },
+      {
+        "order": 8,
+        "id": "owner-export-integration",
+        "owner": "ATLAS root governance and owner repositories",
+        "packet": "Runtime placement owner-export integration",
+        "status": "accepted",
+        "admission_proof": "Established Atlas and Cortex owner exporters consume the validated runtime placement registry as a third governed source, preserve the frozen activation and marker identities, derive the null post-sequence selector, and pass schema, semantic, deterministic replay, source-revision, and exact generated readback checks with Discord mutation unauthorized.",
+        "evidence_refs": [
+          "ops/atlas/project_board_owner_export.py",
+          "ops/atlas/test_project_board_owner_export.py",
+          "packages/atlas-contracts/schemas/atlas.project-board.owner-export.v1.schema.json",
+          "docs/registry/project-board-owner-exports/atlas.project-board.owner-export.v1.json",
+          "docs/registry/project-board-owner-exports/cortex.project-board.owner-export.v1.json",
+          "docs/ops/ATLAS-RUNTIME-OWNER-EXPORT-INTEGRATION-2026-07-17.md"
+        ]
+      }
+    ],
+    "selector": null,
+    "marker_lanes": [
+      {
+        "id": "lane-runtime-activation-readiness",
+        "title": "Runtime Activation Readiness",
+        "percentage": 100,
+        "completed_units": 8,
+        "denominator": 8,
+        "measurement_unit": "binary activation gate",
+        "units": [
+          {
+            "id": "placement-contract",
+            "title": "placement contract",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/ATLAS/pull/131",
+              "docs/registry/ATLAS-RUNTIME-PLACEMENT-REGISTRY.v1.json"
+            ]
+          },
+          {
+            "id": "playbook-build",
+            "title": "Playbook build",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/playbook/pull/27",
+              "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+            ]
+          },
+          {
+            "id": "observer-foreground-health",
+            "title": "Observer foreground health",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/playbook/pull/27",
+              "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+            ]
+          },
+          {
+            "id": "lifeline-build-doctor",
+            "title": "Lifeline build/doctor",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/lifeline/pull/35",
+              "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+            ]
+          },
+          {
+            "id": "lifeline-state-placement",
+            "title": "Lifeline state placement",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/lifeline/pull/35",
+              "https://github.com/fawxzzy/playbook/pull/27"
+            ]
+          },
+          {
+            "id": "lifeline-supervision-restart",
+            "title": "Lifeline supervision/restart",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/lifeline/pull/35",
+              "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+            ]
+          },
+          {
+            "id": "logon-restore",
+            "title": "logon restore",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/lifeline/pull/35",
+              "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+            ]
+          },
+          {
+            "id": "stack-single-worker-proof",
+            "title": "_stack single-worker proof",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/_stack/pull/9",
+              "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "lane-runtime-correlation-reliability",
+        "title": "Runtime Correlation Reliability",
+        "percentage": 100,
+        "completed_units": 5,
+        "denominator": 5,
+        "measurement_unit": "correlated runtime scenario",
+        "units": [
+          {
+            "id": "successful-task",
+            "title": "successful task",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/_stack/pull/9",
+              "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+            ]
+          },
+          {
+            "id": "failed-task",
+            "title": "failed task",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/_stack/blob/7aed5495d2702a653e461549877d8fa77b3a33d2/ops/codex/Test-StackInboxSweep.ps1"
+            ]
+          },
+          {
+            "id": "duplicate-task",
+            "title": "duplicate task",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/_stack/blob/7aed5495d2702a653e461549877d8fa77b3a33d2/ops/codex/Test-StackInboxSweep.ps1"
+            ]
+          },
+          {
+            "id": "interrupted-restarted-task",
+            "title": "interrupted/restarted task",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/_stack/blob/7aed5495d2702a653e461549877d8fa77b3a33d2/ops/codex/Test-StackInboxSweep.ps1"
+            ]
+          },
+          {
+            "id": "stale-receipt-rejection",
+            "title": "stale receipt rejection",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/_stack/blob/7aed5495d2702a653e461549877d8fa77b3a33d2/ops/codex/Test-StackInboxSweep.ps1"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "lane-operator-surface-adoption",
+        "title": "Operator Surface Adoption",
+        "percentage": 100,
+        "completed_units": 4,
+        "denominator": 4,
+        "measurement_unit": "non-duplicative operator role",
+        "units": [
+          {
+            "id": "foundation-portfolio",
+            "title": "Foundation portfolio",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://fawxzzy-foundation.vercel.app",
+              "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+            ]
+          },
+          {
+            "id": "playbook-operations",
+            "title": "Playbook operations",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/playbook/pull/27",
+              "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+            ]
+          },
+          {
+            "id": "atlas-book-doctrine",
+            "title": "Atlas Book doctrine",
+            "status": "accepted",
+            "evidence_refs": [
+              "docs/atlas-book/README.md",
+              "docs/atlas-book/16-runtime-placement.md"
+            ]
+          },
+          {
+            "id": "stack-action-routing",
+            "title": "_stack action routing",
+            "status": "accepted",
+            "evidence_refs": [
+              "https://github.com/fawxzzy/_stack/pull/9",
+              "docs/ops/ATLAS-RUNTIME-PLACEMENT-READ-MODEL-MARKER-SELECTOR-RECONCILIATION-2026-07-16.md"
+            ]
+          }
+        ]
+      }
+    ],
+    "status_boundaries": {
+      "unknown": [
+        "Actual restoration after a new Windows logon is UNKNOWN.",
+        "Sustained unattended Playbook Observer uptime is UNKNOWN; current state is intentionally stopped and restorable.",
+        "DiscordOS production message-command adoption of the interaction reliability contract is UNKNOWN because PR #104 remains draft and unmerged.",
+        "DiscordOS real-user interaction coverage outside the fixed Preview canary is UNKNOWN.",
+        "PostgreSQL 5432 and 5433 ownership is UNKNOWN.",
+        "The loopback browser-debugger process ownership is UNKNOWN."
+      ],
+      "pending": [],
+      "blocked": [],
+      "stale": []
+    },
+    "discord_mutation_authorized": false
+  },
+  "extensions": {
+    "selection": {
+      "record_ids": [
+        "lane-cortex-context-synthesis",
+        "lane-cortex-boundary-decision"
+      ],
+      "total_record_count": 2
+    },
+    "priority_policy": "preserve-unknown-as-null",
+    "discord_mutation_authorized": false
+  }
+}
