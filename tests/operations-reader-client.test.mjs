@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { createOperationsReader, createTransportGate, readResponseJson, OBSERVATION_MS } from '../src/lib/operations/reader-client.mjs';
 import { validateView } from '../src/lib/operations/display-contract.mjs';
 import { validateView as serverValidate } from '../src/server/operations/consumer-http.mjs';
+import { privateCardEligible } from '../src/lib/projects/private-card-gate.mjs';
 import { exactOrder } from '../src/lib/operations/ordering.mjs';
 import { exactOrder as serverOrder } from '../src/server/operations/ordering.mjs';
 
@@ -218,4 +219,81 @@ for (const [name, options] of [
 test('source contains no token/cookie persistence, logging, polling, or custom Origin spoofing', async () => {
   const source = await readFile(new URL('../src/lib/operations/reader-client.mjs', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /localStorage|sessionStorage|document\.cookie|console\.|setInterval|headers:.*Origin/u);
+});
+
+test('private card gate follows the verified open session, not overview health', async () => {
+  // Stale overview + open session: the card may mount (it has its own server checks); no overview is shown.
+  const stale = fixture(); await stale.reader.start();
+  stale.respond(async (_url, config) => config.method === 'GET' ? Response.json(unhealthy('stale')) : new Response(null, { status: 204 }));
+  await stale.reader.refresh();
+  let snap = stale.reader.getSnapshot();
+  assert.deepEqual([snap.status, snap.session, snap.view], ['stale', 'open', null]);
+  assert.equal(privateCardEligible(snap), true);
+  // Hiding the tab, an Auth change, and sign-out each remove eligibility.
+  stale.reader.setVisible(false); assert.equal(privateCardEligible(stale.reader.getSnapshot()), false);
+  stale.reader.setVisible(true); await stale.reader.refresh(); assert.equal(privateCardEligible(stale.reader.getSnapshot()), true);
+  stale.session('B'); assert.equal(privateCardEligible(stale.reader.getSnapshot()), false);
+  stale.session(null); assert.equal(privateCardEligible(stale.reader.getSnapshot()), false);
+  stale.reader.dispose();
+  // Stale overview + closed session (session missing) shows nothing.
+  const closed = fixture(); await closed.reader.start();
+  closed.respond(async () => Response.json({ error: 'OPS_SESSION_MISSING' }, { status: 403 }));
+  await closed.reader.refresh(); snap = closed.reader.getSnapshot();
+  assert.deepEqual([snap.status, snap.session], ['session-missing', 'closed']); assert.equal(privateCardEligible(snap), false);
+  closed.reader.dispose();
+  // A healthy overview expiring erases eligibility even though the session record is still open.
+  const healthyExpiry = fixture(); await healthyExpiry.reader.start(); await healthyExpiry.reader.refresh();
+  assert.equal(privateCardEligible(healthyExpiry.reader.getSnapshot()), true);
+  healthyExpiry.timers.tick(OBSERVATION_MS); assert.equal(healthyExpiry.reader.getSnapshot().status, 'expired');
+  assert.equal(privateCardEligible(healthyExpiry.reader.getSnapshot()), false); healthyExpiry.reader.dispose();
+  // Denied, unknown, loading and pending states never qualify.
+  const denied = fixture(); await denied.reader.start();
+  denied.respond(async () => Response.json({ error: 'OPS_ACCESS_DENIED' }, { status: 403 }));
+  await denied.reader.refresh(); assert.equal(privateCardEligible(denied.reader.getSnapshot()), false); denied.reader.dispose();
+  const base = { signedIn: true, session: 'open', status: 'stale', pending: false, uncertain: false };
+  assert.equal(privateCardEligible(base), true);
+  for (const patch of [{ signedIn: false }, { session: 'closed' }, { session: 'unverified' }, { status: 'expired' },
+    { status: 'unknown' }, { status: 'loading' }, { status: 'opened' }, { status: 'denied' }, { status: 'idle' },
+    { status: 'session-missing' }, { status: 'closed' }, { status: 'opened', session: 'closed' },
+    { pending: true }, { uncertain: true }]) assert.equal(privateCardEligible({ ...base, ...patch }), false, JSON.stringify(patch));
+  assert.equal(privateCardEligible(null), false);
+});
+
+for (const health of ['stale', 'reconciling', 'incompatible', 'unavailable']) {
+  test(`${health} overview with an open session is eligible, bounded by TTL, and re-read on expiry`, async () => {
+    const f = fixture(); await f.reader.start();
+    f.respond(async (_url, config) => config.method === 'GET' ? Response.json(unhealthy(health)) : new Response(null, { status: 204 }));
+    await f.reader.refresh();
+    let snap = f.reader.getSnapshot();
+    assert.deepEqual([snap.status, snap.session, snap.view], [health, 'open', null]);
+    assert.equal(privateCardEligible(snap), true);
+    f.timers.tick(OBSERVATION_MS - 1); assert.equal(privateCardEligible(f.reader.getSnapshot()), true);
+    f.timers.tick(1); snap = f.reader.getSnapshot();
+    assert.deepEqual([snap.status, snap.session], ['expired', 'unverified']);
+    assert.equal(privateCardEligible(snap), false); assert.equal(f.calls.length, 1, 'expiry never polls');
+    // Only an explicit new read restores eligibility.
+    await f.reader.refresh(); assert.equal(privateCardEligible(f.reader.getSnapshot()), true); assert.equal(f.calls.length, 2);
+    f.reader.dispose();
+  });
+}
+test('stale open observation clears on an Auth generation change even when the session event is missed', async () => {
+  const f = fixture(); await f.reader.start();
+  f.respond(async () => Response.json(unhealthy('stale')));
+  await f.reader.refresh(); assert.equal(privateCardEligible(f.reader.getSnapshot()), true);
+  f.generation('generation-b'); // no onSessionChange event delivered
+  f.reader.checkDisplay();
+  const snap = f.reader.getSnapshot();
+  assert.deepEqual([snap.status, snap.session], ['expired', 'unverified']);
+  assert.equal(privateCardEligible(snap), false); f.reader.dispose();
+});
+test('stale open observation clears at its deadline when the expiry timer never fires', async () => {
+  let t = 0; // a throttled or suspended tab: the clock moves but no timer callback runs
+  const f = fixture({ monotonic: () => t, setTimer: () => 1, clearTimer: () => {} }); await f.reader.start();
+  f.respond(async () => Response.json(unhealthy('stale')));
+  await f.reader.refresh(); assert.equal(privateCardEligible(f.reader.getSnapshot()), true);
+  t = OBSERVATION_MS - 1; f.reader.checkDisplay(); assert.equal(privateCardEligible(f.reader.getSnapshot()), true);
+  t = OBSERVATION_MS; f.reader.checkDisplay();
+  const snap = f.reader.getSnapshot();
+  assert.deepEqual([snap.status, snap.session], ['expired', 'unverified']);
+  assert.equal(privateCardEligible(snap), false); f.reader.dispose();
 });

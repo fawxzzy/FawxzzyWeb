@@ -178,3 +178,13 @@ test("projects page applies the approved snapshot through the adapter envelope",
   assert.match(board, /<ProjectBoard publicBoardState=\{publicBoardState\} privateBoardSlot=/);
   assert(!/fetch\(|process\.env/.test(page + board));
 });
+
+test("Projects navigation is origin-relative on the storefront and points to the main site from the account shell", () => {
+  const nav = fs.readFileSync("src/components/site/site-nav.tsx", "utf8");
+  const shell = fs.readFileSync("src/components/account/account-page-shell.tsx", "utf8");
+  const config = fs.readFileSync("src/config/account.ts", "utf8");
+  assert.match(nav, /projectsHref = "\/projects"/);
+  assert(!nav.includes("canonicalOrigin"));
+  assert.match(shell, /<SiteNav current="account" projectsHref=\{publicProjectsUrl\} \/>/);
+  assert.match(config, /publicProjectsUrl = `\$\{accountContract\.publicHubOrigin\}\$\{projectsPaths\.public\}`/);
+});

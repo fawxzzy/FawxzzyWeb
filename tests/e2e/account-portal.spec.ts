@@ -1136,7 +1136,7 @@ test("public navigation exposes the shared account host without duplicating auth
   );
   await expect(navigation.getByRole("link", { name: "Projects", exact: true })).toHaveAttribute(
     "href",
-    `${accountContract.canonicalOrigin}/projects`,
+    "/projects",
   );
   await expect(navigation.getByRole("link", { name: "Account", exact: true })).toHaveAttribute(
     "href",
@@ -1653,6 +1653,15 @@ test("account status copies the compact Mazer hierarchy without unfinished servi
   await expect(page.getByRole("link", { name: "Reset password" })).toHaveAttribute(
     "href",
     "/reset-password",
+  );
+  const projectLinks = page.locator("[data-account-projects-links]");
+  await expect(projectLinks.getByRole("link", { name: "Projects", exact: true })).toHaveAttribute(
+    "href",
+    "https://fawxzzy.com/projects",
+  );
+  await expect(projectLinks.getByRole("link", { name: "Private projects" })).toHaveAttribute(
+    "href",
+    "/projects",
   );
   expect(await context.cookies()).toEqual([]);
 

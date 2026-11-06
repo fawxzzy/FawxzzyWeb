@@ -100,10 +100,20 @@ checks; signing in alone does not grant it. The loopback-only `auth_test`
 adapter is used for local browser fixtures; synthetic credentials are never
 sent to a live provider. The Projects sign-in link uses the exact allowlisted
 `/projects` return target on the account origin; other product contexts retain
-their own return rules. The Projects view makes one current-session read after
+their own return rules. The same page on the main site (`fawxzzy.com/projects`)
+never starts the reader: its private region is only a `Sign in to see private
+work` link to `https://account.fawxzzy.com/login?returnTo=%2Fprojects`.
+The private project card mounts whenever the owner is signed in and the caller-bound private session is
+verified open (`src/lib/projects/private-card-gate.mjs`), even if the legacy work overview is stale,
+reconciling, incompatible or unavailable; the card still passes its own server checks (Auth, owner grant,
+caller-bound cookie, no-store). Closed, missing, denied, expired, unknown, loading, hidden-tab and
+signed-out states render no card. Every verified-open observation, healthy or not, is bounded to
+60 seconds and one Auth generation: after that the session is treated as unverified, the card unmounts,
+and only an explicit read restores it. The Projects view makes one current-session read after
 verified sign-in. If that proves no session exists, it can open once and read
-again. Other denial, uncertainty, or a nonhealthy projection stops the automatic
-path. There is no polling, card write action, or reverse editor.
+again. Other denial or uncertainty stops the automatic path, and a nonhealthy projection never starts
+one by itself (the card may still mount for an already open session as described above). There is no
+polling, card write action, or reverse editor.
 
 The request bearer exists only in its request closure,
 not in UI state, logs, page URLs or application storage. Browser-generated
@@ -113,7 +123,8 @@ strict UTF-8 JSON and the same display validator used by the server.
 A healthy result is displayed for at most 60 seconds. Its timer only erases it.
 Auth events (including same-user events),
 generation changes, page hiding, pagehide, unmount, failed refresh and nonhealthy
-results erase private cards. A new page visit or return after a healthy or expired
+results erase work-overview cards, and the same events or the 60-second bound unmount the private
+project card. A new page visit or return after a healthy, stale or expired
 observation can make one automatic read for its current Auth generation. A denied
 or uncertain result does not automatically retry on tab return. Expired work may
 also be refreshed explicitly; there is no background polling. Cards render escaped

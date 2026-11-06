@@ -1,13 +1,15 @@
 import Image from "next/image";
 import { StaticLink } from "@/components/site/static-link";
-import { accountContract, accountUrls } from "@/config/account";
+import { accountUrls } from "@/config/account";
 import { productIdentity } from "@/config/product";
 
 type SiteNavProps = {
   current: "account" | "apps" | "home" | "projects";
+  /** Origin-relative by default; account-host shells pass the absolute main-site URL. */
+  projectsHref?: string;
 };
 
-export function SiteNav({ current }: SiteNavProps) {
+export function SiteNav({ current, projectsHref = "/projects" }: SiteNavProps) {
   return (
     <nav aria-label="Primary" className="site-nav surface-panel">
       <StaticLink
@@ -39,7 +41,7 @@ export function SiteNav({ current }: SiteNavProps) {
         >
           Apps
         </StaticLink>
-        <StaticLink aria-current={current === "projects" ? "page" : undefined} href={`${accountContract.canonicalOrigin}/projects`}>
+        <StaticLink aria-current={current === "projects" ? "page" : undefined} href={projectsHref}>
           Projects
         </StaticLink>
         <StaticLink href={accountUrls.account}>Account</StaticLink>

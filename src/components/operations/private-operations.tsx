@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { isLocalAuthTestOrigin } from '@/config/account';
+import { isLiveAccountAdapterOrigin, isLocalAuthTestOrigin, privateProjectsSignInUrl } from '@/config/account';
 import { resolvePortalAuthAdapter, type PortalAuthAdapter } from '@/lib/auth/browser-adapter';
 import { createOperationsReader, type OperationsReader, type ReaderState } from '@/lib/operations/reader-client.mjs';
 import { PrivateProjectCard } from '@/components/projects/private-project-card';
+import { privateCardEligible } from '@/lib/projects/private-card-gate.mjs';
 import {
   emitAccountProjectsPageView,
   shouldCountAccountProjectsPageView,
@@ -38,6 +39,9 @@ export function PrivateOperations({
   const [resumeEpoch, setResumeEpoch] = useState(0);
   const [portalAdapter, setPortalAdapter] = useState<PortalAuthAdapter | null>(null);
   const [cardReady, setCardReady] = useState(false);
+  // Auth lives only on the account origin. On any other host (the main site)
+  // the private region is a plain link to sign in there; the reader never runs.
+  const [offAccountOrigin, setOffAccountOrigin] = useState(false);
   const reader = useRef<OperationsReader | null>(null);
   const adapter = useRef<PortalAuthAdapter | null>(null);
   const attemptedGeneration = useRef<string | null>(null);
@@ -52,7 +56,11 @@ export function PrivateOperations({
     const resolution = resolvePortalAuthAdapter(window.location);
     if (resolution.status !== 'ready') {
       // Match asynchronous adapter initialization without doing work at render.
-      queueMicrotask(() => setState({ ...initial, status: 'unavailable' }));
+      const offOrigin = !isLiveAccountAdapterOrigin(window.location.origin);
+      queueMicrotask(() => {
+        setState({ ...initial, status: 'unavailable' });
+        if (offOrigin) setOffAccountOrigin(true);
+      });
       return;
     }
     adapter.current = resolution.adapter;
@@ -71,7 +79,7 @@ export function PrivateOperations({
       if (!nextVisible) {
         const snapshot = controller.getSnapshot();
         resumeEligible = snapshot.status === 'healthy' || snapshot.status === 'expired'
-          || attemptedGeneration.current === null;
+          || privateCardEligible(snapshot) || attemptedGeneration.current === null;
       } else if (resumeEligible) {
         // A real return to this tab may reconcile once. A denied or uncertain
         // request stays held for explicit user action in the same Auth generation.
@@ -133,6 +141,16 @@ export function PrivateOperations({
   const disabled = !state.signedIn || state.pending;
   if (projectView) {
     if (!active) return null;
+    if (offAccountOrigin) {
+      return (
+        <section aria-label="Private projects" className={styles.root}>
+          <div className={styles.panel}>
+            <h2>Private work</h2>
+            <p><a href={privateProjectsSignInUrl}>Sign in to see private work</a></p>
+          </div>
+        </section>
+      );
+    }
     // This client-only slot never serializes private data into the public page
     // HTML. The existing account-origin endpoint still verifies Auth, the
     // caller-bound cookie, operator grant, and a no-store private response.
@@ -142,7 +160,7 @@ export function PrivateOperations({
         <div className={styles.panel}>
           <h2>Private work</h2>
           {state.signedIn
-            ? <p role="status" aria-live="polite">{state.view ? (cardReady ? "You're signed in. Your private project card is shown below." : "You're signed in. Private project cards are not available yet.") : messages[state.status] ?? messages.unavailable}</p>
+            ? <p role="status" aria-live="polite">{cardReady ? "You're signed in. Your private project card is shown below." : state.view ? "You're signed in. Private project cards are not available yet." : messages[state.status] ?? messages.unavailable}</p>
             : <p>Sign in to your Fawxzzy account to check private work. <a href="/login?returnTo=%2Fprojects">Sign in</a></p>}
           {!state.signedIn && localLateSignInTest
             ? <button type="button" onClick={() => {
@@ -153,7 +171,7 @@ export function PrivateOperations({
             ? <button type="button" disabled={state.pending} onClick={() => { void reader.current?.refresh(); }}>Refresh private work</button>
             : null}
         </div>
-        {state.view && state.session === 'open' ? <PrivateProjectCard adapter={portalAdapter} enabled onReady={setCardReady} /> : null}
+        {privateCardEligible(state) ? <PrivateProjectCard adapter={portalAdapter} enabled onReady={setCardReady} /> : null}
       </section>
     );
   }

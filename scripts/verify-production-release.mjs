@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
 import htmlParser from 'next/dist/compiled/node-html-parser/index.js';
@@ -87,22 +88,59 @@ export function hasExactCanonicalLink(html, expectedCanonical) {
     && canonicalLinks[0].getAttribute("href") === expectedCanonical;
 }
 
-export function verifyProjectsPublicHtml(html) {
+// The published board is the committed owner-approved snapshot; derive the expected tabs from it.
+// The verifier runs from the candidate checkout, so its generated snapshot is the candidate tree's.
+// The `snapshot` option of verifyProductionRelease exists for tests only: whatever is used must hash
+// to identity.projectSnapshotDigest or acceptance fails.
+export function loadCandidateProjectSnapshot() {
+  return JSON.parse(readFileSync(new URL('../src/data/project-board-public.generated.json', import.meta.url), 'utf8'));
+}
+
+function sortedJson(value) {
+  if (Array.isArray(value)) return `[${value.map(sortedJson).join(',')}]`;
+  if (value !== null && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${sortedJson(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+// sha256 of the key-sorted JSON of the generated public snapshot. The release identity carries this
+// digest, so the expected board is bound to the release rather than to whatever tree verifies it.
+export function projectSnapshotDigest(snapshot) {
+  return createHash('sha256').update(sortedJson(snapshot), 'utf8').digest('hex');
+}
+
+// Mirrors the board's own open/completed split (src/components/projects/project-board.tsx).
+const completedLifecycles = new Set(['completed', 'complete', 'closed', 'archived', 'retired']);
+
+export function expectedProjectsBoards(snapshot = loadCandidateProjectSnapshot()) {
+  return snapshot.boards.map((board) => ({ name: board.name, count: String(board.cards.length) }));
+}
+
+export function verifyProjectsPublicHtml(html, expectedDigest, snapshot = loadCandidateProjectSnapshot()) {
+  requireCondition(/^[0-9a-f]{64}$/u.test(expectedDigest ?? '') && projectSnapshotDigest(snapshot) === expectedDigest,
+    'Project board snapshot does not match the release identity digest.');
   const document = htmlParser.parse(html);
   const robots = document.querySelector('head > meta[name="robots"]')?.getAttribute('content') ?? '';
   const boards = document.querySelectorAll('.project-tab').map((tab) => ({
     name: tab.querySelector('span')?.text.trim(),
     count: tab.querySelector('strong')?.text.trim(),
   }));
-  const expected = ['Fawxzzy Fitness', 'Mazer', 'Fawxzzy Web', 'Atlas Stack'];
-  if (!robots.split(',').some((part) => part.trim().toLowerCase() === 'noindex')
+  const expected = expectedProjectsBoards(snapshot);
+  // The static HTML renders exactly the default (first) board's open cards, each present in the snapshot.
+  const openTitles = (snapshot.boards[0]?.cards ?? [])
+    .filter((card) => !completedLifecycles.has(card.lifecycle)).map((card) => card.title);
+  const renderedTitles = document.querySelectorAll('.project-card').map((card) => card.querySelector('h3')?.text.trim());
+  const rendered = renderedTitles.length;
+  if (rendered !== openTitles.length || openTitles.length < 1
+    || [...renderedTitles].sort().join('\u0000') !== [...openTitles].sort().join('\u0000')
+    || !robots.split(',').some((part) => part.trim().toLowerCase() === 'noindex')
     || boards.length !== expected.length
-    || boards.some((board, index) => board.name !== expected[index] || board.count !== '0')
-    || document.querySelectorAll('.project-card').length !== 0
+    || boards.some((board, index) => board.name !== expected[index].name || board.count !== expected[index].count)
     || html.includes('FW-ANALYTICS-001') || html.includes('FF-WEB-ANALYTICS-001')) {
-    throw new Error('Projects public HTML is not the approved noindex four-board empty view.');
+    throw new Error('Projects public HTML is not the approved noindex public board snapshot view.');
   }
-  return { noindex: true, boardCount: boards.length, publicCardCount: 0 };
+  return { noindex: true, boardCount: boards.length, publicCardCount: rendered };
 }
 
 
@@ -135,7 +173,7 @@ function assertBodyDigest(digest, body) {
     'Supplied body does not match its captured digest.');
 }
 
-function assertRouteGroup(observations, expected, kind) {
+function assertRouteGroup(observations, expected, kind, snapshot, snapshotDigest) {
   requireCondition(Array.isArray(observations) && observations.length === expected.length,
     `Incomplete ${kind} route observations.`);
   observations.forEach((observation, index) => {
@@ -152,19 +190,28 @@ function assertRouteGroup(observations, expected, kind) {
     assertBodyDigest(observation.bodyDigest, needsHtml ? observation.html : undefined);
     const account = kind === 'account';
     const legal = kind === 'legal';
+    // Public Projects is a main-site page: only the apex may serve the public observation.
+    const apexProjects = kind === 'public' && route === '/projects';
     const origins = account ? ['https://account.fawxzzy.com']
+      : apexProjects ? ['https://fawxzzy.com']
       : (legal || accountRoutes.includes(route)) ? ['https://fawxzzy.com', 'https://account.fawxzzy.com']
         : ['https://fawxzzy.com'];
     assertObservationUrl(observation.url, route, origins, kind);
+    if (apexProjects) {
+      requireCondition(hasExactCanonicalLink(observation.html, 'https://fawxzzy.com/projects'),
+        'Apex Projects canonical HTML is invalid.');
+    }
     if (account || legal) {
-      const canonical = `${legal ? 'https://fawxzzy.com' : 'https://account.fawxzzy.com'}${route.split('?')[0]}`;
+      // Projects is a main-site page: the account host serves the same page but canonicalizes to the apex.
+      const mainSite = legal || route === '/projects';
+      const canonical = `${mainSite ? 'https://fawxzzy.com' : 'https://account.fawxzzy.com'}${route.split('?')[0]}`;
       requireCondition(hasExactCanonicalLink(observation.html, canonical), `${kind} canonical HTML is invalid.`);
     }
-    if (route === '/projects') verifyProjectsPublicHtml(observation.html);
+    if (route === '/projects') verifyProjectsPublicHtml(observation.html, snapshotDigest, snapshot);
   });
 }
 
-export function verifyProductionRelease(input) {
+export function verifyProductionRelease(input, { snapshot = loadCandidateProjectSnapshot() } = {}) {
   assertKeys(input, ['identity', 'observations'], 'pure acceptance input');
   const { identity, observations: o } = input;
   assertReleaseIdentity(identity);
@@ -174,9 +221,9 @@ export function verifyProductionRelease(input) {
   assertDeploymentObservation(o.deployment, identity);
   assertDeploymentObservation(o.rollbackDeployment, identity, true);
   assertCanonicalAliasBindings(o.aliases, identity.candidateDeploymentId);
-  assertRouteGroup(o.smoke, smokeRoutes, 'public');
-  assertRouteGroup(o.account, accountRoutes, 'account');
-  assertRouteGroup(o.legal, legalRoutes, 'legal');
+  assertRouteGroup(o.smoke, smokeRoutes, 'public', snapshot, identity.projectSnapshotDigest);
+  assertRouteGroup(o.account, accountRoutes, 'account', snapshot, identity.projectSnapshotDigest);
+  assertRouteGroup(o.legal, legalRoutes, 'legal', snapshot, identity.projectSnapshotDigest);
   assertKeys(o.privateApi, ['status', 'cacheControl', 'body', 'bodyDigest'], 'signed-out private API');
   requireCondition([403, 503].includes(o.privateApi.status) && typeof o.privateApi.cacheControl === 'string'
     && o.privateApi.cacheControl.split(',').some((token) => token.trim().toLowerCase() === 'no-store')

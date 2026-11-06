@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { VERCEL_PRODUCTION_CONTRACT as contract } from './vercel-production-contract.mjs';
 import { assertCanonicalAliasBindings, recoverFailedProductionRelease,
   validateCandidateObservations, validateRollbackObservations } from './recover-production-release.mjs';
-import { verifyProductionRelease, smokeRoutes, accountRoutes, legalRoutes } from './verify-production-release.mjs';
+import { verifyProductionRelease, smokeRoutes, expectedProjectsBoards, loadCandidateProjectSnapshot, projectSnapshotDigest, accountRoutes, legalRoutes } from './verify-production-release.mjs';
 import { canonicalJson, parsePhaseFrame, handlePhaseRequest, PHASE_SCHEMA, MAX_FRAME_BYTES } from './deploy-production.mjs';
 
 const identity = {
@@ -16,6 +16,7 @@ const identity = {
   teamId: contract.teamId, projectId: contract.projectId, productionAliases: [...contract.productionAliases],
   candidateDeploymentId: 'dpl_Candidate123', candidateUrl: 'https://candidate.vercel.app',
   rollbackDeploymentId: 'dpl_Prior123', rollbackCommit: 'c'.repeat(40), rollbackTree: 'd'.repeat(40),
+  projectSnapshotDigest: projectSnapshotDigest(loadCandidateProjectSnapshot()),
 };
 const project = (id) => ({ id: contract.projectId, name: contract.projectName,
   accountId: contract.teamId, productionDeploymentId: id });
@@ -25,7 +26,10 @@ const deployment = (rollback = false) => ({ id: rollback ? identity.rollbackDepl
   url: rollback ? 'prior.vercel.app' : 'candidate.vercel.app', projectId: identity.projectId, teamId: identity.teamId,
   target: 'production', readyState: 'READY', commit: rollback ? identity.rollbackCommit : identity.commit,
   tree: rollback ? identity.rollbackTree : identity.tree, attemptId: rollback ? null : identity.attemptId });
-const page = (canonical) => `<html><head>${canonical ? `<link rel="canonical" href="${canonical}">` : ''}<meta name="robots" content="noindex, nofollow"></head><body>${['Fawxzzy Fitness', 'Mazer', 'Fawxzzy Web', 'Atlas Stack'].map((name) => `<button class="project-tab"><span>${name}</span><strong>0</strong></button>`).join('')}</body></html>`;
+const openCards = () => loadCandidateProjectSnapshot().boards[0].cards
+  .filter((card) => !['completed', 'complete', 'closed', 'archived', 'retired'].includes(card.lifecycle))
+  .map((card) => `<button class="project-card" type="button"><h3>${card.title.replaceAll('&', '&amp;').replaceAll('<', '&lt;')}</h3></button>`).join('');
+const page = (canonical) => `<html><head>${canonical ? `<link rel="canonical" href="${canonical}">` : ''}<meta name="robots" content="noindex, nofollow"></head><body>${expectedProjectsBoards().map(({ name, count }) => `<button class="project-tab"><span>${name}</span><strong>${count}</strong></button>`).join('')}${openCards()}</body></html>`;
 const digest = (body) => createHash('sha256').update(body, 'utf8').digest('hex');
 const followedPublicRedirects = {
   '/apps/fitness': 'https://fitness.fawxzzy.com/',
@@ -35,7 +39,7 @@ const followedPublicRedirects = {
 };
 function routes(list, kind, padding = 0) {
   return list.map((route) => {
-    const body = page(kind === 'public' ? null : `${kind === 'account' ? 'https://account.fawxzzy.com' : 'https://fawxzzy.com'}${route.split('?')[0]}`)
+    const body = page(kind === 'public' ? (route === '/projects' ? 'https://fawxzzy.com/projects' : null) : `${kind === 'account' && route !== '/projects' ? 'https://account.fawxzzy.com' : 'https://fawxzzy.com'}${route.split('?')[0]}`)
       + 'x'.repeat(padding);
     return { route, status: 200,
       url: new URL((kind === 'public' ? followedPublicRedirects[route] : undefined) ?? route,
@@ -96,7 +100,7 @@ test('all three pure phases accept complete observations without performing effe
 
 test('identity and every candidate correlation reject foreign data', () => {
   for (const field of ['repository', 'packetId', 'reservationId', 'attemptId', 'commit', 'tree', 'teamId', 'projectId',
-    'candidateDeploymentId', 'candidateUrl', 'rollbackDeploymentId', 'rollbackCommit', 'rollbackTree']) {
+    'candidateDeploymentId', 'candidateUrl', 'rollbackDeploymentId', 'rollbackCommit', 'rollbackTree', 'projectSnapshotDigest']) {
     assert.throws(() => validateCandidateObservations({ ...identity, [field]: null }, candidate()));
   }
   for (const field of ['id', 'url', 'projectId', 'teamId', 'target', 'readyState', 'commit', 'tree', 'attemptId']) {
@@ -168,6 +172,22 @@ test('canonical and Projects HTML predicates remain enforced', () => {
     const o = acceptance(); const entry = o[group].find((item) => item.route === '/projects');
     entry.html = entry.html.replace('noindex', 'index'); assert.throws(() => runAcceptance(o));
   }
+});
+
+test('apex Projects acceptance is apex-only, canonical to the apex, and matches the candidate snapshot', () => {
+  const mutate = (change) => {
+    const o = acceptance(); const entry = o.smoke.find((item) => item.route === '/projects');
+    change(entry); entry.bodyDigest = digest(entry.html); return o;
+  };
+  assert.doesNotThrow(() => runAcceptance(acceptance()));
+  assert.throws(() => verifyProductionRelease({ identity: { ...identity, projectSnapshotDigest: 'f'.repeat(64) }, observations: acceptance() }), /identity digest/u);
+  assert.throws(() => verifyProductionRelease({ identity, observations: acceptance() }, {
+    snapshot: { ...loadCandidateProjectSnapshot(), preparedAt: 'tampered' } }), /identity digest/u);
+  assert.throws(() => runAcceptance(mutate((e) => { e.url = 'https://account.fawxzzy.com/projects'; })), /admitted route/u);
+  assert.throws(() => runAcceptance(mutate((e) => { e.html = e.html.replace(/<link rel="canonical"[^>]*>/u, ''); })), /canonical/u);
+  assert.throws(() => runAcceptance(mutate((e) => { e.html = e.html.replace('https://fawxzzy.com/projects', 'https://account.fawxzzy.com/projects'); })), /canonical/u);
+  assert.throws(() => runAcceptance(mutate((e) => { e.html = e.html.replace(/<button class="project-card"/u, '<button class="x"'); })), /snapshot/u);
+  assert.throws(() => runAcceptance(mutate((e) => { e.html = e.html.replace(/(<button class="project-card"[^>]*><h3>)[^<]*/u, '$1Invented card'); })), /snapshot/u);
 });
 
 test('private API, pending denial, redirect, range and log failure each deny acceptance', () => {

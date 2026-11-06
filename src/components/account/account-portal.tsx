@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import {
   accountContract,
   classifyRuntimeOrigin,
+  projectsPaths,
+  publicProjectsUrl,
   resolveAccountExperienceContext,
   type AccountExperienceContext,
 } from "@/config/account";
@@ -715,6 +717,13 @@ function AccountPanel({
         <div className="account-card__links">
           <a href={contextualPath("/reset-password", context)}>Reset Password</a>
         </div>
+        {context.id === "website" && session ? (
+          <div className="account-card__links" data-account-projects-links>
+            <a href={publicProjectsUrl}>Projects</a>
+            <AccountTextDivider />
+            <a href={projectsPaths.private}>Private projects</a>
+          </div>
+        ) : null}
         <AccountLegalLinks context={context} />
       </div>
       <div className={`account-auth-dock${session ? " account-auth-dock--danger" : ""}`}>

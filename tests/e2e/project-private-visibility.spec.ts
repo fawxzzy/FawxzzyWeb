@@ -22,7 +22,11 @@ const privateCard = {
 };
 type CardReply = 'absent' | 'valid' | 'denied' | 'unavailable' | 'mismatch';
 
-async function privateFixture(page: Page, { deny = false, card = 'absent', hold = false }: { deny?: boolean; card?: CardReply; hold?: boolean } = {}) {
+const staleView = { health: 'stale', authoritative: false, actions_enabled: false,
+  projection_revision: null, source_watermark: [], cards: [] };
+
+async function privateFixture(page: Page, { deny = false, card = 'absent', hold = false, overview = 'healthy', keepClosed = false }:
+  { deny?: boolean; card?: CardReply; hold?: boolean; overview?: 'healthy' | 'stale'; keepClosed?: boolean } = {}) {
   let opened = false;
   let releaseCard: () => void = () => undefined;
   const gate = hold ? new Promise<void>((resolve) => { releaseCard = resolve; }) : Promise.resolve();
@@ -30,7 +34,13 @@ async function privateFixture(page: Page, { deny = false, card = 'absent', hold 
   const calls: string[] = [];
   const external: string[] = [];
   const privateCardCalls: string[] = [];
-  await page.route('https://**/*', (route) => { external.push(new URL(route.request().url()).origin); return route.abort(); });
+  // A build with NEXT_PUBLIC_FAWXZZY_ANALYTICS_URL baked (the analytics spec uses collector.invalid) legitimately
+  // emits the signed-in Projects page view; that single sink is not an external leak, so it is not recorded here.
+  await page.route('https://**/*', (route) => {
+    const origin = new URL(route.request().url()).origin;
+    if (origin !== 'https://collector.invalid') external.push(origin);
+    return route.abort();
+  });
   await page.route('http://127.0.0.1:3210/api/projects/private-card', async (route) => {
     privateCardCalls.push(route.request().method());
     await gate;
@@ -54,13 +64,21 @@ async function privateFixture(page: Page, { deny = false, card = 'absent', hold 
     } else if (request.method() === 'GET' && !opened) {
       await route.fulfill({ status: 403, headers, json: { error: 'OPS_SESSION_MISSING' } });
     } else if (request.method() === 'POST') {
-      opened = true;
+      opened = !keepClosed;
       await route.fulfill({ status: 204, headers });
+    } else if (keepClosed) {
+      await route.fulfill({ status: 403, headers, json: { error: 'OPS_SESSION_MISSING' } });
     } else {
-      await route.fulfill({ status: 200, headers, json: privateView });
+      await route.fulfill({ status: 200, headers, json: overview === 'stale' ? staleView : privateView });
     }
   });
   return { calls, external, privateCardCalls, releaseCard, setDenied(value: boolean) { denied = value; } };
+}
+
+// Playwright's installed clock can leave WebKit's action-stability (rAF) wait paused, so clock tests
+// activate buttons directly instead of waiting for actionability.
+async function refreshPrivateWork(page: Page) {
+  await page.getByRole('button', { name: 'Refresh private work' }).evaluate((element: HTMLButtonElement) => element.click());
 }
 
 async function selectWebBoard(page: Page, afterFakeClock = false) {
@@ -69,6 +87,30 @@ async function selectWebBoard(page: Page, afterFakeClock = false) {
   if (afterFakeClock) await button.evaluate((element: HTMLButtonElement) => element.click());
   else await button.click();
 }
+
+test('main-site Projects offers only a plain sign-in link and never starts the private reader', async ({ page }) => {
+  const foreign: string[] = [];
+  // Serve the static export under the main-site origin; every other HTTPS origin is refused.
+  await page.route('https://**/*', (route) => { foreign.push(new URL(route.request().url()).origin); return route.abort(); });
+  await page.route('https://fawxzzy.com/**', async (route) => {
+    const url = new URL(route.request().url());
+    await route.fulfill({ response: await route.fetch({ url: `http://127.0.0.1:3210${url.pathname}${url.search}` }) });
+  });
+  await page.goto('https://fawxzzy.com/projects');
+  await expect(page.locator('head > link[rel="canonical"]')).toHaveAttribute('href', 'https://fawxzzy.com/projects');
+  const nav = page.getByRole('navigation', { name: 'Primary' });
+  await expect(nav.getByRole('link', { name: 'Projects', exact: true })).toHaveAttribute('href', '/projects');
+  await expect(page.getByRole('navigation', { name: 'Project boards' }).getByRole('button')).toHaveCount(4);
+  await selectWebBoard(page);
+  const privateArea = page.getByRole('region', { name: 'Private projects' });
+  await expect(privateArea.getByRole('link', { name: 'Sign in to see private work' }))
+    .toHaveAttribute('href', 'https://account.fawxzzy.com/login?returnTo=%2Fprojects');
+  await expect(privateArea.getByRole('button')).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Canonical private project card' })).toHaveCount(0);
+  // The storefront listener may count the public page view; nothing else leaves the page, and
+  // in particular the account origin is never contacted.
+  expect(foreign.filter((origin) => origin !== 'https://collector.invalid')).toEqual([]);
+});
 
 test('signed-out Projects keeps public boards separate from the dormant private Web slot', async ({ page }) => {
   const fixture = await privateFixture(page);
@@ -220,6 +262,7 @@ test('foreign account gets no private Web card or open retry loop', async ({ pag
 });
 
 test('expiry, Auth change and revocation clear verified Web state without legacy payload', async ({ page }) => {
+  test.setTimeout(60_000);
   await page.clock.install();
   // A VISIBLE valid card must render first; each event below must then clear it.
   const fixture = await privateFixture(page, { card: 'valid' });
@@ -236,7 +279,7 @@ test('expiry, Auth change and revocation clear verified Web state without legacy
   await expect(canonicalCard(page)).toHaveCount(0);
   await expect(page.getByText(cardTitle)).toHaveCount(0);
   expect(fixture.calls).toHaveLength(3);
-  await page.getByRole('button', { name: 'Refresh private work' }).click();
+  await refreshPrivateWork(page);
   await expect(privateArea.getByRole('status')).toContainText("You're signed in");
   await expect(canonicalCard(page)).toHaveCount(1);
   await page.clock.resume();
@@ -268,5 +311,80 @@ test('expiry, Auth change and revocation clear verified Web state without legacy
   expect(stored).not.toContain(title);
   expect(stored).not.toContain(privateView.cards[0].stable_id);
   await expect(page.getByRole('region', { name: 'Canonical private project card' })).toHaveCount(0);
+  expect(fixture.external).toEqual([]);
+});
+
+test('stale overview with an open session still shows the owner card and keeps the overview empty', async ({ page }) => {
+  const fixture = await privateFixture(page, { card: 'valid', overview: 'stale' });
+  await page.goto('/projects?auth_test=session');
+  await selectWebBoard(page);
+  const privateArea = page.getByRole('region', { name: 'Private projects' });
+  await expect(canonicalCard(page).getByRole('heading', { name: cardTitle })).toBeVisible();
+  await expect(privateArea.getByRole('status')).toContainText("You're signed in. Your private project card is shown below.");
+  await expect(page.getByText(title)).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Private project cards' })).toHaveCount(0);
+  expect(fixture.calls).toEqual(['GET /api/operations/read', 'POST /api/operations/session', 'GET /api/operations/read']);
+  expect(fixture.privateCardCalls).toHaveLength(1);
+  // Hiding the tab clears it; coming back reads fresh from the owner endpoint.
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect(canonicalCard(page)).toHaveCount(0);
+  await expect(page.getByText(cardTitle)).toHaveCount(0);
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect(canonicalCard(page)).toHaveCount(1);
+  // The card only returned because the owner endpoint and the reader were actually read again.
+  expect(fixture.privateCardCalls.length).toBeGreaterThan(1);
+  expect(fixture.calls.filter((call) => call === 'GET /api/operations/read').length).toBeGreaterThan(2);
+  expect(fixture.external).toEqual([]);
+});
+
+test('stale overview card is bounded to 60 seconds and returns only after an explicit re-read', async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.clock.install();
+  const fixture = await privateFixture(page, { card: 'valid', overview: 'stale' });
+  await page.goto('/projects?auth_test=session');
+  await selectWebBoard(page);
+  await expect(canonicalCard(page)).toHaveCount(1);
+  const cardReads = fixture.privateCardCalls.length;
+  const overviewReads = fixture.calls.length;
+  await page.clock.fastForward(60_001);
+  await expect(canonicalCard(page)).toHaveCount(0);
+  await expect(page.getByText(cardTitle)).toHaveCount(0);
+  expect(fixture.calls).toHaveLength(overviewReads); // expiry never polls
+  await refreshPrivateWork(page);
+  await expect(canonicalCard(page)).toHaveCount(1);
+  expect(fixture.privateCardCalls.length).toBeGreaterThan(cardReads);
+  expect(fixture.calls.length).toBeGreaterThan(overviewReads);
+});
+
+test('stale overview card clears when the owner session is revoked on return', async ({ page }) => {
+  const fixture = await privateFixture(page, { card: 'valid', overview: 'stale' });
+  await page.goto('/projects?auth_test=session');
+  await selectWebBoard(page);
+  await expect(canonicalCard(page)).toHaveCount(1);
+  fixture.setDenied(true);
+  await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pagehide')));
+  await expect(canonicalCard(page)).toHaveCount(0);
+  await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow')));
+  await expect(page.getByRole('region', { name: 'Private projects' }).getByRole('status')).toContainText('Private access is not available');
+  await expect(canonicalCard(page)).toHaveCount(0);
+  await expect(page.getByText(cardTitle)).toHaveCount(0);
+});
+
+test('stale overview with a closed session shows no card and never reads one', async ({ page }) => {
+  const fixture = await privateFixture(page, { card: 'valid', overview: 'stale', keepClosed: true });
+  await page.goto('/projects?auth_test=session');
+  await selectWebBoard(page);
+  const privateArea = page.getByRole('region', { name: 'Private projects' });
+  await expect(privateArea.getByRole('status')).toContainText('Opening your private session');
+  await expect.poll(() => fixture.calls.length).toBe(3);
+  await expect(canonicalCard(page)).toHaveCount(0);
+  await expect(page.getByText(cardTitle)).toHaveCount(0);
+  expect(fixture.privateCardCalls).toEqual([]);
   expect(fixture.external).toEqual([]);
 });

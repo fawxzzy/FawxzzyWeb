@@ -22,7 +22,9 @@ The table lives in a private schema, is not granted to `anon` or `authenticated`
 only through the bounded Edge Function.
 
 `/projects` is a closed website route. The public client preserves it for `page_view` instead of
-counting it as `/`. The account Projects page sends one `page_view` for each signed-in page mount,
+counting it as `/`. The public Projects boards live on `fawxzzy.com/projects`, so the storefront
+listener counts them like any other website route. The account-origin Projects page (the owner's
+private view) sends one `page_view` for each signed-in page mount,
 including a late sign-in, after the existing account reader establishes signed-in state. Board
 switches and private-card refreshes do not add views. The event contains only `page_view`, `web`,
 and `/projects`; it carries no account identifier, session, private-card data, query, app, or
