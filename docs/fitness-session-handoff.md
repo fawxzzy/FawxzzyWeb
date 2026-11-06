@@ -86,10 +86,14 @@ candidate's exact merged commit in `FITNESS_HANDOFF_ACTIVATION`. Public login
 rendering alone cannot prove this: the portal checks `readiness.sourceCommit`
 before retrieving credentials. An unlisted candidate must block the release.
 
-The seven-source transition list includes reviewed Fitness PR202 password-policy
-merge `c086111c4ca3374c6f0c6d57f5e090b22cb57063`. It retains current production
-`0467722373da14760779392d94a212e3f10aac92` for rollback plus all five earlier
-accepted sources, including `dbb63556d8b01b383dd61d326ce551635cb8b4d8`.
+The seven-source transition list includes the Fitness merge
+`06db3f234ee0b90c00b32507351fe1d902661bdf` (PR203-205 login autofill) served by
+the 2026-11-05 CLI production deploy. It retains reviewed PR202 password-policy
+merge `c086111c4ca3374c6f0c6d57f5e090b22cb57063` for rollback plus all five
+earlier accepted sources, including `0467722373da14760779392d94a212e3f10aac92`.
+The oldest source `8070196cd3f5efbe2faf7fe8719971cf2ebd1e39` was dropped.
+Fitness must also expose that exact 40-hex commit through `VERCEL_GIT_COMMIT_SHA`;
+a CLI-only deploy without git metadata leaves readiness closed (HTTP 503).
 Release and verify this portal binding first, then stage and verify the exact
 Fitness candidate before switching its canonical domain. Keep the prior portal
 and Fitness deployment bindings until both acceptance observations pass.
