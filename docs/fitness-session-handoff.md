@@ -86,14 +86,19 @@ candidate's exact merged commit in `FITNESS_HANDOFF_ACTIVATION`. Public login
 rendering alone cannot prove this: the portal checks `readiness.sourceCommit`
 before retrieving credentials. An unlisted candidate must block the release.
 
-The seven-source transition list includes the Fitness merge
-`06db3f234ee0b90c00b32507351fe1d902661bdf` (PR203-205 login autofill) served by
-the 2026-11-05 CLI production deploy. It retains reviewed PR202 password-policy
-merge `c086111c4ca3374c6f0c6d57f5e090b22cb57063` for rollback plus all five
-earlier accepted sources, including `0467722373da14760779392d94a212e3f10aac92`.
-The oldest source `8070196cd3f5efbe2faf7fe8719971cf2ebd1e39` was dropped.
-Fitness must also expose that exact 40-hex commit through `VERCEL_GIT_COMMIT_SHA`;
-a CLI-only deploy without git metadata leaves readiness closed (HTTP 503).
+The seven-source transition list includes the Fitness main commit
+`2a47cd4b6b1bfb70d6d2b5b913e9f917acc4716e`
+(PR206-209: session-start atomicity, board registry, sign-in/streak-day/not-found
+fixes, CI pin). It retains the PR203-205 login-autofill merge
+`06db3f234ee0b90c00b32507351fe1d902661bdf` for rollback plus reviewed PR202
+password-policy merge `c086111c4ca3374c6f0c6d57f5e090b22cb57063` and all earlier
+accepted sources, including `0467722373da14760779392d94a212e3f10aac92`.
+The oldest source `dbbe305fc511633166c1a65396fdf9ef6a1c79f1` was dropped.
+Fitness must also expose that exact 40-hex commit through
+`NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA`/`VERCEL_GIT_COMMIT_SHA` at deploy time; a CLI-only
+deploy without git metadata (this project has no Git link, so pass
+`--build-env`/`--env NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA=<sha>` on `vercel deploy`)
+leaves readiness closed (HTTP 503).
 Release and verify this portal binding first, then stage and verify the exact
 Fitness candidate before switching its canonical domain. Keep the prior portal
 and Fitness deployment bindings until both acceptance observations pass.

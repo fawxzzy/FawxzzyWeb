@@ -11,7 +11,6 @@ export const FITNESS_HANDOFF_MASTER_PROJECT_REF = "bxtcuhkotumitoqtrcej";
 
 export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
   fitnessConsumerMerges: [
-    "dbbe305fc511633166c1a65396fdf9ef6a1c79f1",
     "389d4d21aa79725ba6cd716dcc84d7aa917ada3e",
     // Retained production rollback and reviewed username/reset release candidate.
     // Release acceptance and canonical cutover remain separate from this source list.
@@ -23,6 +22,8 @@ export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
     "c086111c4ca3374c6f0c6d57f5e090b22cb57063",
     // Reviewed PR203-205 release (login autofill) served by the Nov-5 CLI production deploy.
     "06db3f234ee0b90c00b32507351fe1d902661bdf",
+    // Reviewed Fitness main after PR206-209 (session-start atomicity, board registry, sign-in fixes, CI pin).
+    "2a47cd4b6b1bfb70d6d2b5b913e9f917acc4716e",
   ],
   state: "active",
 } as const satisfies FitnessHandoffActivation);
