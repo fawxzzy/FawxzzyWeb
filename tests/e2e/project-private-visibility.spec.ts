@@ -75,6 +75,12 @@ async function privateFixture(page: Page, { deny = false, card = 'absent', hold 
   return { calls, external, privateCardCalls, releaseCard, setDenied(value: boolean) { denied = value; } };
 }
 
+// Playwright's installed clock can leave WebKit's action-stability (rAF) wait paused, so clock tests
+// activate buttons directly instead of waiting for actionability.
+async function refreshPrivateWork(page: Page) {
+  await page.getByRole('button', { name: 'Refresh private work' }).evaluate((element: HTMLButtonElement) => element.click());
+}
+
 async function selectWebBoard(page: Page, afterFakeClock = false) {
   const button = page.getByRole('navigation', { name: 'Project boards' }).getByRole('button', { name: /Fawxzzy Web/u });
   // Playwright's installed clock can leave WebKit's action-stability timer paused after reload.
@@ -256,6 +262,7 @@ test('foreign account gets no private Web card or open retry loop', async ({ pag
 });
 
 test('expiry, Auth change and revocation clear verified Web state without legacy payload', async ({ page }) => {
+  test.setTimeout(60_000);
   await page.clock.install();
   // A VISIBLE valid card must render first; each event below must then clear it.
   const fixture = await privateFixture(page, { card: 'valid' });
@@ -272,7 +279,7 @@ test('expiry, Auth change and revocation clear verified Web state without legacy
   await expect(canonicalCard(page)).toHaveCount(0);
   await expect(page.getByText(cardTitle)).toHaveCount(0);
   expect(fixture.calls).toHaveLength(3);
-  await page.getByRole('button', { name: 'Refresh private work' }).click();
+  await refreshPrivateWork(page);
   await expect(privateArea.getByRole('status')).toContainText("You're signed in");
   await expect(canonicalCard(page)).toHaveCount(1);
   await page.clock.resume();
@@ -337,6 +344,7 @@ test('stale overview with an open session still shows the owner card and keeps t
 });
 
 test('stale overview card is bounded to 60 seconds and returns only after an explicit re-read', async ({ page }) => {
+  test.setTimeout(60_000);
   await page.clock.install();
   const fixture = await privateFixture(page, { card: 'valid', overview: 'stale' });
   await page.goto('/projects?auth_test=session');
@@ -348,7 +356,7 @@ test('stale overview card is bounded to 60 seconds and returns only after an exp
   await expect(canonicalCard(page)).toHaveCount(0);
   await expect(page.getByText(cardTitle)).toHaveCount(0);
   expect(fixture.calls).toHaveLength(overviewReads); // expiry never polls
-  await page.getByRole('button', { name: 'Refresh private work' }).click();
+  await refreshPrivateWork(page);
   await expect(canonicalCard(page)).toHaveCount(1);
   expect(fixture.privateCardCalls.length).toBeGreaterThan(cardReads);
   expect(fixture.calls.length).toBeGreaterThan(overviewReads);

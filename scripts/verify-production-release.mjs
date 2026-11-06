@@ -90,9 +90,24 @@ export function hasExactCanonicalLink(html, expectedCanonical) {
 
 // The published board is the committed owner-approved snapshot; derive the expected tabs from it.
 // The verifier runs from the candidate checkout, so its generated snapshot is the candidate tree's.
-// Callers that hold the candidate snapshot elsewhere may inject it instead.
+// The `snapshot` option of verifyProductionRelease exists for tests only: whatever is used must hash
+// to identity.projectSnapshotDigest or acceptance fails.
 export function loadCandidateProjectSnapshot() {
   return JSON.parse(readFileSync(new URL('../src/data/project-board-public.generated.json', import.meta.url), 'utf8'));
+}
+
+function sortedJson(value) {
+  if (Array.isArray(value)) return `[${value.map(sortedJson).join(',')}]`;
+  if (value !== null && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${sortedJson(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+// sha256 of the key-sorted JSON of the generated public snapshot. The release identity carries this
+// digest, so the expected board is bound to the release rather than to whatever tree verifies it.
+export function projectSnapshotDigest(snapshot) {
+  return createHash('sha256').update(sortedJson(snapshot), 'utf8').digest('hex');
 }
 
 // Mirrors the board's own open/completed split (src/components/projects/project-board.tsx).
@@ -102,7 +117,9 @@ export function expectedProjectsBoards(snapshot = loadCandidateProjectSnapshot()
   return snapshot.boards.map((board) => ({ name: board.name, count: String(board.cards.length) }));
 }
 
-export function verifyProjectsPublicHtml(html, snapshot = loadCandidateProjectSnapshot()) {
+export function verifyProjectsPublicHtml(html, expectedDigest, snapshot = loadCandidateProjectSnapshot()) {
+  requireCondition(/^[0-9a-f]{64}$/u.test(expectedDigest ?? '') && projectSnapshotDigest(snapshot) === expectedDigest,
+    'Project board snapshot does not match the release identity digest.');
   const document = htmlParser.parse(html);
   const robots = document.querySelector('head > meta[name="robots"]')?.getAttribute('content') ?? '';
   const boards = document.querySelectorAll('.project-tab').map((tab) => ({
@@ -156,7 +173,7 @@ function assertBodyDigest(digest, body) {
     'Supplied body does not match its captured digest.');
 }
 
-function assertRouteGroup(observations, expected, kind, snapshot) {
+function assertRouteGroup(observations, expected, kind, snapshot, snapshotDigest) {
   requireCondition(Array.isArray(observations) && observations.length === expected.length,
     `Incomplete ${kind} route observations.`);
   observations.forEach((observation, index) => {
@@ -190,7 +207,7 @@ function assertRouteGroup(observations, expected, kind, snapshot) {
       const canonical = `${mainSite ? 'https://fawxzzy.com' : 'https://account.fawxzzy.com'}${route.split('?')[0]}`;
       requireCondition(hasExactCanonicalLink(observation.html, canonical), `${kind} canonical HTML is invalid.`);
     }
-    if (route === '/projects') verifyProjectsPublicHtml(observation.html, snapshot);
+    if (route === '/projects') verifyProjectsPublicHtml(observation.html, snapshotDigest, snapshot);
   });
 }
 
@@ -204,9 +221,9 @@ export function verifyProductionRelease(input, { snapshot = loadCandidateProject
   assertDeploymentObservation(o.deployment, identity);
   assertDeploymentObservation(o.rollbackDeployment, identity, true);
   assertCanonicalAliasBindings(o.aliases, identity.candidateDeploymentId);
-  assertRouteGroup(o.smoke, smokeRoutes, 'public', snapshot);
-  assertRouteGroup(o.account, accountRoutes, 'account', snapshot);
-  assertRouteGroup(o.legal, legalRoutes, 'legal', snapshot);
+  assertRouteGroup(o.smoke, smokeRoutes, 'public', snapshot, identity.projectSnapshotDigest);
+  assertRouteGroup(o.account, accountRoutes, 'account', snapshot, identity.projectSnapshotDigest);
+  assertRouteGroup(o.legal, legalRoutes, 'legal', snapshot, identity.projectSnapshotDigest);
   assertKeys(o.privateApi, ['status', 'cacheControl', 'body', 'bodyDigest'], 'signed-out private API');
   requireCondition([403, 503].includes(o.privateApi.status) && typeof o.privateApi.cacheControl === 'string'
     && o.privateApi.cacheControl.split(',').some((token) => token.trim().toLowerCase() === 'no-store')

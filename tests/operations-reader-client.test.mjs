@@ -286,9 +286,14 @@ test('stale open observation clears on an Auth generation change even when the s
   assert.deepEqual([snap.status, snap.session], ['expired', 'unverified']);
   assert.equal(privateCardEligible(snap), false); f.reader.dispose();
 });
-test('stale open observation clears when checked while the tab is not visible', async () => {
-  const f = fixture(); await f.reader.start();
+test('stale open observation clears at its deadline when the expiry timer never fires', async () => {
+  let t = 0; // a throttled or suspended tab: the clock moves but no timer callback runs
+  const f = fixture({ monotonic: () => t, setTimer: () => 1, clearTimer: () => {} }); await f.reader.start();
   f.respond(async () => Response.json(unhealthy('stale')));
-  await f.reader.refresh(); f.reader.setVisible(false);
-  f.reader.checkDisplay(); assert.equal(privateCardEligible(f.reader.getSnapshot()), false); f.reader.dispose();
+  await f.reader.refresh(); assert.equal(privateCardEligible(f.reader.getSnapshot()), true);
+  t = OBSERVATION_MS - 1; f.reader.checkDisplay(); assert.equal(privateCardEligible(f.reader.getSnapshot()), true);
+  t = OBSERVATION_MS; f.reader.checkDisplay();
+  const snap = f.reader.getSnapshot();
+  assert.deepEqual([snap.status, snap.session], ['expired', 'unverified']);
+  assert.equal(privateCardEligible(snap), false); f.reader.dispose();
 });

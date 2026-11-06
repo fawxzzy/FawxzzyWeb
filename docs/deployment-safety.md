@@ -65,7 +65,13 @@ not authority, provider provenance or an installed release receipt.
 Identity has exactly: `repository` (lowercase), `packetId`, `reservationId`,
 `attemptId`, `commit`, `tree`, `teamId`, `projectId`, `productionAliases`,
 `candidateDeploymentId`, `candidateUrl`, `rollbackDeploymentId`,
-`rollbackCommit`, `rollbackTree`. All except the alias array are strings.
+`rollbackCommit`, `rollbackTree`, `projectSnapshotDigest`. All except the alias array are strings.
+`projectSnapshotDigest` is the lowercase sha256 of the key-sorted JSON of
+`src/data/project-board-public.generated.json` in the candidate tree (the producer computes it next
+to `tree`); acceptance recomputes it from the verifier's snapshot and requires equality before it
+compares the rendered `/projects` board (tabs, counts, open cards and titles) to that snapshot.
+The public apex `/projects` observation must come from `https://fawxzzy.com` with canonical
+`https://fawxzzy.com/projects`. Release producers must add the new field.
 Candidate and rollback IDs differ. The manifest binds these values; Ops must
 independently check that the selected Git commits really have the stated trees.
 

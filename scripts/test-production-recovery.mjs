@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { VERCEL_PRODUCTION_CONTRACT as contract } from './vercel-production-contract.mjs';
 import { assertCanonicalAliasBindings, recoverFailedProductionRelease,
   validateCandidateObservations, validateRollbackObservations } from './recover-production-release.mjs';
-import { verifyProductionRelease, smokeRoutes, expectedProjectsBoards, loadCandidateProjectSnapshot, accountRoutes, legalRoutes } from './verify-production-release.mjs';
+import { verifyProductionRelease, smokeRoutes, expectedProjectsBoards, loadCandidateProjectSnapshot, projectSnapshotDigest, accountRoutes, legalRoutes } from './verify-production-release.mjs';
 import { canonicalJson, parsePhaseFrame, handlePhaseRequest, PHASE_SCHEMA, MAX_FRAME_BYTES } from './deploy-production.mjs';
 
 const identity = {
@@ -16,6 +16,7 @@ const identity = {
   teamId: contract.teamId, projectId: contract.projectId, productionAliases: [...contract.productionAliases],
   candidateDeploymentId: 'dpl_Candidate123', candidateUrl: 'https://candidate.vercel.app',
   rollbackDeploymentId: 'dpl_Prior123', rollbackCommit: 'c'.repeat(40), rollbackTree: 'd'.repeat(40),
+  projectSnapshotDigest: projectSnapshotDigest(loadCandidateProjectSnapshot()),
 };
 const project = (id) => ({ id: contract.projectId, name: contract.projectName,
   accountId: contract.teamId, productionDeploymentId: id });
@@ -99,7 +100,7 @@ test('all three pure phases accept complete observations without performing effe
 
 test('identity and every candidate correlation reject foreign data', () => {
   for (const field of ['repository', 'packetId', 'reservationId', 'attemptId', 'commit', 'tree', 'teamId', 'projectId',
-    'candidateDeploymentId', 'candidateUrl', 'rollbackDeploymentId', 'rollbackCommit', 'rollbackTree']) {
+    'candidateDeploymentId', 'candidateUrl', 'rollbackDeploymentId', 'rollbackCommit', 'rollbackTree', 'projectSnapshotDigest']) {
     assert.throws(() => validateCandidateObservations({ ...identity, [field]: null }, candidate()));
   }
   for (const field of ['id', 'url', 'projectId', 'teamId', 'target', 'readyState', 'commit', 'tree', 'attemptId']) {
@@ -179,6 +180,9 @@ test('apex Projects acceptance is apex-only, canonical to the apex, and matches 
     change(entry); entry.bodyDigest = digest(entry.html); return o;
   };
   assert.doesNotThrow(() => runAcceptance(acceptance()));
+  assert.throws(() => verifyProductionRelease({ identity: { ...identity, projectSnapshotDigest: 'f'.repeat(64) }, observations: acceptance() }), /identity digest/u);
+  assert.throws(() => verifyProductionRelease({ identity, observations: acceptance() }, {
+    snapshot: { ...loadCandidateProjectSnapshot(), preparedAt: 'tampered' } }), /identity digest/u);
   assert.throws(() => runAcceptance(mutate((e) => { e.url = 'https://account.fawxzzy.com/projects'; })), /admitted route/u);
   assert.throws(() => runAcceptance(mutate((e) => { e.html = e.html.replace(/<link rel="canonical"[^>]*>/u, ''); })), /canonical/u);
   assert.throws(() => runAcceptance(mutate((e) => { e.html = e.html.replace('https://fawxzzy.com/projects', 'https://account.fawxzzy.com/projects'); })), /canonical/u);

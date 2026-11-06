@@ -13,7 +13,7 @@ export function assertKeys(value, keys, label) {
 export function assertReleaseIdentity(identity) {
   assertKeys(identity, ['repository', 'packetId', 'reservationId', 'attemptId', 'commit', 'tree',
     'teamId', 'projectId', 'productionAliases', 'candidateDeploymentId', 'candidateUrl',
-    'rollbackDeploymentId', 'rollbackCommit', 'rollbackTree'], 'release identity');
+    'rollbackDeploymentId', 'rollbackCommit', 'rollbackTree', 'projectSnapshotDigest'], 'release identity');
   requireCondition(Object.entries(identity).every(([key, value]) => key === 'productionAliases' || typeof value === 'string'),
     'Release identity fields must be strings.');
   requireCondition(identity.repository === contract.repository.toLowerCase()
@@ -21,6 +21,7 @@ export function assertReleaseIdentity(identity) {
     && /^rsrv_[0-9a-f]{64}$/u.test(identity.reservationId)
     && /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/u.test(identity.attemptId)
     && ['commit', 'tree', 'rollbackCommit', 'rollbackTree'].every((key) => /^[0-9a-f]{40}$/u.test(identity[key]))
+    && /^[0-9a-f]{64}$/u.test(identity.projectSnapshotDigest)
     && identity.teamId === contract.teamId && identity.projectId === contract.projectId,
   'Release identity does not match the committed destination.');
   requireCondition(Array.isArray(identity.productionAliases)
