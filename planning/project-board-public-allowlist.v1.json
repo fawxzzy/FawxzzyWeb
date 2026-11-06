@@ -85,13 +85,11 @@
     ],
     "atlas": [
       "lane-atlas-contracts-mesh",
-      "lane-atlas-control-ledger",
       "lane-ci-delivery-health",
       "lane-default-branch-governance",
       "lane-marker-integrity",
       "lane-operator-surface-adoption",
       "lane-owner-metric-scope-alignment",
-      "lane-persistent-workspaces",
       "lane-release-policy-and-evidence",
       "lane-root-truth-convergence",
       "lane-runtime-activation-readiness",
@@ -114,11 +112,21 @@
     "lifeline": [
       "LIF-202"
     ],
-    "_stack": [
-      "STK-SCHEDULED-INBOX-SWEEP"
-    ]
+    "_stack": []
   },
   "exclude": [
+    {
+      "id": "lane-atlas-control-ledger",
+      "reason": "describes the retired Codex scheduler/ledger machinery (retired 2026-11-05); stale and confusing on a public board"
+    },
+    {
+      "id": "lane-persistent-workspaces",
+      "reason": "describes retired Codex workspace/lease machinery (retired 2026-11-05); stale and confusing on a public board"
+    },
+    {
+      "id": "STK-SCHEDULED-INBOX-SWEEP",
+      "reason": "describes the retired Codex scheduler inbox (retired 2026-11-05); stale and confusing on a public board"
+    },
     {
       "id": "FW-ANALYTICS-001",
       "reason": "owner export marks public_safe:false"

@@ -482,25 +482,6 @@
           "updatedAt": "2026-07-15T17:25:00Z"
         },
         {
-          "id": "lane-atlas-control-ledger",
-          "sourceProjectId": "atlas",
-          "component": "Atlas",
-          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
-          "owner": "atlas",
-          "title": "Atlas Control ledger",
-          "summary": "Design a backend-neutral thin ledger for card/job/thread/turn identity, leases, idempotency, expected board version, receipt evidence, and human acceptance.",
-          "lifecycle": "planning",
-          "workType": "architecture",
-          "priority": null,
-          "dependencies": [
-            "lane-persistent-workspaces"
-          ],
-          "parentId": null,
-          "duplicateOf": null,
-          "supersededBy": null,
-          "updatedAt": "2026-07-17T06:07:21Z"
-        },
-        {
           "id": "lane-ci-delivery-health",
           "sourceProjectId": "atlas",
           "component": "Atlas",
@@ -589,23 +570,6 @@
           "duplicateOf": null,
           "supersededBy": null,
           "updatedAt": "2026-07-15T11:53:18Z"
-        },
-        {
-          "id": "lane-persistent-workspaces",
-          "sourceProjectId": "atlas",
-          "component": "Atlas",
-          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
-          "owner": "atlas",
-          "title": "Persistent workspaces and browser leases",
-          "summary": "Define persistent workspace and browser lease identity, renewal, expiry, recovery, and collision behavior.",
-          "lifecycle": "planning",
-          "workType": "architecture",
-          "priority": null,
-          "dependencies": [],
-          "parentId": null,
-          "duplicateOf": null,
-          "supersededBy": null,
-          "updatedAt": "2026-07-17T06:07:21Z"
         },
         {
           "id": "lane-release-policy-and-evidence",
@@ -876,23 +840,6 @@
           "duplicateOf": null,
           "supersededBy": null,
           "updatedAt": "2026-07-15T00:00:00.000Z"
-        },
-        {
-          "id": "STK-SCHEDULED-INBOX-SWEEP",
-          "sourceProjectId": "_stack",
-          "component": "Stack",
-          "sourceRevision": "sha256:4c53bac4ad367682f9bf65fb6dcda8a86895512cb0e677bc7e77368d8ad368a9",
-          "owner": "_stack",
-          "title": "Deterministic scheduled RunOnce inbox sweep",
-          "summary": "Replace replay-prone ambient _stack inbox processing with one scheduled, bounded, claim-safe, correlated RunOnce sweep.",
-          "lifecycle": "in_progress",
-          "workType": "reliability",
-          "priority": null,
-          "dependencies": [],
-          "parentId": null,
-          "duplicateOf": null,
-          "supersededBy": null,
-          "updatedAt": "2026-07-16T00:00:00.000Z"
         }
       ]
     }
