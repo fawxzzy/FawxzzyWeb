@@ -11,7 +11,6 @@ export const FITNESS_HANDOFF_MASTER_PROJECT_REF = "bxtcuhkotumitoqtrcej";
 
 export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
   fitnessConsumerMerges: [
-    "8070196cd3f5efbe2faf7fe8719971cf2ebd1e39",
     "dbbe305fc511633166c1a65396fdf9ef6a1c79f1",
     "389d4d21aa79725ba6cd716dcc84d7aa917ada3e",
     // Retained production rollback and reviewed username/reset release candidate.
@@ -22,6 +21,8 @@ export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
     "0467722373da14760779392d94a212e3f10aac92",
     // Reviewed PR202 password-policy release; deploy this portal binding first.
     "c086111c4ca3374c6f0c6d57f5e090b22cb57063",
+    // Reviewed PR203-205 release (login autofill) served by the Nov-5 CLI production deploy.
+    "06db3f234ee0b90c00b32507351fe1d902661bdf",
   ],
   state: "active",
 } as const satisfies FitnessHandoffActivation);
