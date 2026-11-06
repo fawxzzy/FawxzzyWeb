@@ -49,7 +49,7 @@ The family requires 44px minimum interactive targets, visible keyboard focus, no
 - Desktop and mobile: the same bounded one-column Fitness-shaped frame.
 - The remembered username is stored as optional local presentation state after a successful session and never becomes authentication authority.
 - Current service boundary: account actions remain visibly unavailable unless the approved adapter resolves at runtime.
-- Current implementation status: the account host renders Website, Fitness, and Mazer presentation contexts from one registry. Fitness consumer integration is active through an exact source-bound readiness contract; Mazer remains pending until its owner repository adopts the broker contract from a reviewed exact head.
+- Current implementation status: the account host renders Website, Fitness, and Mazer presentation contexts from one registry. Fitness consumer integration is active through an exact source-bound readiness contract; Mazer's owner repository has adopted the OAuth 2.1 broker contract (Mazer PR #350): the game starts sign-in at `/oauth/authorize` on this host and returns to the exact `https://mazer.fawxzzy.com/` redirect URI. This document does not assert Mazer's served-build or release state; that remains owner-observed.
 
 ### Fitness
 
@@ -64,6 +64,7 @@ The family requires 44px minimum interactive targets, visible keyboard focus, no
 - Preserve one overlay and recoverable input behavior without guest-play access.
 - The account host owns the `/oauth/authorize` OAuth 2.1 consent surface. It accepts one bounded provider authorization identifier, immediately removes it from the address bar, and retains it for at most 15 minutes in a Secure, HttpOnly, SameSite=Lax, host-only cookie. Page script and local storage never receive the retained identifier.
 - The consent surface accepts only the registered Mazer client, exact `https://mazer.fawxzzy.com/` redirect URI, and `email` scope. Approval and denial revalidate the current account session and accept only a bounded code-or-error redirect back to that exact origin.
+- Create-account entry and consent behavior for this flow are specified in `docs/mazer-oauth-signup-and-consent.md`.
 - Do not change the auth/menu surface while another exact writer owns it. Reconcile that work first, then implement from a fresh exact parent.
 
 ## Mazer pattern intake
