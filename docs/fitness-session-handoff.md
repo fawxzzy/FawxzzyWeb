@@ -87,13 +87,15 @@ rendering alone cannot prove this: the portal checks `readiness.sourceCommit`
 before retrieving credentials. An unlisted candidate must block the release.
 
 The seven-source transition list includes the Fitness main commit
-`2a47cd4b6b1bfb70d6d2b5b913e9f917acc4716e`
-(PR206-209: session-start atomicity, board registry, sign-in/streak-day/not-found
-fixes, CI pin). It retains the PR203-205 login-autofill merge
-`06db3f234ee0b90c00b32507351fe1d902661bdf` for rollback plus reviewed PR202
+`76f04dfcd66c6ebbdbbb6a65a8d516accdd6b2e3`
+(PR206-210: session-start atomicity, board registry, sign-in/streak-day/not-found
+fixes, CI pin, board export refresh) as the current source. It retains the
+PR206-209 main commit `2a47cd4b6b1bfb70d6d2b5b913e9f917acc4716e` for rollback,
+the PR203-205 login-autofill merge
+`06db3f234ee0b90c00b32507351fe1d902661bdf`, and reviewed PR202
 password-policy merge `c086111c4ca3374c6f0c6d57f5e090b22cb57063` and all earlier
 accepted sources, including `0467722373da14760779392d94a212e3f10aac92`.
-The oldest source `dbbe305fc511633166c1a65396fdf9ef6a1c79f1` was dropped.
+The oldest source `389d4d21aa79725ba6cd716dcc84d7aa917ada3e` was dropped.
 Fitness must also expose that exact 40-hex commit through
 `NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA`/`VERCEL_GIT_COMMIT_SHA` at deploy time; a CLI-only
 deploy without git metadata (this project has no Git link, so pass

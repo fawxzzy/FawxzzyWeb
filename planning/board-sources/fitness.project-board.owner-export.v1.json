@@ -1,20 +1,20 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_fitness_owner_registry_98c0ab07b972",
+  "export_id": "pbe_fitness_owner_registry_03bb25f1d952",
   "project_id": "fitness",
   "board_id": "fitness:project-feedback:fitness-active",
   "owner": "fitness",
   "adapter_id": "fitness-owner-registry-v1",
-  "source_revision": "sha256:98c0ab07b972f7858350b54fe9bc7ba17648588a99c8365d2e99e930529ebad2",
-  "generated_at": "2026-11-06T17:20:00.000Z",
+  "source_revision": "sha256:03bb25f1d9520ca940091ea89d4d6ff5a4033c6843e27b3f8d1969d61b8b2913",
+  "generated_at": "2026-11-09T00:00:00.000Z",
   "sources": [
     {
       "source_id": "fitness-owner-work-registry",
       "kind": "json",
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json",
-      "revision": "sha256:3fe0c034bbf7f2c9abac80e14f8923b18f726a4de580b504cc5a89b66df3bc04",
-      "observed_at": "2026-11-06T17:20:00.000Z"
+      "revision": "sha256:2f795e33077c7e426879b91bc587abaead4af1fa30c5820c4289e1712309efbc",
+      "observed_at": "2026-11-09T00:00:00.000Z"
     },
     {
       "source_id": "fitness-feedback-monetization-roadmap",
@@ -22,7 +22,7 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs",
       "revision": "sha256:78aa8b8300f0c21258144da0a5bdd6fdc4c9ff1337e265b2552094ebf3505ba6",
-      "observed_at": "2026-11-06T17:20:00.000Z"
+      "observed_at": "2026-11-09T00:00:00.000Z"
     },
     {
       "source_id": "fitness-session-timer-roadmap",
@@ -30,22 +30,22 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs",
       "revision": "sha256:58b1235add45e05d51712f433e2e67d4536b878f4edfad6ab6908d9402c55bcc",
-      "observed_at": "2026-11-06T17:20:00.000Z"
+      "observed_at": "2026-11-09T00:00:00.000Z"
     },
     {
       "source_id": "fitness-owner-export-adapter",
       "kind": "generated",
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs",
-      "revision": "sha256:290cedef02e1fbb83b8547ae62da44c726f1aae5b1ffa61b1ec7182335f1c3e4",
-      "observed_at": "2026-11-06T17:20:00.000Z"
+      "revision": "sha256:254a935aa2c56f1b198b2e4c665ebc14770399c1cbcd29585b1bd6e7fc804238",
+      "observed_at": "2026-11-09T00:00:00.000Z"
     }
   ],
   "cards": [
     {
       "idempotency_key": "pbk_fitness_ff-account-002_v1",
       "record_kind": "project-work",
-      "record_status": "candidate",
+      "record_status": "active",
       "record": {
         "contract_version": "atlas.card-record.v2",
         "card_id": "FF-ACCOUNT-002",
@@ -54,15 +54,15 @@
         "title": "Enable Account Portal to Fitness Handoff",
         "description": "Let people who begin in the Fawxzzy account portal continue straight into Fitness without a second sign-in step.",
         "card_type": "feature",
-        "lifecycle": "planning",
+        "lifecycle": "completed",
         "priority": "high",
         "owner": "fitness",
         "dependencies": [],
         "board_version": 1,
-        "updated_at": "2026-11-06T17:20:00.000Z",
+        "updated_at": "2026-11-09T00:00:00.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-ACCOUNT-002",
         "extensions": {
-          "owner_status": "planning",
+          "owner_status": "fixed",
           "public_safe": true,
           "visibility": "public"
         }
@@ -71,7 +71,7 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-ACCOUNT-002",
         "source_status": "current",
-        "source_updated_at": "2026-11-06T17:20:00.000Z"
+        "source_updated_at": "2026-11-09T00:00:00.000Z"
       },
       "content": {
         "summary": "Let people who begin in the Fawxzzy account portal continue straight into Fitness without a second sign-in step.",
@@ -264,7 +264,7 @@
     {
       "idempotency_key": "pbk_fitness_ff-auth-001_v1",
       "record_kind": "project-work",
-      "record_status": "candidate",
+      "record_status": "active",
       "record": {
         "contract_version": "atlas.card-record.v2",
         "card_id": "FF-AUTH-001",
@@ -273,15 +273,15 @@
         "title": "Make Sign-In Outcomes Clear",
         "description": "Show a clear message whenever a sign-in attempt does not complete, instead of quietly returning to the sign-in form.",
         "card_type": "feature",
-        "lifecycle": "planning",
+        "lifecycle": "in-progress",
         "priority": "high",
         "owner": "fitness",
         "dependencies": [],
         "board_version": 1,
-        "updated_at": "2026-11-06T17:20:00.000Z",
+        "updated_at": "2026-11-09T00:00:00.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-AUTH-001",
         "extensions": {
-          "owner_status": "planning",
+          "owner_status": "in_progress",
           "public_safe": true,
           "visibility": "public"
         }
@@ -290,7 +290,7 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-AUTH-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-06T17:20:00.000Z"
+        "source_updated_at": "2026-11-09T00:00:00.000Z"
       },
       "content": {
         "summary": "Show a clear message whenever a sign-in attempt does not complete, instead of quietly returning to the sign-in form.",
@@ -834,7 +834,7 @@
     {
       "idempotency_key": "pbk_fitness_ff-qa-003_v1",
       "record_kind": "project-work",
-      "record_status": "candidate",
+      "record_status": "active",
       "record": {
         "contract_version": "atlas.card-record.v2",
         "card_id": "FF-QA-003",
@@ -843,15 +843,15 @@
         "title": "Return a Proper Not-Found Status for Missing Pages",
         "description": "Pages for items that do not exist or are unavailable should respond with a real not-found status along with the friendly not-found screen.",
         "card_type": "feature",
-        "lifecycle": "planning",
+        "lifecycle": "completed",
         "priority": "medium",
         "owner": "fitness",
         "dependencies": [],
         "board_version": 1,
-        "updated_at": "2026-11-06T17:20:00.000Z",
+        "updated_at": "2026-11-09T00:00:00.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-QA-003",
         "extensions": {
-          "owner_status": "planning",
+          "owner_status": "fixed",
           "public_safe": true,
           "visibility": "public"
         }
@@ -860,7 +860,7 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-QA-003",
         "source_status": "current",
-        "source_updated_at": "2026-11-06T17:20:00.000Z"
+        "source_updated_at": "2026-11-09T00:00:00.000Z"
       },
       "content": {
         "summary": "Pages for items that do not exist or are unavailable should respond with a real not-found status along with the friendly not-found screen.",
@@ -953,15 +953,15 @@
         "title": "Make Workout Start Atomic",
         "description": "Make starting a workout an all-or-nothing step so an interrupted start never leaves a partial session behind.",
         "card_type": "feature",
-        "lifecycle": "in-progress",
+        "lifecycle": "completed",
         "priority": "high",
         "owner": "fitness",
         "dependencies": [],
         "board_version": 1,
-        "updated_at": "2026-11-06T17:20:00.000Z",
+        "updated_at": "2026-11-09T00:00:00.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-RELIABILITY-001",
         "extensions": {
-          "owner_status": "in_progress",
+          "owner_status": "fixed",
           "public_safe": true,
           "visibility": "public"
         }
@@ -970,7 +970,7 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-RELIABILITY-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-06T17:20:00.000Z"
+        "source_updated_at": "2026-11-09T00:00:00.000Z"
       },
       "content": {
         "summary": "Make starting a workout an all-or-nothing step so an interrupted start never leaves a partial session behind.",
@@ -1062,17 +1062,17 @@
         "title": "Add Workout Streaks",
         "description": "Add simple streak tracking to increase habit formation.",
         "card_type": "feature",
-        "lifecycle": "review",
+        "lifecycle": "completed",
         "priority": "high",
         "owner": "fitness",
         "dependencies": [
           "FF-RET-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-07-13T04:31:19.434Z",
+        "updated_at": "2026-11-09T00:00:00.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-RET-002",
         "extensions": {
-          "owner_status": "fawxzzy_review",
+          "owner_status": "fixed",
           "public_safe": true
         }
       },
@@ -1080,7 +1080,7 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-RET-002",
         "source_status": "current",
-        "source_updated_at": "2026-07-13T04:31:19.434Z"
+        "source_updated_at": "2026-11-09T00:00:00.000Z"
       },
       "content": {
         "summary": "Add simple streak tracking to increase habit formation.",
@@ -1222,7 +1222,7 @@
     {
       "idempotency_key": "pbk_fitness_ff-ret-005_v1",
       "record_kind": "project-work",
-      "record_status": "candidate",
+      "record_status": "active",
       "record": {
         "contract_version": "atlas.card-record.v2",
         "card_id": "FF-RET-005",
@@ -1231,17 +1231,17 @@
         "title": "Respect the Local Day Boundary in Workout Streaks",
         "description": "Count streak days in the user's local time zone so an evening workout is credited to the day it was logged.",
         "card_type": "feature",
-        "lifecycle": "planning",
+        "lifecycle": "completed",
         "priority": "high",
         "owner": "fitness",
         "dependencies": [
           "FF-RET-002"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-06T17:20:00.000Z",
+        "updated_at": "2026-11-09T00:00:00.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-RET-005",
         "extensions": {
-          "owner_status": "planning",
+          "owner_status": "fixed",
           "public_safe": true,
           "visibility": "public"
         }
@@ -1250,7 +1250,7 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-RET-005",
         "source_status": "current",
-        "source_updated_at": "2026-11-06T17:20:00.000Z"
+        "source_updated_at": "2026-11-09T00:00:00.000Z"
       },
       "content": {
         "summary": "Count streak days in the user's local time zone so an evening workout is credited to the day it was logged.",
@@ -1719,7 +1719,7 @@
   "extensions": {
     "source_work_item_count": 45,
     "exported_card_count": 30,
-    "exported_completed_card_count": 10,
+    "exported_completed_card_count": 15,
     "excluded_completed_card_count": 15,
     "selected_owner_snapshot_record_count": 55,
     "excluded_unstable_or_nonfitness_record_count": 18,
