@@ -1,11 +1,11 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_fitness_owner_registry_03bb25f1d952",
+  "export_id": "pbe_fitness_owner_registry_08bc690164ba",
   "project_id": "fitness",
   "board_id": "fitness:project-feedback:fitness-active",
   "owner": "fitness",
   "adapter_id": "fitness-owner-registry-v1",
-  "source_revision": "sha256:03bb25f1d9520ca940091ea89d4d6ff5a4033c6843e27b3f8d1969d61b8b2913",
+  "source_revision": "sha256:08bc690164ba2e7cc26611393dbc0c79d7e3bf1b60c710af826cc24b0904abe5",
   "generated_at": "2026-11-09T00:00:00.000Z",
   "sources": [
     {
@@ -13,7 +13,7 @@
       "kind": "json",
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json",
-      "revision": "sha256:2f795e33077c7e426879b91bc587abaead4af1fa30c5820c4289e1712309efbc",
+      "revision": "sha256:5ab949799cbd5a9875f1e5da54a3579f625e811c807c0ff1e4127bd859dd3a3e",
       "observed_at": "2026-11-09T00:00:00.000Z"
     },
     {
@@ -37,7 +37,7 @@
       "kind": "generated",
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs",
-      "revision": "sha256:254a935aa2c56f1b198b2e4c665ebc14770399c1cbcd29585b1bd6e7fc804238",
+      "revision": "sha256:4f64b746b7024540ad8c6df022492200e3f0497dd907d74f3f41f499d1bae0a5",
       "observed_at": "2026-11-09T00:00:00.000Z"
     }
   ],
@@ -132,6 +132,60 @@
           "Forgotten-sign-in recovery is verified end to end.",
           "People can export their own data.",
           "People can request account removal with a clear confirmation step."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-account-004_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-ACCOUNT-004",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Finish Account Site Setup for the Fitness App",
+        "description": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it.",
+        "card_type": "feature",
+        "lifecycle": "planning",
+        "priority": "high",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-AUTH-001"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-11-09T21:00:00.000Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-ACCOUNT-004",
+        "extensions": {
+          "owner_status": "planning",
+          "public_safe": true,
+          "visibility": "public"
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-ACCOUNT-004",
+        "source_status": "current",
+        "source_updated_at": "2026-11-09T21:00:00.000Z"
+      },
+      "content": {
+        "summary": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it.",
+        "objective": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it.",
+        "acceptance_criteria": [
+          "Sign-up, sign-in, sign-out and forgotten-sign-in recovery all work from the account site and return people to the Fitness app.",
+          "The account site and the app always agree on who is signed in.",
+          "Every account screen Fitness links to is complete and checked in the installed phone app."
         ],
         "discoveries": [],
         "next_actions": [],
@@ -273,15 +327,15 @@
         "title": "Make Sign-In Outcomes Clear",
         "description": "Show a clear message whenever a sign-in attempt does not complete, instead of quietly returning to the sign-in form.",
         "card_type": "feature",
-        "lifecycle": "in-progress",
+        "lifecycle": "completed",
         "priority": "high",
         "owner": "fitness",
         "dependencies": [],
         "board_version": 1,
-        "updated_at": "2026-11-09T00:00:00.000Z",
+        "updated_at": "2026-11-09T21:00:00.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-AUTH-001",
         "extensions": {
-          "owner_status": "in_progress",
+          "owner_status": "fixed",
           "public_safe": true,
           "visibility": "public"
         }
@@ -290,7 +344,7 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-AUTH-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-09T00:00:00.000Z"
+        "source_updated_at": "2026-11-09T21:00:00.000Z"
       },
       "content": {
         "summary": "Show a clear message whenever a sign-in attempt does not complete, instead of quietly returning to the sign-in form.",
@@ -1717,9 +1771,9 @@
     }
   ],
   "extensions": {
-    "source_work_item_count": 45,
-    "exported_card_count": 30,
-    "exported_completed_card_count": 15,
+    "source_work_item_count": 46,
+    "exported_card_count": 31,
+    "exported_completed_card_count": 16,
     "excluded_completed_card_count": 15,
     "selected_owner_snapshot_record_count": 55,
     "excluded_unstable_or_nonfitness_record_count": 18,
