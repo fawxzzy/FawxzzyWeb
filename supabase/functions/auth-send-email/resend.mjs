@@ -1,7 +1,8 @@
 /** Resend HTTP API sender. No SDK; fetch is injected so tests stay hermetic. */
 
 export const RESEND_ENDPOINT = "https://api.resend.com/emails";
-const SEND_TIMEOUT_MS = 10_000;
+// Supabase gives HTTP hooks about 5 s in total; keep one send well inside that budget.
+export const SEND_TIMEOUT_MS = 3_500;
 
 export class SendError extends Error {
   constructor(message, status) {

@@ -66,7 +66,7 @@ While the hook is enabled, **a broken function blocks every auth email** (sign-u
 
 ## Rollback
 
-1. Dashboard > Authentication > Auth Hooks > Send Email > **disable** the hook. Supabase immediately goes back to its built-in mailer.
+1. Dashboard > Authentication > Auth Hooks > Send Email > **disable** the hook. Supabase should go back to its built-in mailer (Supabase documents the hook as replacing the built-in sender but does not spell out the switch-back timing, so verify with a QA-account reset right after disabling).
 2. Leave the function deployed but unused. Nothing else needs to change; no portal code depends on the hook.
 
 If emails stop arriving after enabling: disable the hook first, then read the function logs.

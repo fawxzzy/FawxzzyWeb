@@ -48,6 +48,8 @@ export async function handleAuthEmailRequest(request, { env, fetchImpl, nowSecon
     return failure(500, "Email hook is not configured");
   }
 
+  const declaredLength = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) return failure(413, "Payload too large");
   const body = await request.text();
   if (new TextEncoder().encode(body).length > MAX_BODY_BYTES) return failure(413, "Payload too large");
 
@@ -75,7 +77,8 @@ export async function handleAuthEmailRequest(request, { env, fetchImpl, nowSecon
     messages = planMessages(JSON.parse(body), { supabaseUrl: env.SUPABASE_URL });
   } catch (error) {
     if (error instanceof HookPayloadError || error instanceof SyntaxError) {
-      console.error(`auth-send-email: payload rejected: ${error.message}`);
+      // HookPayloadError messages are static; a JSON SyntaxError message can quote the body, so log only its name.
+      console.error(`auth-send-email: payload rejected: ${error instanceof HookPayloadError ? error.message : error.name}`);
       return failure(400, "Invalid hook payload");
     }
     throw error;
@@ -83,15 +86,18 @@ export async function handleAuthEmailRequest(request, { env, fetchImpl, nowSecon
 
   const webhookId = request.headers.get("webhook-id");
   try {
-    for (const [index, message] of messages.entries()) {
-      await sendViaResend({
-        fetchImpl,
-        apiKey: env.RESEND_API_KEY,
-        from: env.AUTH_EMAIL_FROM,
-        message,
-        idempotencyKey: `${webhookId}/${index}`,
-      });
-    }
+    // Concurrent, not sequential: the secure email-change case sends two messages and the hook budget is ~5 s.
+    await Promise.all(
+      messages.map((message, index) =>
+        sendViaResend({
+          fetchImpl,
+          apiKey: env.RESEND_API_KEY,
+          from: env.AUTH_EMAIL_FROM,
+          message,
+          idempotencyKey: `${webhookId}/${index}`,
+        }),
+      ),
+    );
   } catch (error) {
     if (error instanceof SendError) {
       console.error(`auth-send-email: send failed: ${error.message}`);

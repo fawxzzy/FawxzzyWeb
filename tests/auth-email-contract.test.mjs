@@ -24,7 +24,7 @@ import {
   rgbTripletToHex,
   themeColors,
 } from "../supabase/functions/auth-send-email/render.mjs";
-import { RESEND_ENDPOINT } from "../supabase/functions/auth-send-email/resend.mjs";
+import { RESEND_ENDPOINT, SEND_TIMEOUT_MS } from "../supabase/functions/auth-send-email/resend.mjs";
 import {
   constantTimeEqual,
   signWebhook,
@@ -632,4 +632,60 @@ test("supabase config disables JWT verification for auth-send-email (signature a
   const block = config.match(/^\[functions\.auth-send-email\]\s*$([^[]*)/m);
   assert.ok(block, "config.toml must declare [functions.auth-send-email]");
   assert.match(block[1], /^\s*verify_jwt\s*=\s*false\s*$/m);
+});
+
+test("hook budget: one send stays inside Supabase's ~5 s hook limit", () => {
+  assert.ok(SEND_TIMEOUT_MS <= 4_000, `send timeout ${SEND_TIMEOUT_MS} ms leaves no room in a ~5 s hook budget`);
+});
+
+test("hook budget: the two secure email-change messages are sent concurrently, not one after the other", async () => {
+  const payload = hookPayload({
+    user: { new_email: "new-address@example.test" },
+    email_data: { email_action_type: "email_change", redirect_to: accountConfirmUrl("mazer", "s"), token_hash: "N", token_hash_new: "C" },
+  });
+  let started = 0;
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const fetchImpl = async () => {
+    started += 1;
+    await gate; // neither send can finish until both have started
+    return new Response("{}", { status: 200 });
+  };
+  const pending = handleAuthEmailRequest(await signedRequest(payload), { env: goodEnv(), fetchImpl, nowSeconds: NOW });
+  await new Promise((resolve) => setTimeout(resolve, 25));
+  assert.equal(started, 2, "second send must start before the first one finishes");
+  release();
+  assert.equal((await pending).status, 200);
+});
+
+test("handler: an oversized declared content-length is rejected before the body is read", async () => {
+  const { calls, fetchImpl } = mockFetch();
+  let textCalls = 0;
+  const request = {
+    method: "POST",
+    headers: new Headers({ "content-length": String(1024 * 1024), "webhook-id": "x", "webhook-timestamp": String(NOW), "webhook-signature": "v1,x" }),
+    text: async () => { textCalls += 1; return "{}"; },
+  };
+  const response = await handleAuthEmailRequest(request, { env: goodEnv(), fetchImpl, nowSeconds: NOW });
+  assert.equal(response.status, 413);
+  assert.equal(textCalls, 0, "body must not be read when the declared length is already too big");
+  assert.equal(calls.length, 0);
+});
+
+test("handler: a rejected non-JSON payload is never echoed into the logs", async () => {
+  const { fetchImpl } = mockFetch();
+  const seen = [];
+  const original = console.error;
+  console.error = (...args) => { seen.push(args.join(" ")); };
+  try {
+    // The parse error lands on the first sensitive-looking token, so V8's message would quote it.
+    const secretBody = '{"x": TOKENHASHLEAK leak-me@example.test}';
+    const response = await handleAuthEmailRequest(await signedRequest(secretBody), { env: goodEnv(), fetchImpl, nowSeconds: NOW });
+    assert.equal(response.status, 400);
+  } finally {
+    console.error = original;
+  }
+  const logged = seen.join("\n");
+  assert.ok(logged.includes("payload rejected"), "a rejection line is still logged");
+  assert.ok(!/leak-me|TOKENHASH/.test(logged), "log must not quote any part of the request body");
 });
