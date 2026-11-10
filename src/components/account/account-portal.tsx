@@ -37,7 +37,13 @@ import {
   type PortalAuthAdapter,
   type PortalSession,
 } from "@/lib/auth/browser-adapter";
-import { PASSWORD_MINIMUM, validatePassword } from "@/lib/auth/password-policy";
+import { PASSWORD_MINIMUM } from "@/lib/auth/password-policy";
+import {
+  guidanceForCredentials,
+  guidanceForNewPassword,
+  guidanceForResetRequest,
+  type GuidanceProblem,
+} from "@/lib/auth/form-guidance";
 import { FitnessHandoffError } from "@/lib/auth/fitness-handoff";
 import {
   SystemState,
@@ -58,7 +64,7 @@ type Notice = {
 
 const emptySubscribe = () => () => undefined;
 const SIGNUP_SETTLEMENT_MINIMUM_MS = 500;
-const USERNAME_PATTERN = /^[A-Za-z0-9._-]{2,15}$/;
+const GUIDANCE_ID = "account-auth-guidance";
 
 async function settleSignupAttempt(
   adapter: PortalAuthAdapter,
@@ -219,6 +225,41 @@ function AuthLiveNotice({ notice }: { notice: Notice | null }) {
   );
 }
 
+/**
+ * Visible "what is needed" banner for input problems. Lines disappear as each field is
+ * fixed (it only lists problems whose field is still flagged invalid). The red field
+ * border alone never carries the meaning.
+ */
+function GuidanceBanner({
+  problems,
+  invalidFields,
+}: {
+  problems: GuidanceProblem[];
+  invalidFields: Set<string>;
+}) {
+  const visible = problems.filter((problem) => invalidFields.has(problem.field));
+  if (visible.length === 0) return null;
+  return (
+    <div className="account-auth-guidance" data-auth-guidance id={GUIDANCE_ID} role="alert">
+      <p className="account-auth-guidance__title">
+        {visible.length === 1 ? "One thing to fix" : `${visible.length} things to fix`}
+      </p>
+      <ul>
+        {visible.map((problem) => (
+          <li data-field={problem.field} key={problem.field}>{problem.message}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function focusFirstProblem(form: HTMLFormElement, problems: GuidanceProblem[]) {
+  const first = problems[0];
+  if (!first) return;
+  const element = form.elements.namedItem(first.field);
+  if (element instanceof HTMLElement) element.focus();
+}
+
 function SetupState({ resolution }: { resolution: AdapterResolution | null }) {
   if (!resolution) {
     return <p className="account-capability-note" role="status">Preparing account service.</p>;
@@ -318,6 +359,7 @@ function LoginPanel({
   const [intent, setIntent] = useState<"login" | "signup">("login");
   const [username, setUsername] = useState("");
   const [invalidFields, setInvalidFields] = useState<Set<string>>(() => new Set());
+  const [guidance, setGuidance] = useState<GuidanceProblem[]>([]);
   const transient = useTransientNotice();
   const [busy, setBusy] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -375,17 +417,11 @@ function LoginPanel({
     const email = String(form.get("email") ?? "").trim();
     const password = String(form.get("password") ?? "");
     const submittedUsername = String(form.get("username") ?? "").trim();
-    const nextInvalidFields = new Set<string>();
-    if (!email || (intent === "signup" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
-      nextInvalidFields.add("email");
-    }
-    if (intent === "signup" && !USERNAME_PATTERN.test(submittedUsername)) {
-      nextInvalidFields.add("username");
-    }
-    const validation = validatePassword(password, intent);
-    if (!validation.valid) nextInvalidFields.add("password");
-    if (nextInvalidFields.size > 0) {
-      setInvalidFields(nextInvalidFields);
+    const problems = guidanceForCredentials({ intent, email, password, username: submittedUsername });
+    if (problems.length > 0) {
+      setGuidance(problems);
+      setInvalidFields(new Set(problems.map((problem) => problem.field)));
+      focusFirstProblem(event.currentTarget, problems);
       return;
     }
 
@@ -488,11 +524,13 @@ function LoginPanel({
       <div className="account-auth-body">
         <SetupState resolution={resolution} />
         <AuthLiveNotice notice={transient.notice} />
+        <GuidanceBanner invalidFields={invalidFields} problems={guidance} />
         <form className="account-form account-form--auth" id="account-auth-form" noValidate onSubmit={submit}>
         {intent === "signup" ? (
           <fieldset data-invalid={invalidFields.has("username") || undefined}>
             <legend><label htmlFor="account-username">Username</label></legend>
             <input
+              aria-describedby={invalidFields.has("username") ? GUIDANCE_ID : undefined}
               aria-invalid={invalidFields.has("username") || undefined}
               id="account-username"
               autoComplete="username"
@@ -517,6 +555,7 @@ function LoginPanel({
         <fieldset data-invalid={invalidFields.has("email") || undefined}>
           <legend><label htmlFor="account-email">{intent === "login" ? "Email or username" : "Email"}</label></legend>
           <input
+            aria-describedby={invalidFields.has("email") ? GUIDANCE_ID : undefined}
             aria-invalid={invalidFields.has("email") || undefined}
             id="account-email"
             autoComplete={intent === "login" ? "username" : "email"}
@@ -534,6 +573,7 @@ function LoginPanel({
         <fieldset data-invalid={invalidFields.has("password") || undefined}>
           <legend><label htmlFor="account-password">Password</label></legend>
           <input
+            aria-describedby={invalidFields.has("password") ? GUIDANCE_ID : undefined}
             aria-invalid={invalidFields.has("password") || undefined}
             id="account-password"
             autoComplete={intent === "login" ? "current-password" : "new-password"}
@@ -825,6 +865,7 @@ function ResetPanel({
   const adapter = adapterFrom(resolution);
   const transient = useTransientNotice();
   const [invalidFields, setInvalidFields] = useState<Set<string>>(() => new Set());
+  const [guidance, setGuidance] = useState<GuidanceProblem[]>([]);
   const [busy, setBusy] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmationVisible, setConfirmationVisible] = useState(false);
@@ -861,16 +902,15 @@ function ResetPanel({
     if (!adapter || busy || cooldown.remaining || (recovery && !recoveryReady)) return;
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
-    const nextInvalidFields = new Set<string>();
 
     if (recovery) {
       const password = String(form.get("password") ?? "");
       const confirmation = String(form.get("confirmation") ?? "");
-      const validation = validatePassword(password, "reset");
-      if (!validation.valid) nextInvalidFields.add("password");
-      if (!confirmation || password !== confirmation) nextInvalidFields.add("confirmation");
-      if (nextInvalidFields.size > 0) {
-        setInvalidFields(nextInvalidFields);
+      const problems = guidanceForNewPassword(password, confirmation);
+      if (problems.length > 0) {
+        setGuidance(problems);
+        setInvalidFields(new Set(problems.map((problem) => problem.field)));
+        focusFirstProblem(formElement, problems);
         return;
       }
       setBusy(true);
@@ -894,8 +934,11 @@ function ResetPanel({
     }
 
     const email = String(form.get("email") ?? "").trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setInvalidFields(new Set(["email"]));
+    const emailProblems = guidanceForResetRequest(email);
+    if (emailProblems.length > 0) {
+      setGuidance(emailProblems);
+      setInvalidFields(new Set(emailProblems.map((problem) => problem.field)));
+      focusFirstProblem(formElement, emailProblems);
       return;
     }
     setBusy(true);
@@ -928,6 +971,7 @@ function ResetPanel({
       <div className="account-auth-body">
         <SetupState resolution={resolution} />
         <AuthLiveNotice notice={actionNotice} />
+        <GuidanceBanner invalidFields={invalidFields} problems={guidance} />
         {!recovery || recoveryReady ? (
           <form className="account-form account-form--auth" id="account-reset-form" noValidate onSubmit={submit}>
         {recovery ? (
@@ -935,6 +979,7 @@ function ResetPanel({
             <fieldset data-invalid={invalidFields.has("password") || undefined}>
               <legend><label htmlFor="account-new-password">New password</label></legend>
               <input
+                aria-describedby={invalidFields.has("password") ? GUIDANCE_ID : undefined}
                 aria-invalid={invalidFields.has("password") || undefined}
                 autoComplete="new-password"
                 id="account-new-password"
@@ -955,6 +1000,7 @@ function ResetPanel({
             <fieldset data-invalid={invalidFields.has("confirmation") || undefined}>
               <legend><label htmlFor="account-confirm-password">Confirm password</label></legend>
               <input
+                aria-describedby={invalidFields.has("confirmation") ? GUIDANCE_ID : undefined}
                 aria-invalid={invalidFields.has("confirmation") || undefined}
                 autoComplete="new-password"
                 id="account-confirm-password"
@@ -976,7 +1022,7 @@ function ResetPanel({
         ) : (
           <fieldset data-invalid={invalidFields.has("email") || undefined}>
             <legend><label htmlFor="account-reset-email">Email</label></legend>
-            <input aria-invalid={invalidFields.has("email") || undefined} autoComplete="email" id="account-reset-email" inputMode="email" name="email" onChange={() => setInvalidFields(new Set())} required type="email" />
+            <input aria-describedby={invalidFields.has("email") ? GUIDANCE_ID : undefined} aria-invalid={invalidFields.has("email") || undefined} autoComplete="email" id="account-reset-email" inputMode="email" name="email" onChange={() => setInvalidFields(new Set())} required type="email" />
           </fieldset>
         )}
           </form>

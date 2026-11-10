@@ -1395,7 +1395,7 @@ test("auth inputs preserve native caret placement after editing", async ({ page 
   await expect(identifier).toHaveValue("fawxzzy-.user");
 });
 
-test("required-field feedback is visual and does not add an error paragraph", async ({ page }) => {
+test("required-field feedback is a visible banner that says what each field needs", async ({ page }) => {
   await page.goto("/login?auth_test=success");
   const submit = page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" });
   const identifier = page.getByLabel("Email or username");
@@ -1408,11 +1408,48 @@ test("required-field feedback is visual and does not add an error paragraph", as
   await expect(identifierFrame).toHaveCSS("border-color", "rgb(255, 77, 87)");
   await expect(page.locator(".account-auth-live-notice")).toHaveCount(0);
 
-  await identifier.focus();
-  await expect(identifierFrame).toHaveCSS("border-color", "rgb(255, 77, 87)");
+  const banner = page.locator("[data-auth-guidance]");
+  await expect(banner).toBeVisible();
+  await expect(banner).toHaveAttribute("role", "alert");
+  await expect(banner).toContainText("2 things to fix");
+  await expect(banner).toContainText("Enter your email or username.");
+  await expect(banner).toContainText("Enter your password.");
+  await expect(identifier).toHaveAttribute("aria-describedby", "account-auth-guidance");
+  await expect(identifier).toBeFocused();
 
   await identifier.fill("fawxzzy");
   await expect(identifierFrame).not.toHaveAttribute("data-invalid", "true");
+  await expect(banner).toContainText("One thing to fix");
+  await expect(banner).not.toContainText("Enter your email or username.");
+
+  await page.getByLabel("Password", { exact: true }).fill("x");
+  await expect(banner).toHaveCount(0);
+});
+
+test("signup banner names the username, email and password rules", async ({ page }) => {
+  await page.goto("/login?auth_test=success");
+  await page.getByRole("button", { name: "Create account" }).click();
+  const form = page.locator("form");
+  await form.getByLabel("Username").fill("a b");
+  await form.getByLabel("Email").fill("not-an-email");
+  await form.getByLabel("Password", { exact: true }).fill("short");
+  await page.locator(".account-auth-dock").getByRole("button", { name: "Create account" }).click();
+
+  const banner = page.locator("[data-auth-guidance]");
+  await expect(banner).toContainText("3 things to fix");
+  await expect(banner).toContainText("Username: 2 to 15 letters");
+  await expect(banner).toContainText("name@example.com");
+  await expect(banner).toContainText("Use at least 10 characters");
+  await expect(form.getByLabel("Username")).toBeFocused();
+});
+
+test("reset forms say what is missing or mismatched", async ({ page }) => {
+  await page.goto("/reset-password?auth_test=success");
+  await page.locator('.account-auth-dock button[type="submit"]').click();
+  await expect(page.locator("[data-auth-guidance]")).toContainText("Enter the email address for your account.");
+  await page.getByLabel("Email").fill("nope");
+  await page.locator('.account-auth-dock button[type="submit"]').click();
+  await expect(page.locator("[data-auth-guidance]")).toContainText("name@example.com");
 });
 
 test("field focus follows the notched frame without drawing a second input outline", async ({ page }) => {
@@ -1586,6 +1623,7 @@ test("signup validation stops before the provider call", async ({ browserName, p
   await submit.click();
 
   await expect(password).toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator("[data-auth-guidance]")).toContainText("Use at least 10 characters");
   await expect(page.locator('.account-auth-live-notice[role="status"]')).toHaveCount(0);
   await expect(page.locator('.account-auth-live-notice[role="alert"]')).toHaveCount(0);
   await expect(submit).toBeEnabled();
@@ -2009,6 +2047,7 @@ test("recovery exchanges PKCE before exposing the password form", async ({ brows
   await page.getByLabel("Confirm password").fill("y".repeat(129));
   await submit.click();
   await expect(page.getByLabel("Confirm password")).toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator("[data-auth-guidance]")).toContainText("The two passwords do not match.");
   await expect(submit).toBeEnabled();
   await expect(submit).toHaveText("Save new password");
 

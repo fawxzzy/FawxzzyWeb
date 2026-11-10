@@ -3,6 +3,7 @@
 @import "../styles/components/site-shell.css";
 @import "../styles/page-families/legacy-public.css";
 @import "../styles/page-families/utility.css";
+@import "../styles/page-families/account-forms.css";
 @import "../styles/components/catalog-foundations.css";
 @import "../styles/components/app-launcher.css";
 @import "../styles/page-families/product-detail.css";
