@@ -12,7 +12,7 @@
     {
       "board": "mazer",
       "path": "planning/board-sources/mazer.project-board.owner-export.v1.json",
-      "sha256": "71d1d97e316da63075cbe45e3670c13d960d848ea9073a15e713cb0168737d59",
+      "sha256": "37035d672b2122b6c98514648d01775bba91921b5176fac12501acaf5784ee0a",
       "sourceProjectId": "mazer"
     },
     {
@@ -123,6 +123,7 @@
       "MAZER-GEN-001",
       "MAZER-GEN-002",
       "MAZER-GEN-003",
+      "MAZER-GEN-004",
       "MAZER-GOV-001",
       "MAZER-GOV-002",
       "MAZER-GOV-003",
