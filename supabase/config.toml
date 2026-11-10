@@ -6,3 +6,6 @@ verify_jwt = false
 
 [functions.first-party-analytics]
 verify_jwt = false
+
+[functions.auth-send-email]
+verify_jwt = false
