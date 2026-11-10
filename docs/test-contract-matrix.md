@@ -15,6 +15,7 @@
 | Runtime/security | Node, Actions, Docker, HTTP-header contracts | Lifeline smoke | source receipt captures exact tree/run |
 | Deployment binding | missing/malformed/wrong/correct workspace bindings, clean exact-main source, CI and provider identity guards | production smoke and log verification run only after separate release authority | production receipt binds source, project, deployment, aliases, smoke, and rollback |
 | Style ownership | ordered import and file-owner assertions | full cross-family regression matrix | contact sheet makes visual review portable |
+| Auth email | Standard Webhooks signature, per-app theme parity with the portal tokens, every action type, escaping, contrast, link construction against the real confirm/reset route logic, mocked Resend sends, `verify_jwt = false` (`npm run test:auth-email`) | none (hermetic; preview via `npm run email:preview`) | none |
 
 Test-count changes must be explained in the PR and receipt by the new or removed
 behavioral denominator. A green total without a contract delta is not sufficient

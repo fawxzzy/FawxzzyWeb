@@ -1,4 +1,5 @@
 import { apps } from "@/data/apps";
+import { authThemes } from "../../supabase/functions/_shared/auth-theme.mjs";
 import { productIdentity } from "@/config/product";
 
 function requireAppOrigin(slug: "fitness" | "mazer") {
@@ -68,6 +69,10 @@ export const accountContract = {
 } as const;
 
 /**
+ * Accent and product marker below come from the shared auth theme tokens
+ * (supabase/functions/_shared/auth-theme.mjs) that the auth email renderer also
+ * reads; the auth-email parity test keeps both in sync.
+ *
  * Presentation-only account contexts. These values may change copy, color,
  * legal destinations, and the eventual allowlisted return destination. They
  * never select an Auth provider, callback, session, or credential boundary.
@@ -81,7 +86,7 @@ export const accountExperienceContexts: Record<
   AccountExperienceContext
 > = {
   website: {
-    accentRgb: "147 184 148",
+    accentRgb: authThemes.website.accentRgb,
     consumerIntegration: "active",
     destinationOrigin: accountContract.publicHubOrigin,
     id: "website",
@@ -95,13 +100,13 @@ export const accountExperienceContexts: Record<
         label: "Terms of Service",
       },
     ],
-    productName: productIdentity.publicName,
+    productName: authThemes.website.kicker,
     resetLabel: "Send recovery link",
     signInLabel: "Sign in",
     signUpLabel: "Create account",
   },
   fitness: {
-    accentRgb: "160 223 56",
+    accentRgb: authThemes.fitness.accentRgb,
     consumerIntegration: "active",
     destinationOrigin: accountContract.productOrigins.fitness,
     id: "fitness",
@@ -115,13 +120,13 @@ export const accountExperienceContexts: Record<
         label: "Terms of Service",
       },
     ],
-    productName: "Fitness",
+    productName: authThemes.fitness.kicker,
     resetLabel: "Send recovery link",
     signInLabel: "Sign in",
     signUpLabel: "Create account",
   },
   mazer: {
-    accentRgb: "53 238 224",
+    accentRgb: authThemes.mazer.accentRgb,
     consumerIntegration: "pending",
     destinationOrigin: accountContract.productOrigins.mazer,
     id: "mazer",
@@ -135,7 +140,7 @@ export const accountExperienceContexts: Record<
         label: "Terms of Service",
       },
     ],
-    productName: "Mazer",
+    productName: authThemes.mazer.kicker,
     resetLabel: "Send recovery link",
     signInLabel: "Sign in",
     signUpLabel: "Create account",
