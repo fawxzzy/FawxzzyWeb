@@ -26,7 +26,7 @@ const NEVER_PUBLIC = [
   "lane-creation-os-product-definition-first-wedge", "lane-stream-remote-decision",
   "lane-codex-execution-contracts", "lane-discordos-single-writer", "lane-discordos-cross-project-board-integrity",
 ];
-const BOARD_COUNTS = { fitness: 27, mazer: 131, trove: 1, "atlas-stack": 21 };
+const BOARD_COUNTS = { fitness: 27, mazer: 133, trove: 1, "atlas-stack": 21 };
 
 test("generated snapshot is publication-ready, valid, and accepted as healthy by the adapter", () => {
   assert.equal(snapshot.schema, "fawxzzy.project-board.public-preview.v1");
