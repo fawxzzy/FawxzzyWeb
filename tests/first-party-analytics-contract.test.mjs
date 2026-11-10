@@ -296,3 +296,10 @@ test("actual Edge handler rejects unknown, forged, extra-field and disallowed-or
     assert.equal(inserts.length, 0, JSON.stringify(payload));
   }
 });
+
+test("supabase config disables JWT verification for first-party-analytics", async () => {
+  const config = await readFile(new URL("../supabase/config.toml", import.meta.url), "utf8");
+  const block = config.match(/^\[functions\.first-party-analytics\]\s*$([^[]*)/m);
+  assert.ok(block, "config.toml must declare [functions.first-party-analytics]");
+  assert.match(block[1], /^\s*verify_jwt\s*=\s*false\s*$/m);
+});
