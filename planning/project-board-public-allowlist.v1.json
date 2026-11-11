@@ -12,7 +12,7 @@
     {
       "board": "mazer",
       "path": "planning/board-sources/mazer.project-board.owner-export.v1.json",
-      "sha256": "604c275270fef49420f51524c1fcc89083d5580ba48e8b7ddbf296503bc78db2",
+      "sha256": "fc1ff55a0f914f57b9354deaaafb58bab67335747d01d580e3090ad0ff1a2cf4",
       "sourceProjectId": "mazer"
     },
     {
@@ -94,6 +94,7 @@
       "MAZER-AI-002",
       "MAZER-AUDIO-001",
       "MAZER-AUDIO-002",
+      "MAZER-AUTH-EMAIL-001",
       "MAZER-AUTH-QA-001",
       "MAZER-CAM-001",
       "MAZER-CHAL-001",
@@ -177,6 +178,7 @@
       "MAZER-QA-004",
       "MAZER-QA-005",
       "MAZER-QA-006",
+      "MAZER-REPO-HYGIENE-001",
       "MAZER-RUN-001",
       "MAZER-RUN-002",
       "MAZER-RUN-003",
