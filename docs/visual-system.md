@@ -47,6 +47,9 @@ styles belong to the narrowest established owner:
   opt-in Preview and Feedback dialogs.
 - `src/styles/page-families/utility.css` owns Login, Auth handoff, recovery, and
   Account presentation until the utility-family refinement lands.
+- `src/styles/page-families/account-forms.css` owns the account form guidance banner
+  (the visible "what is needed" message for missing or invalid inputs). It was split out
+  because `utility.css` is at its line-count cap; it loads right after it.
 - `src/styles/page-families/product-detail.css` retains historical Fitness and Mazer
   detail styling for provenance and ordered-cascade compatibility; it does not authorize active detail routes.
 - `src/styles/page-families/studio-public.css` owns the Home/catalog studio
