@@ -6,7 +6,7 @@
     {
       "board": "fitness",
       "path": "planning/board-sources/fitness.project-board.owner-export.v1.json",
-      "sha256": "58cabf0925bd8668a9c5490fb93157c980ac7329977a14f8a23ff6157e14f2be",
+      "sha256": "4e57028a2ca27aa210e1a91620c2c93a4a514e6b87db71546a36517a1a35ffe3",
       "sourceProjectId": "fitness"
     },
     {
@@ -59,6 +59,7 @@
       "FF-ACCOUNT-004",
       "FF-ANALYTICS-001",
       "FF-AUTH-001",
+      "FF-AUTH-002",
       "FF-ENGINE-001",
       "FF-ENGINE-002",
       "FF-GAM-001",
@@ -69,6 +70,7 @@
       "FF-QA-003",
       "FF-RECAP-001",
       "FF-RELIABILITY-001",
+      "FF-RELIABILITY-002",
       "FF-RET-001",
       "FF-RET-002",
       "FF-RET-003",
