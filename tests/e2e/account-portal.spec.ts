@@ -2217,10 +2217,59 @@ test("website, Mazer, and unknown account contexts use the correct legal center"
   }
 });
 
-test("Mazer authorization captures once, scrubs the URL, and approves to the exact app", async ({ page }) => {
+test("first-party Mazer authorization auto-approves without a consent card", async ({ page }) => {
   const authorizationId = "authorization-id-1234567890";
   await page.goto(`/oauth/authorize?authorization_id=${authorizationId}&auth_test=session`);
+  await expect.poll(() => page.locator("html").getAttribute("data-oauth-redirect")).toBe(
+    `https://mazer.fawxzzy.com/?code=local-code&state=${oauthState}`,
+  );
   await expect(page).toHaveURL(/\/oauth\/authorize\?auth_test=session$/);
+  await expect(page.locator('[data-auth-surface="oauth-consent"]')).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Continue to Mazer?" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Continue to Mazer" })).toHaveCount(0);
+  await expect(page.getByText("Mazer will use your Fawxzzy email")).toHaveCount(0);
+  await expect.poll(() => page.evaluate(
+    (id) => Object.values(window.localStorage).some((value) => value.includes(id)),
+    authorizationId,
+  )).toBe(false);
+});
+
+test("first-party Mazer auto-approve failure shows the existing error state once, with no card or retry loop", async ({ page }) => {
+  let decisions = 0;
+  await page.route("**/api/account/mazer-oauth-pending", async (route) => {
+    if (route.request().method() === "PUT") {
+      decisions += 1;
+      await route.fulfill({ status: 502 });
+      return;
+    }
+    await route.fallback();
+  });
+  await page.goto(
+    "/oauth/authorize?authorization_id=authorization-id-1234567890&auth_test=session",
+  );
+  await expect(page.locator('[data-system-state="unavailable"]')).toContainText(
+    "Mazer sign-in is unavailable.",
+  );
+  await expect(page.locator('[data-auth-surface="oauth-consent"]')).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Continue to Mazer" })).toHaveCount(0);
+  await expect(page.locator("html")).not.toHaveAttribute("data-oauth-redirect", /.+/);
+  await page.waitForTimeout(1_000);
+  expect(decisions).toBe(1);
+});
+
+test("first-party Mazer auto-approve rejects a hostile provider redirect without a card", async ({ page }) => {
+  await page.goto(
+    "/oauth/authorize?authorization_id=authorization-id-1234567890&auth_test=oauth-hostile",
+  );
+  await expect(page.locator('[data-system-state="invalid"]')).toContainText("invalid or expired");
+  await expect(page.locator('[data-auth-surface="oauth-consent"]')).toHaveCount(0);
+  await expect(page.locator("html")).not.toHaveAttribute("data-oauth-redirect", /.+/);
+});
+
+test("retained Mazer consent card captures once, scrubs the URL, and approves to the exact app", async ({ page }) => {
+  const authorizationId = "authorization-id-1234567890";
+  await page.goto(`/oauth/authorize?authorization_id=${authorizationId}&auth_test=session&oauth_consent=1`);
+  await expect(page).toHaveURL(/\/oauth\/authorize\?auth_test=session&oauth_consent=1$/);
   await expect(page.locator('[data-auth-surface="oauth-consent"]')).toBeVisible();
   await expect(page.getByRole("heading", { name: "Continue to Mazer?" })).toBeVisible();
   await expect(page.getByText("Mazer will use your Fawxzzy email")).toBeVisible();
@@ -2244,9 +2293,9 @@ test("Mazer authorization captures once, scrubs the URL, and approves to the exa
   );
 });
 
-test("Mazer authorization denial returns a bounded OAuth error", async ({ page }) => {
+test("retained Mazer consent card denial returns a bounded OAuth error", async ({ page }) => {
   const authorizationId = "authorization-id-1234567890";
-  await page.goto(`/oauth/authorize?authorization_id=${authorizationId}&auth_test=session`);
+  await page.goto(`/oauth/authorize?authorization_id=${authorizationId}&auth_test=session&oauth_consent=1`);
   await expect(page.getByRole("button", { name: "Cancel" })).toBeVisible();
   await page.getByRole("button", { name: "Cancel" }).click();
   await expect.poll(() => page.locator("html").getAttribute("data-oauth-redirect")).toBe(
@@ -2300,7 +2349,7 @@ test("Mazer authorization rejects duplicate requests and hostile provider redire
   );
 
   await page.goto(
-    "/oauth/authorize?authorization_id=authorization-id-1234567890&auth_test=oauth-hostile",
+    "/oauth/authorize?authorization_id=authorization-id-1234567890&auth_test=oauth-hostile&oauth_consent=1",
   );
   await expect(page.getByRole("button", { name: "Continue to Mazer" })).toBeVisible();
   await page.getByRole("button", { name: "Continue to Mazer" }).click();
@@ -2310,9 +2359,9 @@ test("Mazer authorization rejects duplicate requests and hostile provider redire
   await expect(page.locator("html")).not.toHaveAttribute("data-oauth-redirect", /.+/);
 });
 
-test("Mazer consent fails closed after a same-tab auth-generation change", async ({ page }) => {
+test("retained Mazer consent card fails closed after a same-tab auth-generation change", async ({ page }) => {
   await page.goto(
-    "/oauth/authorize?authorization_id=authorization-id-1234567890&auth_test=session",
+    "/oauth/authorize?authorization_id=authorization-id-1234567890&auth_test=session&oauth_consent=1",
   );
   await expect(page.getByRole("button", { name: "Continue to Mazer" })).toBeVisible();
   await page.evaluate(
@@ -2326,9 +2375,9 @@ test("Mazer consent fails closed after a same-tab auth-generation change", async
   await expect(page.locator("html")).not.toHaveAttribute("data-oauth-redirect", /.+/);
 });
 
-test("Mazer consent fails closed after a cross-tab auth-generation change", async ({ context, page }) => {
+test("retained Mazer consent card fails closed after a cross-tab auth-generation change", async ({ context, page }) => {
   await page.goto(
-    "/oauth/authorize?authorization_id=authorization-id-1234567890&auth_test=session",
+    "/oauth/authorize?authorization_id=authorization-id-1234567890&auth_test=session&oauth_consent=1",
   );
   await expect(page.getByRole("button", { name: "Continue to Mazer" })).toBeVisible();
   const sibling = await context.newPage();
@@ -2353,6 +2402,7 @@ test("Mazer authorization accepts only a previously approved exact app redirect"
     `https://mazer.fawxzzy.com/?code=local-auto-code&state=${oauthState}`,
   );
   await expect(page.getByRole("button", { name: "Continue to Mazer" })).toHaveCount(0);
+  await expect(page.locator('[data-auth-surface="oauth-consent"]')).toHaveCount(0);
 });
 
 test("callback rejects a mismatched state without an exchange", async ({ page }) => {

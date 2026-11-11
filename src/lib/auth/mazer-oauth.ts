@@ -277,6 +277,44 @@ export function isExpectedMazerOAuthAuthorization(
   );
 }
 
+/**
+ * Explicit first-party allowlist. A request skips the consent card only when the
+ * provider-reported client id AND redirect URI are both exact members of these
+ * lists. No name, prefix, substring, or pattern matching is used for identity.
+ */
+export const FIRST_PARTY_MAZER_REDIRECT_URIS: readonly string[] = [MAZER_OAUTH_REDIRECT_URI];
+
+export function firstPartyMazerOAuthClientIds(runtimeOrigin: string): readonly string[] {
+  const clientId = expectedMazerOAuthClientId(runtimeOrigin);
+  return clientId ? [clientId] : [];
+}
+
+export function shouldAutoApproveMazerOAuth(
+  details: Partial<MazerOAuthAuthorizationDetails> | null | undefined,
+  runtimeOrigin: string,
+  sessionUserId: string | null | undefined,
+) {
+  if (
+    !details ||
+    typeof details.clientId !== "string" ||
+    typeof details.redirectUri !== "string" ||
+    typeof details.scope !== "string" ||
+    typeof details.userId !== "string" ||
+    typeof sessionUserId !== "string" ||
+    !sessionUserId ||
+    details.userId !== sessionUserId ||
+    (details.clientName !== undefined && typeof details.clientName !== "string")
+  ) {
+    return false;
+  }
+  return (
+    firstPartyMazerOAuthClientIds(runtimeOrigin).includes(details.clientId) &&
+    FIRST_PARTY_MAZER_REDIRECT_URIS.includes(details.redirectUri) &&
+    details.scope === MAZER_OAUTH_SCOPE &&
+    (details.clientName === undefined || details.clientName === "" || details.clientName === "Mazer")
+  );
+}
+
 function parseBoundedMazerRedirect(value: unknown) {
   if (typeof value !== "string" || new TextEncoder().encode(value).byteLength > REDIRECT_MAX_BYTES) {
     return null;
