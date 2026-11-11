@@ -18,6 +18,7 @@ import {
   rebindPendingMazerOAuthAuthorization,
   sanitizeMazerOAuthApprovalRedirect,
   sanitizeMazerOAuthDenialRedirect,
+  shouldAutoApproveMazerOAuth,
   storePendingMazerOAuthAuthorization,
   type MazerOAuthAuthorizationDetails,
 } from "@/lib/auth/mazer-oauth";
@@ -161,6 +162,36 @@ export function MazerOAuthAuthorization() {
         !isExpectedMazerOAuthAuthorization(result.details, window.location.origin)
       ) {
         if (active) setState({ kind: "invalid" });
+        return;
+      }
+      // First-party Mazer (exact client id + exact redirect URI allowlist) is
+      // approved without a consent card. The local-test `oauth_consent` flag
+      // exists only so the retained consent card stays testable.
+      const forceConsent = classifyRuntimeOrigin(window.location.origin) === "local-test" &&
+        query.get("oauth_consent") === "1";
+      if (
+        !forceConsent &&
+        shouldAutoApproveMazerOAuth(result.details, window.location.origin, session.userId)
+      ) {
+        try {
+          const rawRedirect = await decidePendingMazerOAuthAuthorization(
+            "approve",
+            accessToken,
+            authGeneration,
+          );
+          const destination = sanitizeMazerOAuthApprovalRedirect(rawRedirect);
+          if (!destination) {
+            await clearPendingMazerOAuthAuthorization().catch(() => undefined);
+            if (active) setState({ kind: "invalid" });
+            return;
+          }
+          navigateToMazer(destination);
+        } catch {
+          // No retry and no consent card: the gateway already clears the
+          // carrier after a failed decision; show the existing error state.
+          await clearPendingMazerOAuthAuthorization().catch(() => undefined);
+          if (active) setState({ kind: "unavailable" });
+        }
         return;
       }
       if (active) {

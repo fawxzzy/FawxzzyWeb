@@ -3,8 +3,8 @@ import { MazerOAuthAuthorization } from "@/components/account/mazer-oauth-author
 import { accountPageMetadata } from "@/lib/account-metadata";
 
 export const metadata = accountPageMetadata(
-  "Continue to Mazer",
-  "Authorize Mazer to use your Fawxzzy account.",
+  "Mazer sign-in",
+  "Sign in to Mazer with your Fawxzzy account.",
   "/oauth/authorize",
 );
 
