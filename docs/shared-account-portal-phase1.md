@@ -130,8 +130,19 @@ redirects must be admitted individually in a future packet; do not add a broad p
   email-only until the metadata conflict is resolved, without silently changing or merging users.
   Candidate-scoped transaction locks serialize concurrent claims, and multi-candidate updates take
   those locks in lexical order so simultaneous claims cannot abort Auth writes or deadlock swaps.
-  Missing, ambiguous, rate-limited, and incorrect credentials return the same categorical failure. The
+  Missing, ambiguous, and incorrect credentials return the same categorical failure. The
   resolved email never reaches the browser.
+- Username lockout (additive v3). `account_resolve_username_signin_v3` returns
+  `(resolved_user_id, throttled)` with the same keys, windows and limits as v2, so the Edge Function
+  can answer HTTP 429 `username_throttled` and the portal can say "Too many tries for that username.
+  Wait 15 minutes, or sign in with your email address." instead of a wrong-password message. The
+  throttle is evaluated before and independently of whether the username exists, so it does not
+  enumerate accounts. After a verified password sign-in the function calls
+  `account_note_username_signin_success_v1`, which deletes only that username's counter row, so only
+  failures accumulate. v2 stays installed; the Edge Function falls back to v2 (no distinct lockout
+  signal, no success clearing) only when PostgREST reports v3 absent, so the SQL can be applied before
+  the function is redeployed. Migration: `20261112140000_account_username_signin_throttle_v3.sql`
+  (apply is a gated Supabase write; rollback drops only the v3 and note-success functions).
 - The public website receives only a one-time `signedIn` or `signedOut` presentation marker on the
   post-auth return URL. It immediately removes that marker and retains only a five-minute
   tab-session presentation marker, clearing expired or signed-out state deterministically.

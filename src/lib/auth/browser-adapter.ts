@@ -9,6 +9,7 @@ import {
   isLiveAccountAdapterOrigin,
   isLocalAuthTestOrigin,
 } from "@/config/account";
+import { USERNAME_THROTTLED_CODE, UsernameSignInThrottledError } from "@/lib/auth/errors";
 import { isBrowserSafeSupabasePublicKey } from "@/lib/auth/supabase-public-key.mjs";
 import {
   completeFitnessHandoff, fitnessReturnPath, FitnessHandoffError,
@@ -280,8 +281,12 @@ function createSupabaseAdapter(
       });
       const payload = await response.json().catch(() => null) as {
         access_token?: unknown;
+        code?: unknown;
         refresh_token?: unknown;
       } | null;
+      if (response.status === 429 && payload?.code === USERNAME_THROTTLED_CODE) {
+        throw new UsernameSignInThrottledError();
+      }
       if (
         !response.ok
         || typeof payload?.access_token !== "string"
@@ -471,6 +476,10 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
     },
     async signIn(email) {
       beginAuthMutation();
+      // Deterministic lockout scenario: only username sign-in is throttled; email sign-in is not.
+      if (scenario === "login-throttled" && !email.includes("@")) {
+        throw new UsernameSignInThrottledError();
+      }
       fail();
       session = {
         displayName: email.includes("@") ? email.split("@", 1)[0] : email,
@@ -587,6 +596,7 @@ export function resolvePortalAuthAdapter(
       "signup-rate-limit",
       "signup-network",
       "signup-unknown",
+      "login-throttled",
       "fitness-handoff-error",
       "oauth-auto",
       "oauth-hostile",

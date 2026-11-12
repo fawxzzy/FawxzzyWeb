@@ -1,5 +1,6 @@
 export type AuthAction =
   | "login"
+  | "login-throttled"
   | "signup"
   | "reset-request"
   | "reset-complete"
@@ -12,6 +13,10 @@ export type AuthAction =
 
 const SAFE_MESSAGES: Record<AuthAction, string> = {
   login: "We could not sign you in with those details. Check them and try again.",
+  // Shown only when username sign-in is rate limited. Throttling is applied before and regardless of
+  // whether the username exists, so this does not reveal whether an account exists.
+  "login-throttled":
+    "Too many tries for that username. Wait 15 minutes, or sign in with your email address.",
   // One fixed sentence for every sign-up failure (already registered, weak password, rate limit,
   // network, unknown). It claims no completion and never reveals whether an address is registered.
   signup:
@@ -26,6 +31,17 @@ const SAFE_MESSAGES: Record<AuthAction, string> = {
   signout: "We could not finish signing out. Refresh and try again.",
   session: "Account status is temporarily unavailable. Refresh and try again.",
 };
+
+/** Machine code the username sign-in Edge Function returns (HTTP 429) when a lockout applies. */
+export const USERNAME_THROTTLED_CODE = "username_throttled";
+
+/** Thrown by the browser adapter so the portal can show the distinct lockout copy. */
+export class UsernameSignInThrottledError extends Error {
+  constructor() {
+    super("Username sign-in is temporarily rate limited.");
+    this.name = "UsernameSignInThrottledError";
+  }
+}
 
 export function safeAuthError(action: AuthAction) {
   return SAFE_MESSAGES[action];

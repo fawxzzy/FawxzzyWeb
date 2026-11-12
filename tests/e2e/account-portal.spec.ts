@@ -843,6 +843,10 @@ test("safe messages are deterministic and non-enumerating", () => {
   expect(safeAuthError("signup")).toContain("could not finish creating your account");
   expect(safeAuthError("signup")).not.toMatch(/complete|session is available|registered|exists/i);
   expect(safeAuthSuccess("signup")).not.toContain("session is available");
+  expect(safeAuthError("login-throttled")).toBe(
+    "Too many tries for that username. Wait 15 minutes, or sign in with your email address.",
+  );
+  expect(safeAuthError("login-throttled")).not.toBe(safeAuthError("login"));
   expect(safeAuthSuccess("reset-request")).toContain("If an account can receive");
   expect(safeAuthError("reset-request")).toBe(safeAuthSuccess("reset-request"));
 });
@@ -1447,6 +1451,60 @@ test("signup banner names the username, email and password rules", async ({ page
   await expect(form.getByLabel("Username")).toBeFocused();
 });
 
+test("signup tells people their username shows on the Mazer leaderboard", async ({ page }) => {
+  await page.goto("/login?auth_test=success");
+  await expect(page.locator("#account-username-note")).toHaveCount(0);
+  await page.getByRole("button", { name: "Create account" }).click();
+  const note = page.locator("#account-username-note");
+  await expect(note).toBeVisible();
+  await expect(note).toHaveText("This username shows on the Mazer leaderboard.");
+  await expect(page.getByLabel("Username")).toHaveAttribute(
+    "aria-describedby",
+    "account-username-note",
+  );
+  // The note stays inside the viewport: no horizontal overflow, and it sits under its own field.
+  const noteBox = await note.boundingBox();
+  const fieldBox = await page.locator("#account-username").boundingBox();
+  const emailBox = await page.locator("#account-email").boundingBox();
+  expect(noteBox!.y).toBeGreaterThanOrEqual(fieldBox!.y + fieldBox!.height);
+  expect(noteBox!.y + noteBox!.height).toBeLessThanOrEqual(emailBox!.y);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+  // A validation problem keeps the note and adds the guidance banner to the description.
+  await page.getByLabel("Username").fill("a b");
+  await page.locator(".account-auth-dock").getByRole("button", { name: "Create account" }).click();
+  await expect(page.getByLabel("Username")).toHaveAttribute(
+    "aria-describedby",
+    "account-username-note account-auth-guidance",
+  );
+
+  // Sign-in has no username field and no leaderboard note.
+  await page.getByRole("button", { name: "Log in" }).click();
+  await expect(page.locator("#account-username-note")).toHaveCount(0);
+});
+
+test("a username lockout shows its own message while email sign-in is unaffected", async ({ page }) => {
+  await page.goto("/login?auth_test=login-throttled");
+  const form = page.locator("form");
+  const submit = page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" });
+  await form.getByLabel("Email or username").fill("fawxzzy");
+  await form.getByLabel("Password", { exact: true }).fill("short");
+  await submit.click();
+  await expect(page.locator('.account-auth-live-notice[role="alert"]')).toContainText(
+    safeAuthError("login-throttled"),
+  );
+  await expect(page.locator('.account-auth-live-notice[role="alert"]')).not.toContainText(
+    safeAuthError("login"),
+  );
+  await expect(page.locator("html")).not.toHaveAttribute("data-post-auth-destination", /.+/);
+
+  await page.goto("/login?auth_test=login-throttled");
+  await form.getByLabel("Email or username").fill("legacy@example.test");
+  await form.getByLabel("Password", { exact: true }).fill("short");
+  await page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" }).click();
+  await expect.poll(() => page.locator("html").getAttribute("data-post-auth-destination")).toBeTruthy();
+});
+
 test("reset forms say what is missing or mismatched", async ({ page }) => {
   await page.goto("/reset-password?auth_test=success");
   await page.locator('.account-auth-dock button[type="submit"]').click();
@@ -1699,7 +1757,11 @@ test("every provider signup rejection shows one neutral non-success result", asy
     await expect(notice).toContainText(expectedNotice);
     await expect(notice).toHaveAttribute("data-notice-kind", "info");
     await expect(page.locator('.account-auth-live-notice[data-notice-kind="success"]')).toHaveCount(0);
-    await expect(submit).toHaveText(expectedNotice);
+    // The visible copy sits directly under the fields it concerns, not as the submit label.
+    const inlineResult = form.locator(".account-form-result");
+    await expect(inlineResult).toHaveText(expectedNotice);
+    await expect(inlineResult).toBeVisible();
+    await expect(submit).toHaveText("Create account");
     await expect(page.locator("body")).not.toContainText("account request is complete");
     await expect(page.locator("body")).not.toContainText("session is available");
     await expect(page.locator("html")).not.toHaveAttribute("data-post-auth-destination", /.+/);
@@ -1829,7 +1891,7 @@ test("username login and autofill styling remain explicit source contracts", asy
   expect(functionSource).toContain('/auth/v1/settings');
   expect(functionSource).toContain('headers: { apikey: candidate }');
   expect(functionSource).not.toContain('Authorization: `Bearer ${requestKey}`');
-  expect(functionSource).toContain("resolveUsernameSignInRpc");
+  expect(functionSource).toContain("resolveUsernameSignIn");
   expect(functionSource).not.toContain("listUsers");
   expect(functionSource).toContain("00000000-0000-0000-0000-000000000000");
   expect(functionSource).toContain('Invalid credentials');

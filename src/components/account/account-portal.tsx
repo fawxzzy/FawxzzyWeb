@@ -30,7 +30,7 @@ import {
   scheduleDeferredAttempt,
   type OneShotAttemptState,
 } from "@/lib/auth/client-lifecycle";
-import { safeAuthError, safeAuthSuccess } from "@/lib/auth/errors";
+import { safeAuthError, safeAuthSuccess, UsernameSignInThrottledError } from "@/lib/auth/errors";
 import {
   resolvePortalAuthAdapter,
   type AdapterResolution,
@@ -42,6 +42,7 @@ import {
   guidanceForCredentials,
   guidanceForNewPassword,
   guidanceForResetRequest,
+  USERNAME_VISIBILITY_NOTE,
   type GuidanceProblem,
 } from "@/lib/auth/form-guidance";
 import { FitnessHandoffError } from "@/lib/auth/fitness-handoff";
@@ -59,13 +60,17 @@ type PortalMode = "login" | "account" | "confirm" | "callback" | "reset";
 type Notice = {
   kind: "error" | "info" | "success";
   text: string;
+  /** Rendered beside the form it concerns instead of as the submit button label. */
+  inline?: boolean;
   variant?: SystemStateVariant;
 };
 
 const emptySubscribe = () => () => undefined;
 const SIGNUP_SETTLEMENT_MINIMUM_MS = 500;
 const SIGNUP_FAILURE_VISIBLE_MS = 8_000;
+const THROTTLED_NOTICE_VISIBLE_MS = 8_000;
 const GUIDANCE_ID = "account-auth-guidance";
+const USERNAME_NOTE_ID = "account-username-note";
 
 async function settleSignupAttempt(
   adapter: PortalAuthAdapter,
@@ -460,7 +465,10 @@ function LoginPanel({
         );
         if (!session) {
           cooldown.start(SIGNUP_FAILURE_VISIBLE_MS / 1000);
-          transient.show({ kind: "info", text: safeAuthError("signup") }, SIGNUP_FAILURE_VISIBLE_MS);
+          transient.show(
+            { kind: "info", text: safeAuthError("signup"), inline: true },
+            SIGNUP_FAILURE_VISIBLE_MS,
+          );
           return;
         }
         const identity = session.displayName || submittedUsername;
@@ -504,7 +512,17 @@ function LoginPanel({
         }
       }
     } catch (error) {
-      transient.show({ kind: "error", text: error instanceof FitnessHandoffError ? error.message : safeAuthError(intent) });
+      if (error instanceof UsernameSignInThrottledError) {
+        cooldown.start(THROTTLED_NOTICE_VISIBLE_MS / 1000);
+      }
+      transient.show({
+        kind: "error",
+        text: error instanceof FitnessHandoffError
+          ? error.message
+          : error instanceof UsernameSignInThrottledError
+            ? safeAuthError("login-throttled")
+            : safeAuthError(intent),
+      }, error instanceof UsernameSignInThrottledError ? THROTTLED_NOTICE_VISIBLE_MS : undefined);
     } finally {
       setBusy(false);
     }
@@ -539,7 +557,9 @@ function LoginPanel({
           <fieldset data-invalid={invalidFields.has("username") || undefined}>
             <legend><label htmlFor="account-username">Username</label></legend>
             <input
-              aria-describedby={invalidFields.has("username") ? GUIDANCE_ID : undefined}
+              aria-describedby={invalidFields.has("username")
+                ? `${USERNAME_NOTE_ID} ${GUIDANCE_ID}`
+                : USERNAME_NOTE_ID}
               aria-invalid={invalidFields.has("username") || undefined}
               id="account-username"
               autoComplete="username"
@@ -560,6 +580,11 @@ function LoginPanel({
               value={username}
             />
           </fieldset>
+        ) : null}
+        {intent === "signup" ? (
+          <p className="account-field-note" id={USERNAME_NOTE_ID}>
+            {USERNAME_VISIBILITY_NOTE}
+          </p>
         ) : null}
         <fieldset data-invalid={invalidFields.has("email") || undefined}>
           <legend><label htmlFor="account-email">{intent === "login" ? "Email or username" : "Email"}</label></legend>
@@ -605,6 +630,12 @@ function LoginPanel({
             <PasswordEye visible={passwordVisible} />
           </button>
         </fieldset>
+        {transient.notice?.inline ? (
+          // The sr-only live notice above already announces this text; keep the visible copy quiet.
+          <p aria-hidden="true" className="account-form-result" data-notice-kind={transient.notice.kind}>
+            {transient.notice.text}
+          </p>
+        ) : null}
         </form>
       </div>
       <div
@@ -637,7 +668,7 @@ function LoginPanel({
         >
           {busy
             ? "Working…"
-            : transient.notice
+            : transient.notice && !transient.notice.inline
               ? transient.notice.text
               : intent === "login"
                 ? context.signInLabel

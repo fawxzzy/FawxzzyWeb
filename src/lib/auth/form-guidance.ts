@@ -15,6 +15,9 @@ export type GuidanceProblem = {
   message: string;
 };
 
+/** Plain disclosure shown beside the sign-up username field (owner-approved wording, MAZER-ACCT-018). */
+export const USERNAME_VISIBILITY_NOTE = "This username shows on the Mazer leaderboard.";
+
 export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const USERNAME_PATTERN = /^[A-Za-z0-9._-]{2,15}$/;
 
