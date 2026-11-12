@@ -96,3 +96,16 @@
   justify-content: safe center;
   overflow-y: auto;
 }
+
+/* Sign-up username rejection (MAZER-ACCT-029): one plain red line directly under the username
+   field, wider than the 240px field column like the note above it. Usernames are public, so this
+   is the only sign-up rejection that is named. */
+.account-form--auth .account-field-error {
+  margin: -9px -40px 0;
+  padding: 0;
+  color: #ff6b73;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+}

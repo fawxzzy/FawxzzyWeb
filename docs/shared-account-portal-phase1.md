@@ -56,7 +56,8 @@ Local testing is limited to `localhost` and `127.0.0.1` on ports `3000` and `321
 test adapter may be selected there with `auth_test=success`, `auth_test=error`,
 `auth_test=pending`, `auth_test=session`, or the bounded signup-outcome scenarios
 `auth_test=signup-existing`, `auth_test=signup-weak-password`, `auth_test=signup-rate-limit`, `auth_test=signup-network`, and
-`auth_test=signup-unknown`; it is never enabled on a Vercel Preview or canonical public host. Previews
+`auth_test=signup-unknown`, `auth_test=signup-username-taken`, `auth_test=signup-database-error`, or the
+unrelated-session-loss scenario `auth_test=session-expires`; it is never enabled on a Vercel Preview or canonical public host. Previews
 therefore prove the honest setup-pending state until public configuration is bound. Preview
 redirects must be admitted individually in a future packet; do not add a broad production
 `*.vercel.app` Auth wildcard.
@@ -87,7 +88,15 @@ redirects must be admitted individually in a future packet; do not add a broad p
   same fixed, non-success info notice: "We could not finish creating your account. If you already
   made one, sign in with it instead." It claims no completion, never reveals whether an address is
   registered, and no raw provider diagnostic is surfaced or logged. The "Log in" action stays
-  visible beside it. Provider settings can still make the two outcomes observable by timing or by
+  visible beside it. One exception (MAZER-ACCT-029): a username is public (it shows on the Mazer
+  leaderboard), so when the rejection text contains `ACCOUNT_USERNAME_TAKEN` (the database
+  duplicate-username guard, or a before-user-created hook answering 409) the portal instead shows
+  "That username is taken. Pick another one." directly under the username field, with
+  `aria-invalid` and `aria-describedby` on the input and focus returned to it, and no generic
+  notice. A generic "Database error saving new user" is never read as a taken username and keeps
+  the neutral notice. Provider note: the database trigger's own text may be hidden by the provider
+  behind that generic message, so the named message is guaranteed only where the hook (or another
+  path that forwards the code) is registered. Provider settings can still make the two outcomes observable by timing or by
   whether the user ends up signed in; that residual signal is accepted. A real returned session
   remains origin-scoped and provider-owned. Reset responses likewise do not disclose whether an
   address exists.
@@ -244,7 +253,7 @@ existing account, or treat a client-side value as authoritative.
 1. Confirm exact Vercel project, Git revision, Preview/production target, custom domain, and prior
    rollback deployment before mutation.
 2. Prove TLS and canonical behavior for the account origin without changing the public hub.
-3. Exercise signup (10 and 128+ characters), legacy-short login, normal login, local sign-out,
+3. Exercise signup (10 and 128+ characters), legacy-short login, normal login, local sign-out (which must land on the product origin, never on the login page),
    email update, password update, reset request, recovery completion, confirm, and PKCE callback.
 4. Prove non-enumerating error copy, cooldown, callback idempotency, state mismatch rejection,
    URL sanitization, and rejection of access/refresh-token URLs and open redirects.

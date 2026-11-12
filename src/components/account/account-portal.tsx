@@ -30,7 +30,13 @@ import {
   scheduleDeferredAttempt,
   type OneShotAttemptState,
 } from "@/lib/auth/client-lifecycle";
-import { safeAuthError, safeAuthSuccess, UsernameSignInThrottledError } from "@/lib/auth/errors";
+import {
+  isUsernameTakenError,
+  safeAuthError,
+  safeAuthSuccess,
+  UsernameSignInThrottledError,
+  USERNAME_TAKEN_MESSAGE,
+} from "@/lib/auth/errors";
 import {
   resolvePortalAuthAdapter,
   type AdapterResolution,
@@ -71,6 +77,7 @@ const SIGNUP_FAILURE_VISIBLE_MS = 8_000;
 const THROTTLED_NOTICE_VISIBLE_MS = 8_000;
 const GUIDANCE_ID = "account-auth-guidance";
 const USERNAME_NOTE_ID = "account-username-note";
+const USERNAME_ERROR_ID = "account-username-error";
 
 async function settleSignupAttempt(
   adapter: PortalAuthAdapter,
@@ -84,7 +91,11 @@ async function settleSignupAttempt(
     adapter.signUp(email, password, username, context.id, returnTarget),
     new Promise((resolve) => window.setTimeout(resolve, SIGNUP_SETTLEMENT_MINIMUM_MS)),
   ]);
-  return result.status === "fulfilled" ? result.value : null;
+  // A rejection keeps its error so the caller can tell a taken username (public, safe to name)
+  // from every other failure (shown as one neutral sentence).
+  return result.status === "fulfilled"
+    ? { session: result.value, error: null }
+    : { session: null, error: result.reason as unknown };
 }
 
 /**
@@ -381,6 +392,7 @@ function LoginPanel({
   const [username, setUsername] = useState("");
   const [invalidFields, setInvalidFields] = useState<Set<string>>(() => new Set());
   const [guidance, setGuidance] = useState<GuidanceProblem[]>([]);
+  const [usernameTaken, setUsernameTaken] = useState(false);
   const transient = useTransientNotice();
   const [busy, setBusy] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -427,6 +439,7 @@ function LoginPanel({
     setIntent(intent === "login" ? "signup" : "login");
     transient.clear();
     setInvalidFields(new Set());
+    setUsernameTaken(false);
     window.requestAnimationFrame(() => window.scrollTo(0, 0));
   }
 
@@ -434,7 +447,8 @@ function LoginPanel({
     event.preventDefault();
     if (!adapter || busy || cooldown.remaining) return;
 
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const email = String(form.get("email") ?? "").trim();
     const password = String(form.get("password") ?? "");
     const submittedUsername = String(form.get("username") ?? "").trim();
@@ -449,13 +463,14 @@ function LoginPanel({
     setBusy(true);
     transient.clear();
     setInvalidFields(new Set());
+    setUsernameTaken(false);
     cooldown.start();
     try {
       if (intent === "signup") {
         // The adapter persists and publishes a real returned session. A session means the account
         // exists and the user is signed in, so continue exactly like sign-in. No session means the
         // provider did not complete the request for some reason we deliberately do not reveal.
-        const session = await settleSignupAttempt(
+        const { session, error: signupError } = await settleSignupAttempt(
           adapter,
           email,
           password,
@@ -463,6 +478,15 @@ function LoginPanel({
           context,
           internalMazerReturn,
         );
+        if (!session && isUsernameTakenError(signupError)) {
+          // A username is public (it shows on the leaderboard), so this one rejection is named,
+          // beside the field. Email-duplicate and every other failure keep the neutral notice.
+          setUsernameTaken(true);
+          setInvalidFields(new Set(["username"]));
+          const usernameField = formElement.elements.namedItem("username");
+          if (usernameField instanceof HTMLElement) usernameField.focus();
+          return;
+        }
         if (!session) {
           cooldown.start(SIGNUP_FAILURE_VISIBLE_MS / 1000);
           transient.show(
@@ -557,9 +581,11 @@ function LoginPanel({
           <fieldset data-invalid={invalidFields.has("username") || undefined}>
             <legend><label htmlFor="account-username">Username</label></legend>
             <input
-              aria-describedby={invalidFields.has("username")
-                ? `${USERNAME_NOTE_ID} ${GUIDANCE_ID}`
-                : USERNAME_NOTE_ID}
+              aria-describedby={[
+                usernameTaken ? USERNAME_ERROR_ID : null,
+                USERNAME_NOTE_ID,
+                invalidFields.has("username") && !usernameTaken ? GUIDANCE_ID : null,
+              ].filter(Boolean).join(" ")}
               aria-invalid={invalidFields.has("username") || undefined}
               id="account-username"
               autoComplete="username"
@@ -568,6 +594,7 @@ function LoginPanel({
               name="username"
               onChange={(event) => {
                 setUsername(event.target.value);
+                setUsernameTaken(false);
                 setInvalidFields((current) => {
                   const next = new Set(current);
                   next.delete("username");
@@ -584,6 +611,11 @@ function LoginPanel({
         {intent === "signup" ? (
           <p className="account-field-note" id={USERNAME_NOTE_ID}>
             {USERNAME_VISIBILITY_NOTE}
+          </p>
+        ) : null}
+        {intent === "signup" && usernameTaken ? (
+          <p className="account-field-error" data-username-taken id={USERNAME_ERROR_ID} role="alert">
+            {USERNAME_TAKEN_MESSAGE}
           </p>
         ) : null}
         <fieldset data-invalid={invalidFields.has("email") || undefined}>
@@ -721,27 +753,37 @@ function AccountPanel({
   const { error, loaded, session } = usePortalSession(adapter);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [busy, setBusy] = useState(false);
+  // True from the moment this page asks to sign out until it has chosen its own destination. The
+  // provider announces SIGNED_OUT before adapter.signOut() resolves, so without this the
+  // "session lost" redirect below would send the person to /login ahead of the product origin.
+  const signingOutRef = useRef(false);
 
   useEffect(() => {
-    if (adapter && loaded && !session && !error) {
+    if (adapter && loaded && !session && !error && !signingOutRef.current) {
+      if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
+        document.documentElement.dataset.sessionLostRedirect = "login";
+      }
       window.location.replace(contextualPath("/login", context));
     }
   }, [adapter, context, error, loaded, session]);
 
   async function signOut() {
-    if (!adapter) return;
+    if (!adapter || signingOutRef.current) return;
+    signingOutRef.current = true;
     setBusy(true);
     setNotice(null);
     try {
       await adapter.signOut();
-      if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
-        window.location.assign(contextualPath("/login", context));
-        return;
-      }
       const destination = new URL("/", context.destinationOrigin);
       if (context.id === "website") destination.searchParams.set("signedOut", "1");
+      if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
+        // Deterministic harness: record the real destination instead of leaving the test origin.
+        document.documentElement.dataset.signOutDestination = destination.href;
+        return;
+      }
       window.location.assign(destination.href);
     } catch {
+      signingOutRef.current = false;
       setNotice({ kind: "error", text: safeAuthError("signout") });
     } finally {
       setBusy(false);
