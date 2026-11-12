@@ -12,7 +12,7 @@
     {
       "board": "mazer",
       "path": "planning/board-sources/mazer.project-board.owner-export.v1.json",
-      "sha256": "4ee811c65d21d418ae6e9d5d1616264e1d7b30c8b617caabc924fd0bf28f9557",
+      "sha256": "b22b026af26240433927eea34b17e2bc5806291c239daa37851b85d8cad6ff27",
       "sourceProjectId": "mazer"
     },
     {
@@ -159,6 +159,8 @@
       "MAZER-GEN-002",
       "MAZER-GEN-003",
       "MAZER-GEN-004",
+      "MAZER-GEN-005",
+      "MAZER-GEN-006",
       "MAZER-GOV-001",
       "MAZER-GOV-002",
       "MAZER-GOV-003",
@@ -219,6 +221,7 @@
       "MAZER-PROG-016",
       "MAZER-PROG-017",
       "MAZER-PROG-018",
+      "MAZER-PROG-019",
       "MAZER-PWA-001",
       "MAZER-PWA-002",
       "MAZER-PWA-003",
@@ -230,6 +233,7 @@
       "MAZER-QA-004",
       "MAZER-QA-005",
       "MAZER-QA-006",
+      "MAZER-QA-007",
       "MAZER-REPO-HYGIENE-001",
       "MAZER-RUN-001",
       "MAZER-RUN-002",
