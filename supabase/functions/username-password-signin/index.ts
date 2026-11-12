@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.109.0";
 import { createPublicKeyAdmission } from "./public-key.mjs";
-import { resolveUsernameSignInRpc } from "./rpc-response.mjs";
+import { noteUsernameSignInSuccessRpc, resolveUsernameSignIn } from "./rpc-response.mjs";
 
 const USERNAME = /^[A-Za-z0-9._-]{2,15}$/;
 const ALLOWED_ORIGINS = new Set(["https://account.fawxzzy.com"]);
@@ -14,6 +14,17 @@ const genericFailure = (origin = "") => new Response(JSON.stringify({ error: "In
   headers: { "Content-Type": "application/json", ...(ALLOWED_ORIGINS.has(origin) ? corsHeaders(origin) : {}) },
   status: 401,
 });
+const throttledFailure = (origin = "") => new Response(
+  JSON.stringify({ code: "username_throttled", error: "Too many attempts" }),
+  {
+    headers: {
+      "Content-Type": "application/json",
+      "Retry-After": "900",
+      ...(ALLOWED_ORIGINS.has(origin) ? corsHeaders(origin) : {}),
+    },
+    status: 429,
+  },
+);
 const admitPublicClientKey = createPublicKeyAdmission();
 
 function acceptedPublicKeys() {
@@ -82,7 +93,7 @@ Deno.serve(async (request) => {
       ?? "unknown";
     const attemptKey = await sha256(`username:${normalized}`);
     const clientAttemptKey = await sha256(`client:${clientAddress}`);
-    const resolvedUserId = await resolveUsernameSignInRpc({
+    const resolution = await resolveUsernameSignIn({
       args: {
         p_attempt_key: attemptKey,
         p_client_attempt_key: clientAttemptKey,
@@ -92,6 +103,9 @@ Deno.serve(async (request) => {
       serviceRole,
       url,
     });
+    // A lockout is reported distinctly (it is independent of whether the username exists).
+    if (resolution.throttled) return throttledFailure(origin);
+    const resolvedUserId = resolution.userId;
     const { data: userResult } = await admin.auth.admin.getUserById(
       resolvedUserId ?? "00000000-0000-0000-0000-000000000000",
     );
@@ -101,6 +115,8 @@ Deno.serve(async (request) => {
     const auth = createClient(url, anonKey, { auth: { persistSession: false } });
     const { data, error } = await auth.auth.signInWithPassword({ email, password });
     if (!resolvedUserId || !resolvedEmail || error || !data.session) return genericFailure(origin);
+    // Verified sign-in: clear the per-username counter so only failures accumulate (best effort).
+    await noteUsernameSignInSuccessRpc({ attemptKey, fetchImpl: fetch, serviceRole, url });
     return new Response(JSON.stringify({
       access_token: data.session.access_token,
       refresh_token: data.session.refresh_token,

@@ -50,3 +50,49 @@
     line-height: 1.3;
   }
 }
+
+/* One plain line under the sign-up username field (MAZER-ACCT-018). It sits in the form grid, so
+   it tucks up under the field it describes instead of adding a full row gap. */
+.account-form--auth .account-field-note {
+  /* Wider than the 240px field column so the line fits on one row at phone widths. */
+  margin: -9px -40px 0;
+  padding: 0;
+  color: rgb(var(--muted));
+  font-size: 0.75rem;
+  line-height: 1.35;
+  text-align: center;
+}
+
+@media (max-height: 640px) {
+  .account-form--auth .account-field-note {
+    margin: -9px -40px -6px;
+    font-size: 0.68rem;
+    line-height: 1.1;
+  }
+}
+
+/* Keyboard-height screens: only the sign-up form (the one carrying the note) trades a few pixels of
+   row gap so every field still fits the locked viewport. */
+@media (max-height: 560px) {
+  .account-form--auth:has(.account-field-note) {
+    gap: 7px;
+  }
+}
+
+/* Sign-up rejection result: visible directly under the fields it concerns. The sr-only live notice
+   still announces it. Scrolls instead of clipping on very short screens. */
+.account-form--auth .account-form-result {
+  margin: 0;
+  border: 1px solid rgb(var(--auth-color) / 0.36);
+  border-radius: 18px;
+  padding: 9px 14px 10px;
+  color: rgb(var(--text));
+  font-size: 0.78rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.account-page--utility .account-auth-body:has(.account-form-result) {
+  justify-content: safe center;
+  overflow-y: auto;
+}
