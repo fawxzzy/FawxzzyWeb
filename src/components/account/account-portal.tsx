@@ -64,6 +64,7 @@ type Notice = {
 
 const emptySubscribe = () => () => undefined;
 const SIGNUP_SETTLEMENT_MINIMUM_MS = 500;
+const SIGNUP_FAILURE_VISIBLE_MS = 8_000;
 const GUIDANCE_ID = "account-auth-guidance";
 
 async function settleSignupAttempt(
@@ -79,6 +80,21 @@ async function settleSignupAttempt(
     new Promise((resolve) => window.setTimeout(resolve, SIGNUP_SETTLEMENT_MINIMUM_MS)),
   ]);
   return result.status === "fulfilled" ? result.value : null;
+}
+
+/**
+ * Where a signed-in session continues for the generic (non-Fitness-handoff) contexts. Shared by
+ * sign-in and sign-up so a session never lands on a dead-end notice.
+ */
+function resolvePostAuthTarget(context: AccountExperienceContext) {
+  const postAuthTarget = sanitizePostAuthReturnTarget(
+    new URLSearchParams(window.location.search).get("returnTo"),
+    context,
+  );
+  if (postAuthTarget.startsWith("/")) return postAuthTarget;
+  const destinationUrl = new URL(postAuthTarget);
+  if (context.id === "website") destinationUrl.searchParams.set("signedIn", "1");
+  return destinationUrl.href;
 }
 
 function deriveIdentity(identifier: string) {
@@ -127,7 +143,7 @@ function useAccountExperienceContext() {
   }, [hydrated]);
 }
 
-function useCooldown(seconds = 5) {
+function useCooldown(defaultSeconds = 5) {
   const [until, setUntil] = useState(0);
   const [clock, setClock] = useState(0);
   const remaining = Math.max(0, Math.ceil((until - clock) / 1000));
@@ -142,7 +158,7 @@ function useCooldown(seconds = 5) {
 
   return {
     remaining,
-    start() {
+    start(seconds = defaultSeconds) {
       const next = Date.now() + seconds * 1000;
       setUntil(next);
       setClock(Date.now());
@@ -168,13 +184,13 @@ function useTransientNotice(duration = 5_000) {
       setNotice(null);
     },
     notice,
-    show(nextNotice: Notice) {
+    show(nextNotice: Notice, visibleMs = duration) {
       if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
       setNotice(nextNotice);
       timeoutRef.current = window.setTimeout(() => {
         timeoutRef.current = null;
         setNotice(null);
-      }, duration);
+      }, visibleMs);
     },
   };
 }
@@ -431,8 +447,9 @@ function LoginPanel({
     cooldown.start();
     try {
       if (intent === "signup") {
-        // The adapter persists and publishes a real returned session. The notice intentionally
-        // makes no claim about whether the provider created an account or returned a session.
+        // The adapter persists and publishes a real returned session. A session means the account
+        // exists and the user is signed in, so continue exactly like sign-in. No session means the
+        // provider did not complete the request for some reason we deliberately do not reveal.
         const session = await settleSignupAttempt(
           adapter,
           email,
@@ -441,30 +458,29 @@ function LoginPanel({
           context,
           internalMazerReturn,
         );
-        if (session) {
-          const identity = session.displayName || submittedUsername;
-          writeRememberedIdentity(identity);
-          setRememberedIdentity(identity);
-          if (context.id === "fitness" || internalMazerReturn) {
-            const destination = context.id === "fitness"
-              ? await adapter.handoffToFitness(
-                  sanitizeContextReturnTarget(
-                    new URLSearchParams(window.location.search).get("returnTo"),
-                    context,
-                  ),
-                  session.userId,
-                )
-              : internalMazerReturn!;
-            transient.show({ kind: "success", text: safeAuthSuccess("signup") });
-            if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
-              document.documentElement.dataset.postAuthDestination = destination;
-            } else {
-              window.location.assign(destination);
-            }
-            return;
-          }
+        if (!session) {
+          cooldown.start(SIGNUP_FAILURE_VISIBLE_MS / 1000);
+          transient.show({ kind: "info", text: safeAuthError("signup") }, SIGNUP_FAILURE_VISIBLE_MS);
+          return;
         }
+        const identity = session.displayName || submittedUsername;
+        writeRememberedIdentity(identity);
+        setRememberedIdentity(identity);
+        const destination = context.id === "fitness"
+          ? await adapter.handoffToFitness(
+              sanitizeContextReturnTarget(
+                new URLSearchParams(window.location.search).get("returnTo"),
+                context,
+              ),
+              session.userId,
+            )
+          : internalMazerReturn ?? resolvePostAuthTarget(context);
         transient.show({ kind: "success", text: safeAuthSuccess("signup") });
+        if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
+          document.documentElement.dataset.postAuthDestination = destination;
+        } else {
+          window.location.assign(destination);
+        }
         return;
       }
 
@@ -476,17 +492,10 @@ function LoginPanel({
       }
       if (!session) transient.show({ kind: "error", text: safeAuthError("login") });
       if (session) {
-        const postAuthTarget = sanitizePostAuthReturnTarget(
-          new URLSearchParams(window.location.search).get("returnTo"),
-          context,
-        );
-        const destinationUrl = postAuthTarget.startsWith("/")
-          ? null
-          : new URL(postAuthTarget);
-        if (context.id === "website" && destinationUrl) destinationUrl.searchParams.set("signedIn", "1");
-        const destination = context.id === "fitness" && destinationUrl
-          ? await adapter.handoffToFitness(destinationUrl.href, session.userId)
-          : destinationUrl?.href ?? postAuthTarget;
+        const postAuthTarget = resolvePostAuthTarget(context);
+        const destination = context.id === "fitness" && !postAuthTarget.startsWith("/")
+          ? await adapter.handoffToFitness(postAuthTarget, session.userId)
+          : postAuthTarget;
         transient.show({ kind: "success", text: "Signed in on this account origin." });
         if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
           document.documentElement.dataset.postAuthDestination = destination;

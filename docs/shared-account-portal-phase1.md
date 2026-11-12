@@ -55,7 +55,7 @@ an allowed source/Preview state and renders the existing setup-pending interface
 Local testing is limited to `localhost` and `127.0.0.1` on ports `3000` and `3210`. A deterministic
 test adapter may be selected there with `auth_test=success`, `auth_test=error`,
 `auth_test=pending`, `auth_test=session`, or the bounded signup-outcome scenarios
-`auth_test=signup-existing`, `auth_test=signup-rate-limit`, `auth_test=signup-network`, and
+`auth_test=signup-existing`, `auth_test=signup-weak-password`, `auth_test=signup-rate-limit`, `auth_test=signup-network`, and
 `auth_test=signup-unknown`; it is never enabled on a Vercel Preview or canonical public host. Previews
 therefore prove the honest setup-pending state until public configuration is bound. Preview
 redirects must be admitted individually in a future packet; do not add a broad production
@@ -79,10 +79,18 @@ redirects must be admitted individually in a future packet; do not add a broad p
 - Signup, reset, and change-password require at least 10 characters. The application has no
   restrictive maximum and never trims or truncates passwords; 128+ character values remain
   accepted. Login accepts existing shorter passwords for migration compatibility.
-- Signup preserves local form-validation feedback, then maps every provider resolution or failure
-  to the same fixed status notice and completion state. No raw provider diagnostic, account-existence
-  hint, automatic navigation, or assumed session is exposed. A real returned session remains
-  origin-scoped and provider-owned. Reset responses likewise do not disclose whether an address exists.
+- Signup preserves local form-validation feedback, then branches only on whether the provider
+  returned a real session. A returned session means the account exists and the user is signed in:
+  the portal shows "Your account is ready." and continues exactly like sign-in (Fitness handoff,
+  Mazer authorize return, or the sanitized website/Projects target). With no session, every
+  provider rejection (already registered, weak password, rate limit, network, unknown) maps to the
+  same fixed, non-success info notice: "We could not finish creating your account. If you already
+  made one, sign in with it instead." It claims no completion, never reveals whether an address is
+  registered, and no raw provider diagnostic is surfaced or logged. The "Log in" action stays
+  visible beside it. Provider settings can still make the two outcomes observable by timing or by
+  whether the user ends up signed in; that residual signal is accepted. A real returned session
+  remains origin-scoped and provider-owned. Reset responses likewise do not disclose whether an
+  address exists.
 - Callback state must match browser session storage. Authorization codes are exchanged once and
   receive an idempotency receipt; sensitive query material is removed from the visible URL.
 - A successful callback briefly exposes a readable success state, then navigates to its sanitized
