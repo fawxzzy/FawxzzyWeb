@@ -1,4 +1,4 @@
--- web-signin-lockout-v3 :: APPLY (proposed, NOT applied)
+-- web-signin-lockout-v3 :: APPLY FIXED (proposed, NOT applied). Differences from 01-apply.sql: null-safe, global-key-safe input validation in v3 only.
 -- Additive. Leaves account_resolve_username_signin_v2 (public + account_api) untouched so this
 -- can be applied BEFORE the Edge Function / web deploy that starts calling v3.
 --
@@ -49,9 +49,13 @@ declare
   client_count integer;
   global_count integer;
 begin
-  if p_normalized_username !~ '^[a-z0-9._-]{2,15}$'
-     or p_attempt_key !~ '^[0-9a-f]{64}$'
-     or p_client_attempt_key !~ '^[0-9a-f]{64}$' then
+  -- FIXED: NULL arguments are invalid (coalesce(..., true)); the original raised a not-null violation on the counter insert.
+  -- FIXED: the shared global counter key (64 zeros) is not accepted as a username or client key.
+  if coalesce(p_normalized_username !~ '^[a-z0-9._-]{2,15}$', true)
+     or coalesce(p_attempt_key !~ '^[0-9a-f]{64}$', true)
+     or coalesce(p_client_attempt_key !~ '^[0-9a-f]{64}$', true)
+     or p_attempt_key = repeat('0', 64)
+     or p_client_attempt_key = repeat('0', 64) then
     return query select null::uuid, false;
     return;
   end if;

@@ -175,6 +175,11 @@ test("v3 migration is additive, keeps v2, and mirrors the v2 limits, grants and 
   assert.equal(sql.split("from public, anon, authenticated").length - 1, 4);
   assert.equal(sql.split("to service_role").length - 1, 4);
   assert.match(sql, /p_attempt_key = repeat\('0', 64\)/);
+  // v3 input validation is NULL-safe and never accepts the shared global counter key.
+  assert.match(sql, /coalesce\(p_normalized_username !~ '\^\[a-z0-9\._-\]\{2,15\}\$', true\)/);
+  assert.match(sql, /coalesce\(p_attempt_key !~ '\^\[0-9a-f\]\{64\}\$', true\)/);
+  assert.match(sql, /coalesce\(p_client_attempt_key !~ '\^\[0-9a-f\]\{64\}\$', true\)/);
+  assert.match(sql, /or p_client_attempt_key = repeat\('0', 64\) then/);
   assert.match(sql, /delete from account_private\.username_signin_attempts\s+where attempt_key = p_attempt_key/);
 });
 
