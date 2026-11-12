@@ -428,7 +428,7 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
     authGeneration.advance();
   };
   let session: PortalSession | null =
-    ["session", "oauth-auto", "oauth-hostile"].includes(scenario)
+    ["session", "session-expires", "oauth-auto", "oauth-hostile"].includes(scenario)
       ? { displayName: "fawxzzy", email: "preview.user@example.test", userId: "preview-user" }
       : null;
   const listeners = new Set<(value: PortalSession | null) => void>();
@@ -451,6 +451,15 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
         throw Object.assign(new Error("Too many requests"), { status: 429 });
       case "signup-network":
         throw new TypeError("fetch failed at the deterministic provider boundary");
+      case "signup-username-taken":
+        // Shape of the before-user-created hook rejection (HTTP 409).
+        throw Object.assign(new Error("ACCOUNT_USERNAME_TAKEN"), { status: 409 });
+      case "signup-database-error":
+        // What the provider returns when a database trigger aborts user creation.
+        throw Object.assign(new Error("Database error saving new user"), {
+          code: "unexpected_failure",
+          status: 500,
+        });
       case "signup-unknown":
         throw { detail: "Malformed provider detail must never reach the interface" };
       default:
@@ -472,6 +481,13 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
     },
     onSessionChange(listener) {
       listeners.add(listener);
+      if (scenario === "session-expires") {
+        // A session that ends without this page asking (expiry or a sign-out in another tab).
+        window.setTimeout(() => {
+          session = null;
+          publish();
+        }, 400);
+      }
       return () => listeners.delete(listener);
     },
     async signIn(email) {
@@ -596,6 +612,9 @@ export function resolvePortalAuthAdapter(
       "signup-rate-limit",
       "signup-network",
       "signup-unknown",
+      "signup-username-taken",
+      "signup-database-error",
+      "session-expires",
       "login-throttled",
       "fitness-handoff-error",
       "oauth-auto",
