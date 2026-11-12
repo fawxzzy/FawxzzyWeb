@@ -12,7 +12,7 @@
     {
       "board": "mazer",
       "path": "planning/board-sources/mazer.project-board.owner-export.v1.json",
-      "sha256": "7ba295c89b3ac4bedcb8f122c14d9d3efcc337ddc196e2263f8b474271ba020b",
+      "sha256": "4bc058bedba10c1af0b7c10914392abbe3f38d246e122edbfa119b18b6d7111d",
       "sourceProjectId": "mazer"
     },
     {
@@ -93,6 +93,16 @@
       "MAZER-ACCT-004",
       "MAZER-ACCT-005",
       "MAZER-ACCT-006",
+      "MAZER-ACCT-007",
+      "MAZER-ACCT-008",
+      "MAZER-ACCT-009",
+      "MAZER-ACCT-010",
+      "MAZER-ACCT-011",
+      "MAZER-ACCT-012",
+      "MAZER-ACCT-013",
+      "MAZER-ACCT-014",
+      "MAZER-ACCT-015",
+      "MAZER-ACCT-016",
       "MAZER-AI-001",
       "MAZER-AI-002",
       "MAZER-AUDIO-001",
