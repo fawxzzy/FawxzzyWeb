@@ -437,6 +437,11 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
           code: "user_already_exists",
           status: 422,
         });
+      case "signup-weak-password":
+        throw Object.assign(new Error("Password is known to be weak and easy to guess"), {
+          code: "weak_password",
+          status: 422,
+        });
       case "signup-rate-limit":
         throw Object.assign(new Error("Too many requests"), { status: 429 });
       case "signup-network":
@@ -578,6 +583,7 @@ export function resolvePortalAuthAdapter(
       "session",
       "session-pending",
       "signup-existing",
+      "signup-weak-password",
       "signup-rate-limit",
       "signup-network",
       "signup-unknown",

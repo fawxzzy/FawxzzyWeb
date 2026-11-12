@@ -838,7 +838,11 @@ test("password policy distinguishes login from account-changing actions without 
 
 test("safe messages are deterministic and non-enumerating", () => {
   expect(safeAuthError("login")).not.toContain("account exists");
-  expect(safeAuthError("signup")).toBe(safeAuthSuccess("signup"));
+  // A failed sign-up must never read as completion or leak whether an address is registered.
+  expect(safeAuthError("signup")).not.toBe(safeAuthSuccess("signup"));
+  expect(safeAuthError("signup")).toContain("could not finish creating your account");
+  expect(safeAuthError("signup")).not.toMatch(/complete|session is available|registered|exists/i);
+  expect(safeAuthSuccess("signup")).not.toContain("session is available");
   expect(safeAuthSuccess("reset-request")).toContain("If an account can receive");
   expect(safeAuthError("reset-request")).toBe(safeAuthSuccess("reset-request"));
 });
@@ -1580,7 +1584,35 @@ test("signup enforces ten characters and accepts long passwords", async ({ brows
   await form.getByLabel("Email").fill("new@example.test");
   await form.getByLabel("Password", { exact: true }).fill("x".repeat(129));
   await page.locator(".account-auth-dock").getByRole("button", { name: "Create account" }).click();
-  await expect(page.getByRole("status")).toContainText("account request is complete");
+  await expect(page.getByRole("status")).toContainText(safeAuthSuccess("signup"));
+});
+
+test("a session-bearing signup without product context continues like sign-in", async ({
+  browserName,
+  page,
+}) => {
+  test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
+  await page.goto("/login?auth_test=success");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await page.getByLabel("Username").fill("new-player");
+  await page.getByLabel("Email").fill("new@example.test");
+  await page.getByLabel("Password", { exact: true }).fill("long-enough-password");
+  await page.locator(".account-auth-dock").getByRole("button", { name: "Create account" }).click();
+  await expect.poll(() => page.locator("html").getAttribute("data-post-auth-destination"))
+    .toBe("https://fawxzzy.com/?signedIn=1");
+  await expect(page.locator("body")).not.toContainText("session is available");
+  await expect(page.locator("body")).not.toContainText("could not finish creating");
+});
+
+test("a session-bearing signup honours the Projects return target", async ({ page }) => {
+  await page.goto("/login?auth_test=success&returnTo=%2Fprojects");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await page.getByLabel("Username").fill("new-player");
+  await page.getByLabel("Email").fill("new@example.test");
+  await page.getByLabel("Password", { exact: true }).fill("long-enough-password");
+  await page.locator(".account-auth-dock").getByRole("button", { name: "Create account" }).click();
+  await expect.poll(() => page.locator("html").getAttribute("data-post-auth-destination"))
+    .toBe("/projects");
 });
 
 test("a session-bearing Fitness signup completes the secure consumer handoff", async ({ page }) => {
@@ -1629,15 +1661,15 @@ test("signup validation stops before the provider call", async ({ browserName, p
   await expect(submit).toBeEnabled();
 });
 
-test("every settled provider signup outcome has one non-enumerating result", async ({
+test("every provider signup rejection shows one neutral non-success result", async ({
   context,
   page,
 }) => {
   test.setTimeout(90_000);
   await page.emulateMedia({ reducedMotion: "reduce" });
-  const outcomes = [
-    { scenario: "success", diagnostic: null },
+  const rejections = [
     { scenario: "signup-existing", diagnostic: "User already registered" },
+    { scenario: "signup-weak-password", diagnostic: "known to be weak" },
     { scenario: "signup-rate-limit", diagnostic: "Too many requests" },
     {
       scenario: "signup-network",
@@ -1648,9 +1680,10 @@ test("every settled provider signup outcome has one non-enumerating result", asy
       diagnostic: "Malformed provider detail must never reach the interface",
     },
   ] as const;
-  const expectedNotice = safeAuthSuccess("signup");
+  const expectedNotice = safeAuthError("signup");
+  const seenNotices = new Set<string>();
 
-  for (const { scenario, diagnostic } of outcomes) {
+  for (const { scenario, diagnostic } of rejections) {
     await page.goto(`/login?auth_test=${scenario}`);
     await page.getByRole("button", { name: "Create account" }).click();
     const form = page.locator("form");
@@ -1662,15 +1695,22 @@ test("every settled provider signup outcome has one non-enumerating result", asy
 
     await expect(submit).toHaveText(/^Working/);
     await expect(submit).toBeDisabled();
-    const notice = page.locator('.account-auth-live-notice[role="status"]');
+    const notice = page.locator(".account-auth-live-notice");
     await expect(notice).toContainText(expectedNotice);
-    await expect(notice).toHaveAttribute("data-notice-kind", "success");
-    await expect(page.locator('.account-auth-live-notice[role="alert"]')).toHaveCount(0);
+    await expect(notice).toHaveAttribute("data-notice-kind", "info");
+    await expect(page.locator('.account-auth-live-notice[data-notice-kind="success"]')).toHaveCount(0);
     await expect(submit).toHaveText(expectedNotice);
-    await expect(submit).toBeDisabled();
-    if (diagnostic) await expect(page.locator("body")).not.toContainText(diagnostic);
+    await expect(page.locator("body")).not.toContainText("account request is complete");
+    await expect(page.locator("body")).not.toContainText("session is available");
+    await expect(page.locator("html")).not.toHaveAttribute("data-post-auth-destination", /.+/);
+    // The way back to sign-in stays one tap away.
+    await expect(page.getByRole("button", { name: "Log in" })).toBeVisible();
+    await expect(page.locator("body")).not.toContainText(diagnostic);
+    seenNotices.add((await notice.textContent()) ?? "");
   }
 
+  // Already-registered, weak-password and every other rejection are indistinguishable.
+  expect([...seenNotices]).toEqual([expectedNotice]);
   expect(await context.cookies()).toEqual([]);
 });
 

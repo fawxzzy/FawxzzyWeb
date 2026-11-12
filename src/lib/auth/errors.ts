@@ -12,8 +12,10 @@ export type AuthAction =
 
 const SAFE_MESSAGES: Record<AuthAction, string> = {
   login: "We could not sign you in with those details. Check them and try again.",
+  // One fixed sentence for every sign-up failure (already registered, weak password, rate limit,
+  // network, unknown). It claims no completion and never reveals whether an address is registered.
   signup:
-    "Your account request is complete. You can continue to your account when a session is available.",
+    "We could not finish creating your account. If you already made one, sign in with it instead.",
   "reset-request":
     "If an account can receive recovery mail at that address, the next step is on its way.",
   "reset-complete": "We could not update the password. Request a fresh recovery link.",
@@ -32,7 +34,8 @@ export function safeAuthError(action: AuthAction) {
 export function safeAuthSuccess(action: AuthAction) {
   switch (action) {
     case "signup":
-      return SAFE_MESSAGES.signup;
+      // Only shown after the provider returned a real session.
+      return "Your account is ready.";
     case "reset-request":
       return SAFE_MESSAGES["reset-request"];
     case "reset-complete":
