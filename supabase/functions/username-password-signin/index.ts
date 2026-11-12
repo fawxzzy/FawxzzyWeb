@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.109.0";
+import { clientBucket } from "./client-bucket.mjs";
 import { createPublicKeyAdmission } from "./public-key.mjs";
 import {
   noteUsernameSignInFailureRpc,
@@ -92,9 +93,13 @@ Deno.serve(async (request) => {
 
     const admin = createClient(url, serviceRole, { auth: { persistSession: false } });
     const normalized = identifier.toLowerCase();
-    // Only the Cloudflare-set address is trusted. A client-supplied forwarded-address header would let a caller
-    // pick its own rate-limit bucket, so a missing header shares one conservative "unknown" bucket instead.
-    const clientAddress = request.headers.get("cf-connecting-ip")?.trim() || "unknown";
+    // Address precedence is unchanged from v3. The bucket groups an IPv6 client by its /64 so one subscriber
+    // cannot rotate addresses to dodge the per-client and per-(username, client) limits.
+    const clientAddress = clientBucket(
+      request.headers.get("cf-connecting-ip")
+        ?? request.headers.get("x-forwarded-for")?.split(",", 1)[0]
+        ?? "unknown",
+    );
     const attemptKey = await sha256(`username:${normalized}`);
     const clientAttemptKey = await sha256(`client:${clientAddress}`);
     const aggregateAttemptKey = await sha256(`username-aggregate-v4:${normalized}`);

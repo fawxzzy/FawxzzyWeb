@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
+import { clientBucket } from "../supabase/functions/username-password-signin/client-bucket.mjs";
 import {
   noteUsernameSignInFailureRpc,
   resolveUsernameSignIn,
@@ -146,10 +147,13 @@ test("note-failure posts both keys to account_api and never throws", async () =>
   );
 });
 
-test("edge function v4 flow: trusted client address only, failures noted after the password check, success clears the pair", () => {
+test("edge function v4 flow: bucketed client address, failures noted after the password check, success clears the pair", () => {
   const source = readFileSync("supabase/functions/username-password-signin/index.ts", "utf8");
-  assert.doesNotMatch(source, /x-forwarded-for/i, "a caller-controlled header must not pick the rate-limit bucket");
-  assert.ok(source.includes('request.headers.get("cf-connecting-ip")?.trim() || "unknown"'));
+  assert.match(
+    source,
+    /clientBucket\(\s*request\.headers\.get\("cf-connecting-ip"\)\s*\?\?\s*request\.headers\.get\("x-forwarded-for"\)\?\.split\(",", 1\)\[0\]\s*\?\?\s*"unknown",?\s*\)/,
+    "the client key is the grouped bucket with the same header precedence as v3",
+  );
   assert.ok(source.includes("v4Args: {"));
   assert.ok(source.includes("sha256(`username-aggregate-v4:${normalized}`)"));
   assert.ok(source.includes("sha256(`username-client-v4:${normalized}:${clientAddress}`)"));
@@ -208,4 +212,35 @@ test("v4 migration is additive, keeps v3, and checks client, then global, then f
   assert.equal(sql.split("to service_role").length - 1, 4);
   assert.match(sql, /p_pair_attempt_key = repeat\('0', 64\)/);
   assert.match(sql, /coalesce\(p_pair_attempt_key !~ '\^\[0-9a-f\]\{64\}\$', true\)/);
+});
+
+test("client bucket groups IPv6 by /64, canonicalizes IPv4 and sends anything unparsable to one shared bucket", () => {
+  const sameSubscriber = "v6/64:2001:0db8:0000:0000";
+  for (const address of [
+    "2001:db8::1",
+    "2001:DB8:0:0:ffff:ffff:ffff:ffff",
+    "[2001:db8::5]",
+    "2001:db8::1%eth0",
+    " 2001:0db8:0000:0000:0000:0000:0000:0001 ",
+  ]) {
+    assert.equal(clientBucket(address), sameSubscriber, address);
+  }
+  assert.notEqual(clientBucket("2001:db8:0:1::1"), sameSubscriber, "a different /64 is a different bucket");
+  assert.equal(clientBucket("2001:db8:0:1::1"), "v6/64:2001:0db8:0000:0001");
+  assert.equal(clientBucket("::"), "v6/64:0000:0000:0000:0000");
+  assert.equal(clientBucket("::1"), "v6/64:0000:0000:0000:0000");
+  assert.equal(clientBucket("1:2:3:4:5:6:1.2.3.4"), "v6/64:0001:0002:0003:0004");
+  assert.equal(clientBucket("64:ff9b::1.2.3.4"), "v6/64:0064:ff9b:0000:0000");
+
+  assert.equal(clientBucket("1.2.3.4"), "1.2.3.4");
+  assert.equal(clientBucket("001.2.3.4"), "1.2.3.4", "leading zeros cannot create a second bucket");
+  assert.equal(clientBucket("::ffff:1.2.3.4"), "1.2.3.4");
+  assert.equal(clientBucket("::ffff:102:304"), "1.2.3.4");
+
+  for (const bad of [
+    undefined, null, 42, "", "   ", "garbage", "256.1.1.1", "1.2.3", "::ffff:1.2.3.999", "1::2::3",
+    "2001:db8:1:2:3:4:5:6:7", "2001:db8:1:2:3:4:5", "12345::1", ":1:2:3:4:5:6:7", "unknown",
+  ]) {
+    assert.equal(clientBucket(bad), "unknown", String(bad));
+  }
 });
