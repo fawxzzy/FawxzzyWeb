@@ -1,6 +1,10 @@
 import { createClient } from "npm:@supabase/supabase-js@2.109.0";
 import { createPublicKeyAdmission } from "./public-key.mjs";
-import { noteUsernameSignInSuccessRpc, resolveUsernameSignIn } from "./rpc-response.mjs";
+import {
+  noteUsernameSignInFailureRpc,
+  noteUsernameSignInSuccessRpc,
+  resolveUsernameSignIn,
+} from "./rpc-response.mjs";
 
 const USERNAME = /^[A-Za-z0-9._-]{2,15}$/;
 const ALLOWED_ORIGINS = new Set(["https://account.fawxzzy.com"]);
@@ -88,11 +92,13 @@ Deno.serve(async (request) => {
 
     const admin = createClient(url, serviceRole, { auth: { persistSession: false } });
     const normalized = identifier.toLowerCase();
-    const clientAddress = request.headers.get("cf-connecting-ip")
-      ?? request.headers.get("x-forwarded-for")?.split(",", 1)[0]?.trim()
-      ?? "unknown";
+    // Only the Cloudflare-set address is trusted. A client-supplied forwarded-address header would let a caller
+    // pick its own rate-limit bucket, so a missing header shares one conservative "unknown" bucket instead.
+    const clientAddress = request.headers.get("cf-connecting-ip")?.trim() || "unknown";
     const attemptKey = await sha256(`username:${normalized}`);
     const clientAttemptKey = await sha256(`client:${clientAddress}`);
+    const aggregateAttemptKey = await sha256(`username-aggregate-v4:${normalized}`);
+    const pairAttemptKey = await sha256(`username-client-v4:${normalized}:${clientAddress}`);
     const resolution = await resolveUsernameSignIn({
       args: {
         p_attempt_key: attemptKey,
@@ -102,6 +108,12 @@ Deno.serve(async (request) => {
       fetchImpl: fetch,
       serviceRole,
       url,
+      v4Args: {
+        p_attempt_key: aggregateAttemptKey,
+        p_client_attempt_key: clientAttemptKey,
+        p_normalized_username: normalized,
+        p_pair_attempt_key: pairAttemptKey,
+      },
     });
     // A lockout is reported distinctly (it is independent of whether the username exists).
     if (resolution.throttled) return throttledFailure(origin);
@@ -114,9 +126,26 @@ Deno.serve(async (request) => {
 
     const auth = createClient(url, anonKey, { auth: { persistSession: false } });
     const { data, error } = await auth.auth.signInWithPassword({ email, password });
-    if (!resolvedUserId || !resolvedEmail || error || !data.session) return genericFailure(origin);
-    // Verified sign-in: clear the per-username counter so only failures accumulate (best effort).
-    await noteUsernameSignInSuccessRpc({ attemptKey, fetchImpl: fetch, serviceRole, url });
+    if (!resolvedUserId || !resolvedEmail || error || !data.session) {
+      // v4 counts failures only (known and unknown usernames alike) after the password check; best effort.
+      if (resolution.version === 4) {
+        await noteUsernameSignInFailureRpc({
+          attemptKey: aggregateAttemptKey,
+          fetchImpl: fetch,
+          pairAttemptKey,
+          serviceRole,
+          url,
+        });
+      }
+      return genericFailure(origin);
+    }
+    // Verified sign-in: clear this caller's failure counter so only failures accumulate (best effort).
+    await noteUsernameSignInSuccessRpc({
+      attemptKey: resolution.version === 4 ? pairAttemptKey : attemptKey,
+      fetchImpl: fetch,
+      serviceRole,
+      url,
+    });
     return new Response(JSON.stringify({
       access_token: data.session.access_token,
       refresh_token: data.session.refresh_token,
