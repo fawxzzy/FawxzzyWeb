@@ -12,7 +12,7 @@
     {
       "board": "mazer",
       "path": "planning/board-sources/mazer.project-board.owner-export.v1.json",
-      "sha256": "dd989f47d756b083999fc06ef89ab115289a01a0b53873ae939fec622f6d6aa5",
+      "sha256": "7ba295c89b3ac4bedcb8f122c14d9d3efcc337ddc196e2263f8b474271ba020b",
       "sourceProjectId": "mazer"
     },
     {
@@ -135,6 +135,9 @@
       "MAZER-GOV-004",
       "MAZER-GOV-005",
       "MAZER-GOV-006",
+      "MAZER-GOV-007",
+      "MAZER-GOV-008",
+      "MAZER-GOV-009",
       "MAZER-HAZ-001",
       "MAZER-HAZ-002",
       "MAZER-HAZ-003",
@@ -152,6 +155,8 @@
       "MAZER-MOTION-003",
       "MAZER-MOTION-004",
       "MAZER-MOTION-005",
+      "MAZER-MOTION-006",
+      "MAZER-MOTION-007",
       "MAZER-NATIVE-001",
       "MAZER-NAV-001",
       "MAZER-PATH-001",
@@ -177,6 +182,7 @@
       "MAZER-PWA-002",
       "MAZER-PWA-003",
       "MAZER-PWA-004",
+      "MAZER-PWA-005",
       "MAZER-QA-001",
       "MAZER-QA-002",
       "MAZER-QA-003",
@@ -235,6 +241,12 @@
       "MAZER-VIS-019",
       "MAZER-VIS-020",
       "MAZER-VIS-021",
+      "MAZER-VIS-022",
+      "MAZER-VIS-023",
+      "MAZER-VIS-024",
+      "MAZER-VIS-025",
+      "MAZER-VIS-026",
+      "MAZER-VIS-027",
       "MAZER-WORLD-001"
     ],
     "trove": [
