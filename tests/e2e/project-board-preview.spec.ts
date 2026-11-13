@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const boards = [
   { name: "Fawxzzy Fitness", count: 29, sample: "Add Calendar View" },
-  { name: "Mazer", count: 217, sample: "Maintain the mobile-clean 2D shipping baseline" },
+  { name: "Mazer", count: 219, sample: "Maintain the mobile-clean 2D shipping baseline" },
   { name: "Fawxzzy Web", count: 4, sample: "Connect the public project boards to the live master read model" },
   { name: "Atlas Stack", count: 54, sample: "Deterministic roadmap next command" },
 ];
@@ -38,7 +38,7 @@ test("four project boards show the owner-approved public cards and keep private 
   }
 
   // A card opens its detail dialog and closes again.
-  await activate(navigation.getByRole("button", { name: "Mazer, 217 cards" }));
+  await activate(navigation.getByRole("button", { name: "Mazer, 219 cards" }));
   await activate(page.locator(".project-card", { hasText: "Maintain the mobile-clean 2D shipping baseline" }).first());
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();

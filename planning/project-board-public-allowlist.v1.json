@@ -12,7 +12,7 @@
     {
       "board": "mazer",
       "path": "planning/board-sources/mazer.project-board.owner-export.v1.json",
-      "sha256": "356edc42c153f5338748f3a9935ec624cba118699549dd893bd3919e686accad",
+      "sha256": "65ac5fdfffcd9a36998122ee1f8681b1c0e3199da8afadd862ecab5b6e36bbd3",
       "sourceProjectId": "mazer"
     },
     {
@@ -307,6 +307,8 @@
       "MAZER-VIS-028",
       "MAZER-VIS-029",
       "MAZER-VIS-030",
+      "MAZER-VIS-031",
+      "MAZER-VIS-032",
       "MAZER-WORLD-001"
     ],
     "trove": [
