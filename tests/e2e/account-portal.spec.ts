@@ -19,6 +19,7 @@ import {
   accountUrls,
   classifyRuntimeOrigin,
   isLiveAccountAdapterOrigin,
+  resolveAccountAuthIntent,
   resolveAccountExperienceContext,
 } from "../../src/config/account";
 import {
@@ -1648,6 +1649,110 @@ test("signup enforces ten characters and accepts long passwords", async ({ brows
   await form.getByLabel("Password", { exact: true }).fill("x".repeat(129));
   await page.locator(".account-auth-dock").getByRole("button", { name: "Create account" }).click();
   await expect(page.getByRole("status")).toContainText(safeAuthSuccess("signup"));
+});
+
+test("the intent key opens sign-up only for one exact `signup` value", () => {
+  expect(resolveAccountAuthIntent(["signup"])).toBe("signup");
+  for (const raw of [
+    [],
+    [""],
+    ["login"],
+    ["SIGNUP"],
+    ["Signup"],
+    [" signup"],
+    ["signup "],
+    ["signup", "signup"],
+    ["signup", "login"],
+    ["login", "signup"],
+    ["<script>alert(1)</script>"],
+  ]) {
+    expect(resolveAccountAuthIntent(raw), JSON.stringify(raw)).toBe("login");
+  }
+});
+
+test("intent=signup opens Create Account on the portal and the form still switches to sign-in", async ({
+  browserName,
+  page,
+}) => {
+  test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(`console: ${message.text()}`);
+  });
+  page.on("pageerror", (error) => errors.push(`page: ${error.message}`));
+  await page.goto("/login?intent=signup&auth_test=success", { waitUntil: "networkidle" });
+  await expect(page.getByRole("heading", { name: "Create Account" })).toBeVisible();
+  await expect(page.getByLabel("Username", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Email", { exact: true })).toHaveAttribute("type", "email");
+  await expect(page.getByLabel("Password", { exact: true })).toHaveAttribute("minlength", "10");
+  await expect(
+    page.locator(".account-auth-dock").getByRole("button", { name: "Create account" }),
+  ).toBeVisible();
+  // The toggle is the way back; the person's choice is not overridden by the address.
+  await page.locator(".account-card__links").getByRole("button", { name: "Log in" }).click();
+  await expect(page.getByRole("heading", { name: "Welcome" })).toBeVisible();
+  await expect(page.getByLabel("Username", { exact: true })).toHaveCount(0);
+  await page.locator(".account-card__links").getByRole("button", { name: "Create Account" }).click();
+  await expect(page.getByRole("heading", { name: "Create Account" })).toBeVisible();
+  // Opening on the sign-up form after hydration must not raise a hydration or framework error.
+  expect(errors).toEqual([]);
+});
+
+for (const query of [
+  "",
+  "&intent=login",
+  "&intent=SIGNUP",
+  "&intent=signup&intent=login",
+  "&intent=%3Cscript%3E",
+]) {
+  test(`an unrecognised intent (${query || "none"}) opens sign-in`, async ({ page }) => {
+    await page.goto(`/login?auth_test=success${query}`);
+    await expect(page.getByRole("heading", { name: "Welcome" })).toBeVisible();
+    await expect(page.getByLabel("Username", { exact: true })).toHaveCount(0);
+    await expect(page.getByLabel("Email or username")).toBeVisible();
+  });
+}
+
+test("intent=signup from Fitness keeps the secure handoff and the plain-language guidance", async ({
+  browserName,
+  page,
+}) => {
+  test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
+  await page.goto(
+    "/login?app=fitness&intent=signup&auth_test=success&returnTo=https%3A%2F%2Ffitness.fawxzzy.com%2Ftoday",
+  );
+  await expect(page.getByRole("heading", { name: "Create Account" })).toBeVisible();
+  await expect(page.locator('.account-card--auth[data-auth-product="fitness"]')).toBeVisible();
+  // Guidance (PR #114) still names what each field needs when it is left empty.
+  await page.locator(".account-auth-dock").getByRole("button", { name: "Create account" }).click();
+  await expect(page.locator("[data-auth-guidance]")).toBeVisible();
+  await expect(page.locator("html")).not.toHaveAttribute("data-post-auth-destination", /.+/);
+  // The handoff and return path are the ordinary Fitness sign-up ones.
+  await page.getByLabel("Username", { exact: true }).fill("new.fitness.user");
+  await page.getByLabel("Email", { exact: true }).fill("new.fitness.user@example.test");
+  await page.getByLabel("Password", { exact: true }).fill("correct-horse-battery-staple");
+  await page.locator(".account-auth-dock").getByRole("button", { name: "Create account" }).click();
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-post-auth-destination",
+    "https://fitness.fawxzzy.com/today",
+  );
+});
+
+test("intent=signup never widens the return allowlist", async ({ browserName, page }) => {
+  test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
+  await page.goto(
+    "/login?app=fitness&intent=signup&auth_test=success&returnTo=https%3A%2F%2Fattacker.example.test%2F",
+  );
+  // The form swaps from sign-in to sign-up on hydration; wait for it before typing into it.
+  await expect(page.getByRole("heading", { name: "Create Account" })).toBeVisible();
+  await page.getByLabel("Username", { exact: true }).fill("new.fitness.user");
+  await page.getByLabel("Email", { exact: true }).fill("new.fitness.user@example.test");
+  await page.getByLabel("Password", { exact: true }).fill("correct-horse-battery-staple");
+  await page.locator(".account-auth-dock").getByRole("button", { name: "Create account" }).click();
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-post-auth-destination",
+    "https://fitness.fawxzzy.com/",
+  );
 });
 
 test("a session-bearing signup without product context continues like sign-in", async ({

@@ -156,6 +156,19 @@ export function resolveAccountExperienceContext(rawContext: unknown) {
   return accountExperienceContexts[rawContext as AccountExperienceContextId];
 }
 
+export type AccountAuthIntent = "login" | "signup";
+
+/**
+ * Which form the sign-in screen opens on. `?intent=signup` opens "Create Account" so a product
+ * (Fitness) can send a browser straight to the one portal sign-up surface; every other value,
+ * including a repeated or differently-cased `intent`, opens sign-in. It selects presentation only:
+ * it never changes the Auth provider, the return allowlist, or the handoff, and the person can
+ * still switch forms with the on-screen link. Same single-value rule as the `app` context key.
+ */
+export function resolveAccountAuthIntent(rawIntents: readonly string[]): AccountAuthIntent {
+  return rawIntents.length === 1 && rawIntents[0] === "signup" ? "signup" : "login";
+}
+
 export const accountUrls = {
   login: `${accountContract.canonicalOrigin}${accountContract.loginPath}`,
   account: `${accountContract.canonicalOrigin}${accountContract.accountPath}`,

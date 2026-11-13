@@ -6,7 +6,9 @@ import {
   classifyRuntimeOrigin,
   projectsPaths,
   publicProjectsUrl,
+  resolveAccountAuthIntent,
   resolveAccountExperienceContext,
+  type AccountAuthIntent,
   type AccountExperienceContext,
 } from "@/config/account";
 import {
@@ -388,7 +390,14 @@ function LoginPanel({
   context: AccountExperienceContext;
   resolution: AdapterResolution | null;
 }) {
-  const [intent, setIntent] = useState<"login" | "signup">("login");
+  const hydrated = useHydrated();
+  // `?intent=signup` picks the form the screen opens on. Once the person flips the toggle their
+  // choice wins for the rest of the visit (it is never re-derived from the address).
+  const requestedIntent: AccountAuthIntent = hydrated
+    ? resolveAccountAuthIntent(new URLSearchParams(window.location.search).getAll("intent"))
+    : "login";
+  const [chosenIntent, setChosenIntent] = useState<AccountAuthIntent | null>(null);
+  const intent = chosenIntent ?? requestedIntent;
   const [username, setUsername] = useState("");
   const [invalidFields, setInvalidFields] = useState<Set<string>>(() => new Set());
   const [guidance, setGuidance] = useState<GuidanceProblem[]>([]);
@@ -405,7 +414,6 @@ function LoginPanel({
   const cooldown = useCooldown();
   const adapter = adapterFrom(resolution);
   const displayedIdentity = rememberedIdentity ?? storedRememberedIdentity;
-  const hydrated = useHydrated();
   const returnTarget = hydrated
     ? sanitizePostAuthReturnTarget(
         new URLSearchParams(window.location.search).get("returnTo"),
@@ -436,7 +444,7 @@ function LoginPanel({
 
   function switchIntent(event: React.MouseEvent<HTMLButtonElement>) {
     event.currentTarget.blur();
-    setIntent(intent === "login" ? "signup" : "login");
+    setChosenIntent(intent === "login" ? "signup" : "login");
     transient.clear();
     setInvalidFields(new Set());
     setUsernameTaken(false);
