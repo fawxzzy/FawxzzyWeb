@@ -159,6 +159,16 @@ main.catalog-page .shell-container {
   .app-launcher__action {
     width: 100%;
   }
+
+  /* Reserve the lines phones typically need, so card height does not depend on which font
+     metrics wrap a line differently (and the two cards stay the same height). */
+  .app-launcher__tagline {
+    min-height: calc(1.45em * 3);
+  }
+
+  .app-launcher__description {
+    min-height: calc(1.65em * 3);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
