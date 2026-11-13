@@ -995,6 +995,12 @@ function ResetPanel({
   const cooldown = useCooldown();
   const recoveryState = useRecoverySession(hydrated, recovery, resolution);
   const recoveryReady = recovery && recoveryState === "ready";
+  // A dead link (invalid, expired, or the exchange failed) must offer the way out: a fresh request.
+  const recoveryLinkDead = recovery && (
+    recoveryState === "invalid" ||
+    recoveryState === "expired" ||
+    recoveryState === "recoverable-error"
+  );
   const returnTarget = hydrated
     ? sanitizePostAuthReturnTarget(
         new URLSearchParams(window.location.search).get("returnTo"),
@@ -1012,7 +1018,9 @@ function ResetPanel({
       : recoveryState === "expired"
         ? { kind: "error", text: "Recovery link expired.", variant: "expired" }
         : recoveryState === "recoverable-error"
-          ? { kind: "error", text: safeAuthError("reset-complete") }
+          ? // The link could not be used (wrong browser, already used, or a network problem). Nothing
+            // was being saved yet, so "Password not saved" would misstate what happened.
+            { kind: "error", text: safeAuthError("confirm") }
           : recoveryState === "setup-pending"
             ? { kind: "info", text: "Account service unavailable." }
             : recoveryState === "ready"
@@ -1159,6 +1167,14 @@ function ResetPanel({
       >
         <div className="account-card__links">
           <a href={contextualPath("/login", context, internalMazerReturn)}>Log in</a>
+          {recoveryLinkDead ? (
+            <>
+              <AccountTextDivider />
+              <a data-recovery-new-link href={contextualPath("/reset-password", context, internalMazerReturn)}>
+                Request a new link
+              </a>
+            </>
+          ) : null}
         </div>
         <AccountLegalLinks context={context} />
       </div>
