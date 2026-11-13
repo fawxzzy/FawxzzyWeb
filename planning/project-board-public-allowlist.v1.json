@@ -18,7 +18,7 @@
     {
       "board": "trove",
       "path": "exports/trove.project-board.owner-export.v1.json",
-      "sha256": "133903a9b8812011c86099597906fecdb683dde76932972e043b56e120ccc3ee",
+      "sha256": "3f1c03a3430c4a05b7c8fec6d5fc9d21ef622f4514558875935907407dbf1f9e",
       "sourceProjectId": "trove"
     },
     {
@@ -48,7 +48,7 @@
     {
       "board": "atlas-stack",
       "path": "planning/board-sources/playbook.project-board.owner-export.v1.json",
-      "sha256": "12d21d93ae8ed655530442e6eca6e686768cda483b605a50492b48534da47891",
+      "sha256": "74ecf685488915edd66ebc0203daa3f4c967cfa24e8772c60230f1641a24cb6b",
       "sourceProjectId": "playbook"
     },
     {
@@ -310,7 +310,10 @@
       "MAZER-WORLD-001"
     ],
     "trove": [
-      "FW-PROJECTS-001"
+      "FW-CAPTCHA-001",
+      "FW-DEVICE-001",
+      "FW-PROJECTS-001",
+      "FW-PROJECTS-002"
     ],
     "atlas": [
       "lane-atlas-contracts-mesh",
