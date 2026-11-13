@@ -41,7 +41,12 @@ import {
   type DeferredScheduler,
 } from "../../src/lib/auth/client-lifecycle";
 import { resolvePortalAuthAdapter } from "../../src/lib/auth/browser-adapter";
-import { safeAuthError, safeAuthSuccess } from "../../src/lib/auth/errors";
+import {
+  isUsernameTakenError,
+  safeAuthError,
+  safeAuthSuccess,
+  USERNAME_TAKEN_MESSAGE,
+} from "../../src/lib/auth/errors";
 import { validatePassword } from "../../src/lib/auth/password-policy";
 import { isBrowserSafeSupabasePublicKey } from "../../src/lib/auth/supabase-public-key.mjs";
 import {
@@ -1723,7 +1728,7 @@ test("every provider signup rejection shows one neutral non-success result", asy
   context,
   page,
 }) => {
-  test.setTimeout(90_000);
+  test.setTimeout(150_000);
   await page.emulateMedia({ reducedMotion: "reduce" });
   const rejections = [
     { scenario: "signup-existing", diagnostic: "User already registered" },
@@ -1737,6 +1742,8 @@ test("every provider signup rejection shows one neutral non-success result", asy
       scenario: "signup-unknown",
       diagnostic: "Malformed provider detail must never reach the interface",
     },
+    // A generic database failure is not claimed to be a taken username.
+    { scenario: "signup-database-error", diagnostic: "Database error saving new user" },
   ] as const;
   const expectedNotice = safeAuthError("signup");
   const seenNotices = new Set<string>();
@@ -1776,6 +1783,85 @@ test("every provider signup rejection shows one neutral non-success result", asy
   expect(await context.cookies()).toEqual([]);
 });
 
+test("a taken username is named beside the username field and nothing else is disclosed", async ({
+  browserName,
+  page,
+}) => {
+  test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
+  test.setTimeout(90_000);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 1280, height: 720 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/login?auth_test=signup-username-taken");
+    await page.getByRole("button", { name: "Create account" }).click();
+    const form = page.locator("form");
+    const submit = page.locator('.account-auth-dock button[type="submit"]');
+    const username = form.getByLabel("Username");
+    await username.fill("taken-player");
+    await form.getByLabel("Email").fill("someone@example.test");
+    await form.getByLabel("Password", { exact: true }).fill("long-enough-password");
+    await submit.click();
+
+    const error = form.locator("[data-username-taken]");
+    await expect(error).toHaveText(USERNAME_TAKEN_MESSAGE);
+    await expect(error).toBeVisible();
+    await expect(error).toBeInViewport();
+    await expect(username).toHaveAttribute("aria-invalid", "true");
+    await expect(username).toBeFocused();
+    const describedBy = (await username.getAttribute("aria-describedby")) ?? "";
+    expect(describedBy.split(" ")).toContain((await error.getAttribute("id")) ?? "missing");
+    // The neutral sign-up notice is not shown on top of it, and there is no success state.
+    await expect(page.locator(".account-form-result")).toHaveCount(0);
+    await expect(page.locator("body")).not.toContainText(safeAuthError("signup"));
+    await expect(page.locator("html")).not.toHaveAttribute("data-post-auth-destination", /.+/);
+    await expect(page.locator("body")).not.toContainText("ACCOUNT_USERNAME_TAKEN");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+    // Editing the username clears the flag.
+    await username.fill("another-player");
+    await expect(error).toHaveCount(0);
+    await expect(username).not.toHaveAttribute("aria-invalid", "true");
+  }
+});
+
+test("email-duplicate and generic database rejections never flag the username", async ({
+  browserName,
+  page,
+}) => {
+  test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
+  test.setTimeout(90_000);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  for (const scenario of ["signup-existing", "signup-database-error"]) {
+    await page.goto(`/login?auth_test=${scenario}`);
+    await page.getByRole("button", { name: "Create account" }).click();
+    const form = page.locator("form");
+    await form.getByLabel("Username").fill("test-player");
+    await form.getByLabel("Email").fill(`${scenario}@example.test`);
+    await form.getByLabel("Password", { exact: true }).fill("long-enough-password");
+    await page.locator('.account-auth-dock button[type="submit"]').click();
+    await expect(form.locator(".account-form-result")).toHaveText(safeAuthError("signup"));
+    await expect(form.locator("[data-username-taken]")).toHaveCount(0);
+    await expect(form.getByLabel("Username")).not.toHaveAttribute("aria-invalid", "true");
+    await expect(page.locator("body")).not.toContainText(USERNAME_TAKEN_MESSAGE);
+  }
+});
+
+test("username-taken detection reads only the provider error text", () => {
+  expect(isUsernameTakenError(new Error("ACCOUNT_USERNAME_TAKEN"))).toBe(true);
+  expect(isUsernameTakenError({ message: "hook returned 409: ACCOUNT_USERNAME_TAKEN" })).toBe(true);
+  expect(isUsernameTakenError({ msg: "x", code: "ACCOUNT_USERNAME_TAKEN" })).toBe(true);
+  expect(isUsernameTakenError("ACCOUNT_USERNAME_TAKEN")).toBe(true);
+  expect(isUsernameTakenError(new Error("Database error saving new user"))).toBe(false);
+  expect(isUsernameTakenError(new Error("User already registered"))).toBe(false);
+  expect(isUsernameTakenError({ detail: "ACCOUNT_USERNAME_TAKEN" })).toBe(false);
+  expect(isUsernameTakenError(null)).toBe(false);
+  expect(isUsernameTakenError(undefined)).toBe(false);
+  expect(USERNAME_TAKEN_MESSAGE).toBe("That username is taken. Pick another one.");
+});
+
 test("account status copies the compact Mazer hierarchy without unfinished service copy", async ({
   context,
   page,
@@ -1812,8 +1898,34 @@ test("account status copies the compact Mazer hierarchy without unfinished servi
   expect(Math.round(dockBox!.y - (secondaryBox!.y + secondaryBox!.height))).toBe(16);
 
   await page.getByRole("button", { name: "Sign out" }).click();
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole("heading", { name: "Welcome" })).toBeVisible();
+  // The page picks its own destination (the website) and the session-lost redirect stays out of it.
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-sign-out-destination",
+    `${accountContract.publicHubOrigin}/?signedOut=1`,
+  );
+  await page.waitForTimeout(600);
+  await expect(page).toHaveURL(/\/account\?auth_test=session$/);
+  await expect(page.locator("html")).not.toHaveAttribute("data-session-lost-redirect", /.+/);
+});
+
+// MAZER-ACCT-023: SIGNED_OUT arrives before adapter.signOut() resolves. The "session lost"
+// redirect to /login must not run ahead of the product origin the page sends the person to.
+test("account sign-out from Mazer heads for Mazer, never the login page", async ({ page }) => {
+  await page.goto("/account?auth_test=session&app=mazer");
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-sign-out-destination",
+    `${accountContract.productOrigins.mazer}/`,
+  );
+  await page.waitForTimeout(600);
+  await expect(page).toHaveURL(/\/account\?auth_test=session&app=mazer$/);
+  await expect(page.locator("html")).not.toHaveAttribute("data-session-lost-redirect", /.+/);
+});
+
+test("a session lost without this page signing out still redirects to login", async ({ page }) => {
+  await page.goto("/account?auth_test=session-expires&app=mazer");
+  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await expect(page).toHaveURL(/\/login\?app=mazer$/);
 });
 
 test("successful website login records the canonical public destination", async ({ page }) => {

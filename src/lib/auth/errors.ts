@@ -43,6 +43,36 @@ export class UsernameSignInThrottledError extends Error {
   }
 }
 
+/**
+ * Machine code the database duplicate-username guard (a trigger raising a 23505-shaped error) and
+ * the optional before-user-created hook (HTTP 409) put in their message when a username is taken.
+ */
+export const ACCOUNT_USERNAME_TAKEN_CODE = "ACCOUNT_USERNAME_TAKEN";
+
+/**
+ * The one sentence shown beside the username field. A username is public (it appears on the Mazer
+ * leaderboard), so unlike email existence it is not a secret and may be named. It claims nothing
+ * about the email or password.
+ */
+export const USERNAME_TAKEN_MESSAGE = "That username is taken. Pick another one.";
+
+const ERROR_TEXT_KEYS = ["message", "msg", "error", "error_description", "code", "details", "hint"] as const;
+
+/**
+ * True only when a sign-up rejection carries the username-taken machine code. Looks at the
+ * provider error's text fields and never at the email, so the generic "Database error saving new
+ * user" message and every email-duplicate rejection stay on the neutral sign-up notice.
+ */
+export function isUsernameTakenError(error: unknown): boolean {
+  if (typeof error === "string") return error.includes(ACCOUNT_USERNAME_TAKEN_CODE);
+  if (typeof error !== "object" || error === null) return false;
+  const record = error as Record<string, unknown>;
+  return ERROR_TEXT_KEYS.some((key) => {
+    const value = record[key];
+    return typeof value === "string" && value.includes(ACCOUNT_USERNAME_TAKEN_CODE);
+  });
+}
+
 export function safeAuthError(action: AuthAction) {
   return SAFE_MESSAGES[action];
 }
