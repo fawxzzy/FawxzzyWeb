@@ -31,7 +31,7 @@
     "test:private-project-card": "node --test tests/private-project-card.test.mjs tests/projects-release-smoke.test.mjs",
     "test:analytics": "node --test tests/first-party-analytics-contract.test.mjs",
     "test:auth-email": "node --test tests/auth-email-contract.test.mjs",
-    "test:username-signin": "node --test tests/username-signin-lockout.test.mjs tests/username-signin-lockout-v4.test.mjs",
+    "test:username-signin": "node --test tests/username-signin-lockout.test.mjs tests/username-signin-lockout-v4.test.mjs tests/username-signin-lockout-v5.test.mjs",
     "email:preview": "node scripts/email-preview.mjs",
     "smoke:lifeline": "node scripts/smoke-lifeline.mjs",
     "deploy:production": "node scripts/deploy-production.mjs",

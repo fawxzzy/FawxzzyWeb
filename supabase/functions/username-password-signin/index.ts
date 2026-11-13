@@ -1,11 +1,12 @@
 import { createClient } from "npm:@supabase/supabase-js@2.109.0";
-import { clientBucket } from "./client-bucket.mjs";
 import { createPublicKeyAdmission } from "./public-key.mjs";
 import {
   noteUsernameSignInFailureRpc,
+  noteUsernameSignInFailureV2Rpc,
   noteUsernameSignInSuccessRpc,
   resolveUsernameSignIn,
 } from "./rpc-response.mjs";
+import { clientAddressFromHeaders, deriveThrottleKeys } from "./throttle-keys.mjs";
 
 const USERNAME = /^[A-Za-z0-9._-]{2,15}$/;
 const ALLOWED_ORIGINS = new Set(["https://account.fawxzzy.com"]);
@@ -61,12 +62,6 @@ async function isAcceptedPublicKey(requestKey: string) {
   });
 }
 
-async function sha256(value: string) {
-  const bytes = new TextEncoder().encode(value);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
 Deno.serve(async (request) => {
   const origin = request.headers.get("origin") ?? "";
   if (request.method === "OPTIONS" && ALLOWED_ORIGINS.has(origin)) {
@@ -93,32 +88,17 @@ Deno.serve(async (request) => {
 
     const admin = createClient(url, serviceRole, { auth: { persistSession: false } });
     const normalized = identifier.toLowerCase();
-    // Address precedence is unchanged from v3. The bucket groups an IPv6 client by its /64 so one subscriber
-    // cannot rotate addresses to dodge the per-client and per-(username, client) limits.
-    const clientAddress = clientBucket(
-      request.headers.get("cf-connecting-ip")
-        ?? request.headers.get("x-forwarded-for")?.split(",", 1)[0]
-        ?? "unknown",
-    );
-    const attemptKey = await sha256(`username:${normalized}`);
-    const clientAttemptKey = await sha256(`client:${clientAddress}`);
-    const aggregateAttemptKey = await sha256(`username-aggregate-v4:${normalized}`);
-    const pairAttemptKey = await sha256(`username-client-v4:${normalized}:${clientAddress}`);
+    // Only cf-connecting-ip is trusted (x-forwarded-for is caller-controlled and is not used). An IPv6 client is grouped by
+    // its /64 and a missing or unparsable address shares the single "unknown" bucket, which the database caps strictly.
+    const clientAddress = clientAddressFromHeaders(request.headers);
+    const keys = await deriveThrottleKeys({ client: clientAddress, normalized });
     const resolution = await resolveUsernameSignIn({
-      args: {
-        p_attempt_key: attemptKey,
-        p_client_attempt_key: clientAttemptKey,
-        p_normalized_username: normalized,
-      },
+      args: keys.v3,
       fetchImpl: fetch,
       serviceRole,
       url,
-      v4Args: {
-        p_attempt_key: aggregateAttemptKey,
-        p_client_attempt_key: clientAttemptKey,
-        p_normalized_username: normalized,
-        p_pair_attempt_key: pairAttemptKey,
-      },
+      v4Args: keys.v4,
+      v5Args: keys.v5,
     });
     // A lockout is reported distinctly (it is independent of whether the username exists).
     if (resolution.throttled) return throttledFailure(origin);
@@ -132,21 +112,32 @@ Deno.serve(async (request) => {
     const auth = createClient(url, anonKey, { auth: { persistSession: false } });
     const { data, error } = await auth.auth.signInWithPassword({ email, password });
     if (!resolvedUserId || !resolvedEmail || error || !data.session) {
-      // v4 counts failures only (known and unknown usernames alike) after the password check; best effort.
-      if (resolution.version === 4) {
-        await noteUsernameSignInFailureRpc({
-          attemptKey: aggregateAttemptKey,
+      // v5 and v4 count failures only (known and unknown usernames alike) after the password check; best effort.
+      if (resolution.version === 5) {
+        await noteUsernameSignInFailureV2Rpc({
+          attemptKey: keys.v5.p_attempt_key,
+          clientAttemptKey: keys.v5.p_client_attempt_key,
           fetchImpl: fetch,
-          pairAttemptKey,
+          pairAttemptKey: keys.v5.p_pair_attempt_key,
+          serviceRole,
+          url,
+        });
+      } else if (resolution.version === 4) {
+        await noteUsernameSignInFailureRpc({
+          attemptKey: keys.v4.p_attempt_key,
+          fetchImpl: fetch,
+          pairAttemptKey: keys.v4.p_pair_attempt_key,
           serviceRole,
           url,
         });
       }
       return genericFailure(origin);
     }
-    // Verified sign-in: clear this caller's failure counter so only failures accumulate (best effort).
+    // Verified sign-in: clear this caller's (username, client) failure counter and nothing else (best effort).
     await noteUsernameSignInSuccessRpc({
-      attemptKey: resolution.version === 4 ? pairAttemptKey : attemptKey,
+      attemptKey: resolution.version === 5
+        ? keys.v5.p_pair_attempt_key
+        : resolution.version === 4 ? keys.v4.p_pair_attempt_key : keys.v3.p_attempt_key,
       fetchImpl: fetch,
       serviceRole,
       url,
