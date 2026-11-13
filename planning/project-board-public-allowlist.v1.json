@@ -48,7 +48,7 @@
     {
       "board": "atlas-stack",
       "path": "planning/board-sources/playbook.project-board.owner-export.v1.json",
-      "sha256": "0ec28f41dabc26cc4f6aba8be90c123e3192425e3555318f0d5b722a4edb3982",
+      "sha256": "8b67264cc646ae1f4cbef2fac98f5b56378ca38ac9124e7e5e68f2a01f45febb",
       "sourceProjectId": "playbook"
     },
     {
@@ -349,7 +349,7 @@
     "playbook": [
       "PB-V04-PLAN-APPLY-001",
       "PB-V05-PACKAGE-BOUNDARIES-001",
-      "PB-V06-FAILURE-INTELLIGENCE-001",
+      "PB-V06-FAILURE-TAXONOMY-001",
       "PB-V07-ARCH-INTELLIGENCE-GRAPH-001",
       "PB-V08-GRAPH-MEMORY-001",
       "PB-V09-CAPABILITY-ROUTING-001",
@@ -362,9 +362,7 @@
       "PB-V09-PLATFORM-OBSERVATION-001",
       "PB-V09-TRUST-EVIDENCE-001",
       "PB-V09-WORKSPACE-TENANT-GOVERNANCE-001",
-      "PB-V1-DEMO-REFRESH-001",
-      "PB-V1-PRODUCT-TRUTH-PACKAGING-001",
-      "PB-V10-ENGINE-PACKAGE-LOAD-TIMEOUT-HARDENING-001"
+      "PB-V1-DEMO-REFRESH-001"
     ],
     "_stack": []
   },
