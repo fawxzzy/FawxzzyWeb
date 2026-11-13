@@ -39,6 +39,16 @@ without admitting arbitrary query data. Protocol-relative URLs, userinfo, foreig
 backslashes, fragments, every other query key, nested query/fragment data, and token-bearing
 targets fail closed to `/account` or the selected product root.
 
+Sign-in screen intent: `https://account.fawxzzy.com/login?app=<product>&intent=signup` opens the
+"Create Account" form first (any product, or none). It is the one portal sign-up surface a product
+links to; Fitness's browser `/signup` redirects here. Exactly one `intent` key with the exact value
+`signup` selects sign-up; every other value (absent, `login`, another case, repeated, unknown)
+opens sign-in. It is presentation only: it adds no return target, no Auth behaviour and no
+handoff change, so `app` and `returnTo` keep their closed contracts above and a successful sign-up
+continues exactly like sign-in (Fitness handoff, Mazer authorize return, or the website target).
+The on-screen "Log in" / "Create Account" link still switches forms and is not overridden by the
+address.
+
 Live Supabase adapter creation is limited to the exact canonical account origin and the bounded
 local development origins below. The public apex, `www`, every Vercel Preview, foreign host, and
 unlisted local port remain setup-pending even when public Supabase configuration is present.
