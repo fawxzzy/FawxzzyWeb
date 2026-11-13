@@ -1,20 +1,20 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_fitness_owner_registry_2430743280fe",
+  "export_id": "pbe_fitness_owner_registry_ed281cc5b697",
   "project_id": "fitness",
   "board_id": "fitness:project-feedback:fitness-active",
   "owner": "fitness",
   "adapter_id": "fitness-owner-registry-v1",
-  "source_revision": "sha256:2430743280fec3a9bcea89e0438d76fb08c99b2e63cb68a4476a1828357ff15d",
-  "generated_at": "2026-11-11T00:00:00.000Z",
+  "source_revision": "sha256:ed281cc5b697ee092c6a9ff8b9742fbc72743c3281d4495bf1d006615ce0b7fb",
+  "generated_at": "2026-11-13T17:40:00.000Z",
   "sources": [
     {
       "source_id": "fitness-owner-work-registry",
       "kind": "json",
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json",
-      "revision": "sha256:54388d2620757fbd0843a514268a8dbc6979c070f59550022a05c05d0f18b6cb",
-      "observed_at": "2026-11-11T00:00:00.000Z"
+      "revision": "sha256:404e80a522798c45e8b4b258c07fb61013c2c21d152a5ba8dc65959dded1c356",
+      "observed_at": "2026-11-13T17:40:00.000Z"
     },
     {
       "source_id": "fitness-feedback-monetization-roadmap",
@@ -22,7 +22,7 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs",
       "revision": "sha256:78aa8b8300f0c21258144da0a5bdd6fdc4c9ff1337e265b2552094ebf3505ba6",
-      "observed_at": "2026-11-11T00:00:00.000Z"
+      "observed_at": "2026-11-13T17:40:00.000Z"
     },
     {
       "source_id": "fitness-session-timer-roadmap",
@@ -30,15 +30,15 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs",
       "revision": "sha256:58b1235add45e05d51712f433e2e67d4536b878f4edfad6ab6908d9402c55bcc",
-      "observed_at": "2026-11-11T00:00:00.000Z"
+      "observed_at": "2026-11-13T17:40:00.000Z"
     },
     {
       "source_id": "fitness-owner-export-adapter",
       "kind": "generated",
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs",
-      "revision": "sha256:842d1cf6ef8bcd8714a9f5b42dd8a4f7c882218f47400008ebe09c78a0a4f467",
-      "observed_at": "2026-11-11T00:00:00.000Z"
+      "revision": "sha256:e275b81c8831806cf4836347af47b4bed6e9de8701ecd3be8b8919ede89fd9d5",
+      "observed_at": "2026-11-13T17:40:00.000Z"
     }
   ],
   "cards": [
@@ -104,14 +104,14 @@
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Complete Self-Service Account Tools",
-        "description": "Finish the self-service account lifecycle: recovering a forgotten sign-in, downloading your own data, and removing your account.",
+        "description": "Finish the self-service account lifecycle: recovering a forgotten sign-in, changing your sign-in details, downloading your own data, and removing your account. Progress: changing sign-in details is merged and live, and saving a reset sign-in was fixed and is live, but neither has been exercised live yet. Recovery is not verified end to end. Data download and account removal are still planned. Not checked on a real phone.",
         "card_type": "feature",
         "lifecycle": "planning",
         "priority": "medium",
         "owner": "fitness",
         "dependencies": [],
         "board_version": 1,
-        "updated_at": "2026-11-06T17:20:00.000Z",
+        "updated_at": "2026-11-13T17:40:00.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-ACCOUNT-003",
         "extensions": {
           "owner_status": "planning",
@@ -123,13 +123,14 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-ACCOUNT-003",
         "source_status": "current",
-        "source_updated_at": "2026-11-06T17:20:00.000Z"
+        "source_updated_at": "2026-11-13T17:40:00.000Z"
       },
       "content": {
-        "summary": "Finish the self-service account lifecycle: recovering a forgotten sign-in, downloading your own data, and removing your account.",
-        "objective": "Finish the self-service account lifecycle: recovering a forgotten sign-in, downloading your own data, and removing your account.",
+        "summary": "Finish the self-service account lifecycle: recovering a forgotten sign-in, changing your sign-in details, downloading your own data, and removing your account. Progress: changing sign-in details is merged and live, and saving a reset sign-in was fixed and is live, but neither has been exercised live yet. Recovery is not verified end to end. Data download and account removal are still planned. Not checked on a real phone.",
+        "objective": "Finish the self-service account lifecycle: recovering a forgotten sign-in, changing your sign-in details, downloading your own data, and removing your account. Progress: changing sign-in details is merged and live, and saving a reset sign-in was fixed and is live, but neither has been exercised live yet. Recovery is not verified end to end. Data download and account removal are still planned. Not checked on a real phone.",
         "acceptance_criteria": [
-          "Forgotten-sign-in recovery is verified end to end.",
+          "Forgotten-sign-in recovery is verified end to end (not yet verified).",
+          "Changing sign-in details and saving a reset sign-in are exercised live (not yet done).",
           "People can export their own data.",
           "People can request account removal with a clear confirmation step."
         ],
@@ -149,26 +150,26 @@
     {
       "idempotency_key": "pbk_fitness_ff-account-004_v1",
       "record_kind": "project-work",
-      "record_status": "candidate",
+      "record_status": "active",
       "record": {
         "contract_version": "atlas.card-record.v2",
         "card_id": "FF-ACCOUNT-004",
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Finish Account Site Setup for the Fitness App",
-        "description": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it. Progress: the sign-in, sign-up and reset forms now list in plain language what is missing or wrong; this is live on the account site and has not been checked on a real phone.",
+        "description": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it. Done and live as of 2026-11-13: starting sign-up from the account site, clearer sign-up feedback messages, one global sign-out that also signs people out of the app, and saving a changed username or contact address. Checked live only in headless Chromium with a standing test account (sign-in, account site handoff, sign-out then redirect to sign-in); not checked on a real phone. Still open: the recovery link needs an owner setup step on the account side and a live check, and a real-phone pass is pending.",
         "card_type": "feature",
-        "lifecycle": "planning",
+        "lifecycle": "in-progress",
         "priority": "high",
         "owner": "fitness",
         "dependencies": [
           "FF-AUTH-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-11T00:00:00.000Z",
+        "updated_at": "2026-11-13T17:40:00.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-ACCOUNT-004",
         "extensions": {
-          "owner_status": "planning",
+          "owner_status": "in_progress",
           "public_safe": true,
           "visibility": "public"
         }
@@ -177,15 +178,15 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-ACCOUNT-004",
         "source_status": "current",
-        "source_updated_at": "2026-11-11T00:00:00.000Z"
+        "source_updated_at": "2026-11-13T17:40:00.000Z"
       },
       "content": {
-        "summary": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it. Progress: the sign-in, sign-up and reset forms now list in plain language what is missing or wrong; this is live on the account site and has not been checked on a real phone.",
-        "objective": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it. Progress: the sign-in, sign-up and reset forms now list in plain language what is missing or wrong; this is live on the account site and has not been checked on a real phone.",
+        "summary": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it. Done and live as of 2026-11-13: starting sign-up from the account site, clearer sign-up feedback messages, one global sign-out that also signs people out of the app, and saving a changed username or contact address. Checked live only in headless Chromium with a standing test account (sign-in, account site handoff, sign-out then redirect to sign-in); not checked on a real phone. Still open: the recovery link needs an owner setup step on the account side and a live check, and a real-phone pass is pending.",
+        "objective": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it. Done and live as of 2026-11-13: starting sign-up from the account site, clearer sign-up feedback messages, one global sign-out that also signs people out of the app, and saving a changed username or contact address. Checked live only in headless Chromium with a standing test account (sign-in, account site handoff, sign-out then redirect to sign-in); not checked on a real phone. Still open: the recovery link needs an owner setup step on the account side and a live check, and a real-phone pass is pending.",
         "acceptance_criteria": [
           "Sign-up, sign-in, sign-out and forgotten-sign-in recovery all work from the account site and return people to the Fitness app.",
           "The account site and the app always agree on who is signed in.",
-          "Every account screen Fitness links to is complete and checked in the installed phone app."
+          "Every account screen Fitness links to is complete and checked in the installed phone app (real-phone pass not yet done)."
         ],
         "discoveries": [],
         "next_actions": [],
@@ -377,7 +378,7 @@
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Send Branded Account Messages for Fitness and Mazer",
-        "description": "Account messages such as forgotten-sign-in recovery now come from one no-reply Fawxzzy sender with a per-app look (Fitness green, Mazer cyan). Checked live on 2026-11-10 with a throwaway account: the message arrived, its link opened the new sign-in form, a new sign-in was saved and sign-in worked. Not verified: sign-up and change-of-address messages, and other mail clients. The hourly send allowance was raised from 2 to 30 on 2026-11-11 (confirmed by reload); the delivery service's free tier allows 100 messages a day.",
+        "description": "Account messages such as forgotten-sign-in recovery now come from one no-reply Fawxzzy sender with a per-app look (Fitness green, Mazer cyan). Checked live on 2026-11-10 with a throwaway account: the message arrived, its link opened the new sign-in form, a new sign-in was saved and sign-in worked. Sign-up confirmation messages do not exist while sign-up confirmation is off, so none are sent or need checking; the remaining work is the reset and recovery message path. Not verified: change-of-address messages and other mail clients. The hourly send allowance was raised from 2 to 30 on 2026-11-11 (confirmed by reload); the delivery service's free tier allows 100 messages a day.",
         "card_type": "feature",
         "lifecycle": "review",
         "priority": "high",
@@ -386,7 +387,7 @@
           "FF-AUTH-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-11T00:00:00.000Z",
+        "updated_at": "2026-11-13T17:40:00.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-AUTH-002",
         "extensions": {
           "owner_status": "review",
@@ -398,15 +399,15 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-AUTH-002",
         "source_status": "current",
-        "source_updated_at": "2026-11-11T00:00:00.000Z"
+        "source_updated_at": "2026-11-13T17:40:00.000Z"
       },
       "content": {
-        "summary": "Account messages such as forgotten-sign-in recovery now come from one no-reply Fawxzzy sender with a per-app look (Fitness green, Mazer cyan). Checked live on 2026-11-10 with a throwaway account: the message arrived, its link opened the new sign-in form, a new sign-in was saved and sign-in worked. Not verified: sign-up and change-of-address messages, and other mail clients. The hourly send allowance was raised from 2 to 30 on 2026-11-11 (confirmed by reload); the delivery service's free tier allows 100 messages a day.",
-        "objective": "Account messages such as forgotten-sign-in recovery now come from one no-reply Fawxzzy sender with a per-app look (Fitness green, Mazer cyan). Checked live on 2026-11-10 with a throwaway account: the message arrived, its link opened the new sign-in form, a new sign-in was saved and sign-in worked. Not verified: sign-up and change-of-address messages, and other mail clients. The hourly send allowance was raised from 2 to 30 on 2026-11-11 (confirmed by reload); the delivery service's free tier allows 100 messages a day.",
+        "summary": "Account messages such as forgotten-sign-in recovery now come from one no-reply Fawxzzy sender with a per-app look (Fitness green, Mazer cyan). Checked live on 2026-11-10 with a throwaway account: the message arrived, its link opened the new sign-in form, a new sign-in was saved and sign-in worked. Sign-up confirmation messages do not exist while sign-up confirmation is off, so none are sent or need checking; the remaining work is the reset and recovery message path. Not verified: change-of-address messages and other mail clients. The hourly send allowance was raised from 2 to 30 on 2026-11-11 (confirmed by reload); the delivery service's free tier allows 100 messages a day.",
+        "objective": "Account messages such as forgotten-sign-in recovery now come from one no-reply Fawxzzy sender with a per-app look (Fitness green, Mazer cyan). Checked live on 2026-11-10 with a throwaway account: the message arrived, its link opened the new sign-in form, a new sign-in was saved and sign-in worked. Sign-up confirmation messages do not exist while sign-up confirmation is off, so none are sent or need checking; the remaining work is the reset and recovery message path. Not verified: change-of-address messages and other mail clients. The hourly send allowance was raised from 2 to 30 on 2026-11-11 (confirmed by reload); the delivery service's free tier allows 100 messages a day.",
         "acceptance_criteria": [
           "Account messages arrive from one branded sender with the app's own look (Fitness green, Mazer cyan).",
           "Forgotten-sign-in recovery works end to end: the message arrives, its link opens the new sign-in form, a new sign-in is saved and works (checked live 2026-11-10).",
-          "Sign-up and change-of-address messages are checked and other mail clients are reviewed (not yet verified).",
+          "The reset and recovery message path is finished: change-of-address messages are checked and other mail clients are reviewed (not yet verified). Sign-up confirmation messages are not needed while confirmation is off.",
           "Daily and hourly send allowances are watched as use grows."
         ],
         "discoveries": [],
@@ -477,6 +478,59 @@
         "blockers": [],
         "evidence": [
           "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-design-001_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-DESIGN-001",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Consistent cards across the app",
+        "description": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system and the Routines screens are merged and live. The Today screens are merged but not yet live. Still to move over: History, Session, Settings and the routine editor. Not checked on a real phone.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-11-13T17:40:00.000Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-DESIGN-001",
+        "extensions": {
+          "owner_status": "review",
+          "public_safe": true,
+          "visibility": "public"
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-DESIGN-001",
+        "source_status": "current",
+        "source_updated_at": "2026-11-13T17:40:00.000Z"
+      },
+      "content": {
+        "summary": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system and the Routines screens are merged and live. The Today screens are merged but not yet live. Still to move over: History, Session, Settings and the routine editor. Not checked on a real phone.",
+        "objective": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system and the Routines screens are merged and live. The Today screens are merged but not yet live. Still to move over: History, Session, Settings and the routine editor. Not checked on a real phone.",
+        "acceptance_criteria": [
+          "Routines screens use the shared cards (merged and live).",
+          "Today screens use the shared cards (merged, not yet live).",
+          "History, Session, Settings and the routine editor are moved to the shared cards (not yet done).",
+          "The result is checked in the installed phone app (not yet done)."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs"
         ]
       },
       "relationships": {
@@ -833,6 +887,60 @@
       }
     },
     {
+      "idempotency_key": "pbk_fitness_ff-platform-001_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-PLATFORM-001",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Move to a supported framework version",
+        "description": "The web framework the app is built on (Next 14) is past end of support. The latest patch release (14.2.35) is live, but remaining fixes only ship in newer major versions, so a framework upgrade to Next 15.5 or 16 together with React 19 is planned.",
+        "card_type": "feature",
+        "lifecycle": "planning",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-QA-004"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-11-13T17:40:00.000Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-PLATFORM-001",
+        "extensions": {
+          "owner_status": "planning",
+          "public_safe": true,
+          "visibility": "public"
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-PLATFORM-001",
+        "source_status": "current",
+        "source_updated_at": "2026-11-13T17:40:00.000Z"
+      },
+      "content": {
+        "summary": "The web framework the app is built on (Next 14) is past end of support. The latest patch release (14.2.35) is live, but remaining fixes only ship in newer major versions, so a framework upgrade to Next 15.5 or 16 together with React 19 is planned.",
+        "objective": "The web framework the app is built on (Next 14) is past end of support. The latest patch release (14.2.35) is live, but remaining fixes only ship in newer major versions, so a framework upgrade to Next 15.5 or 16 together with React 19 is planned.",
+        "acceptance_criteria": [
+          "The app runs on a supported framework version.",
+          "The framework upgrade is tested before release and rolled out without breaking sign-in or workouts.",
+          "Everyday flows are checked live after the upgrade."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
       "idempotency_key": "pbk_fitness_ff-pwa-003_v1",
       "record_kind": "project-work",
       "record_status": "active",
@@ -978,6 +1086,58 @@
           "Missing or unavailable pages respond with a not-found status, not a success status.",
           "The friendly not-found screen still renders.",
           "Existing pages are unaffected."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-qa-004_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-QA-004",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Cover the app with real interaction tests",
+        "description": "Add a library for testing what people see and tap, sort out 13 stale tests that are currently left out of the all-tests job, and wire the QA scripts so they run together.",
+        "card_type": "feature",
+        "lifecycle": "planning",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-11-13T17:40:00.000Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-QA-004",
+        "extensions": {
+          "owner_status": "planning",
+          "public_safe": true,
+          "visibility": "public"
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-QA-004",
+        "source_status": "current",
+        "source_updated_at": "2026-11-13T17:40:00.000Z"
+      },
+      "content": {
+        "summary": "Add a library for testing what people see and tap, sort out 13 stale tests that are currently left out of the all-tests job, and wire the QA scripts so they run together.",
+        "objective": "Add a library for testing what people see and tap, sort out 13 stale tests that are currently left out of the all-tests job, and wire the QA scripts so they run together.",
+        "acceptance_criteria": [
+          "A screen-level test library is added and used for key flows.",
+          "The 13 stale tests are fixed or retired and included in the all-tests job.",
+          "QA scripts run together from one command."
         ],
         "discoveries": [],
         "next_actions": [],
@@ -1281,17 +1441,17 @@
         "title": "Add Consistency Heatmap",
         "description": "Add GitHub-style workout consistency visualization.",
         "card_type": "feature",
-        "lifecycle": "in-progress",
+        "lifecycle": "review",
         "priority": "high",
         "owner": "fitness",
         "dependencies": [
           "FF-RET-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-06T17:20:00.000Z",
+        "updated_at": "2026-11-13T17:40:00.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-RET-003",
         "extensions": {
-          "owner_status": "in_progress",
+          "owner_status": "review",
           "public_safe": true
         }
       },
@@ -1299,7 +1459,7 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-RET-003",
         "source_status": "current",
-        "source_updated_at": "2026-11-06T17:20:00.000Z"
+        "source_updated_at": "2026-11-13T17:40:00.000Z"
       },
       "content": {
         "summary": "Add GitHub-style workout consistency visualization.",
@@ -1879,8 +2039,8 @@
     }
   ],
   "extensions": {
-    "source_work_item_count": 48,
-    "exported_card_count": 33,
+    "source_work_item_count": 51,
+    "exported_card_count": 36,
     "exported_completed_card_count": 16,
     "excluded_completed_card_count": 15,
     "selected_owner_snapshot_record_count": 55,
