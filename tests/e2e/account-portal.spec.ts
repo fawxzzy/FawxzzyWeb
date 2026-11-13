@@ -2581,7 +2581,7 @@ test("the public legal center publishes all versioned canonical documents", asyn
       documentId === "platform-privacy" ? "2026-11-13" : "2026-09-13",
     );
     await expect(document.getByText("Last updated")).toContainText(
-      documentId === "platform-privacy" ? "October 28, 2026" : legalCenter.lastUpdated.label,
+      documentId === "platform-privacy" ? "November 13, 2026" : legalCenter.lastUpdated.label,
     );
   }
   const sitemapUrls = sitemap().map((entry) => entry.url);
