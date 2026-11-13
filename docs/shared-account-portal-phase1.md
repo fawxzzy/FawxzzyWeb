@@ -41,8 +41,8 @@ targets fail closed to `/account` or the selected product root.
 
 Sign-in screen intent: `https://account.fawxzzy.com/login?app=<product>&intent=signup` opens the
 "Create Account" form first (any product, or none). It is the one portal sign-up surface a product
-links to; Fitness's browser `/signup` redirects here. Exactly one `intent` key with the exact value
-`signup` selects sign-up; every other value (absent, `login`, another case, repeated, unknown)
+links to; Fitness's `/signup` will link here once its F-2 change ships (it does not yet). Exactly
+one `intent` key with the exact value `signup` selects sign-up; every other value (absent, `login`, another case, repeated, unknown)
 opens sign-in. It is presentation only: it adds no return target, no Auth behaviour and no
 handoff change, so `app` and `returnTo` keep their closed contracts above and a successful sign-up
 continues exactly like sign-in (Fitness handoff, Mazer authorize return, or the website target).
