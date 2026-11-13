@@ -15,6 +15,7 @@ import {
   sanitizeReturnTarget,
 } from "@/config/account-return";
 import { productIdentity } from "@/config/product";
+import { syncOwnerHint, writeOwnerHint } from "@/lib/projects/owner-hint-sync";
 import {
   callbackReceiptKey,
   callbackStateMatches,
@@ -514,6 +515,8 @@ function LoginPanel({
               session.userId,
             )
           : internalMazerReturn ?? resolvePostAuthTarget(context);
+        // Record whether this account is the owner before leaving, so main-site pages can show the Projects link.
+        if (context.id === "website") await syncOwnerHint(adapter);
         transient.show({ kind: "success", text: safeAuthSuccess("signup") });
         if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
           document.documentElement.dataset.postAuthDestination = destination;
@@ -535,6 +538,8 @@ function LoginPanel({
         const destination = context.id === "fitness" && !postAuthTarget.startsWith("/")
           ? await adapter.handoffToFitness(postAuthTarget, session.userId)
           : postAuthTarget;
+        // Record whether this account is the owner before leaving, so main-site pages can show the Projects link.
+        if (context.id === "website") await syncOwnerHint(adapter);
         transient.show({ kind: "success", text: safeAuthSuccess("login") });
         if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
           document.documentElement.dataset.postAuthDestination = destination;
@@ -816,6 +821,7 @@ function AccountPanel({
     setNotice(null);
     try {
       await adapter.signOut();
+      writeOwnerHint(false);
       const destination = new URL("/", context.destinationOrigin);
       if (context.id === "website") destination.searchParams.set("signedOut", "1");
       if (classifyRuntimeOrigin(window.location.origin) === "local-test") {

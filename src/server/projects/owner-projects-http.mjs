@@ -2,8 +2,9 @@ import { authenticate, fail, MASTER } from '../operations/consumer-auth.mjs';
 
 // Projects is the owner's private view. The static site never contains board
 // data: the browser sends its Auth bearer to these two same-origin endpoints and
-// only the account owner (server-only OPERATIONS_OWNER_SUBJECT, matched against
-// the master-verified Auth subject) receives anything. Every other caller,
+// only an owner account (server-only PROJECTS_OWNER_SUBJECTS, a comma-separated list of Auth
+// user ids, falling back to OPERATIONS_OWNER_SUBJECT; matched against the master-verified Auth
+// subject) receives anything. Every other caller,
 // including every other signed-in account, gets the same opaque 403, and any
 // configuration or upstream problem fails closed.
 const ORIGIN = 'https://account.fawxzzy.com';
@@ -40,9 +41,11 @@ export function createOwnerProjectsHandler(kind, dependencies) {
     try {
       guard(request, kind);
       const deps = typeof dependencies === 'function' ? dependencies() : dependencies;
-      if (!UUID.test(deps.ownerSubject ?? '')) fail('PROJECTS_ACCESS_DENIED');
+      const owners = deps.ownerSubjects;
+      // Fail closed on an empty list or any malformed entry, before Auth is even called.
+      if (!Array.isArray(owners) || owners.length === 0 || owners.some((owner) => !UUID.test(owner ?? ''))) fail('PROJECTS_ACCESS_DENIED');
       const identity = await (deps.authenticate ?? authenticate)(request, deps.auth, deps.authOptions);
-      if (identity.subject !== deps.ownerSubject) fail('PROJECTS_ACCESS_DENIED');
+      if (!owners.includes(identity.subject)) fail('PROJECTS_ACCESS_DENIED');
       if (!Number.isSafeInteger(identity.expires) || identity.expires <= Math.floor((deps.now ?? Date.now)() / 1000)
         || request.signal.aborted) fail('PROJECTS_ACCESS_DENIED');
       if (kind === 'access') return json(200, { owner: true });
@@ -56,10 +59,12 @@ export function createOwnerProjectsHandler(kind, dependencies) {
   };
 }
 
+export const parseOwnerSubjects = (value) => String(value ?? '').split(',').map((entry) => entry.trim()).filter(Boolean);
+
 // Server-only configuration. Request data cannot set the owner or the auth project.
 export function ownerEnvironmentDependencies(loadBoard) {
   return () => ({
-    ownerSubject: process.env.OPERATIONS_OWNER_SUBJECT?.trim(),
+    ownerSubjects: parseOwnerSubjects(process.env.PROJECTS_OWNER_SUBJECTS || process.env.OPERATIONS_OWNER_SUBJECT),
     auth: { url: MASTER, publishableKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY },
     loadBoard,
   });

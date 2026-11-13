@@ -22,7 +22,7 @@ function request(kind = 'board', sub = OWNER, extra = {}) {
 // The real consumer-auth.authenticate runs against a stubbed Auth provider.
 function fixture(kind, overrides = {}) {
   const calls = { auth: 0, board: 0 };
-  const deps = { auth, ownerSubject: OWNER, now: () => now,
+  const deps = { auth, ownerSubjects: [OWNER], now: () => now,
     authOptions: { now: () => now, fetchImpl: async (_url, init) => {
       calls.auth += 1;
       const sub = JSON.parse(Buffer.from(init.headers.Authorization.slice(7).split('.')[1], 'base64url').toString()).sub;
@@ -59,8 +59,8 @@ test('any other signed-in account is denied with no board payload and no board l
 });
 
 test('a missing, malformed or unset owner subject fails closed before Auth is even called', async () => {
-  for (const ownerSubject of [undefined, '', 'not-a-uuid', 'AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA']) {
-    const { handler, calls } = fixture('board', { ownerSubject });
+  for (const ownerSubjects of [undefined, [], [''], ['not-a-uuid'], ['AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA'], [OWNER, 'not-a-uuid']]) {
+    const { handler, calls } = fixture('board', { ownerSubjects });
     const response = await handler(request('board'));
     assert.equal(response.status, 403);
     assert.equal(calls.auth, 0);
@@ -134,11 +134,11 @@ test('production wiring reads the server-only owner subject (trimmed) and never 
     process.env.OPERATIONS_OWNER_SUBJECT = `${OWNER}\n`;
     const loadBoard = async () => board;
     const deps = ownerEnvironmentDependencies(loadBoard)();
-    assert.equal(deps.ownerSubject, OWNER);
+    assert.deepEqual(deps.ownerSubjects, [OWNER]);
     assert.equal(deps.auth.url, MASTER);
     assert.equal(deps.loadBoard, loadBoard);
     delete process.env.OPERATIONS_OWNER_SUBJECT;
-    assert.equal(ownerEnvironmentDependencies(loadBoard)().ownerSubject, undefined);
+    assert.deepEqual(ownerEnvironmentDependencies(loadBoard)().ownerSubjects, []);
   } finally {
     if (before === undefined) delete process.env.OPERATIONS_OWNER_SUBJECT; else process.env.OPERATIONS_OWNER_SUBJECT = before;
   }
@@ -151,4 +151,33 @@ test('each API route binds the matching endpoint kind, and only the board route 
   assert.match(boardRoute, /owner-board\.generated\.mjs/u);
   assert.match(access, /ownerAccessHandler/u);
   assert.doesNotMatch(access, /owner-board|'board'/u);
+});
+
+test('several owner accounts are each allowed, anyone else is not, and one bad entry denies everyone', async () => {
+  const SECOND = '44444444-4444-4444-8444-444444444444';
+  const both = fixture('board', { ownerSubjects: [OWNER, SECOND] });
+  assert.equal((await both.handler(request('board', OWNER))).status, 200);
+  assert.equal((await both.handler(request('board', SECOND))).status, 200);
+  assert.equal((await both.handler(request('board', OTHER))).status, 403);
+  const broken = fixture('board', { ownerSubjects: [OWNER, 'nope'] });
+  assert.equal((await broken.handler(request('board', OWNER))).status, 403);
+  assert.equal(broken.calls.auth, 0);
+});
+
+test('PROJECTS_OWNER_SUBJECTS (comma list) wins over OPERATIONS_OWNER_SUBJECT, which is the fallback', () => {
+  const saved = { p: process.env.PROJECTS_OWNER_SUBJECTS, o: process.env.OPERATIONS_OWNER_SUBJECT };
+  const loadBoard = async () => board;
+  try {
+    process.env.OPERATIONS_OWNER_SUBJECT = OWNER;
+    delete process.env.PROJECTS_OWNER_SUBJECTS;
+    assert.deepEqual(ownerEnvironmentDependencies(loadBoard)().ownerSubjects, [OWNER]);
+    process.env.PROJECTS_OWNER_SUBJECTS = ` ${OTHER} , ${OWNER}\n`;
+    assert.deepEqual(ownerEnvironmentDependencies(loadBoard)().ownerSubjects, [OTHER, OWNER]);
+    process.env.PROJECTS_OWNER_SUBJECTS = '';
+    assert.deepEqual(ownerEnvironmentDependencies(loadBoard)().ownerSubjects, [OWNER], 'an empty list falls back');
+  } finally {
+    for (const [key, value] of [['PROJECTS_OWNER_SUBJECTS', saved.p], ['OPERATIONS_OWNER_SUBJECT', saved.o]]) {
+      if (value === undefined) delete process.env[key]; else process.env[key] = value;
+    }
+  }
 });

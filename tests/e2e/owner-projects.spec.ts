@@ -147,3 +147,60 @@ test("the owner sees the tab and every board; the static page itself carries no 
   expect(server.calls).toContain("GET board");
   expect(server.external).toEqual([]);
 });
+
+const HINT = "fawxzzy_owner_hint";
+const hint = async (page: Page) => (await page.context().cookies()).find((cookie) => cookie.name === HINT)?.value;
+
+test("the account site records the owner hint for the owner and clears it for everyone else", async ({ page }) => {
+  await serverFixture(page, "owner");
+  await page.goto("/apps?auth_test=session");
+  await expect(projectsLink(page)).toBeVisible();
+  await expect.poll(() => hint(page)).toBe("1");
+
+  const other = await page.context().browser()!.newContext();
+  const otherPage = await other.newPage();
+  await other.addCookies([{ name: HINT, value: "1", url: "http://127.0.0.1:3210" }]);
+  await serverFixture(otherPage, "other-account");
+  await otherPage.goto("/apps?auth_test=session");
+  await expect.poll(() => hint(otherPage)).toBeUndefined();
+  await other.close();
+});
+
+test("signing in as the owner records the hint before leaving, and signing out clears it", async ({ page, browserName }) => {
+  test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
+  // The sign-in scenario's test adapter issues its own bearer, so this route accepts any.
+  await page.route("**/api/projects/access", (route) => route.fulfill({ status: 200, json: { owner: true } }));
+  await page.goto("/login?auth_test=success");
+  await page.getByLabel("Email or username").fill("owner@example.test");
+  await page.getByLabel("Password", { exact: true }).fill("long-enough-password");
+  await page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" }).click();
+  await expect.poll(() => page.locator("html").getAttribute("data-post-auth-destination")).toBeTruthy();
+  expect(await hint(page)).toBe("1");
+
+  await page.goto("/account?auth_test=session");
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect.poll(() => page.locator("html").getAttribute("data-sign-out-destination")).toBeTruthy();
+  expect(await hint(page)).toBeUndefined();
+});
+
+test("main-site pages show a Projects link to the account site only while the owner hint is present", async ({ page, context }) => {
+  const calls: string[] = [];
+  const proxy = async (route: import("@playwright/test").Route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname.startsWith("/api/")) { calls.push(url.pathname); return route.abort(); }
+    const response = await route.fetch({ url: `http://127.0.0.1:3210${url.pathname}${url.search}` });
+    return route.fulfill({ response });
+  };
+  await page.route("https://fawxzzy.com/**", proxy);
+  await page.route("https://account.fawxzzy.com/**", (route) => route.abort());
+  await page.route("https://**/*", (route) => (new URL(route.request().url()).origin === "https://fawxzzy.com" ? proxy(route) : route.abort()));
+
+  await page.goto("https://fawxzzy.com/apps");
+  await expect(page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Apps", exact: true })).toBeVisible();
+  await expect(projectsLink(page)).toHaveCount(0);
+
+  await context.addCookies([{ name: HINT, value: "1", domain: "fawxzzy.com", path: "/", secure: true }]);
+  await page.goto("https://fawxzzy.com/apps");
+  await expect(projectsLink(page)).toHaveAttribute("href", "https://account.fawxzzy.com/projects");
+  expect(calls).toEqual([]);
+});
