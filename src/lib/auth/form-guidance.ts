@@ -21,7 +21,7 @@ export const USERNAME_VISIBILITY_NOTE = "This username shows on the Mazer leader
 export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const USERNAME_PATTERN = /^[A-Za-z0-9._-]{2,15}$/;
 
-const EMAIL_HINT = "Use a full address, like name@example.com.";
+const EMAIL_HINT = "Enter a full email, like name@example.com.";
 
 export function guidanceForCredentials(input: {
   intent: "login" | "signup";
@@ -37,8 +37,7 @@ export function guidanceForCredentials(input: {
     } else if (!USERNAME_PATTERN.test(input.username)) {
       problems.push({
         field: "username",
-        message:
-          "Username: 2 to 15 letters, numbers, dots, dashes or underscores. No spaces.",
+        message: "Use 2 to 15 letters, numbers, dots, dashes or underscores.",
       });
     }
   }
@@ -49,7 +48,7 @@ export function guidanceForCredentials(input: {
       message: input.intent === "login" ? "Enter your email or username." : "Enter your email address.",
     });
   } else if (input.intent === "signup" && !EMAIL_PATTERN.test(input.email)) {
-    problems.push({ field: "email", message: `That email is incomplete. ${EMAIL_HINT}` });
+    problems.push({ field: "email", message: EMAIL_HINT });
   }
 
   const password = validatePassword(input.password, input.intent);
@@ -60,10 +59,10 @@ export function guidanceForCredentials(input: {
 
 export function guidanceForResetRequest(email: string): GuidanceProblem[] {
   if (!email) {
-    return [{ field: "email", message: "Enter the email address for your account." }];
+    return [{ field: "email", message: "Enter your email address." }];
   }
   if (!EMAIL_PATTERN.test(email)) {
-    return [{ field: "email", message: `That email is incomplete. ${EMAIL_HINT}` }];
+    return [{ field: "email", message: EMAIL_HINT }];
   }
   return [];
 }
@@ -74,7 +73,7 @@ export function guidanceForNewPassword(password: string, confirmation: string): 
   if (!password) {
     problems.push({
       field: "password",
-      message: `Enter a new password of at least ${PASSWORD_MINIMUM} characters.`,
+      message: `Enter a new password, at least ${PASSWORD_MINIMUM} characters.`,
     });
   } else {
     const validation = validatePassword(password, "reset");
@@ -82,12 +81,9 @@ export function guidanceForNewPassword(password: string, confirmation: string): 
   }
 
   if (!confirmation) {
-    problems.push({ field: "confirmation", message: "Type the new password again in Confirm password." });
+    problems.push({ field: "confirmation", message: "Confirm your new password." });
   } else if (password !== confirmation) {
-    problems.push({
-      field: "confirmation",
-      message: "The two passwords do not match. Type the same password in both boxes.",
-    });
+    problems.push({ field: "confirmation", message: "Passwords do not match." });
   }
 
   return problems;

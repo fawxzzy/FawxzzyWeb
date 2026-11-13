@@ -186,19 +186,13 @@ test("v3 migration is additive, keeps v2, and mirrors the v2 limits, grants and 
 test("lockout copy is distinct, names the way out, and reveals nothing about accounts", () => {
   const errors = loadPortalModule("src/lib/auth/errors.ts");
   const copy = errors.safeAuthError("login-throttled");
-  assert.equal(
-    copy,
-    "Too many tries for that username. Wait 15 minutes, or sign in with your email address.",
-  );
+  assert.equal(copy, "Too many tries. Wait 15 minutes or use your email.");
   assert.notEqual(copy, errors.safeAuthError("login"));
   assert.doesNotMatch(copy, /exists|registered|no account|not found/i);
   assert.equal(errors.USERNAME_THROTTLED_CODE, "username_throttled");
   assert.equal(new errors.UsernameSignInThrottledError().name, "UsernameSignInThrottledError");
-  // The generic login copy is unchanged.
-  assert.equal(
-    errors.safeAuthError("login"),
-    "We could not sign you in with those details. Check them and try again.",
-  );
+  // The generic login copy stays short and neutral.
+  assert.equal(errors.safeAuthError("login"), "Wrong details. Try again.");
 });
 
 test("sign-up username disclosure copy is the owner-approved line", () => {

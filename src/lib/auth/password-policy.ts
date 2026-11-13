@@ -17,7 +17,7 @@ export function validatePassword(
   if (action !== "login" && password.length < PASSWORD_MINIMUM) {
     return {
       valid: false,
-      message: `Use at least ${PASSWORD_MINIMUM} characters. Longer passphrases are welcome.`,
+      message: `Use at least ${PASSWORD_MINIMUM} characters.`,
     };
   }
 

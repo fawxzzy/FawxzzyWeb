@@ -11,25 +11,29 @@ export type AuthAction =
   | "signout"
   | "session";
 
+/**
+ * Every portal status text is a short plain statement (the length contract in
+ * tests/account-copy-length.test.mjs caps it). Wording rules: "Try again." when the same screen can
+ * retry, "Request a new link." when a link is dead, "Start again." when a one-time handoff must be
+ * restarted from sign-in; no hedging clauses.
+ */
 const SAFE_MESSAGES: Record<AuthAction, string> = {
-  login: "We could not sign you in with those details. Check them and try again.",
+  login: "Wrong details. Try again.",
   // Shown only when username sign-in is rate limited. Throttling is applied before and regardless of
   // whether the username exists, so this does not reveal whether an account exists.
-  "login-throttled":
-    "Too many tries for that username. Wait 15 minutes, or sign in with your email address.",
+  "login-throttled": "Too many tries. Wait 15 minutes or use your email.",
   // One fixed sentence for every sign-up failure (already registered, weak password, rate limit,
   // network, unknown). It claims no completion and never reveals whether an address is registered.
-  signup:
-    "We could not finish creating your account. If you already made one, sign in with it instead.",
-  "reset-request":
-    "If an account can receive recovery mail at that address, the next step is on its way.",
-  "reset-complete": "We could not update the password. Request a fresh recovery link.",
-  "update-email": "We could not update the email address. Try again from this account.",
-  "update-password": "We could not update the password. Try again from this account.",
-  confirm: "This confirmation link could not be completed. Request a fresh link.",
-  callback: "This sign-in handoff could not be completed. Start again from the account page.",
-  signout: "We could not finish signing out. Refresh and try again.",
-  session: "Account status is temporarily unavailable. Refresh and try again.",
+  signup: "Could not create account. Try again.",
+  // Identical for every address: it never reveals whether an account or username exists.
+  "reset-request": "Check your email.",
+  "reset-complete": "Password not saved. Request a new link.",
+  "update-email": "Email not updated. Try again.",
+  "update-password": "Password not updated. Try again.",
+  confirm: "Link failed. Request a new link.",
+  callback: "Sign-in failed. Start again.",
+  signout: "Sign out failed. Try again.",
+  session: "Status unavailable. Try again.",
 };
 
 /** Machine code the username sign-in Edge Function returns (HTTP 429) when a lockout applies. */
@@ -54,7 +58,7 @@ export const ACCOUNT_USERNAME_TAKEN_CODE = "ACCOUNT_USERNAME_TAKEN";
  * leaderboard), so unlike email existence it is not a secret and may be named. It claims nothing
  * about the email or password.
  */
-export const USERNAME_TAKEN_MESSAGE = "That username is taken. Pick another one.";
+export const USERNAME_TAKEN_MESSAGE = "Username taken. Try another.";
 
 const ERROR_TEXT_KEYS = ["message", "msg", "error", "error_description", "code", "details", "hint"] as const;
 
@@ -81,19 +85,19 @@ export function safeAuthSuccess(action: AuthAction) {
   switch (action) {
     case "login":
       // Shown on the sign-in button while the page continues to its destination.
-      return "You are signed in.";
+      return "Signed in.";
     case "signup":
       // Only shown after the provider returned a real session.
-      return "Your account is ready.";
+      return "Account created.";
     case "reset-request":
       return SAFE_MESSAGES["reset-request"];
     case "reset-complete":
     case "update-password":
-      return "Your password has been updated.";
+      return "Password updated.";
     case "update-email":
-      return "Your email update was accepted.";
+      return "Email update submitted.";
     case "signout":
-      return "You are signed out of your Fawxzzy account everywhere.";
+      return "Signed out everywhere.";
     default:
       return "Done.";
   }

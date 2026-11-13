@@ -120,16 +120,16 @@ redirects must be admitted individually in a future packet; do not add a broad p
   accepted. Login accepts existing shorter passwords for migration compatibility.
 - Signup preserves local form-validation feedback, then branches only on whether the provider
   returned a real session. A returned session means the account exists and the user is signed in:
-  the portal shows "Your account is ready." and continues exactly like sign-in (Fitness handoff,
+  the portal shows "Account created." and continues exactly like sign-in (Fitness handoff,
   Mazer authorize return, or the sanitized website/Projects target). With no session, every
   provider rejection (already registered, weak password, rate limit, network, unknown) maps to the
-  same fixed, non-success info notice: "We could not finish creating your account. If you already
-  made one, sign in with it instead." It claims no completion, never reveals whether an address is
-  registered, and no raw provider diagnostic is surfaced or logged. The "Log in" action stays
+  same fixed, non-success info notice: "Could not create account. Try again." It claims no
+  completion, never reveals whether an address is registered, and no raw provider diagnostic is
+  surfaced or logged. The "Log in" action stays
   visible beside it. One exception (MAZER-ACCT-029): a username is public (it shows on the Mazer
   leaderboard), so when the rejection text contains `ACCOUNT_USERNAME_TAKEN` (the database
   duplicate-username guard, or a before-user-created hook answering 409) the portal instead shows
-  "That username is taken. Pick another one." directly under the username field, with
+  "Username taken. Try another." directly under the username field, with
   `aria-invalid` and `aria-describedby` on the input and focus returned to it, and no generic
   notice. A generic "Database error saving new user" is never read as a taken username and keeps
   the neutral notice. Provider note: the database trigger's own text may be hidden by the provider
@@ -137,7 +137,11 @@ redirects must be admitted individually in a future packet; do not add a broad p
   path that forwards the code) is registered. Provider settings can still make the two outcomes observable by timing or by
   whether the user ends up signed in; that residual signal is accepted. A real returned session
   remains origin-scoped and provider-owned. Reset responses likewise do not disclose whether an
-  address exists.
+  address exists: the reset request always ends with the one fixed line "Check your email."
+  Portal status text stays short by contract: every message is at most 70 characters, enforced by
+  `npm run test:account-copy` (wording rules: "Try again." when the same screen can retry,
+  "Request a new link." when a link is dead, "Start again." when a one-time handoff must restart
+  from sign-in, no hedging clauses).
 - Callback state must match browser session storage. Authorization codes are exchanged once and
   receive an idempotency receipt; sensitive query material is removed from the visible URL.
 - A successful callback briefly exposes a readable success state, then navigates to its sanitized
@@ -181,8 +185,8 @@ redirects must be admitted individually in a future packet; do not add a broad p
   resolved email never reaches the browser.
 - Username lockout (additive v3). `account_resolve_username_signin_v3` returns
   `(resolved_user_id, throttled)` with the same keys, windows and limits as v2, so the Edge Function
-  can answer HTTP 429 `username_throttled` and the portal can say "Too many tries for that username.
-  Wait 15 minutes, or sign in with your email address." instead of a wrong-password message. The
+  can answer HTTP 429 `username_throttled` and the portal can say "Too many tries. Wait 15
+  minutes or use your email." instead of a wrong-password message. The
   throttle is evaluated before and independently of whether the username exists, so it does not
   enumerate accounts. After a verified password sign-in the function calls
   `account_note_username_signin_success_v1`, which deletes only that username's counter row, so only

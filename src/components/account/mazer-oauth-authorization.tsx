@@ -260,13 +260,13 @@ export function MazerOAuthAuthorization() {
   }
 
   if (state.kind === "loading") {
-    return <SystemState compact description="Checking this Mazer sign-in request…" title="One moment." variant="pending" />;
+    return <SystemState compact description="Checking your sign-in…" title="One moment." variant="pending" />;
   }
   if (state.kind === "invalid") {
-    return <SystemState compact description="This Mazer sign-in request is invalid or expired. Start again from Mazer." title="This request cannot continue." variant="invalid" />;
+    return <SystemState compact description="Invalid or expired. Start again in Mazer." title="This request cannot continue." variant="invalid" />;
   }
   if (state.kind === "unavailable") {
-    return <SystemState compact description="The secure Mazer sign-in connection is unavailable right now. Start again from Mazer." title="Mazer sign-in is unavailable." variant="unavailable" />;
+    return <SystemState compact description="Start again in Mazer." title="Mazer sign-in is unavailable." variant="unavailable" />;
   }
 
   return (
