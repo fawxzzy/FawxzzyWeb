@@ -1,20 +1,20 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_fitness_owner_registry_dc7ad2d80434",
+  "export_id": "pbe_fitness_owner_registry_fb33dfeb1edd",
   "project_id": "fitness",
   "board_id": "fitness:project-feedback:fitness-active",
   "owner": "fitness",
   "adapter_id": "fitness-owner-registry-v1",
-  "source_revision": "sha256:dc7ad2d80434f88856921756c00825edd82337ca13e9f3c8477083c06c92530a",
-  "generated_at": "2026-11-13T19:02:00.000Z",
+  "source_revision": "sha256:fb33dfeb1edd8154f1328f51349129b05494658d505ba5207e97b44977a54004",
+  "generated_at": "2026-11-13T21:38:00.000Z",
   "sources": [
     {
       "source_id": "fitness-owner-work-registry",
       "kind": "json",
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json",
-      "revision": "sha256:e814a7fb977f67fde33954e32d85a5555839de99748979cf5f3b550b4b0befcd",
-      "observed_at": "2026-11-13T19:02:00.000Z"
+      "revision": "sha256:618e8dd4e0a8f1a0921f0bfad2dc9f0780a27403959821c026d0f50c5e358440",
+      "observed_at": "2026-11-13T21:38:00.000Z"
     },
     {
       "source_id": "fitness-feedback-monetization-roadmap",
@@ -22,7 +22,7 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs",
       "revision": "sha256:78aa8b8300f0c21258144da0a5bdd6fdc4c9ff1337e265b2552094ebf3505ba6",
-      "observed_at": "2026-11-13T19:02:00.000Z"
+      "observed_at": "2026-11-13T21:38:00.000Z"
     },
     {
       "source_id": "fitness-session-timer-roadmap",
@@ -30,15 +30,15 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs",
       "revision": "sha256:58b1235add45e05d51712f433e2e67d4536b878f4edfad6ab6908d9402c55bcc",
-      "observed_at": "2026-11-13T19:02:00.000Z"
+      "observed_at": "2026-11-13T21:38:00.000Z"
     },
     {
       "source_id": "fitness-owner-export-adapter",
       "kind": "generated",
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs",
-      "revision": "sha256:1b946b24b8e480ee6328f8e27750e96c6a624b28bef5cc4a37209ba39d08b4a4",
-      "observed_at": "2026-11-13T19:02:00.000Z"
+      "revision": "sha256:9a2b8d1fd14063ae204252025c44d577dc1ad15a45859d31ec47c5310caa5a8a",
+      "observed_at": "2026-11-13T21:38:00.000Z"
     }
   ],
   "cards": [
@@ -496,14 +496,14 @@
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Consistent cards across the app",
-        "description": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system, the Routines screens and the Today screen are merged and live (checked only in headless Chromium and dev fixtures, not on a real phone). Still to move over: History, Session, Settings and the routine editor.",
+        "description": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system is merged and live on the Routines, Today, Settings, Session and History screens. Checked only in headless Chromium, on development fixtures and in a signed-in render sweep of those screens (no overflow, no console errors, no controls under 32px), not on a real phone. Still to do: the routine editor and routine creation, heatmap labels under 11px, the History filter toggle and the logger plus and minus steppers at 44px, and retiring the old exercise card once nothing uses it.",
         "card_type": "feature",
         "lifecycle": "review",
         "priority": "medium",
         "owner": "fitness",
         "dependencies": [],
         "board_version": 1,
-        "updated_at": "2026-11-13T19:02:00.000Z",
+        "updated_at": "2026-11-13T21:38:00.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-DESIGN-001",
         "extensions": {
           "owner_status": "review",
@@ -515,16 +515,72 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-DESIGN-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-13T19:02:00.000Z"
+        "source_updated_at": "2026-11-13T21:38:00.000Z"
       },
       "content": {
-        "summary": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system, the Routines screens and the Today screen are merged and live (checked only in headless Chromium and dev fixtures, not on a real phone). Still to move over: History, Session, Settings and the routine editor.",
-        "objective": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system, the Routines screens and the Today screen are merged and live (checked only in headless Chromium and dev fixtures, not on a real phone). Still to move over: History, Session, Settings and the routine editor.",
+        "summary": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system is merged and live on the Routines, Today, Settings, Session and History screens. Checked only in headless Chromium, on development fixtures and in a signed-in render sweep of those screens (no overflow, no console errors, no controls under 32px), not on a real phone. Still to do: the routine editor and routine creation, heatmap labels under 11px, the History filter toggle and the logger plus and minus steppers at 44px, and retiring the old exercise card once nothing uses it.",
+        "objective": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system is merged and live on the Routines, Today, Settings, Session and History screens. Checked only in headless Chromium, on development fixtures and in a signed-in render sweep of those screens (no overflow, no console errors, no controls under 32px), not on a real phone. Still to do: the routine editor and routine creation, heatmap labels under 11px, the History filter toggle and the logger plus and minus steppers at 44px, and retiring the old exercise card once nothing uses it.",
         "acceptance_criteria": [
-          "Routines screens use the shared cards (merged and live).",
-          "Today screens use the shared cards (merged and live; checked only in headless Chromium and dev fixtures).",
-          "History, Session, Settings and the routine editor are moved to the shared cards (not yet done).",
+          "Routines, Today, Settings, Session and History screens use the shared cards (merged and live).",
+          "Those screens pass a signed-in render sweep with no page overflow and no console errors (headless Chromium only).",
+          "Heatmap labels are at least 11px, and the History filter toggle and logger steppers are 44px (not yet done).",
+          "The routine editor and routine creation use the shared cards (not yet done).",
+          "The old exercise card and row are retired once no screen uses them (not yet done).",
           "The result is checked in the installed phone app (not yet done)."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-design-002_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-DESIGN-002",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Finish the remaining screens on the shared card style",
+        "description": "Move the last screens onto the shared card style once the main screens are settled: the routine editor and routine creation, the exercise picker, the progression editor and the stretch panel. Also raise the remaining 9 to 10px text and the controls under 32px on those screens.",
+        "card_type": "feature",
+        "lifecycle": "planning",
+        "priority": "low",
+        "owner": "fitness",
+        "dependencies": [
+          "FF-DESIGN-001"
+        ],
+        "board_version": 1,
+        "updated_at": "2026-11-13T21:38:00.000Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-DESIGN-002",
+        "extensions": {
+          "owner_status": "planning",
+          "public_safe": true,
+          "visibility": "public"
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-DESIGN-002",
+        "source_status": "current",
+        "source_updated_at": "2026-11-13T21:38:00.000Z"
+      },
+      "content": {
+        "summary": "Move the last screens onto the shared card style once the main screens are settled: the routine editor and routine creation, the exercise picker, the progression editor and the stretch panel. Also raise the remaining 9 to 10px text and the controls under 32px on those screens.",
+        "objective": "Move the last screens onto the shared card style once the main screens are settled: the routine editor and routine creation, the exercise picker, the progression editor and the stretch panel. Also raise the remaining 9 to 10px text and the controls under 32px on those screens.",
+        "acceptance_criteria": [
+          "The routine editor, routine creation, exercise picker, progression editor and stretch panel use the shared cards.",
+          "No text on these screens is below the app minimum size, and no control is under 32px.",
+          "The screens are checked in a signed-in render sweep and on a real phone."
         ],
         "discoveries": [],
         "next_actions": [],
@@ -2144,8 +2200,8 @@
     }
   ],
   "extensions": {
-    "source_work_item_count": 53,
-    "exported_card_count": 38,
+    "source_work_item_count": 54,
+    "exported_card_count": 39,
     "exported_completed_card_count": 16,
     "excluded_completed_card_count": 15,
     "selected_owner_snapshot_record_count": 55,
