@@ -82,7 +82,8 @@ redirects must be admitted individually in a future packet; do not add a broad p
   revoked (Fitness "sign out" is global). The account page therefore asks the provider whether the
   session is still alive right after loading and again when the person returns to the page (tab
   visible, window focus, back/forward restore) using the access token it already holds; it does not
-  spend the refresh token. A revoked session is cleared locally and the person is sent to sign in.
+  itself use the refresh token (the SDK refreshes only inside the last 90 s of the access token, as
+  for any `getSession`). A revoked session is cleared locally and the person is sent to sign in.
   A failed check (offline, provider error) changes nothing: being offline is not a sign-out. The
   provider's answer also refreshes the displayed username and email.
 - Phase-two SSO is deferred. Its only admissible starting points are PKCE/OIDC or a one-time

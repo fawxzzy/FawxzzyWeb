@@ -228,8 +228,9 @@ export async function signOutOfPortal(
 /**
  * Checks the cached session against the provider with the access token it already holds
  * (`getUser`), which is how a sign-out everywhere done in Fitness or Mazer becomes visible here
- * before the cached token expires. It never spends the refresh token on its own, so it adds no
- * refresh-lineage risk beyond what `getSession` already carries when the token is near expiry.
+ * before the cached token expires. It does not itself use the refresh token: like `getSession`,
+ * the SDK refreshes only when the held access token is within 90 s of expiry, so this adds no
+ * refresh-lineage exposure beyond what every `getSession` call already carries.
  */
 export async function validatePortalSession(
   auth: PortalValidationAuth,
