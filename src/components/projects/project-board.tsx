@@ -1,11 +1,10 @@
 "use client";
 
-import { cloneElement, useEffect, useMemo, useRef, useState } from "react";
-import type { ReactElement } from "react";
+import { useEffect, useRef, useState } from "react";
 import { productIdentity } from "@/config/product";
-import { boardView, initialBoardState, resolveCardReference, resolveDetailDependency, resolveVisibleSelection } from "@/data/project-board-adapter.mjs";
+import { boardView, resolveCardReference, resolveDetailDependency, resolveVisibleSelection } from "@/data/project-board-adapter.mjs";
 import { projectBoardLabel } from "@/data/project-board-label.mjs";
-import preview from "@/data/project-board-preview.generated.json";
+import type preview from "@/data/project-board-preview.generated.json";
 
 const stages = [
   { id: "plan", label: "Plan", description: "Desired and defined work waiting to start.", states: ["intake", "planning", "ready", "opened"] },
@@ -33,7 +32,7 @@ type Card = {
   updatedAt: string;
 };
 
-type PublicBoardState = ReturnType<typeof initialBoardState>;
+type BoardState = Parameters<typeof boardView>[0];
 
 function titleCase(value: string) {
   return value.replaceAll("_", " ").replaceAll("-", " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -83,13 +82,10 @@ function CardGroups({ cards, grouped, onSelect }: { cards: Card[]; grouped: bool
   ))}</>;
 }
 
-// The page uses the dated preview until an approved public transport supplies
-// state advanced through applyBoardEnvelope. This component does not fetch.
-export function ProjectBoard({ publicBoardState, privateBoardSlot }: {
-  publicBoardState?: PublicBoardState; privateBoardSlot?: ReactElement<{ active?: boolean }>;
-} = {}) {
-  const previewState = useMemo(() => initialBoardState(preview), []);
-  const view = boardView(publicBoardState ?? previewState);
+// Renders the owner's board state. The caller (OwnerProjectBoard) obtains it from
+// the owner-verified /api/projects/board endpoint; this component does not fetch.
+export function ProjectBoard({ boardState }: { boardState: BoardState }) {
+  const view = boardView(boardState);
   const boards = view.boards as typeof preview.boards;
   const allCards = boards.flatMap((item) => item.cards as Card[]);
   const [boardId, setBoardId] = useState("fitness");
@@ -159,21 +155,19 @@ export function ProjectBoard({ publicBoardState, privateBoardSlot }: {
       <div className="project-board-shell">
         <div className="project-board-toolbar">
           <div>
-            <p className="eyebrow">Public view · Fawxzzy project boards</p>
+            <p className="eyebrow">Owner view · Fawxzzy project boards</p>
             <h1>{board ? projectBoardLabel(board, productIdentity.publicName) : "Project boards unavailable"}</h1>
-            <p className="project-board-toolbar__rule">Public boards stay visible. Private work appears here after account access is verified.</p>
+            <p className="project-board-toolbar__rule">Only your account can see these boards.</p>
             <p>{activeCards.length} open · {completedCards.length} completed</p>
             <p aria-live="polite" className="project-board-toolbar__rule">
-              {view.reason === "STATIC_PREVIEW_NOT_CURRENT_TRUTH"
-                ? `Board placeholder prepared ${preview.preparedAt}. Live master sync is pending; no real card content is approved for this website view.`
-                : view.authoritative
-                  ? `Public board snapshot accepted ${view.lastSuccessfulAt}. Live website sync is not connected.`
-                  : view.health === "stale" || view.health === "reconciling"
-                    ? `Board source is ${view.health}; showing last known cards without current-truth authority. Last accepted ${view.lastSuccessfulAt ?? "never"}.`
-                    : `Board source is ${view.health}; cards are hidden. Last accepted ${view.lastSuccessfulAt ?? "never"}.`}
+              {view.authoritative
+                ? `Board snapshot accepted ${view.lastSuccessfulAt}. Live sync is not connected.`
+                : view.health === "stale" || view.health === "reconciling"
+                  ? `Board source is ${view.health}; showing last known cards without current-truth authority. Last accepted ${view.lastSuccessfulAt ?? "never"}.`
+                  : `Board source is ${view.health}; cards are hidden. Last accepted ${view.lastSuccessfulAt ?? "never"}.`}
             </p>
-            {board && board.cards.length === 0 ? <p className="project-board-toolbar__rule">{view.reason === "STATIC_PREVIEW_NOT_CURRENT_TRUTH" ? "No cards are cleared for this display board yet; owner review remains pending." : "No cards are available on this display board."}</p> : null}
-            {!board ? <p className="project-board-toolbar__rule">No public board cards are available to display.</p> : null}
+            {board && board.cards.length === 0 ? <p className="project-board-toolbar__rule">No cards are available on this board.</p> : null}
+            {!board ? <p className="project-board-toolbar__rule">No board cards are available to display.</p> : null}
           </div>
           <label className="project-search">
             <span className="sr-only">Search board cards</span>
@@ -210,14 +204,11 @@ export function ProjectBoard({ publicBoardState, privateBoardSlot }: {
 
         <section className="project-completed">
           <button aria-expanded={showCompleted} className="project-completed__toggle" onClick={() => setShowCompleted((value) => !value)} title="Card-specific acceptance was verified at the recorded source date." type="button">
-            <span><strong>Completed archive</strong><small>{board?.cards.length ? "Source-exported completed cards remain available." : "No completed cards are approved for this view."}</small></span>
+            <span><strong>Completed archive</strong><small>{board?.cards.length ? "Source-exported completed cards remain available." : "No completed cards on this board."}</small></span>
             <span>{completedCards.length} {showCompleted ? "−" : "+"}</span>
           </button>
           {showCompleted ? <div className="project-completed__cards"><CardGroups cards={completedCards} grouped={board?.id === "atlas-stack"} onSelect={selectCard} /></div> : null}
         </section>
-        {/* The proposed private membership fawxzzyweb maps to this existing
-            Web display tab, whose historical public source id is trove. */}
-        {privateBoardSlot ? cloneElement(privateBoardSlot, { active: board?.id === "trove" }) : null}
       </div>
 
       {selected ? (
@@ -232,7 +223,7 @@ export function ProjectBoard({ publicBoardState, privateBoardSlot }: {
               {selected.dependencies.length ? <ul>{selected.dependencies.map((id, index) => {
                 const { key, target: dependency } = resolveDetailDependency(allCards, selected.sourceProjectId, id, index);
                 return <li key={key}>{dependency ? <button onClick={() => selectCard(dependency)} type="button">{dependency.id} · View card</button> : <span>Another prerequisite is outside this view.</span>}</li>;
-              })}</ul> : <p>No public prerequisites shown.</p>}
+              })}</ul> : <p>No prerequisites shown.</p>}
               <p>Only links between displayed cards are shown; other source prerequisites may exist.</p>
             </div>
             <dl>
@@ -249,7 +240,7 @@ export function ProjectBoard({ publicBoardState, privateBoardSlot }: {
             <div className="project-detail__dependencies"><h3>Enables</h3>
               {dependents.length ? <ul>{dependents.map((card) => <li key={cardKey(card)}><button onClick={() => selectCard(card)} type="button">{cardKey(card)} · View card</button></li>)}</ul> : <p>No cards directly depend on this card.</p>}
             </div>
-            <p className="project-detail__source">Source revision: {selected.sourceRevision.slice(0, 19)}… · {view.authoritative ? "Accepted public snapshot" : "Not current source truth"}</p>
+            <p className="project-detail__source">Source revision: {selected.sourceRevision.slice(0, 19)}… · {view.authoritative ? "Accepted board snapshot" : "Not current source truth"}</p>
           </section>
         </div>
       ) : null}

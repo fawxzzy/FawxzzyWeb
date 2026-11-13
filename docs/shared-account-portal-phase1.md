@@ -194,12 +194,11 @@ redirects must be admitted individually in a future packet; do not add a broad p
   signal, no success clearing) only when PostgREST reports v3 absent, so the SQL can be applied before
   the function is redeployed. Migration: `20261112140000_account_username_signin_throttle_v3.sql`
   (apply is a gated Supabase write; rollback drops only the v3 and note-success functions).
-- The public website receives only a one-time `signedIn` or `signedOut` presentation marker on the
-  post-auth return URL. It immediately removes that marker and retains only a five-minute
-  tab-session presentation marker, clearing expired or signed-out state deterministically.
-  No cookie, user identifier, access token, or refresh token crosses the origin boundary; this
-  boolean only hides the redundant home-page Sign in action.
-- Successful website-context login returns to `https://fawxzzy.com/`. A signed-out Account visit
+- The website-context post-auth return URL carries a one-time `signedIn` (and sign-out `signedOut`)
+  presentation parameter. The public website no longer consumes it: its only consumer was the Sign in
+  action on the Home page, which was removed (2026-11-13), and `/` now redirects to Apps.
+  No cookie, user identifier, access token, or refresh token crosses the origin boundary.
+- Successful website-context login returns to `https://fawxzzy.com/`, which redirects to Apps. A signed-out Account visit
   routes to the contextual login screen. Successful password replacement clears the recovery
   session and returns to login.
 

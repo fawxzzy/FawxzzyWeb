@@ -83,37 +83,11 @@ Repository `.gitattributes` forces LF checkouts only in that subtree, including
 on Windows with `core.autocrlf=true`. Keep the pins intact; a line-ending mismatch
 is a checkout failure, not permission to recompute hashes.
 
-## Private account page
+## Client reader (no page mounts it today)
 
-The visible `/projects` page now hosts a private-card observation alongside its
-public board shell. On the exact account origin, verified sign-in starts one
-reconciliation read. Only a definite missing-session denial may open one private
-session and read again; an uncertain effect never retries. Signed-out and
-non-owner callers see no private content. This is a short-lived card observation,
-not canonical private board membership or an installed public sync. The former
-`/operations` route redirects to `/projects` without rendering a second private
-workspace or private server HTML.
+The visible `/projects` page is now the owner-only board (`docs/project-board-adapter.md`) and no longer mounts this work-overview reader or the former private project card. The former `/operations` route still redirects to `/projects` without rendering private data. `src/lib/operations/reader-client.mjs`, `/api/operations/*` and the ingest path remain in source with their tests; they have no UI until the owner decides to re-mount the observation on the owner board or retire it.
 
-The private reader connects only from the exact account origin using the
-existing Auth adapter. Operator access still depends on server and database
-checks; signing in alone does not grant it. The loopback-only `auth_test`
-adapter is used for local browser fixtures; synthetic credentials are never
-sent to a live provider. The Projects sign-in link uses the exact allowlisted
-`/projects` return target on the account origin; other product contexts retain
-their own return rules. The same page on the main site (`fawxzzy.com/projects`)
-never starts the reader: its private region is only a `Sign in to see private
-work` link to `https://account.fawxzzy.com/login?returnTo=%2Fprojects`.
-The private project card mounts whenever the owner is signed in and the caller-bound private session is
-verified open (`src/lib/projects/private-card-gate.mjs`), even if the legacy work overview is stale,
-reconciling, incompatible or unavailable; the card still passes its own server checks (Auth, owner grant,
-caller-bound cookie, no-store). Closed, missing, denied, expired, unknown, loading, hidden-tab and
-signed-out states render no card. Every verified-open observation, healthy or not, is bounded to
-60 seconds and one Auth generation: after that the session is treated as unverified, the card unmounts,
-and only an explicit read restores it. The Projects view makes one current-session read after
-verified sign-in. If that proves no session exists, it can open once and read
-again. Other denial or uncertainty stops the automatic path, and a nonhealthy projection never starts
-one by itself (the card may still mount for an already open session as described above). There is no
-polling, card write action, or reverse editor.
+The reader connects only from the exact account origin using the existing Auth adapter. Operator access still depends on server and database checks; signing in alone does not grant it. The loopback-only `auth_test` adapter is used for local browser fixtures; synthetic credentials are never sent to a live provider. There is no polling, card write action, or reverse editor.
 
 The request bearer exists only in its request closure,
 not in UI state, logs, page URLs or application storage. Browser-generated

@@ -6,6 +6,7 @@ import { AmbientBrandBackground } from "@/components/ambient/ambient-brand-backg
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
 import { SystemState } from "@/components/system/system-state";
+import { productIdentity } from "@/config/product";
 
 type RouteErrorProps = {
   error: Error & { digest?: string };
@@ -21,7 +22,7 @@ export default function RouteError({ error, unstable_retry }: RouteErrorProps) {
     <main className="system-page app-theme-fawxzzy" id="main-content">
       <AmbientBrandBackground intensity="soft" particleCount={8} pulseEnabled={false} />
       <div className="shell-container system-shell">
-        <SiteNav current="home" />
+        <SiteNav current="apps" />
         <SystemState
           actions={
             <>
@@ -32,12 +33,15 @@ export default function RouteError({ error, unstable_retry }: RouteErrorProps) {
               >
                 Try again
               </button>
-              <Link className="catalog-button catalog-button--secondary" href="/">
-                Return home
+              <Link
+                className="catalog-button catalog-button--secondary"
+                href={productIdentity.appsPath}
+              >
+                Open Apps
               </Link>
             </>
           }
-          description="The current page could not finish rendering. Retry once, or return home if the problem continues."
+          description="The current page could not finish rendering. Retry once, or open Apps if the problem continues."
           details={
             <p>
               Reference: <code>{error.digest ?? "not available"}</code>

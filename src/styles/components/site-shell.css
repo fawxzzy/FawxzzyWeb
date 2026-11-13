@@ -11,20 +11,6 @@
   padding: 1rem 0 4.5rem;
 }
 
-.home-page {
-  position: relative;
-  isolation: isolate;
-  min-height: 100vh;
-  padding: 1rem 0 4.5rem;
-}
-
-.home-shell {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  gap: 1.25rem;
-}
-
 .discover-shell {
   position: relative;
   z-index: 1;
@@ -107,7 +93,6 @@
   outline-offset: -3px;
 }
 
-.home-app-card a:focus-visible,
 .app-store-card:focus-visible,
 .app-detail-breadcrumb a:focus-visible,
 .app-detail-actions a:focus-visible,
@@ -118,7 +103,7 @@
   outline-offset: 3px;
 }
 
-/* Unified storefront navigation: compact, predictable, and touch-friendly. */
+/* Unified site navigation: compact, predictable, and touch-friendly. */
 .shell-container {
   width: min(1240px, calc(100vw - 2rem));
 }

@@ -1,11 +1,11 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_trove_owner_e4d1c46b7a6e",
+  "export_id": "pbe_trove_owner_1391242bad1e",
   "project_id": "trove",
   "board_id": "discordos:project-feedback:trove",
   "owner": "trove",
   "adapter_id": "fawxzzyweb-owner-source-v1",
-  "source_revision": "sha256:e4d1c46b7a6ea506f5dcd63afa0de8dc61e5f79cce451bca44b95fc4bfbcad27",
+  "source_revision": "sha256:1391242bad1ea132e41a831d2580e0e292ba470c0c62bbb2b587739f33592573",
   "generated_at": "2026-11-13T00:00:00.000Z",
   "sources": [
     {
@@ -13,7 +13,7 @@
       "kind": "json",
       "repository": "FawxzzyWeb",
       "path": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json",
-      "revision": "sha256:afaf8206f6140b2bb8964d6f4e0aec63b5a3460e138dace54d128d8807e240b6",
+      "revision": "sha256:63b375574f9000ed03bfbcc98a1ec2ca29568672f5651e461c185830e0427ca6",
       "observed_at": "2026-11-13T00:00:00.000Z"
     },
     {
@@ -230,8 +230,8 @@
         "card_id": "FW-PROJECTS-001",
         "project_id": "trove",
         "board_id": "discordos:project-feedback:trove",
-        "title": "Connect the public project boards to the live master read model",
-        "description": "The public /projects page serves an owner-approved snapshot of the Fitness, Mazer, Web and Atlas Stack boards. Live synchronization from the master public read model, with a refresh policy and stale-source behavior, is not connected yet.",
+        "title": "Connect the owner project boards to the live master read model",
+        "description": "The owner-only /projects page serves a committed snapshot of every card on the Fitness, Mazer, Web and Atlas Stack boards. Live synchronization from the master read model, with a refresh policy and stale-source behavior, is not connected yet.",
         "card_type": "feature",
         "lifecycle": "blocked",
         "priority": null,
@@ -252,32 +252,31 @@
         "source_updated_at": "2026-11-13T00:00:00.000Z"
       },
       "content": {
-        "summary": "The public /projects page serves an owner-approved snapshot of the Fitness, Mazer, Web and Atlas Stack boards. Live synchronization from the master public read model, with a refresh policy and stale-source behavior, is not connected yet.",
-        "objective": "Serve current board cards from the master public read model without restoring DiscordOS as a runtime dependency and without exposing private evidence.",
+        "summary": "The owner-only /projects page serves a committed snapshot of every card on the Fitness, Mazer, Web and Atlas Stack boards. Live synchronization from the master read model, with a refresh policy and stale-source behavior, is not connected yet.",
+        "objective": "Serve current board cards to the signed-in owner from the master read model without restoring DiscordOS as a runtime dependency.",
         "acceptance_criteria": [
-          "The public boards read cards from an approved live source instead of a committed snapshot.",
+          "The owner boards read cards from an approved live source instead of a committed snapshot.",
           "Every displayed card keeps its stable project, card, owner, lifecycle, relationship and source-revision identity.",
-          "Public output excludes provider identifiers, private evidence and privileged credentials.",
+          "The endpoint stays owner-verified on the server and never returns provider identifiers or privileged credentials.",
           "Stale-source, unavailable-source and narrow-screen states pass deterministic verification.",
           "Source publication and production release remain separate guarded owner boundaries."
         ],
         "discoveries": [
-          "Fitness, Mazer, Web and Atlas Stack (including the Playbook roadmap) boards are published from owner-approved snapshots on fawxzzy.com/projects.",
-          "A guarded public HTTP reader exists in source but is not wired to a live source.",
-          "A private card reader exists for the signed-in owner view only."
+          "Fitness, Mazer, Web and Atlas Stack (including the Playbook roadmap) boards are served in full to the signed-in owner at account.fawxzzy.com/projects; nobody else sees the tab or the cards.",
+          "The board is served by an owner-verified endpoint from a committed snapshot, not from a live source."
         ],
         "next_actions": [
-          "Decide the approved public source location and refresh policy for live board cards.",
-          "Wire the guarded reader to that source and verify current, stale, unavailable and public-safe states.",
+          "Decide the approved source location and refresh policy for live board cards.",
+          "Serve the board from that source behind the owner endpoint and verify current, stale and unavailable states.",
           "Verify one real card change end to end, then run separate guarded release and product acceptance."
         ],
         "blockers": [
-          "Needs an owner decision on the public source location and the refresh policy; no live card synchronization readback exists."
+          "Needs an owner decision on the source location and the refresh policy; no live card synchronization readback exists."
         ],
         "evidence": [
-          "src/data/project-board-public-read.mjs",
+          "src/server/projects/owner-projects-http.mjs",
           "docs/project-board-adapter.md",
-          "planning/project-board-public-allowlist.v1.json"
+          "planning/project-board-sources.v1.json"
         ]
       },
       "relationships": {
@@ -321,18 +320,76 @@
         "objective": "Make every Atlas Stack card reflect current evidence, or retire it with a recorded reason.",
         "acceptance_criteria": [
           "Each non-Playbook Atlas Stack card is audited against current repository and provider evidence.",
-          "Stale cards are re-statused or removed from the public list with a recorded reason.",
+          "Stale cards are re-statused or removed from the list with a recorded reason.",
           "The board snapshot and its tests are regenerated and verified."
         ],
         "discoveries": [],
         "next_actions": [
           "Audit the open Atlas lanes (delivery health, default-branch policy, release policy, source hierarchy) against current evidence.",
-          "Update the owner registry and regenerate the owner export, then re-pin the snapshot."
+          "Update the owner registry and regenerate the owner export, then regenerate the owner snapshot."
         ],
         "blockers": [],
         "evidence": [
-          "planning/project-board-public-allowlist.v1.json",
+          "planning/project-board-sources.v1.json",
           "docs/project-board-adapter.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_trove_fw-projects-003_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FW-PROJECTS-003",
+        "project_id": "trove",
+        "board_id": "discordos:project-feedback:trove",
+        "title": "Make Projects owner-only and check it live",
+        "description": "The Projects tab and page are for the signed-in account owner only. The static site ships no board data; a server endpoint verifies the owner and returns every card. It still needs a real-device check by the owner.",
+        "card_type": "feature",
+        "lifecycle": "in-progress",
+        "priority": null,
+        "owner": "trove",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-11-13T00:00:00.000Z",
+        "source_ref": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json#FW-PROJECTS-003",
+        "extensions": {
+          "public_safe": true,
+          "source_baseline_commit": "af6a2076712ce7517b1e021bf4841048f6f97085"
+        }
+      },
+      "source": {
+        "source_id": "fawxzzyweb-owner-work",
+        "source_ref": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json#FW-PROJECTS-003",
+        "source_status": "current",
+        "source_updated_at": "2026-11-13T00:00:00.000Z"
+      },
+      "content": {
+        "summary": "The Projects tab and page are for the signed-in account owner only. The static site ships no board data; a server endpoint verifies the owner and returns every card. It still needs a real-device check by the owner.",
+        "objective": "Show every project card to the owner and nobody else, without per-card hiding.",
+        "acceptance_criteria": [
+          "Signed-out visitors and every other account see no Projects tab and receive no board data.",
+          "The signed-in owner sees the tab and all boards at the account origin.",
+          "The built static site contains no board card text.",
+          "The owner view is checked on a real device."
+        ],
+        "discoveries": [
+          "The owner endpoint needs the server-only owner subject setting; without it the page fails closed and shows nothing, for everyone."
+        ],
+        "next_actions": [
+          "Sign in as the owner on a phone and check the tab and every board.",
+          "Sign in as another account and signed out to confirm nothing shows."
+        ],
+        "blockers": [],
+        "evidence": [
+          "docs/project-board-adapter.md",
+          "src/server/projects/owner-projects-http.mjs"
         ]
       },
       "relationships": {
@@ -343,8 +400,8 @@
     }
   ],
   "extensions": {
-    "source_work_item_count": 5,
-    "exported_card_count": 5,
+    "source_work_item_count": 6,
+    "exported_card_count": 6,
     "excluded_record_count": 3,
     "excluded_record_identities": [
       "SOC-024",

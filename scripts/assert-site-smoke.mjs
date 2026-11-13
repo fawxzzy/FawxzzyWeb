@@ -19,34 +19,31 @@ async function assertRoute(baseUrl, path, expectedText) {
   return html;
 }
 export async function assertSiteSmoke(baseUrl) {
-  const homeHtml = await assertRoute(
-    baseUrl,
-    "/",
+  // Fawxzzy has no home page. Vercel redirects `/` to Apps before the file is served; this
+  // static fallback must still answer and hand visitors on to Apps.
+  const rootHtml = await assertRoute(baseUrl, "/", "Opening Apps.");
+  if (!rootHtml.includes('http-equiv="refresh" content="0;url=/apps"')) {
+    throw new Error("The root fallback did not ask the browser to continue to Apps.");
+  }
+  if (!rootHtml.includes('data-compatibility-identity="home"')) {
+    throw new Error("The root fallback did not render its compatibility identity.");
+  }
+  if (!rootHtml.includes('href="/apps"')) {
+    throw new Error("The root fallback did not link directly to the canonical Apps page.");
+  }
+  for (const retired of [
     "Built by Fawxzzy.",
-  );
-  if (homeHtml.includes("&amp;nearr;") || homeHtml.includes("&nearr;")) {
-    throw new Error("Home route rendered a literal named entity in external action text.");
+    "Creator. Builder. Fitness. Gamer.",
+    "/brand/fawxzzy-banner-v2-hero.webp",
+    "creator-profile",
+    "storefront-hero",
+  ]) {
+    if (rootHtml.includes(retired)) {
+      throw new Error(`The root fallback still rendered retired Home content: ${retired}.`);
+    }
   }
-  if (!homeHtml.includes('href="/apps"')) {
-    throw new Error("Home route did not link directly to the canonical Apps page.");
-  }
-  if (!homeHtml.includes('href="https://account.fawxzzy.com/account"')) {
-    throw new Error("Home route did not link to the canonical Fawxzzy account.");
-  }
-  if (!homeHtml.includes('/brand/fawxzzy-banner-v2-hero.webp')) {
-    throw new Error("Home route did not render the optimized Fawxzzy hero derivative.");
-  }
-  if (homeHtml.includes('>Discover</a>')) {
-    throw new Error("Home route still exposed a duplicate Discover navigation surface.");
-  }
-  if (homeHtml.includes('href="/newsletter"')) {
-    throw new Error("Home route still linked to the retired newsletter archive.");
-  }
-  if (!homeHtml.includes('aria-label="Footer"')) {
-    throw new Error("Home route did not render the shared site footer.");
-  }
-  if (homeHtml.includes("data-app-card") || homeHtml.includes("data-app-launcher")) {
-    throw new Error("Home route duplicated the app catalog instead of remaining creator-focused.");
+  if (rootHtml.includes("data-app-card") || rootHtml.includes("data-app-launcher")) {
+    throw new Error("The root fallback duplicated the app catalog instead of pointing to it.");
   }
   const appsHtml = await assertRoute(
     baseUrl,
@@ -100,6 +97,21 @@ export async function assertSiteSmoke(baseUrl) {
   if (!appsHtml.includes('aria-label="Footer"')) {
     throw new Error("The app catalog did not render the shared site footer.");
   }
+  if (!appsHtml.includes('href="https://account.fawxzzy.com/account"')) {
+    throw new Error("The app catalog did not link to the canonical Fawxzzy account.");
+  }
+  if (appsHtml.includes(">Home</a>") || appsHtml.includes(">Discover</a>")) {
+    throw new Error("The shared navigation or footer still exposed a retired Home or Discover link.");
+  }
+  if (appsHtml.includes('href="/newsletter"')) {
+    throw new Error("The app catalog still linked to the retired newsletter archive.");
+  }
+  const footerHtml = appsHtml.slice(appsHtml.indexOf('aria-label="Footer"'));
+  const footerNavHtml = footerHtml.slice(0, footerHtml.indexOf("</nav>"));
+  const footerLinks = [...footerNavHtml.matchAll(/<a [^>]*>([^<]*)<\/a>/g)].map((match) => match[1]);
+  if (JSON.stringify(footerLinks) !== JSON.stringify(["Apps", "Account"])) {
+    throw new Error(`The shared footer exposed unexpected links: ${footerLinks.join(", ")}.`);
+  }
 
   const discoverHtml = await assertRoute(
     baseUrl,
@@ -109,16 +121,17 @@ export async function assertSiteSmoke(baseUrl) {
   if (!discoverHtml.includes('data-compatibility-identity="discover"')) {
     throw new Error("Discover compatibility identity was not rendered.");
   }
-  if (!discoverHtml.includes('href="/"')) {
-    throw new Error("/discover did not point to canonical Home.");
+  if (!discoverHtml.includes('href="/apps"')) {
+    throw new Error("/discover did not point to the canonical Apps page.");
   }
   if (discoverHtml.includes("data-app-card") || discoverHtml.includes("data-product-showcase")) {
     throw new Error("/discover duplicated product content instead of remaining lightweight.");
   }
-  for (const retiredTarget of ["youtube.com", "x.com/", "snapchat.com", "twitch.tv", "cash.app", "link.me"]) {
-    if (discoverHtml.includes(retiredTarget)) {
-      throw new Error(`/discover still rendered retired destination ${retiredTarget}.`);
-    }
+  const externalDiscoverLinks = [...discoverHtml.matchAll(/<a [^>]*href="(https?:[^"]+)"/g)]
+    .map((match) => match[1])
+    .filter((href) => !href.startsWith("https://account.fawxzzy.com/"));
+  if (externalDiscoverLinks.length > 0) {
+    throw new Error(`/discover rendered retired external destinations: ${externalDiscoverLinks.join(", ")}.`);
   }
 
   const compatibilityHtml = await assertRoute(
@@ -168,7 +181,7 @@ export async function assertSiteSmoke(baseUrl) {
   if (
     manifest.name !== "Fawxzzy" ||
     manifest.short_name !== "Fawxzzy" ||
-    manifest.start_url !== "/"
+    manifest.start_url !== "/apps"
   ) {
     throw new Error("Manifest identity did not match the Fawxzzy public-brand contract.");
   }

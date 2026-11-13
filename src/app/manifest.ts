@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: productIdentity.publicName,
     short_name: productIdentity.publicName,
     description: productIdentity.description,
-    start_url: "/",
+    start_url: productIdentity.appsPath,
     display: "standalone",
     background_color: "#070c0a",
     theme_color: "#7f977c",

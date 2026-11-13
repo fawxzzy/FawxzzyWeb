@@ -39,7 +39,7 @@ inside the optional technical-details disclosure.
 
 ## Route ownership
 
-- `not-found.tsx` uses `empty` and offers Apps plus Home recovery.
+- `not-found.tsx` uses `empty` and offers Apps recovery.
 - `error.tsx` uses `recoverable-error` and retries the current boundary.
 - `global-error.tsx` uses `terminal-error`, owns its complete HTML document, and
   never displays an exception message.
@@ -50,7 +50,9 @@ inside the optional technical-details disclosure.
 - `/trove` is a lightweight `unavailable` compatibility surface with canonical
   metadata pointing to `/apps`; it does not render the catalog or load trailers.
 - `/discover` uses the same lightweight compatibility treatment with canonical
-  metadata pointing to `/`; it does not duplicate Home or load product media.
+  metadata pointing to `/apps`; it does not duplicate the catalog or load product media.
+- `/` has no home page: it is the same compatibility treatment (canonical `/apps`,
+  no-index) plus an immediate meta refresh to Apps. Vercel redirects `/` before it is served.
 
 ## Static-export decision
 
@@ -67,7 +69,7 @@ static output while keeping browser work visible.
   Auth states are exercised with local test adapters only.
 - The built static 404 is checked at 320 and 390 pixels and receives an automated
   WCAG A/AA scan.
-- `/discover` and `/trove` must contain no product showcase or video element.
+- `/`, `/discover`, and `/trove` must contain no product showcase or video element.
 - Route and global error files must use the shared recovery variants and must not
   render `error.message`.
 - Full repository verification remains `npm run verify` across Chromium and

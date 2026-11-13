@@ -1,22 +1,12 @@
 import { StaticLink } from "@/components/site/static-link";
 import { accountUrls } from "@/config/account";
 import { productIdentity } from "@/config/product";
-import { tiktokDestination } from "@/data/discovery";
 
 export function SiteFooter() {
   return (
     <footer className="site-footer">
       <nav aria-label="Footer" className="site-footer__nav">
-        <StaticLink href="/">Home</StaticLink>
         <StaticLink href={productIdentity.appsPath}>Apps</StaticLink>
-        <a
-          data-analytics-event="tiktok_open"
-          href={tiktokDestination.href}
-          rel="noreferrer"
-          target="_blank"
-        >
-          TikTok
-        </a>
         <StaticLink href={accountUrls.account}>Account</StaticLink>
       </nav>
 

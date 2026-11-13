@@ -34,12 +34,12 @@ export default function GlobalError({ error, unstable_retry }: GlobalErrorProps)
                   >
                     Retry Fawxzzy
                   </button>
-                  <Link className="catalog-button catalog-button--secondary" href="/">
-                    Reload home
+                  <Link className="catalog-button catalog-button--secondary" href="/apps">
+                    Open Apps
                   </Link>
                 </>
               }
-              description="The application shell could not recover this page safely. Retry once, then reload the public home if needed."
+              description="The application shell could not recover this page safely. Retry once, then open Apps if needed."
               details={
                 <p>
                   Reference: <code>{error.digest ?? "not available"}</code>

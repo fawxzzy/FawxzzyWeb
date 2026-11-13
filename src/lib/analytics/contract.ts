@@ -1,6 +1,5 @@
 export const analyticsEvents = [
   "page_view",
-  "tiktok_open",
   "catalog_app_view",
   "app_launch",
   "compatibility_visit",

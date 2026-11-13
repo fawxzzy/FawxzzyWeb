@@ -1,0 +1,51 @@
+{
+  "schema": "fawxzzyweb.project-board.sources.v1",
+  "note": "Owner-only Projects. Every card in every listed owner export is shown to the signed-in owner; there is no per-card approval or exclusion list. Sources are copied in from each project's owner export (see docs/project-board-owner-export.md).",
+  "sources": [
+    {
+      "board": "fitness",
+      "path": "planning/board-sources/fitness.project-board.owner-export.v1.json",
+      "sourceProjectId": "fitness"
+    },
+    {
+      "board": "mazer",
+      "path": "planning/board-sources/mazer.project-board.owner-export.v1.json",
+      "sourceProjectId": "mazer"
+    },
+    {
+      "board": "trove",
+      "path": "exports/trove.project-board.owner-export.v1.json",
+      "sourceProjectId": "trove"
+    },
+    {
+      "board": "atlas-stack",
+      "path": "planning/board-sources/atlas.project-board.owner-export.v1.json",
+      "sourceProjectId": "atlas"
+    },
+    {
+      "board": "atlas-stack",
+      "path": "planning/board-sources/cortex.project-board.owner-export.v1.json",
+      "sourceProjectId": "cortex"
+    },
+    {
+      "board": "atlas-stack",
+      "path": "planning/board-sources/foundation.project-board.owner-export.v1.json",
+      "sourceProjectId": "foundation"
+    },
+    {
+      "board": "atlas-stack",
+      "path": "planning/board-sources/lifeline.project-board.owner-export.v1.json",
+      "sourceProjectId": "lifeline"
+    },
+    {
+      "board": "atlas-stack",
+      "path": "planning/board-sources/playbook.project-board.owner-export.v1.json",
+      "sourceProjectId": "playbook"
+    },
+    {
+      "board": "atlas-stack",
+      "path": "planning/board-sources/stack.project-board.owner-export.v1.json",
+      "sourceProjectId": "_stack"
+    }
+  ]
+}

@@ -1,8 +1,8 @@
-{
+export default {
   "schema": "fawxzzy.project-board.public-preview.v1",
-  "preparedAt": "2026-11-10",
+  "preparedAt": "2026-11-13",
   "publicationReady": true,
-  "sourceKind": "owner-export snapshot of already-public roadmap and backlog cards, owner-approved allowlist; source exports generated 2026-07-14 to 2026-11-13; not live",
+  "sourceKind": "owner-export snapshot of every card in the listed project boards, owner-only view; source exports generated 2026-07-14 to 2026-11-13; not live",
   "boards": [
     {
       "id": "fitness",
@@ -72,11 +72,30 @@
           "lifecycle": "planning",
           "workType": "feature",
           "priority": null,
-          "dependencies": [],
+          "dependencies": [
+            "FF-BETA-001"
+          ],
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
           "updatedAt": "2026-07-09T23:41:16.303Z"
+        },
+        {
+          "id": "FF-ANALYTICS-002",
+          "sourceProjectId": "fitness",
+          "component": null,
+          "sourceRevision": "sha256:2430743280fec3a9bcea89e0438d76fb08c99b2e63cb68a4476a1828357ff15d",
+          "owner": "fitness",
+          "title": "Plan Premium Cycle Analytics Experience",
+          "summary": "Plan premium cycle analytics around useful, trustworthy training insight before introducing any gated History UI. Do not render locked placeholder metrics or preview-only boxes without real analytics behind them.",
+          "lifecycle": "planning",
+          "workType": "feature",
+          "priority": null,
+          "dependencies": [],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-15T00:49:00.000Z"
         },
         {
           "id": "FF-AUTH-001",
@@ -113,6 +132,23 @@
           "duplicateOf": null,
           "supersededBy": null,
           "updatedAt": "2026-11-11T00:00:00.000Z"
+        },
+        {
+          "id": "FF-BETA-001",
+          "sourceProjectId": "fitness",
+          "component": null,
+          "sourceRevision": "sha256:2430743280fec3a9bcea89e0438d76fb08c99b2e63cb68a4476a1828357ff15d",
+          "owner": "fitness",
+          "title": "Run 10-20 Real User Beta Before Paid Push",
+          "summary": "Validate that real people can use the app and understand the value after the MVP soft-launch beta gate was explicitly deferred.",
+          "lifecycle": "planning",
+          "workType": "feature",
+          "priority": null,
+          "dependencies": [],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-09T23:42:53.268Z"
         },
         {
           "id": "FF-ENGINE-001",
@@ -189,6 +225,23 @@
           "duplicateOf": null,
           "supersededBy": null,
           "updatedAt": "2026-07-15T15:20:00.000Z"
+        },
+        {
+          "id": "FF-MKT-001",
+          "sourceProjectId": "fitness",
+          "component": null,
+          "sourceRevision": "sha256:2430743280fec3a9bcea89e0438d76fb08c99b2e63cb68a4476a1828357ff15d",
+          "owner": "fitness",
+          "title": "Founding User Launch Plan",
+          "summary": "Create the first small monetization push after launch blockers are done.",
+          "lifecycle": "review",
+          "workType": "feature",
+          "priority": null,
+          "dependencies": [],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-13T04:31:19.434Z"
         },
         {
           "id": "FF-ONBOARD-001",
@@ -515,6 +568,23 @@
           "updatedAt": "2026-11-06T17:20:00.000Z"
         },
         {
+          "id": "FF-SOC-001",
+          "sourceProjectId": "fitness",
+          "component": null,
+          "sourceRevision": "sha256:2430743280fec3a9bcea89e0438d76fb08c99b2e63cb68a4476a1828357ff15d",
+          "owner": "fitness",
+          "title": "Explore Social Features",
+          "summary": "Explore friends, groups, and sharing after the core paid product is working.",
+          "lifecycle": "review",
+          "workType": "feature",
+          "priority": null,
+          "dependencies": [],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-13T04:31:19.434Z"
+        },
+        {
           "id": "FF-SOC-002",
           "sourceProjectId": "fitness",
           "component": null,
@@ -526,7 +596,8 @@
           "workType": "feature",
           "priority": null,
           "dependencies": [
-            "FF-ANALYTICS-001"
+            "FF-ANALYTICS-001",
+            "FF-SOC-001"
           ],
           "parentId": null,
           "duplicateOf": null,
@@ -4546,10 +4617,27 @@
       "name": "Fawxzzy Web",
       "cards": [
         {
+          "id": "FW-ANALYTICS-001",
+          "sourceProjectId": "trove",
+          "component": null,
+          "sourceRevision": "sha256:1391242bad1ea132e41a831d2580e0e292ba470c0c62bbb2b587739f33592573",
+          "owner": "trove",
+          "title": "Traffic Analytics and Live Active-User Counter",
+          "summary": "Prepare Web-first privacy-safe historical traffic and ephemeral active-presence measurement, with a shared contract for future Fitness and Mazer reuse.",
+          "lifecycle": "planning",
+          "workType": "feature",
+          "priority": null,
+          "dependencies": [],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-10-16T01:27:12.356Z"
+        },
+        {
           "id": "FW-CAPTCHA-001",
           "sourceProjectId": "trove",
           "component": null,
-          "sourceRevision": "sha256:e4d1c46b7a6ea506f5dcd63afa0de8dc61e5f79cce451bca44b95fc4bfbcad27",
+          "sourceRevision": "sha256:1391242bad1ea132e41a831d2580e0e292ba470c0c62bbb2b587739f33592573",
           "owner": "trove",
           "title": "Add a bot check to the sign-in, sign-up and reset forms",
           "summary": "Add a bot check to the account forms before public launch, using a free provider that the account backend supports natively.",
@@ -4566,7 +4654,7 @@
           "id": "FW-DEVICE-001",
           "sourceProjectId": "trove",
           "component": null,
-          "sourceRevision": "sha256:e4d1c46b7a6ea506f5dcd63afa0de8dc61e5f79cce451bca44b95fc4bfbcad27",
+          "sourceRevision": "sha256:1391242bad1ea132e41a831d2580e0e292ba470c0c62bbb2b587739f33592573",
           "owner": "trove",
           "title": "Check the account pages and project boards on a real phone",
           "summary": "The account pages and the public project boards were checked on a real phone on 2026-11-13: nothing looked off. Reported by the owner; not independently observed.",
@@ -4583,10 +4671,10 @@
           "id": "FW-PROJECTS-001",
           "sourceProjectId": "trove",
           "component": null,
-          "sourceRevision": "sha256:e4d1c46b7a6ea506f5dcd63afa0de8dc61e5f79cce451bca44b95fc4bfbcad27",
+          "sourceRevision": "sha256:1391242bad1ea132e41a831d2580e0e292ba470c0c62bbb2b587739f33592573",
           "owner": "trove",
-          "title": "Connect the public project boards to the live master read model",
-          "summary": "The public /projects page serves an owner-approved snapshot of the Fitness, Mazer, Web and Atlas Stack boards. Live synchronization from the master public read model, with a refresh policy and stale-source behavior, is not connected yet.",
+          "title": "Connect the owner project boards to the live master read model",
+          "summary": "The owner-only /projects page serves a committed snapshot of every card on the Fitness, Mazer, Web and Atlas Stack boards. Live synchronization from the master read model, with a refresh policy and stale-source behavior, is not connected yet.",
           "lifecycle": "blocked",
           "workType": "feature",
           "priority": null,
@@ -4600,12 +4688,29 @@
           "id": "FW-PROJECTS-002",
           "sourceProjectId": "trove",
           "component": null,
-          "sourceRevision": "sha256:e4d1c46b7a6ea506f5dcd63afa0de8dc61e5f79cce451bca44b95fc4bfbcad27",
+          "sourceRevision": "sha256:1391242bad1ea132e41a831d2580e0e292ba470c0c62bbb2b587739f33592573",
           "owner": "trove",
           "title": "Refresh the Atlas Stack board from current work",
           "summary": "The Atlas Stack tab shows the current Playbook roadmap next to Atlas, Cortex, Foundation and Lifeline cards that come from July exports and need a fresh audit.",
           "lifecycle": "planning",
           "workType": "documentation",
+          "priority": null,
+          "dependencies": [],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-11-13T00:00:00.000Z"
+        },
+        {
+          "id": "FW-PROJECTS-003",
+          "sourceProjectId": "trove",
+          "component": null,
+          "sourceRevision": "sha256:1391242bad1ea132e41a831d2580e0e292ba470c0c62bbb2b587739f33592573",
+          "owner": "trove",
+          "title": "Make Projects owner-only and check it live",
+          "summary": "The Projects tab and page are for the signed-in account owner only. The static site ships no board data; a server endpoint verifies the owner and returns every card. It still needs a real-device check by the owner.",
+          "lifecycle": "in_progress",
+          "workType": "feature",
           "priority": null,
           "dependencies": [],
           "parentId": null,
@@ -4619,6 +4724,44 @@
       "id": "atlas-stack",
       "name": "Atlas Stack",
       "cards": [
+        {
+          "id": "lane-archive-package-retention",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Archive and package retention",
+          "summary": "Classify the Fitness snapshot, package-root DOCX, repos/Hard Pill To Swallow.zip, and repos/Realm Blade.zip, including their path mismatch with stack media paths that omit .zip, without reading sensitive contents.",
+          "lifecycle": "planning",
+          "workType": "technical-debt",
+          "priority": null,
+          "dependencies": [
+            "lane-sensitive-runtime-residue-containment"
+          ],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-17T06:07:21Z"
+        },
+        {
+          "id": "lane-atlas-bootstrap-manifest-recovery-pointer",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Bootstrap Manifest and Recovery Pointer",
+          "summary": "Define, implement, and prove a signed/versioned minimal Atlas recovery pointer into the distributed source hierarchy without storing all memory or granting execution authority.",
+          "lifecycle": "planning",
+          "workType": "governance",
+          "priority": null,
+          "dependencies": [
+            "lane-creation-os-product-definition-first-wedge"
+          ],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-16T06:13:40Z"
+        },
         {
           "id": "lane-atlas-contracts-mesh",
           "sourceProjectId": "atlas",
@@ -4635,6 +4778,25 @@
           "duplicateOf": null,
           "supersededBy": null,
           "updatedAt": "2026-07-15T17:25:00Z"
+        },
+        {
+          "id": "lane-atlas-control-ledger",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Atlas Control ledger",
+          "summary": "Design a backend-neutral thin ledger for card/job/thread/turn identity, leases, idempotency, expected board version, receipt evidence, and human acceptance.",
+          "lifecycle": "planning",
+          "workType": "architecture",
+          "priority": null,
+          "dependencies": [
+            "lane-persistent-workspaces"
+          ],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-17T06:07:21Z"
         },
         {
           "id": "lane-ci-delivery-health",
@@ -4654,6 +4816,59 @@
           "updatedAt": "2026-07-17T06:07:21Z"
         },
         {
+          "id": "lane-codex-execution-contracts",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Codex execution contracts",
+          "summary": "Harden task identity, requested/effective runtime receipt, repository runtime-configuration conformance, handoff, reverse receipt, steering, queueing, and acceptance contracts.",
+          "lifecycle": "planning",
+          "workType": "governance",
+          "priority": null,
+          "dependencies": [
+            "lane-atlas-control-ledger"
+          ],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-17T06:07:21Z"
+        },
+        {
+          "id": "lane-component-generated-state-hygiene",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Component generated-state hygiene",
+          "summary": "Classify Fitness logs/bytecode, Nat1 test outputs, root bytecode, _stack runtime/log/archive surfaces, and the new-manifest working-memory catalog projection drift.",
+          "lifecycle": "planning",
+          "workType": "technical-debt",
+          "priority": null,
+          "dependencies": [],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-17T06:07:21Z"
+        },
+        {
+          "id": "lane-creation-os-product-definition-first-wedge",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Creation OS Product Definition and First Wedge",
+          "summary": "Ratify one product definition, the voice-capable software/app/tool builder wedge, supported artifact and repository classes, and explicit phase-one non-goals.",
+          "lifecycle": "planning",
+          "workType": "governance",
+          "priority": null,
+          "dependencies": [],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-16T06:13:40Z"
+        },
+        {
           "id": "lane-default-branch-governance",
           "sourceProjectId": "atlas",
           "component": "Atlas",
@@ -4663,6 +4878,147 @@
           "summary": "Decide protection/ruleset posture for ten cloud repositories.",
           "lifecycle": "planning",
           "workType": "governance",
+          "priority": null,
+          "dependencies": [],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-17T06:07:21Z"
+        },
+        {
+          "id": "lane-delivery-event-plane",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Delivery event plane",
+          "summary": "Extend seven generic atlas.event.v1 lifecycles with governed GitHub, Vercel, Supabase, and Discord delivery families.",
+          "lifecycle": "planning",
+          "workType": "governance",
+          "priority": null,
+          "dependencies": [
+            "lane-vercel-supabase-monitoring-correlation",
+            "lane-discordos-single-writer"
+          ],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-17T06:07:21Z"
+        },
+        {
+          "id": "lane-dependabot-visibility",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Dependabot visibility",
+          "summary": "Resolve 403/disabled appearance while keeping alert counts unknown.",
+          "lifecycle": "planning",
+          "workType": "governance",
+          "priority": null,
+          "dependencies": [],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-17T06:07:21Z"
+        },
+        {
+          "id": "lane-discordos-cross-project-board-integrity",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "DiscordOS cross-project board integrity and lifecycle repair",
+          "summary": "Detect and repair lifecycle, reaction, completion movement, body, journal, encoding, duplicate, formatting, and readback drift across every governed DiscordOS project board rather than applying project-local fixes only.",
+          "lifecycle": "completed",
+          "workType": "governance",
+          "priority": null,
+          "dependencies": [],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-15T11:19:51Z"
+        },
+        {
+          "id": "lane-discordos-single-writer",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "DiscordOS single writer",
+          "summary": "Eliminate direct writer overlap and prove stable identity, title normalization, starter reaction readback, idempotency, and partial-failure semantics.",
+          "lifecycle": "planning",
+          "workType": "migration",
+          "priority": null,
+          "dependencies": [],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-17T06:07:21Z"
+        },
+        {
+          "id": "lane-fitness-critical-secret-containment",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Fitness Critical secret containment",
+          "summary": "Contain, rotate, and verify published alert #1 without exposing its value.",
+          "lifecycle": "planning",
+          "workType": "reliability",
+          "priority": null,
+          "dependencies": [],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-17T06:07:21Z"
+        },
+        {
+          "id": "lane-github-control-plane-integration",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "GitHub control-plane integration",
+          "summary": "Integrate deterministic read-only-first inventory, parity, Actions, open work, release, protection, ruleset, security, cleanup, event, and projection evidence.",
+          "lifecycle": "completed",
+          "workType": "architecture",
+          "priority": null,
+          "dependencies": [],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-14T20:24:00Z"
+        },
+        {
+          "id": "lane-historical-task-intelligence",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Historical task intelligence",
+          "summary": "Turn task history, handoffs, receipts, and accepted outcomes into queryable provenance without treating transcripts as canonical memory.",
+          "lifecycle": "planning",
+          "workType": "governance",
+          "priority": null,
+          "dependencies": [
+            "lane-atlas-control-ledger"
+          ],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-17T06:07:21Z"
+        },
+        {
+          "id": "lane-local-branch-retention-classification",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Local branch retention classification",
+          "summary": "Read-only inventory of all observed local branches across the twelve audited local root/component repositories; classify owner, retention/collision class, and evidence before any disposition.",
+          "lifecycle": "planning",
+          "workType": "research",
           "priority": null,
           "dependencies": [],
           "parentId": null,
@@ -4727,6 +5083,63 @@
           "updatedAt": "2026-07-15T11:53:18Z"
         },
         {
+          "id": "lane-persistent-workspaces",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Persistent workspaces and browser leases",
+          "summary": "Define persistent workspace and browser lease identity, renewal, expiry, recovery, and collision behavior.",
+          "lifecycle": "planning",
+          "workType": "architecture",
+          "priority": null,
+          "dependencies": [
+            "lane-workspace-branch-worktree-hygiene"
+          ],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-17T06:07:21Z"
+        },
+        {
+          "id": "lane-playbook-universal-adoption",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Playbook universal adoption",
+          "summary": "Prove explicit Playbook doctrine and verification adoption across every declared component and command adapter, including correction of stale Mazer adoption evidence at repos/fawxzzy-mazer. The Atlas root adoption unit is now evidence-backed by source-linked Playbook registry consumption and a read-only conformance receipt, but that does not imply wider component adoption.",
+          "lifecycle": "planning",
+          "workType": "migration",
+          "priority": null,
+          "dependencies": [
+            "lane-project-command-surfaces"
+          ],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-17T06:07:21Z"
+        },
+        {
+          "id": "lane-project-command-surfaces",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Project command surfaces",
+          "summary": "Make ATLAS MAIN, standing Mazer, standing Fitness, FAWXZZY MESSAGES, and embedded DiscordOS routing explicit and testable.",
+          "lifecycle": "planning",
+          "workType": "governance",
+          "priority": null,
+          "dependencies": [
+            "lane-discordos-single-writer"
+          ],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-17T06:07:21Z"
+        },
+        {
           "id": "lane-release-policy-and-evidence",
           "sourceProjectId": "atlas",
           "component": "Atlas",
@@ -4740,6 +5153,23 @@
           "dependencies": [
             "lane-ci-delivery-health"
           ],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-17T06:07:21Z"
+        },
+        {
+          "id": "lane-remote-branch-cleanup-review",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Remote branch cleanup review",
+          "summary": "Review 80 merged remote cleanup candidates without deletion by inference.",
+          "lifecycle": "planning",
+          "workType": "technical-debt",
+          "priority": null,
+          "dependencies": [],
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
@@ -4801,6 +5231,44 @@
           "updatedAt": "2026-07-17T01:54:51Z"
         },
         {
+          "id": "lane-security-containment",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Security containment",
+          "summary": "Non-additive umbrella for four separately measured child-lane closeouts: Critical Fitness secret containment, Supabase advisor remediation, sensitive runtime residue containment, and Fitness dependency security.",
+          "lifecycle": "planning",
+          "workType": "reliability",
+          "priority": null,
+          "dependencies": [
+            "lane-fitness-critical-secret-containment",
+            "lane-supabase-security-advisor-remediation",
+            "lane-sensitive-runtime-residue-containment"
+          ],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-17T06:07:21Z"
+        },
+        {
+          "id": "lane-sensitive-runtime-residue-containment",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Sensitive runtime residue containment",
+          "summary": "Classify name-only token, cookie, snapshot metadata, and unclassified DOCX evidence without reading values.",
+          "lifecycle": "planning",
+          "workType": "reliability",
+          "priority": null,
+          "dependencies": [],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-17T06:07:21Z"
+        },
+        {
           "id": "lane-source-hierarchy-doc-normalization",
           "sourceProjectId": "atlas",
           "component": "Atlas",
@@ -4833,6 +5301,80 @@
           "duplicateOf": null,
           "supersededBy": null,
           "updatedAt": "2026-07-13T00:17:56Z"
+        },
+        {
+          "id": "lane-stream-remote-decision",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Stream remote decision",
+          "summary": "Choose publish, retain local-only, or archive for Stream.",
+          "lifecycle": "planning",
+          "workType": "architecture",
+          "priority": null,
+          "dependencies": [],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-17T06:07:21Z"
+        },
+        {
+          "id": "lane-supabase-security-advisor-remediation",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Supabase security advisor remediation",
+          "summary": "Disposition Fitness/Mazer leaked-password warnings and twelve DiscordOS advisor findings.",
+          "lifecycle": "planning",
+          "workType": "reliability",
+          "priority": null,
+          "dependencies": [
+            "lane-fitness-critical-secret-containment"
+          ],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-17T06:07:21Z"
+        },
+        {
+          "id": "lane-vercel-supabase-monitoring-correlation",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Vercel and Supabase monitoring correlation",
+          "summary": "Correlate five Vercel projects and three Supabase projects with GitHub source/run evidence and endpoint-specific unknowns.",
+          "lifecycle": "planning",
+          "workType": "governance",
+          "priority": null,
+          "dependencies": [
+            "lane-supabase-security-advisor-remediation"
+          ],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-17T06:07:21Z"
+        },
+        {
+          "id": "lane-workspace-branch-worktree-hygiene",
+          "sourceProjectId": "atlas",
+          "component": "Atlas",
+          "sourceRevision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+          "owner": "atlas",
+          "title": "Workspace, branch, and worktree hygiene",
+          "summary": "Classify 62 retention-UNKNOWN candidates, 18 dirty/44 clean split, and two missing registrations without cleanup by inference.",
+          "lifecycle": "planning",
+          "workType": "technical-debt",
+          "priority": null,
+          "dependencies": [
+            "lane-remote-branch-cleanup-review"
+          ],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-17T06:07:21Z"
         },
         {
           "id": "PB-V04-PLAN-APPLY-001",
@@ -4997,6 +5539,8 @@
           "priority": null,
           "dependencies": [
             "PB-V09-GOVERNED-INTERFACE-API-001",
+            "PB-V09-PACKAGING-SKU-ARCHITECTURE-001",
+            "PB-V09-PILOT-DESIGN-PARTNER-ROLLOUT-001",
             "PB-V1-PRODUCT-TRUTH-PACKAGING-001"
           ],
           "parentId": null,
@@ -5034,7 +5578,9 @@
           "lifecycle": "planning",
           "workType": "feature",
           "priority": null,
-          "dependencies": [],
+          "dependencies": [
+            "PB-V09-PACKAGING-SKU-ARCHITECTURE-001"
+          ],
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
@@ -5052,6 +5598,44 @@
           "workType": "feature",
           "priority": null,
           "dependencies": [],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-11-13T00:00:00.000Z"
+        },
+        {
+          "id": "PB-V09-PACKAGING-SKU-ARCHITECTURE-001",
+          "sourceProjectId": "playbook",
+          "component": "Playbook",
+          "sourceRevision": "sha256:7f13c4afcfbe8141caa3b6deda5e8a5285b83eb63666acbaab4bff4190da851d",
+          "owner": "playbook",
+          "title": "Packaging / SKU architecture (Open Core -> Team -> Enterprise)",
+          "summary": "Define a canonical SKU architecture where Open Core, Team, and Enterprise package coordination/governance/deployment surfaces over one deterministic runtime without introducing cloud-required or SKU-specific engine semantics.",
+          "lifecycle": "planning",
+          "workType": "feature",
+          "priority": null,
+          "dependencies": [
+            "PB-V09-WORKSPACE-TENANT-GOVERNANCE-001"
+          ],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-11-13T00:00:00.000Z"
+        },
+        {
+          "id": "PB-V09-PILOT-DESIGN-PARTNER-ROLLOUT-001",
+          "sourceProjectId": "playbook",
+          "component": "Playbook",
+          "sourceRevision": "sha256:7f13c4afcfbe8141caa3b6deda5e8a5285b83eb63666acbaab4bff4190da851d",
+          "owner": "playbook",
+          "title": "Pilot / Design-Partner / Rollout Architecture",
+          "summary": "Define canonical staged adoption from local read-only proof through team/workspace and enterprise governance readiness so rollout is evidence-driven, trust-gated, and aligned to deterministic runtime/control-plane maturity.",
+          "lifecycle": "planning",
+          "workType": "feature",
+          "priority": null,
+          "dependencies": [
+            "PB-V09-METRICS-ROI-PROOF-OF-VALUE-001"
+          ],
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
@@ -5326,8 +5910,25 @@
           "duplicateOf": null,
           "supersededBy": null,
           "updatedAt": "2026-07-15T00:00:00.000Z"
+        },
+        {
+          "id": "STK-SCHEDULED-INBOX-SWEEP",
+          "sourceProjectId": "_stack",
+          "component": "Stack",
+          "sourceRevision": "sha256:4c53bac4ad367682f9bf65fb6dcda8a86895512cb0e677bc7e77368d8ad368a9",
+          "owner": "_stack",
+          "title": "Deterministic scheduled RunOnce inbox sweep",
+          "summary": "Replace replay-prone ambient _stack inbox processing with one scheduled, bounded, claim-safe, correlated RunOnce sweep.",
+          "lifecycle": "in_progress",
+          "workType": "reliability",
+          "priority": null,
+          "dependencies": [],
+          "parentId": null,
+          "duplicateOf": null,
+          "supersededBy": null,
+          "updatedAt": "2026-07-16T00:00:00.000Z"
         }
       ]
     }
   ]
-}
+};

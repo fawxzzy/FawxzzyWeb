@@ -1,4 +1,4 @@
-// Local, source-only handoff for a future approved public projection. This is
+// Local, source-only validation of the board snapshot the owner-verified endpoint returns. This is
 // not the private operations-board contract or a browser database client.
 const BOARD_IDS = ["fitness", "mazer", "trove", "atlas-stack"];
 const ATLAS_COMPONENTS = {
@@ -114,9 +114,8 @@ export function validateFourBoardSnapshot(snapshot, { allowEmptyPreview = false 
       sourceRevisions.set(card.sourceProjectId, card.sourceRevision);
     }
   }
-  // Public snapshots may link only to cards present in the same sanitized
-  // snapshot. A missing target could reveal a private or unapproved card ID
-  // through the payload even when the renderer hides its label.
+  // Snapshots may link only to cards present in the same snapshot, so no
+  // relationship can dangle.
   const cards = snapshot.boards.flatMap((board) => board.cards);
   for (const card of cards) {
     for (const reference of [

@@ -1,20 +1,37 @@
 import type { Metadata } from "next";
-import { StructuredData } from "@/components/seo/structured-data";
-import { StorefrontExperience } from "@/components/storefront/storefront-experience";
+import { CompatibilityRoute } from "@/components/system/compatibility-route";
 import { productIdentity } from "@/config/product";
-import { publicPageMetadata, siteStructuredData } from "@/lib/seo";
+import { publicPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = publicPageMetadata({
+// Fawxzzy has no separate home page: the root opens the Apps catalog. Production sends `/` to
+// `/apps` through the vercel.json redirect before this page is served; this static fallback
+// keeps `/` working (and moving on to Apps) on hosts that ignore vercel.json, such as the
+// local static server used by tests.
+const appsMetadata = publicPageMetadata({
   title: productIdentity.publicName,
   description: productIdentity.description,
-  path: "/",
+  path: productIdentity.appsPath,
 });
 
-export default function Home() {
+export const metadata: Metadata = {
+  ...appsMetadata,
+  title: { absolute: productIdentity.publicName },
+  robots: {
+    index: false,
+    follow: true,
+  },
+};
+
+export default function RootRedirectPage() {
   return (
-    <>
-      <StructuredData data={siteStructuredData()} id="fawxzzy-site-structured-data" />
-      <StorefrontExperience />
-    </>
+    <CompatibilityRoute
+      actionLabel="Browse apps"
+      description="Fawxzzy opens on the app catalog."
+      destination={productIdentity.appsPath}
+      identity="home"
+      label={productIdentity.publicName}
+      redirectToDestination
+      title="Opening Apps."
+    />
   );
 }

@@ -18,7 +18,6 @@ export default function TroveCompatibilityPage() {
   return (
     <CompatibilityRoute
       actionLabel="Browse apps"
-      current="apps"
       description="The app catalog has a shorter name and a clearer home."
       destination={productIdentity.appsPath}
       identity="trove"

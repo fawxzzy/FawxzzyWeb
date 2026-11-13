@@ -5,10 +5,10 @@ articles, ratings, offers, download packages, or product-domain cutovers.
 
 ## Indexing contract
 
-The generated sitemap contains only the canonical public hub, catalog, Fitness
-and Mazer details, Discover, and Newsletter. Account/Auth routes and the Trove
-compatibility route are excluded. `robots.txt` allows the public site, points to
-the canonical sitemap, and explicitly disallows those private or compatibility
+The generated sitemap contains only the canonical Apps catalog and the legal
+pages. The root redirects to Apps and has no page of its own, so it is not listed.
+Account/Auth routes and the Discover and Trove compatibility routes are excluded.
+`robots.txt` allows the public site, points to the canonical sitemap, and explicitly disallows those private or compatibility
 surfaces. Route-level `noindex` metadata remains defense in depth for Trove and
 the account family.
 
@@ -17,10 +17,10 @@ Open Graph record, and large-image Twitter record. The current approved Fawxzzy
 banner is the shared social image; product pages use their governed interaction
 poster. No unpublished newsletter issue is represented as an Article.
 
-The Home page emits sanitized Organization and WebSite JSON-LD. Product detail
-pages emit sanitized SoftwareApplication and BreadcrumbList JSON-LD derived from
-the typed catalog. They deliberately omit offers, prices, reviews, rating counts,
-usage metrics, and unsupported platform claims.
+The Apps page emits sanitized Organization and WebSite JSON-LD together with the
+catalog ItemList and SoftwareApplication JSON-LD derived from the typed catalog.
+They deliberately omit offers, prices, reviews, rating counts, usage metrics, and
+unsupported platform claims.
 
 ## Measured baseline
 
@@ -32,11 +32,12 @@ usage metrics, and unsupported platform claims.
   `3ade2ce0c5c73b0f29aac598f44aa0f112f0af32`.
 
 Production Chromium observed zero CLS and zero pre-interaction MP4 requests on
-Home and Apps. LCP and transferred-byte values are observations, not laboratory
+the root and Apps. LCP and transferred-byte values are observations, not laboratory
 guarantees; CI records them on every exact head so change can be reviewed. The
 deterministic gate sums the uncompressed JavaScript assets referenced by the
-optimized Home and Apps HTML and permits at most ten-percent growth over the
-measured source baseline.
+optimized Apps HTML and permits at most ten-percent growth over the measured
+source baseline. The baseline file keeps its historical `/` measurements; the gate no
+longer budgets `/` because it is now a redirect fallback with no page of its own.
 
 ## Media isolation
 

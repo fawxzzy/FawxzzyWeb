@@ -67,9 +67,11 @@ Identity has exactly: `repository` (lowercase), `packetId`, `reservationId`,
 `candidateDeploymentId`, `candidateUrl`, `rollbackDeploymentId`,
 `rollbackCommit`, `rollbackTree`, `projectSnapshotDigest`. All except the alias array are strings.
 `projectSnapshotDigest` is the lowercase sha256 of the key-sorted JSON of
-`src/data/project-board-public.generated.json` in the candidate tree (the producer computes it next
+`src/server/projects/owner-board.generated.mjs` in the candidate tree (the producer computes it next
 to `tree`); acceptance recomputes it from the verifier's snapshot and requires equality before it
-compares the rendered `/projects` board (tabs, counts, open cards and titles) to that snapshot.
+checks the rendered `/projects` HTML. Projects is owner-only, so that static HTML must be a `noindex`
+shell with no board structure (`.project-tab`, `.project-card`) and no card id or title from the
+snapshot; a build that leaks the owner board into the static site fails acceptance.
 The public apex `/projects` observation must come from `https://fawxzzy.com` with canonical
 `https://fawxzzy.com/projects`. Release producers must add the new field.
 A manual flow computes it from the candidate checkout with
@@ -98,12 +100,13 @@ before UTF-8 or HTML normalization. Only the 13 account/legal/Projects records
 also carry `html`; it is forbidden on other public route records. HTML must
 roundtrip those same UTF-8 bytes, match its digest, fit 96 KiB raw and 112 KiB
 JSON-encoded per body. This limits all 13 HTML strings to at most 1456 KiB
-encoded, leaving room under the unchanged 2 MiB total frame bound. Private API
-also binds its included minimal JSON body to `bodyDigest`; pending API, redirect
+encoded, leaving room under the unchanged 2 MiB total frame bound. `privateApi` is an
+unauthenticated GET of `https://account.fawxzzy.com/api/projects/board`; it must fail closed (403
+`PROJECTS_ACCESS_DENIED` or 503 `PROJECTS_UNAVAILABLE`, `no-store`, minimal canonical JSON) and also binds its included minimal JSON body to `bodyDigest`; pending API, redirect
 and range records carry a digest without body text. Digest format alone cannot
 authenticate omitted bodies: Ops must compare every digest to its raw capture,
 including non-HTML records, before invoking the bridge. Preserve
-all canonical HTML, published-snapshot four-board/noindex, signed-out minimal denial,
+all canonical HTML, data-free noindex Projects shell, signed-out minimal denial,
 wrong-origin/missing-cookie denial, redirect, exact byte-range, empty runtime
 error counts and final target/alias predicates. Tests demonstrate complete
 bundle construction and each closed shape. No credentials/private card payload

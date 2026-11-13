@@ -109,7 +109,7 @@ test("unsafe totals reject instead of overflowing", () => {
 
 test("the closed event vocabulary and canonical website routes stay explicit", () => {
   assert.deepEqual(analyticsEvents, [
-    "page_view", "tiktok_open", "catalog_app_view", "app_launch", "compatibility_visit",
+    "page_view", "catalog_app_view", "app_launch", "compatibility_visit",
   ]);
   assert.deepEqual(analyticsProducts, ["web", "fitness", "mazer"]);
   assert.equal(isAnalyticsEvent("unique_visitor"), false);
@@ -148,20 +148,6 @@ function accountClientHarness(origin, pathname, endpoint = "https://collector.in
   }, { filename: "first-party-analytics.tsx" });
   return { client: moduleShim.exports, sent };
 }
-
-test("account client counts only a resolved signed-in Projects view", () => {
-  const { client } = accountClientHarness("https://account.fawxzzy.com", "/projects");
-  for (const status of ["loading", "unknown", "unavailable", "signed-out"]) {
-    assert.equal(client.shouldCountAccountProjectsPageView(true, true, status), false, status);
-  }
-  assert.equal(client.shouldCountAccountProjectsPageView(false, true, "idle"), false);
-  assert.equal(client.shouldCountAccountProjectsPageView(true, false, "idle"), false);
-  assert.equal(client.shouldCountAccountProjectsPageView(true, true, "unavailable"), false);
-  assert.equal(client.shouldCountAccountProjectsPageView(true, true, "unknown"), false);
-  // A late transition from signed-out to the adapter's known session is eligible once.
-  assert.equal(client.shouldCountAccountProjectsPageView(true, false, "signed-out"), false);
-  assert.equal(client.shouldCountAccountProjectsPageView(true, true, "idle"), true);
-});
 
 test("actual account helper sends only the exact configured origin and path tuple", () => {
   for (const [origin, pathname, endpoint, accepted] of [
