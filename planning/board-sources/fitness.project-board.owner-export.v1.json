@@ -1,20 +1,20 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_fitness_owner_registry_ed281cc5b697",
+  "export_id": "pbe_fitness_owner_registry_dc7ad2d80434",
   "project_id": "fitness",
   "board_id": "fitness:project-feedback:fitness-active",
   "owner": "fitness",
   "adapter_id": "fitness-owner-registry-v1",
-  "source_revision": "sha256:ed281cc5b697ee092c6a9ff8b9742fbc72743c3281d4495bf1d006615ce0b7fb",
-  "generated_at": "2026-11-13T17:40:00.000Z",
+  "source_revision": "sha256:dc7ad2d80434f88856921756c00825edd82337ca13e9f3c8477083c06c92530a",
+  "generated_at": "2026-11-13T19:02:00.000Z",
   "sources": [
     {
       "source_id": "fitness-owner-work-registry",
       "kind": "json",
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json",
-      "revision": "sha256:404e80a522798c45e8b4b258c07fb61013c2c21d152a5ba8dc65959dded1c356",
-      "observed_at": "2026-11-13T17:40:00.000Z"
+      "revision": "sha256:e814a7fb977f67fde33954e32d85a5555839de99748979cf5f3b550b4b0befcd",
+      "observed_at": "2026-11-13T19:02:00.000Z"
     },
     {
       "source_id": "fitness-feedback-monetization-roadmap",
@@ -22,7 +22,7 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs",
       "revision": "sha256:78aa8b8300f0c21258144da0a5bdd6fdc4c9ff1337e265b2552094ebf3505ba6",
-      "observed_at": "2026-11-13T17:40:00.000Z"
+      "observed_at": "2026-11-13T19:02:00.000Z"
     },
     {
       "source_id": "fitness-session-timer-roadmap",
@@ -30,15 +30,15 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs",
       "revision": "sha256:58b1235add45e05d51712f433e2e67d4536b878f4edfad6ab6908d9402c55bcc",
-      "observed_at": "2026-11-13T17:40:00.000Z"
+      "observed_at": "2026-11-13T19:02:00.000Z"
     },
     {
       "source_id": "fitness-owner-export-adapter",
       "kind": "generated",
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs",
-      "revision": "sha256:e275b81c8831806cf4836347af47b4bed6e9de8701ecd3be8b8919ede89fd9d5",
-      "observed_at": "2026-11-13T17:40:00.000Z"
+      "revision": "sha256:1b946b24b8e480ee6328f8e27750e96c6a624b28bef5cc4a37209ba39d08b4a4",
+      "observed_at": "2026-11-13T19:02:00.000Z"
     }
   ],
   "cards": [
@@ -496,14 +496,14 @@
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Consistent cards across the app",
-        "description": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system and the Routines screens are merged and live. The Today screens are merged but not yet live. Still to move over: History, Session, Settings and the routine editor. Not checked on a real phone.",
+        "description": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system, the Routines screens and the Today screen are merged and live (checked only in headless Chromium and dev fixtures, not on a real phone). Still to move over: History, Session, Settings and the routine editor.",
         "card_type": "feature",
         "lifecycle": "review",
         "priority": "medium",
         "owner": "fitness",
         "dependencies": [],
         "board_version": 1,
-        "updated_at": "2026-11-13T17:40:00.000Z",
+        "updated_at": "2026-11-13T19:02:00.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-DESIGN-001",
         "extensions": {
           "owner_status": "review",
@@ -515,14 +515,14 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-DESIGN-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-13T17:40:00.000Z"
+        "source_updated_at": "2026-11-13T19:02:00.000Z"
       },
       "content": {
-        "summary": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system and the Routines screens are merged and live. The Today screens are merged but not yet live. Still to move over: History, Session, Settings and the routine editor. Not checked on a real phone.",
-        "objective": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system and the Routines screens are merged and live. The Today screens are merged but not yet live. Still to move over: History, Session, Settings and the routine editor. Not checked on a real phone.",
+        "summary": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system, the Routines screens and the Today screen are merged and live (checked only in headless Chromium and dev fixtures, not on a real phone). Still to move over: History, Session, Settings and the routine editor.",
+        "objective": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system, the Routines screens and the Today screen are merged and live (checked only in headless Chromium and dev fixtures, not on a real phone). Still to move over: History, Session, Settings and the routine editor.",
         "acceptance_criteria": [
           "Routines screens use the shared cards (merged and live).",
-          "Today screens use the shared cards (merged, not yet live).",
+          "Today screens use the shared cards (merged and live; checked only in headless Chromium and dev fixtures).",
           "History, Session, Settings and the routine editor are moved to the shared cards (not yet done).",
           "The result is checked in the installed phone app (not yet done)."
         ],
@@ -1316,6 +1316,59 @@
       }
     },
     {
+      "idempotency_key": "pbk_fitness_ff-reliability-003_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-RELIABILITY-003",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Keep set logging working offline",
+        "description": "Logging a set with the connection off now retries and syncs once the connection returns (quick-log retry and sync, #219 and #226), and each set keeps the time it was tapped rather than the time it was replayed (#234). Live. A click-through passed in headless Chromium. Not yet verified: a replay after reconnecting on a real phone.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-11-13T19:02:00.000Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-RELIABILITY-003",
+        "extensions": {
+          "owner_status": "review",
+          "public_safe": true,
+          "visibility": "public"
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-RELIABILITY-003",
+        "source_status": "current",
+        "source_updated_at": "2026-11-13T19:02:00.000Z"
+      },
+      "content": {
+        "summary": "Logging a set with the connection off now retries and syncs once the connection returns (quick-log retry and sync, #219 and #226), and each set keeps the time it was tapped rather than the time it was replayed (#234). Live. A click-through passed in headless Chromium. Not yet verified: a replay after reconnecting on a real phone.",
+        "objective": "Logging a set with the connection off now retries and syncs once the connection returns (quick-log retry and sync, #219 and #226), and each set keeps the time it was tapped rather than the time it was replayed (#234). Live. A click-through passed in headless Chromium. Not yet verified: a replay after reconnecting on a real phone.",
+        "acceptance_criteria": [
+          "Sets logged with the connection off are kept and retried.",
+          "After reconnecting, each set appears once.",
+          "Rest timing uses the real tap time, not the replay time.",
+          "A real offline-then-reconnect replay is checked on a real phone (not yet done)."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
       "idempotency_key": "pbk_fitness_ff-ret-001_v1",
       "record_kind": "project-work",
       "record_status": "active",
@@ -2036,11 +2089,63 @@
         "duplicate_of": null,
         "superseded_by": null
       }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-today-004_v1",
+      "record_kind": "project-work",
+      "record_status": "candidate",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-TODAY-004",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Show when an exercise has no target",
+        "description": "Today rows no longer show 'Goal missing' for an exercise without a target. Add a quiet 'No target set' cue so the gap stays visible without nagging. The day editor still shows the missing target.",
+        "card_type": "feature",
+        "lifecycle": "planning",
+        "priority": "low",
+        "owner": "fitness",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-11-13T19:02:00.000Z",
+        "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-TODAY-004",
+        "extensions": {
+          "owner_status": "planning",
+          "public_safe": true,
+          "visibility": "public"
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-TODAY-004",
+        "source_status": "current",
+        "source_updated_at": "2026-11-13T19:02:00.000Z"
+      },
+      "content": {
+        "summary": "Today rows no longer show 'Goal missing' for an exercise without a target. Add a quiet 'No target set' cue so the gap stays visible without nagging. The day editor still shows the missing target.",
+        "objective": "Today rows no longer show 'Goal missing' for an exercise without a target. Add a quiet 'No target set' cue so the gap stays visible without nagging. The day editor still shows the missing target.",
+        "acceptance_criteria": [
+          "An exercise without a target shows a quiet 'No target set' cue on Today.",
+          "Today rows do not show 'Goal missing'.",
+          "The day editor keeps showing the missing target."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
     }
   ],
   "extensions": {
-    "source_work_item_count": 51,
-    "exported_card_count": 36,
+    "source_work_item_count": 53,
+    "exported_card_count": 38,
     "exported_completed_card_count": 16,
     "excluded_completed_card_count": 15,
     "selected_owner_snapshot_record_count": 55,
