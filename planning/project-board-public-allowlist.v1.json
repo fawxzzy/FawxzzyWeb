@@ -47,6 +47,12 @@
     },
     {
       "board": "atlas-stack",
+      "path": "planning/board-sources/playbook.project-board.owner-export.v1.json",
+      "sha256": "12d21d93ae8ed655530442e6eca6e686768cda483b605a50492b48534da47891",
+      "sourceProjectId": "playbook"
+    },
+    {
+      "board": "atlas-stack",
       "path": "planning/board-sources/stack.project-board.owner-export.v1.json",
       "sha256": "03c320bbe76b4c10a7838c11757a2e30e12a528d98954915c0dad7c7c87a7a0b",
       "sourceProjectId": "_stack"
@@ -330,6 +336,41 @@
     "lifeline": [
       "LIF-202"
     ],
+    "playbook": [
+      "PB-V04-PLAN-APPLY-001",
+      "PB-V05-PACKAGE-BOUNDARIES-001",
+      "PB-V06-FAILURE-INTELLIGENCE-001",
+      "PB-V07-ARCH-INTELLIGENCE-GRAPH-001",
+      "PB-V08-ARCH-CLOSURE-001",
+      "PB-V08-GRAPH-MEMORY-001",
+      "PB-V08-KNOWLEDGE-BUCKETING-001",
+      "PB-V08-KNOWLEDGE-CANDIDATE-EXTRACTION-001",
+      "PB-V08-KNOWLEDGE-COMPACTION-SPEC-001",
+      "PB-V08-PATTERN-CARD-STORAGE-001",
+      "PB-V08-TOROIDAL-FLOW-001",
+      "PB-V09-AUTOMATION-SYNTHESIS-001",
+      "PB-V09-CAPABILITY-ROUTING-001",
+      "PB-V09-EXECUTION-ORCHESTRATION-001",
+      "PB-V09-EXTERNAL-CONSUMER-UPGRADE-BOUNDARY-001",
+      "PB-V09-GOVERNED-INTERFACE-API-001",
+      "PB-V09-INTERFACE-SURFACES-001",
+      "PB-V09-KNOWLEDGE-COMPACTION-PROMOTION-001",
+      "PB-V09-KNOWLEDGE-PERSISTENCE-001",
+      "PB-V09-METRICS-ROI-PROOF-OF-VALUE-001",
+      "PB-V09-MULTI-REPO-TRANSFER-001",
+      "PB-V09-PLATFORM-OBSERVATION-001",
+      "PB-V09-REPO-MEMORY-AWARE-RETRIEVAL-001",
+      "PB-V09-REPO-MEMORY-FOUNDATION-001",
+      "PB-V09-REPO-MEMORY-PROMOTION-PRUNE-001",
+      "PB-V09-REPO-MEMORY-REPLAY-CONSOLIDATION-001",
+      "PB-V09-SESSION-EVIDENCE-001",
+      "PB-V09-TRUST-EVIDENCE-001",
+      "PB-V09-WORKSPACE-TENANT-GOVERNANCE-001",
+      "PB-V1-DELIVERY-SYSTEM-001",
+      "PB-V1-DEMO-REFRESH-001",
+      "PB-V1-PRODUCT-TRUTH-PACKAGING-001",
+      "PB-V10-ENGINE-PACKAGE-LOAD-TIMEOUT-HARDENING-001"
+    ],
     "_stack": []
   },
   "exclude": [
@@ -452,6 +493,14 @@
     {
       "id": "lane-workspace-branch-worktree-hygiene",
       "reason": "local worktree inventory"
+    },
+    {
+      "id": "PB-V09-PACKAGING-SKU-ARCHITECTURE-001",
+      "reason": "commercial packaging and pricing-tier planning; kept off the public board (also trips the public-text screen)"
+    },
+    {
+      "id": "PB-V09-PILOT-DESIGN-PARTNER-ROLLOUT-001",
+      "reason": "commercial design-partner rollout planning; kept off the public board (also trips the public-text screen)"
     }
   ]
 }
