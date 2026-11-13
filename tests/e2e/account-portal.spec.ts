@@ -846,18 +846,20 @@ test("safe messages are deterministic and non-enumerating", () => {
   expect(safeAuthError("login")).not.toContain("account exists");
   // A failed sign-up must never read as completion or leak whether an address is registered.
   expect(safeAuthError("signup")).not.toBe(safeAuthSuccess("signup"));
-  expect(safeAuthError("signup")).toContain("could not finish creating your account");
-  expect(safeAuthError("signup")).not.toMatch(/complete|session is available|registered|exists/i);
+  expect(safeAuthError("signup")).toBe("Could not create account. Try again.");
+  expect(safeAuthError("signup")).not.toMatch(/complete|session is available|registered|exists|already/i);
   expect(safeAuthSuccess("signup")).not.toContain("session is available");
-  expect(safeAuthError("login-throttled")).toBe(
-    "Too many tries for that username. Wait 15 minutes, or sign in with your email address.",
-  );
+  expect(safeAuthError("login-throttled")).toBe("Too many tries. Wait 15 minutes or use your email.");
   expect(safeAuthError("login-throttled")).not.toBe(safeAuthError("login"));
-  expect(safeAuthSuccess("login")).toBe("You are signed in.");
-  expect(safeAuthSuccess("signout")).toContain("everywhere");
+  expect(safeAuthError("login")).toBe("Wrong details. Try again.");
+  expect(safeAuthSuccess("login")).toBe("Signed in.");
+  expect(safeAuthSuccess("signup")).toBe("Account created.");
+  expect(safeAuthSuccess("signout")).toBe("Signed out everywhere.");
   expect(safeAuthSuccess("signout")).not.toMatch(/origin/i);
-  expect(safeAuthSuccess("reset-request")).toContain("If an account can receive");
+  // The reset outcome is one fixed line for every address: it never reveals whether an account exists.
+  expect(safeAuthSuccess("reset-request")).toBe("Check your email.");
   expect(safeAuthError("reset-request")).toBe(safeAuthSuccess("reset-request"));
+  expect(safeAuthSuccess("reset-request")).not.toMatch(/account|registered|exists|if /i);
 });
 
 test("Strict Mode probe cleanup reschedules each auth-link operation exactly once", () => {
@@ -1060,7 +1062,7 @@ test("all account routes carry account canonical metadata and setup-pending stat
     } else if (route === "/login" || route === "/reset-password" || route === "/account") {
       await expect(page.locator('[data-system-state="unavailable"]')).toHaveCount(0);
       await expect(page.locator(".account-capability-note")).toHaveText(
-        "Account service unavailable on this origin.",
+        "Account service unavailable.",
       );
     } else {
       await expect(page.locator('[data-system-state="unavailable"]').first()).toBeVisible();
@@ -1099,7 +1101,7 @@ test("login follows the shared Fawxzzy auth anatomy without overstating availabi
   await expect(page.getByLabel("Password", { exact: true })).toHaveAttribute("type", "text");
   await expect(page.getByRole("button", { name: "Hide password" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Sign in" }).last()).toBeDisabled();
-  await expect(page.getByText("Account service unavailable on this origin.")).toBeAttached();
+  await expect(page.getByText("Account service unavailable.")).toBeAttached();
 });
 
 test("utility forms preserve password-manager and autofill semantics", async ({ page }) => {
@@ -1456,7 +1458,7 @@ test("signup banner names the username, email and password rules", async ({ page
 
   const banner = page.locator("[data-auth-guidance]");
   await expect(banner).toContainText("3 things to fix");
-  await expect(banner).toContainText("Username: 2 to 15 letters");
+  await expect(banner).toContainText("Use 2 to 15 letters, numbers, dots, dashes or underscores.");
   await expect(banner).toContainText("name@example.com");
   await expect(banner).toContainText("Use at least 10 characters");
   await expect(form.getByLabel("Username")).toBeFocused();
@@ -1519,7 +1521,7 @@ test("a username lockout shows its own message while email sign-in is unaffected
 test("reset forms say what is missing or mismatched", async ({ page }) => {
   await page.goto("/reset-password?auth_test=success");
   await page.locator('.account-auth-dock button[type="submit"]').click();
-  await expect(page.locator("[data-auth-guidance]")).toContainText("Enter the email address for your account.");
+  await expect(page.locator("[data-auth-guidance]")).toContainText("Enter your email address.");
   await page.getByLabel("Email").fill("nope");
   await page.locator('.account-auth-dock button[type="submit"]').click();
   await expect(page.locator("[data-auth-guidance]")).toContainText("name@example.com");
@@ -1774,7 +1776,7 @@ test("a session-bearing signup without product context continues like sign-in", 
   await expect.poll(() => page.locator("html").getAttribute("data-post-auth-destination"))
     .toBe("https://fawxzzy.com/?signedIn=1");
   await expect(page.locator("body")).not.toContainText("session is available");
-  await expect(page.locator("body")).not.toContainText("could not finish creating");
+  await expect(page.locator("body")).not.toContainText(safeAuthError("signup"));
 });
 
 test("a session-bearing signup honours the Projects return target", async ({ page }) => {
@@ -1810,7 +1812,7 @@ test("a Fitness signup never reports success when its consumer handoff fails", a
   await page.getByLabel("Password", { exact: true }).fill("correct-horse-battery-staple");
   await page.locator(".account-auth-dock").getByRole("button", { name: "Create account" }).click();
   await expect(page.locator('.account-auth-live-notice[role="alert"]')).toContainText(
-    "Fitness connection unavailable",
+    "Signed in. Could not reach Fitness.",
   );
   await expect(page.locator("html")).not.toHaveAttribute("data-post-auth-destination", /.+/);
 });
@@ -1969,7 +1971,7 @@ test("username-taken detection reads only the provider error text", () => {
   expect(isUsernameTakenError({ detail: "ACCOUNT_USERNAME_TAKEN" })).toBe(false);
   expect(isUsernameTakenError(null)).toBe(false);
   expect(isUsernameTakenError(undefined)).toBe(false);
-  expect(USERNAME_TAKEN_MESSAGE).toBe("That username is taken. Pick another one.");
+  expect(USERNAME_TAKEN_MESSAGE).toBe("Username taken. Try another.");
 });
 
 test("account status copies the compact Mazer hierarchy without unfinished service copy", async ({
@@ -2480,13 +2482,13 @@ test("recovery exchanges PKCE before exposing the password form", async ({ brows
   await page.getByLabel("Confirm password").fill("y".repeat(129));
   await submit.click();
   await expect(page.getByLabel("Confirm password")).toHaveAttribute("aria-invalid", "true");
-  await expect(page.locator("[data-auth-guidance]")).toContainText("The two passwords do not match.");
+  await expect(page.locator("[data-auth-guidance]")).toContainText("Passwords do not match.");
   await expect(submit).toBeEnabled();
   await expect(submit).toHaveText("Save new password");
 
   await page.getByLabel("Confirm password").fill(password);
   await submit.click();
-  await expect(page.getByRole("status")).toContainText("password has been updated");
+  await expect(page.getByRole("status")).toContainText("Password updated.");
 
   await page.goto("/reset-password?recovery=1&auth_test=session");
   await expect(page.getByLabel("New password", { exact: true })).toBeVisible();
@@ -2499,7 +2501,7 @@ test("confirmation is browser-bound, one-time, and works from a new tab", async 
   await confirmationPage.goto(
     "/auth/confirm?app=fitness&auth_test=success&token_hash=private-hash&type=signup&state=fitness-confirm-state&returnTo=https%3A%2F%2Ffitness.fawxzzy.com%2F",
   );
-  await expect(confirmationPage.getByRole("status")).toContainText("Confirmation complete.");
+  await expect(confirmationPage.getByRole("status")).toContainText("Confirmed.");
   await expect(confirmationPage).toHaveURL(/\/auth\/confirm$/);
   await expect(confirmationPage.getByRole("link", { name: "Continue safely" })).toHaveAttribute(
     "href",
@@ -2515,7 +2517,7 @@ test("Fitness confirmation fails closed when its secure session handoff cannot c
     "/auth/confirm?app=fitness&auth_test=fitness-handoff-error&token_hash=private-hash&type=signup&state=fitness-confirm-state&returnTo=https%3A%2F%2Ffitness.fawxzzy.com%2F",
   );
   await expect(page.locator('[data-auth-state="recoverable-error"] [role="alert"]')).toContainText(
-    "Fitness connection unavailable",
+    "Signed in. Could not reach Fitness.",
   );
   await expect(page.getByRole("link", { name: "Continue safely" })).toHaveCount(0);
   await expect(page).toHaveURL(/\/auth\/confirm$/);
@@ -2527,7 +2529,7 @@ test("Fitness confirmation binding follows its destination despite presentation 
       `/auth/confirm?auth_test=success&token_hash=private-hash&type=signup&state=forwarded-state&returnTo=https%3A%2F%2Ffitness.fawxzzy.com%2F${appQuery}`,
     );
     await expect(page.locator('[data-auth-state="unauthorized"] [role="alert"]')).toContainText(
-      "does not match the browser that started it",
+      "Opened in a different browser. Start again.",
     );
     await expect(page.getByRole("link", { name: "Continue safely" })).toHaveCount(0);
     await expect(page).toHaveURL(/\/auth\/confirm$/);
@@ -2549,7 +2551,7 @@ test("callback validates state, exchanges once, and never retains token material
   const callback =
     "/auth/callback?auth_test=success&code=one-time-code&state=expected-state&returnTo=%2Faccount";
   await page.goto(callback);
-  await expect(page.getByRole("status")).toContainText("Sign-in handoff complete.");
+  await expect(page.getByRole("status")).toContainText("Signed in.");
   await expect(page).toHaveURL(/\/auth\/callback$/);
   await expect(page.getByRole("link", { name: "Continue safely" })).toHaveAttribute(
     "href",
@@ -2557,13 +2559,13 @@ test("callback validates state, exchanges once, and never retains token material
   );
 
   await page.goto(callback);
-  await expect(page.getByRole("status")).toContainText("This sign-in handoff was already completed.");
+  await expect(page.getByRole("status")).toContainText("Already signed in.");
   await expect(page).toHaveURL(/\/auth\/callback$/);
   await expect(page).toHaveURL(/\/account$/, { timeout: 4_000 });
 
   await page.goto("/auth/callback?auth_test=success#access_token=secret&refresh_token=secret");
   await expect(page.locator('[data-auth-state="invalid"] [role="alert"]')).toContainText(
-    "missing a valid authorization handoff",
+    "Sign-in link incomplete.",
   );
   await expect(page).toHaveURL(/\/auth\/callback$/);
 });
@@ -2574,7 +2576,7 @@ test("Fitness callbacks establish the secure consumer session before returning",
   await page.goto(
     "/auth/callback?app=fitness&auth_test=success&code=fitness-code&state=fitness-state&returnTo=https%3A%2F%2Ffitness.fawxzzy.com%2Ftoday",
   );
-  await expect(page.getByRole("status")).toContainText("Sign-in handoff complete.");
+  await expect(page.getByRole("status")).toContainText("Signed in.");
   await expect(page.getByRole("link", { name: "Continue safely" })).toHaveAttribute(
     "href",
     "https://fitness.fawxzzy.com/today",
@@ -2588,7 +2590,7 @@ test("Fitness callbacks do not redirect when the secure consumer session fails",
     "/auth/callback?app=fitness&auth_test=fitness-handoff-error&code=fitness-code&state=fitness-state&returnTo=https%3A%2F%2Ffitness.fawxzzy.com%2Ftoday",
   );
   await expect(page.locator('[data-auth-state="recoverable-error"] [role="alert"]')).toContainText(
-    "Fitness connection unavailable",
+    "Signed in. Could not reach Fitness.",
   );
   await expect(page).toHaveURL(/\/auth\/callback$/);
   await page.waitForTimeout(1_500);
@@ -2683,6 +2685,7 @@ test("first-party Mazer auto-approve failure shows the existing error state once
   await expect(page.locator('[data-system-state="unavailable"]')).toContainText(
     "Mazer sign-in is unavailable.",
   );
+  await expect(page.locator('[data-system-state="unavailable"]')).toContainText("Start again in Mazer.");
   await expect(page.locator('[data-auth-surface="oauth-consent"]')).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Continue to Mazer" })).toHaveCount(0);
   await expect(page.locator("html")).not.toHaveAttribute("data-oauth-redirect", /.+/);
@@ -2694,7 +2697,7 @@ test("first-party Mazer auto-approve rejects a hostile provider redirect without
   await page.goto(
     "/oauth/authorize?authorization_id=authorization-id-1234567890&auth_test=oauth-hostile",
   );
-  await expect(page.locator('[data-system-state="invalid"]')).toContainText("invalid or expired");
+  await expect(page.locator('[data-system-state="invalid"]')).toContainText("Invalid or expired. Start again in Mazer.");
   await expect(page.locator('[data-auth-surface="oauth-consent"]')).toHaveCount(0);
   await expect(page.locator("html")).not.toHaveAttribute("data-oauth-redirect", /.+/);
 });
@@ -2778,7 +2781,7 @@ test("Mazer authorization rejects duplicate requests and hostile provider redire
     "/oauth/authorize?authorization_id=authorization-id-1234567890&authorization_id=authorization-id-0987654321&auth_test=session",
   );
   await expect(page.locator('[data-system-state="invalid"]')).toContainText(
-    "invalid or expired",
+    "Invalid or expired. Start again in Mazer.",
   );
 
   await page.goto(
@@ -2787,7 +2790,7 @@ test("Mazer authorization rejects duplicate requests and hostile provider redire
   await expect(page.getByRole("button", { name: "Continue to Mazer" })).toBeVisible();
   await page.getByRole("button", { name: "Continue to Mazer" }).click();
   await expect(page.locator('[data-system-state="invalid"]')).toContainText(
-    "invalid or expired",
+    "Invalid or expired. Start again in Mazer.",
   );
   await expect(page.locator("html")).not.toHaveAttribute("data-oauth-redirect", /.+/);
 });
@@ -2803,7 +2806,7 @@ test("retained Mazer consent card fails closed after a same-tab auth-generation 
   );
   await page.getByRole("button", { name: "Continue to Mazer" }).click();
   await expect(page.locator('[data-system-state="invalid"]')).toContainText(
-    "invalid or expired",
+    "Invalid or expired. Start again in Mazer.",
   );
   await expect(page.locator("html")).not.toHaveAttribute("data-oauth-redirect", /.+/);
 });
@@ -2822,7 +2825,7 @@ test("retained Mazer consent card fails closed after a cross-tab auth-generation
   await sibling.close();
   await page.getByRole("button", { name: "Continue to Mazer" }).click();
   await expect(page.locator('[data-system-state="invalid"]')).toContainText(
-    "invalid or expired",
+    "Invalid or expired. Start again in Mazer.",
   );
   await expect(page.locator("html")).not.toHaveAttribute("data-oauth-redirect", /.+/);
 });
@@ -2843,7 +2846,7 @@ test("callback rejects a mismatched state without an exchange", async ({ page })
   await page.evaluate((key) => window.sessionStorage.setItem(key, "expected"), accountContract.callbackStateKey);
   await page.goto("/auth/callback?auth_test=success&code=code&state=wrong");
   await expect(page.locator('[data-auth-state="unauthorized"] [role="alert"]')).toContainText(
-    "does not match the browser",
+    "Opened in a different browser. Start again.",
   );
   await expect(page.getByRole("link", { name: "Start again" })).toHaveAttribute("href", "/login");
   await page.waitForTimeout(1_500);

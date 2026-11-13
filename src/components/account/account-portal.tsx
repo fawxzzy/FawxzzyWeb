@@ -301,7 +301,7 @@ function SetupState({ resolution }: { resolution: AdapterResolution | null }) {
   }
   if (resolution.status === "ready") return null;
 
-  return <p className="account-capability-note" role="status">Account service unavailable on this origin.</p>;
+  return <p className="account-capability-note" role="status">Account service unavailable.</p>;
 }
 
 function RuntimeNote() {
@@ -336,21 +336,21 @@ function noticeVariant(notice: Notice): SystemStateVariant {
 function noticeTitle(variant: SystemStateVariant) {
   switch (variant) {
     case "success":
-      return "Action complete.";
+      return "Done.";
     case "invalid":
-      return "This action is invalid.";
+      return "Invalid request.";
     case "expired":
-      return "This action has expired.";
+      return "Request expired.";
     case "unauthorized":
-      return "This action is not authorized.";
+      return "Not allowed.";
     case "unavailable":
-      return "This service is unavailable.";
+      return "Service unavailable.";
     case "terminal-error":
-      return "This action cannot continue.";
+      return "Cannot continue.";
     case "recoverable-error":
-      return "This action needs another try.";
+      return "Something went wrong.";
     default:
-      return "Working on this action.";
+      return "Working…";
   }
 }
 
@@ -1195,7 +1195,7 @@ function LinkHandler({
   const redirectTimer = useRef<number | null>(null);
   const [notice, setNotice] = useState<Notice>({
     kind: "info",
-    text: mode === "confirm" ? "Checking this confirmation link…" : "Checking this sign-in handoff…",
+    text: "One moment…",
   });
   const [returnTo, setReturnTo] = useState<string>(accountContract.accountPath);
 
@@ -1217,7 +1217,7 @@ function LinkHandler({
         if (!payload) {
           setNotice({
             kind: "error",
-            text: "This confirmation address is missing valid one-time details. Request a fresh link.",
+            text: "Link incomplete. Request a new link.",
             variant: "invalid",
           });
           return;
@@ -1231,7 +1231,7 @@ function LinkHandler({
           if (!confirmationStateMatches(payload.state, storedState)) {
             setNotice({
               kind: "error",
-              text: "This Fitness confirmation does not match the browser that started it. Start again.",
+              text: "Opened in a different browser. Start again.",
               variant: "unauthorized",
             });
             return;
@@ -1241,7 +1241,7 @@ function LinkHandler({
           } catch {
             setNotice({
               kind: "error",
-              text: "This browser cannot safely complete the Fitness confirmation. Start again.",
+              text: "Browser storage unavailable. Start again.",
               variant: "unauthorized",
             });
             return;
@@ -1250,7 +1250,7 @@ function LinkHandler({
         if (!adapter) {
           setNotice({
             kind: "info",
-            text: "Confirmation is ready, but account setup is pending.",
+            text: "Not available on this site.",
             variant: "unavailable",
           });
           return;
@@ -1264,7 +1264,7 @@ function LinkHandler({
               session,
             );
             setReturnTo(destination);
-            setNotice({ kind: "success", text: "Confirmation complete." });
+            setNotice({ kind: "success", text: "Confirmed." });
           })
           .catch((error) => setNotice({
             kind: "error",
@@ -1278,7 +1278,7 @@ function LinkHandler({
       if (!payload) {
         setNotice({
           kind: "error",
-          text: "This sign-in address is missing a valid authorization handoff. Start again.",
+          text: "Sign-in link incomplete.",
           variant: "invalid",
         });
         return;
@@ -1286,7 +1286,7 @@ function LinkHandler({
       setReturnTo(payload.returnTo);
       const receipt = callbackReceiptKey(payload.code);
       if (window.sessionStorage.getItem(receipt) === "complete") {
-        setNotice({ kind: "success", text: "This sign-in handoff was already completed." });
+        setNotice({ kind: "success", text: "Already signed in." });
         scheduleRedirect(payload.returnTo);
         return;
       }
@@ -1294,7 +1294,7 @@ function LinkHandler({
       if (!callbackStateMatches(payload.state, storedState)) {
         setNotice({
           kind: "error",
-          text: "This sign-in handoff does not match the browser that started it. Start again.",
+          text: "Opened in a different browser. Start again.",
           variant: "unauthorized",
         });
         return;
@@ -1302,7 +1302,7 @@ function LinkHandler({
       if (!adapter) {
         setNotice({
           kind: "info",
-          text: "The handoff is valid, but account setup is pending.",
+          text: "Not available on this site.",
           variant: "unavailable",
         });
         return;
@@ -1318,7 +1318,7 @@ function LinkHandler({
           window.sessionStorage.setItem(receipt, "complete");
           window.sessionStorage.removeItem(accountContract.callbackStateKey);
           setReturnTo(destination);
-          setNotice({ kind: "success", text: "Sign-in handoff complete." });
+          setNotice({ kind: "success", text: "Signed in." });
           scheduleRedirect(destination);
         })
         .catch((error) => setNotice({
@@ -1345,12 +1345,12 @@ function LinkHandler({
         : variant === "invalid"
           ? "This link is invalid."
           : variant === "unauthorized"
-            ? "This handoff does not match."
+            ? "This link does not match."
             : variant === "unavailable"
-              ? "Account setup is not connected here."
+              ? "Account service unavailable."
               : variant === "expired"
                 ? "This link has expired."
-                : "This link needs a fresh start.";
+                : "Something went wrong.";
   const actions =
     variant === "success" ? (
       <a className="catalog-button catalog-button--primary" href={sanitizeReturnTarget(returnTo)}>
@@ -1383,10 +1383,7 @@ function LinkHandler({
         actions={actions}
         description={notice.text}
         details={
-          <p>
-            One-time details are processed once, removed from the address bar, and allowed to
-            continue only to an approved {productIdentity.publicName} destination.
-          </p>
+          <p>Details are used once, then sent only to approved {productIdentity.publicName} pages.</p>
         }
         eyebrow={mode === "confirm" ? "Account confirmation" : "Secure sign-in"}
         framed={false}

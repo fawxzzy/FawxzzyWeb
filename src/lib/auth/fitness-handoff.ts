@@ -52,8 +52,7 @@ export function fitnessHandoffRuntimeReady(
   }
 }
 
-export const FITNESS_HANDOFF_UNAVAILABLE =
-  "Account signed in. Fitness connection unavailable.";
+export const FITNESS_HANDOFF_UNAVAILABLE = "Signed in. Could not reach Fitness.";
 
 export class FitnessHandoffError extends Error {
   constructor() {
