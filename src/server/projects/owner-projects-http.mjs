@@ -59,7 +59,7 @@ export function createOwnerProjectsHandler(kind, dependencies) {
 // Server-only configuration. Request data cannot set the owner or the auth project.
 export function ownerEnvironmentDependencies(loadBoard) {
   return () => ({
-    ownerSubject: process.env.OPERATIONS_OWNER_SUBJECT,
+    ownerSubject: process.env.OPERATIONS_OWNER_SUBJECT?.trim(),
     auth: { url: MASTER, publishableKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY },
     loadBoard,
   });

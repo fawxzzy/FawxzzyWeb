@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MASTER } from '../src/server/operations/consumer-auth.mjs';
-import { createOwnerProjectsHandler } from '../src/server/projects/owner-projects-http.mjs';
+import { readFileSync } from 'node:fs';
+import { createOwnerProjectsHandler, ownerEnvironmentDependencies } from '../src/server/projects/owner-projects-http.mjs';
 
 const now = 1800000000000;
 const OWNER = '11111111-1111-4111-8111-111111111111';
@@ -114,4 +115,40 @@ test('the request guard rejects the wrong method, origin, path, query, fetch met
 
 test('only access and board endpoints exist', () => {
   assert.throws(() => createOwnerProjectsHandler('private-card', {}));
+});
+
+test('an aborted request is denied before anything is served', async () => {
+  const { handler, calls } = fixture('board');
+  const controller = new AbortController();
+  controller.abort();
+  const aborted = new Request('https://account.fawxzzy.com/api/projects/board', { method: 'GET', signal: controller.signal,
+    headers: { Origin: 'https://account.fawxzzy.com', 'X-Fawxzzy-Projects': '1', Authorization: `Bearer ${jwt(OWNER)}`,
+      'Sec-Fetch-Site': 'same-origin', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Dest': 'empty' } });
+  assert.notEqual((await handler(aborted)).status, 200);
+  assert.equal(calls.board, 0);
+});
+
+test('production wiring reads the server-only owner subject (trimmed) and never takes it from the request', () => {
+  const before = process.env.OPERATIONS_OWNER_SUBJECT;
+  try {
+    process.env.OPERATIONS_OWNER_SUBJECT = `${OWNER}\n`;
+    const loadBoard = async () => board;
+    const deps = ownerEnvironmentDependencies(loadBoard)();
+    assert.equal(deps.ownerSubject, OWNER);
+    assert.equal(deps.auth.url, MASTER);
+    assert.equal(deps.loadBoard, loadBoard);
+    delete process.env.OPERATIONS_OWNER_SUBJECT;
+    assert.equal(ownerEnvironmentDependencies(loadBoard)().ownerSubject, undefined);
+  } finally {
+    if (before === undefined) delete process.env.OPERATIONS_OWNER_SUBJECT; else process.env.OPERATIONS_OWNER_SUBJECT = before;
+  }
+});
+
+test('each API route binds the matching endpoint kind, and only the board route loads the snapshot', () => {
+  const access = readFileSync('api/projects/access.ts', 'utf8');
+  const boardRoute = readFileSync('api/projects/board.ts', 'utf8');
+  assert.match(boardRoute, /createOwnerProjectsHandler\('board'/u);
+  assert.match(boardRoute, /owner-board\.generated\.mjs/u);
+  assert.match(access, /ownerAccessHandler/u);
+  assert.doesNotMatch(access, /owner-board|'board'/u);
 });

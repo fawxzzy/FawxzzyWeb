@@ -36,11 +36,11 @@
       ],
       "discoveries": [
         "Fitness, Mazer, Web and Atlas Stack (including the Playbook roadmap) boards are served in full to the signed-in owner at account.fawxzzy.com/projects; nobody else sees the tab or the cards.",
-        "A guarded HTTP reader seam exists in source but is not wired to a live source."
+        "The board is served by an owner-verified endpoint from a committed snapshot, not from a live source."
       ],
       "next_actions": [
         "Decide the approved source location and refresh policy for live board cards.",
-        "Wire the guarded reader to that source and verify current, stale and unavailable states.",
+        "Serve the board from that source behind the owner endpoint and verify current, stale and unavailable states.",
         "Verify one real card change end to end, then run separate guarded release and product acceptance."
       ],
       "blockers": [
@@ -48,7 +48,7 @@
       ],
       "dependencies": [],
       "evidence": [
-        "src/data/project-board-public-read.mjs",
+        "src/server/projects/owner-projects-http.mjs",
         "docs/project-board-adapter.md",
         "planning/project-board-sources.v1.json"
       ],
@@ -136,20 +136,21 @@
       "title": "Check the account pages and project boards on a real phone",
       "record_kind": "project-work",
       "card_type": "reliability",
-      "lifecycle": "planning",
+      "lifecycle": "completed",
       "priority": null,
       "public_safe": true,
-      "summary": "The account pages and the public project boards are verified in headless browsers on narrow and wide screens; a real-phone pass is still outstanding.",
+      "summary": "The account pages and the public project boards were checked on a real phone on 2026-11-13: nothing looked off. Reported by the owner; not independently observed.",
       "objective": "Confirm sign-in, sign-out, the account pages and the project boards behave on an actual phone, including the home-screen app.",
       "acceptance_criteria": [
         "Sign-in, sign-out and the Fitness handoff work on a real phone.",
         "The four project-board tabs and card details open, scroll and close without layout breaks.",
         "Findings are recorded and any fix ships through the normal reviewed path."
       ],
-      "discoveries": [],
+      "discoveries": [
+        "Owner report, 2026-11-13: sign-in, sign-out, the four board tabs and the account pages looked right on a phone."
+      ],
       "next_actions": [
-        "Run the pass on the owner's phone with the checklist from the account-site tests.",
-        "File each finding as a card or a fix."
+        "Repeat the pass after any large change to the account pages or the boards."
       ],
       "blockers": [],
       "dependencies": [],
@@ -258,7 +259,7 @@
   "scope": {
     "included_project_ids": ["trove"],
     "excluded_project_ids": ["discordos", "fitness", "mazer", "music-sesh"],
-    "included_lifecycles": ["in-progress", "planning", "blocked"],
+    "included_lifecycles": ["in-progress", "planning", "blocked", "completed"],
     "private_records_included": false,
     "discord_mutation_authorized": false
   }

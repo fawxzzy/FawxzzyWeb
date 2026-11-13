@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { scanForOwnerBoard } from '../scripts/assert-owner-board-not-static.mjs';
 import { loadCandidateProjectSnapshot, projectSnapshotDigest, verifyProjectsPublicHtml } from '../scripts/verify-production-release.mjs';
 
 const snapshot = loadCandidateProjectSnapshot();
@@ -36,8 +39,24 @@ test('an injected snapshot is accepted only when it hashes to the identity diges
   assert.throws(() => verifyProjectsPublicHtml(page(), 'not-a-digest', snapshot), /identity digest/u);
 });
 
-// Skipped only when no static build exists; `npm run build` precedes this suite in a full verify run.
+// Skipped when no static build exists (a clean checkout runs this suite before the build). The verify
+// chain runs `npm run test:owner-board-static` right after the build, which scans all of out/ and fails.
 test('the built static Projects page contains no board data', { skip: !existsSync('out/projects.html') }, () => {
   const html = readFileSync('out/projects.html', 'utf8');
   assert.deepEqual(verifyProjectsPublicHtml(html, digest), { noindex: true, boardCount: 0, publicCardCount: 0 });
+});
+
+test('the static-export scan finds owner board text in any file type and passes a clean export', () => {
+  const root = mkdtempSync(path.join(tmpdir(), 'owner-static-'));
+  try {
+    mkdirSync(path.join(root, '_next'), { recursive: true });
+    writeFileSync(path.join(root, 'index.html'), '<p>nothing here</p>');
+    assert.deepEqual(scanForOwnerBoard(root, snapshot), { hits: [], scanned: 1 });
+    for (const [name, body] of [['_next/chunk.js', `var a="${card.title}"`], ['page.txt', card.id],
+      ['payload.json', JSON.stringify({ t: card.title.replaceAll('&', '&amp;') })]]) {
+      writeFileSync(path.join(root, name), body);
+      assert.ok(scanForOwnerBoard(root, snapshot).hits.some((hit) => hit.file === path.normalize(name)), name);
+      rmSync(path.join(root, name));
+    }
+  } finally { rmSync(root, { force: true, recursive: true }); }
 });

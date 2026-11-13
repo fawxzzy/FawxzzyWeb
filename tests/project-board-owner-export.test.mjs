@@ -119,7 +119,9 @@ test("accepts ready, review and completed status only when the owner source expl
   const expanded = structuredClone(source);
   expanded.work_items.push(exampleCard("FW-EXAMPLE-001", "review", false));
   assert.throws(() => build(expanded), /unsupported current lifecycle/);
-  expanded.scope.included_lifecycles.push("ready", "review", "completed");
+  for (const lifecycle of ["ready", "review", "completed"]) {
+    if (!expanded.scope.included_lifecycles.includes(lifecycle)) expanded.scope.included_lifecycles.push(lifecycle);
+  }
   const reviewing = build(expanded);
   assert.equal(reviewing.cards.find((card) => card.record.card_id === "FW-EXAMPLE-001").record.lifecycle, "review");
   assert.equal(reviewing.cards.find((card) => card.record.card_id === "FW-EXAMPLE-001").record_status, "active");
