@@ -86,8 +86,9 @@ Projects boards at `/projects` (canonical `https://fawxzzy.com/projects`, kept `
 Projects is the owner's private view. The shared navigation renders no Projects link in static HTML; it
 appears client-side only after `/api/projects/access` confirms the signed-in account is the owner, and
 only on the account origin, where the Auth session lives. The main site never shows the tab and
-`https://fawxzzy.com/projects` offers only a sign-in link to
-`https://account.fawxzzy.com/login?returnTo=%2Fprojects`. Auth state is not shared across origins. The
+`https://fawxzzy.com/projects` forwards to `https://account.fawxzzy.com/projects`, which sends a
+signed-out visitor to sign in and shows every other account the standard not-found body. Auth state
+is not shared across origins. The
 same static `/projects` export is served on both hosts, carries no board data, and is `noindex`. See
 `docs/project-board-adapter.md`. Moving the apex alias to a build containing this change is a separate
 release step.

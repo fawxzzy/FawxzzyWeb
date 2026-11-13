@@ -64,7 +64,7 @@ test("signed-out Projects does not emit a page view and asks the server for noth
   test.skip(!hasCollector, "requires the isolated dummy collector build");
   const fixture = await accountFixture(context);
   await page.goto(projectPath(false));
-  await expect(page.getByText("Projects is private.")).toBeVisible();
+  await expect(page).toHaveURL(/\/login\?returnTo=%2Fprojects$/u);
   expect(fixture.events).toEqual([]);
   expect(fixture.ownerCalls).toEqual([]);
 });
@@ -73,7 +73,7 @@ test("a signed-in account that is not the owner emits no Projects event", async 
   test.skip(!hasCollector, "requires the isolated dummy collector build");
   const fixture = await accountFixture(context, false);
   await page.goto(projectPath(true));
-  await expect(page.getByText("Projects is not available for this account.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "This page is not here." })).toBeVisible();
   expect(fixture.events).toEqual([]);
 });
 

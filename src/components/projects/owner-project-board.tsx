@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { emitAccountProjectsPageView } from "@/components/analytics/first-party-analytics";
 import { ProjectBoard } from "@/components/projects/project-board";
-import { StaticLink } from "@/components/site/static-link";
-import { accountUrls, privateProjectsSignInUrl } from "@/config/account";
+import { NotFoundState } from "@/components/system/not-found-state";
+import { accountContract, accountProjectsUrl } from "@/config/account";
+import { productIdentity } from "@/config/product";
 import emptyPreview from "@/data/project-board-preview.generated.json";
 import { buildOwnerBoardState } from "@/data/project-board-owner-state.mjs";
 import { resolvePortalAuthAdapter } from "@/lib/auth/browser-adapter";
@@ -13,22 +14,27 @@ import { fetchOwnerProjects } from "@/lib/projects/owner-projects-client";
 type BoardState = ReturnType<typeof buildOwnerBoardState>;
 type View =
   | { status: "checking" }
-  | { status: "sign-in"; href: string }
-  | { status: "unavailable" }
+  | { status: "hidden" }
   | { status: "ready"; state: BoardState };
 
-// Projects is the owner's private view: this static page contains no board data.
-// The board is fetched only after the browser's Auth session is verified by
-// /api/projects/board, which answers the account owner and no one else. A
-// signed-out visitor is offered the sign-in link; any other account, and any
-// error, shows the same neutral message.
+// Projects is the owner's private view and must not be visible to anyone else:
+// this static page contains no board data, no heading and no copy about Projects.
+// Until the server confirms the owner it shows nothing; for everyone else it is
+// indistinguishable from a page that does not exist. A signed-out visitor on the
+// account origin is sent to sign in; any other origin is sent to the account origin
+// (the Auth session lives only there). The board is fetched only after the browser's
+// Auth session exists, from /api/projects/board, which answers the account owner
+// and no one else.
 export function OwnerProjectBoard() {
   const [view, setView] = useState<View>({ status: "checking" });
   useEffect(() => {
     const resolution = resolvePortalAuthAdapter(window.location);
     if (resolution.status !== "ready") {
-      // Auth lives only on the account origin; elsewhere this page is a sign-in link.
-      queueMicrotask(() => setView({ status: "sign-in", href: privateProjectsSignInUrl }));
+      if (window.location.origin === accountContract.canonicalOrigin) {
+        queueMicrotask(() => setView({ status: "hidden" }));
+      } else {
+        window.location.replace(accountProjectsUrl);
+      }
       return;
     }
     const { adapter } = resolution;
@@ -43,18 +49,19 @@ export function OwnerProjectBoard() {
         const session = await adapter.getSession().catch(() => null);
         if (!mounted || mine.signal.aborted) return;
         if (!session) {
-          setView({ status: "sign-in", href: "/login?returnTo=%2Fprojects" });
+          setView({ status: "checking" });
+          window.location.replace("/login?returnTo=%2Fprojects");
           return;
         }
         setView({ status: "checking" });
         const snapshot = await fetchOwnerProjects(adapter, "board", mine.signal);
         if (!mounted || mine.signal.aborted) return;
-        if (snapshot === null) { setView({ status: "unavailable" }); return; }
+        if (snapshot === null) { setView({ status: "hidden" }); return; }
         try {
           setView({ status: "ready", state: buildOwnerBoardState(emptyPreview, snapshot) });
           if (!counted && emitAccountProjectsPageView()) counted = true;
         } catch {
-          setView({ status: "unavailable" });
+          setView({ status: "hidden" });
         }
       })();
     };
@@ -67,24 +74,14 @@ export function OwnerProjectBoard() {
     };
   }, []);
 
+  useEffect(() => {
+    if (view.status !== "ready") return;
+    const previous = document.title;
+    document.title = `Projects | ${productIdentity.publicName}`;
+    return () => { document.title = previous; };
+  }, [view.status]);
+
   if (view.status === "ready") return <ProjectBoard boardState={view.state} />;
-  return (
-    <section aria-label="Projects" className="project-workspace">
-      <div className="project-board-shell">
-        <div className="project-board-toolbar">
-          <div>
-            <p className="eyebrow">Fawxzzy project boards</p>
-            <h1>Projects</h1>
-            {view.status === "checking" ? <p aria-live="polite" role="status">Checking access…</p> : null}
-            {view.status === "sign-in" ? (
-              <p>Projects is private. <StaticLink href={view.href}>Sign in</StaticLink> to continue.</p>
-            ) : null}
-            {view.status === "unavailable" ? (
-              <p role="status">Projects is not available for this account. <StaticLink href={accountUrls.account}>Back to your account</StaticLink></p>
-            ) : null}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
+  if (view.status === "hidden") return <NotFoundState />;
+  return <div aria-busy="true" />;
 }

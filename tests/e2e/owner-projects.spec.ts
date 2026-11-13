@@ -43,22 +43,26 @@ test("signed out: no Projects tab, no board data, and no request to the owner en
   await expect(page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Apps", exact: true })).toBeVisible();
   await expect(projectsLink(page)).toHaveCount(0);
 
+  // Signed-out visitors are sent to sign in; nothing about Projects is ever rendered.
   await page.goto("/projects?auth_test=success");
-  await expect(page.getByText("Projects is private.")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/login?returnTo=%2Fprojects");
+  await expect(page).toHaveURL(/\/login\?returnTo=%2Fprojects$/u);
+  await expect(page.getByRole("heading", { name: "Projects" })).toHaveCount(0);
   await expect(projectsLink(page)).toHaveCount(0);
-  await expect(page.getByRole("navigation", { name: "Project boards" })).toHaveCount(0);
   expect(server.calls).toEqual([]);
   expect(await page.content()).not.toContain(sampleCard.title);
 });
 
-test("a page with no account service (main site) never shows the tab and offers only a sign-in link", async ({ page }) => {
+test("a page with no account service (main site) never shows the tab and sends /projects to the account origin", async ({ page }) => {
   const server = await serverFixture(page, "owner");
+  const requested: string[] = [];
+  await page.route("https://account.fawxzzy.com/**", (route) => {
+    requested.push(route.request().url());
+    return route.abort();
+  });
   await page.goto("/apps");
   await expect(projectsLink(page)).toHaveCount(0);
-  await page.goto("/projects");
-  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Project boards" })).toHaveCount(0);
+  await page.goto("/projects", { waitUntil: "commit" });
+  await expect.poll(() => requested).toContain("https://account.fawxzzy.com/projects");
   expect(server.calls).toEqual([]);
 });
 
@@ -69,7 +73,9 @@ test("signed in as another account: no tab, a neutral message, and no cards", as
   await expect(projectsLink(page)).toHaveCount(0);
 
   await page.goto("/projects?auth_test=session");
-  await expect(page.getByText("Projects is not available for this account.")).toBeVisible();
+  // Indistinguishable from a page that does not exist.
+  await expect(page.getByRole("heading", { name: "This page is not here." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Projects" })).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "Project boards" })).toHaveCount(0);
   expect(server.calls).toContain("GET board");
   expect(await page.content()).not.toContain(sampleCard.title);
@@ -78,7 +84,7 @@ test("signed in as another account: no tab, a neutral message, and no cards", as
 test("a server outage shows the same neutral state, never cards or the tab", async ({ page }) => {
   await serverFixture(page, "unavailable");
   await page.goto("/projects?auth_test=session");
-  await expect(page.getByText("Projects is not available for this account.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "This page is not here." })).toBeVisible();
   await expect(projectsLink(page)).toHaveCount(0);
 });
 
@@ -92,9 +98,10 @@ test("the owner sees the tab and every board; the static page itself carries no 
   }
   // The static HTML a signed-out visitor receives has neither the tab nor any card text.
   const staticHtml = await (await page.request.get("/projects")).text();
-  for (const needle of [sampleCard.title, "FW-ANALYTICS-001", "lane-security-containment", "FF-MKT-001"]) {
+  for (const needle of [sampleCard.title, "FW-ANALYTICS-001", "lane-security-containment", "FF-MKT-001", "Project boards", "Projects is private"]) {
     expect(staticHtml).not.toContain(needle);
   }
+  expect(staticHtml).not.toMatch(/<title>[^<]*Projects/u);
 
   const server = await serverFixture(page, "owner");
   await page.goto("/apps?auth_test=session");
@@ -103,6 +110,7 @@ test("the owner sees the tab and every board; the static page itself carries no 
 
   await page.goto("/projects?auth_test=session");
   await expect(projectsLink(page)).toHaveAttribute("aria-current", "page");
+  await expect(page).toHaveTitle(/^Projects \| Fawxzzy/u);
   await expect(page.getByText("Board snapshot accepted", { exact: false })).toBeVisible();
   await expect(page.getByText("Only your account can see these boards.")).toBeVisible();
   const navigation = page.getByRole("navigation", { name: "Project boards" });

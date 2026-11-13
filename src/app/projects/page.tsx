@@ -2,18 +2,21 @@ import type { Metadata } from "next";
 import { AmbientBrandBackground } from "@/components/ambient/ambient-brand-background";
 import { OwnerProjectBoard } from "@/components/projects/owner-project-board";
 import { SiteNav } from "@/components/site/site-nav";
+import { productIdentity } from "@/config/product";
 import { publicPageMetadata } from "@/lib/seo";
 
 // Projects is the owner's private view. This static page ships no board data and
-// the nav tab only appears for the verified owner (see OwnerProjectsLink); the
-// board is fetched from the owner-verified /api/projects/board after sign-in.
-// Kept out of the index.
+// says nothing about Projects (neutral title and description; the owner's view sets
+// its own title once verified). The nav tab only appears for the verified owner (see
+// OwnerProjectsLink); the board is fetched from the owner-verified /api/projects/board
+// after sign-in. Kept out of the index.
 export const metadata: Metadata = {
   ...publicPageMetadata({
-    description: "Your project boards.",
+    description: productIdentity.description,
     path: "/projects",
-    title: "Projects",
+    title: productIdentity.publicName,
   }),
+  title: { absolute: productIdentity.publicName },
   robots: { follow: false, index: false },
 };
 
