@@ -77,6 +77,47 @@ portal checks these limits before sending the consume request; independent
 per-token limits do not override the combined body limit. Fitness enforces MIME,
 declared size and streamed size before invoking its store or Auth validator.
 
+## Sign-out and the shared refresh lineage (FF-ACCOUNT-004 W-2)
+
+Sign-out. After a handoff both products hold one provider session, so a sign-out must end it for
+both. Fitness's sign-out is global (supabase-js default scope), and the portal's account-page
+sign-out is now global as well (`scope: "global"`, which revokes the refresh tokens of the
+person's Mazer session and other devices too; access tokens already issued live until they expire,
+and Mazer's own handling of a revoked session was not checked). Fitness validates its session server-side on protected pages (`getUser()` in its
+`requireUser`, which sends "Auth session missing!" to `/login`; source-read, not exercised live), so
+a portal sign-out is seen on Fitness's next protected page load. The portal's
+own cached copy is revalidated against the provider on load and when the person returns to the page
+(`validatePortalSession`, at most once per 20 s), so a Fitness sign-out is seen on the account site
+without waiting for the token to expire. Neither side signs the person out because a check could
+not reach the provider.
+
+Open finding: two refreshers on one lineage (not fixed here, needs evidence first).
+
+- Facts (source-read): the handoff leaves portal and Fitness holding the same rotated refresh token
+  ("the same final refresh lineage", step 5 above). Afterwards Fitness rotates it on its own:
+  `/auth/session-keepalive` forces a refresh on every app launch, its middleware refreshes inside the
+  last 60 s of the access token, and its browser client auto-refreshes. The portal's supabase-js
+  client (`autoRefreshToken: true`) refreshes the copy it stored at handoff whenever the stored
+  access token is within 90 s of expiry, on `getSession`/`getUser`/`signOut` and on its 30 s ticker
+  while a portal page is open.
+- Inference (Supabase's documented refresh-token behaviour; the project's values were NOT read, the
+  Dashboard is a hard stop): if Fitness has rotated the token since the handoff and the portal later
+  refreshes with the older one, outside the provider's "refresh token reuse interval" (documented
+  default 10 s) and with reuse detection on (documented default), the provider treats it as theft
+  and revokes the whole session, signing Fitness out as well. The trigger is simple: hand off, use
+  Fitness for more than an access-token lifetime, then open the account site.
+- Why it is not fixed in this PR: the only code-side fix that removes the race is for the portal to
+  stop refreshing a lineage it has handed to Fitness (drop its copy at expiry instead of refreshing).
+  That is testable, but it changes visible behaviour (the account site and the owner's private
+  Projects pages would ask for sign-in again once the handed-off access token expires) and its
+  premise cannot be confirmed without the Dashboard values and a real run. The other fixes are a
+  Supabase setting (a longer reuse interval narrows but does not remove it) or giving Fitness its
+  own provider session at handoff (a server-side mint, which this static portal cannot do).
+- Test to run before choosing (V0): sign in on the portal with `claude1`, complete the Fitness
+  handoff, force `/auth/session-keepalive` in Fitness twice, wait past the access-token lifetime,
+  open the portal `/account`, then Fitness `/today`; record who is signed in. Also read, with
+  Zac's Dashboard login, the project's reuse-detection toggle, reuse interval and JWT expiry.
+
 ## Boundaries and acceptance
 
 ### Release dependency order

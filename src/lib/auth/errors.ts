@@ -79,6 +79,9 @@ export function safeAuthError(action: AuthAction) {
 
 export function safeAuthSuccess(action: AuthAction) {
   switch (action) {
+    case "login":
+      // Shown on the sign-in button while the page continues to its destination.
+      return "You are signed in.";
     case "signup":
       // Only shown after the provider returned a real session.
       return "Your account is ready.";
@@ -90,7 +93,7 @@ export function safeAuthSuccess(action: AuthAction) {
     case "update-email":
       return "Your email update was accepted.";
     case "signout":
-      return "You are signed out on this origin.";
+      return "You are signed out of your Fawxzzy account everywhere.";
     default:
       return "Done.";
   }

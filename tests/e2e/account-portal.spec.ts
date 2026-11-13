@@ -853,6 +853,9 @@ test("safe messages are deterministic and non-enumerating", () => {
     "Too many tries for that username. Wait 15 minutes, or sign in with your email address.",
   );
   expect(safeAuthError("login-throttled")).not.toBe(safeAuthError("login"));
+  expect(safeAuthSuccess("login")).toBe("You are signed in.");
+  expect(safeAuthSuccess("signout")).toContain("everywhere");
+  expect(safeAuthSuccess("signout")).not.toMatch(/origin/i);
   expect(safeAuthSuccess("reset-request")).toContain("If an account can receive");
   expect(safeAuthError("reset-request")).toBe(safeAuthSuccess("reset-request"));
 });
@@ -1167,7 +1170,9 @@ test("login accepts a legacy short password and maps adapter errors safely", asy
   await form.getByLabel("Password", { exact: true }).fill("short");
   const loginSubmit = page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" });
   await loginSubmit.click();
-  await expect(page.getByRole("status")).toContainText("Signed in on this account origin");
+  await expect(page.getByRole("status")).toContainText(safeAuthSuccess("login"));
+  // The success text names no implementation detail (it used to read "Signed in on this account origin.").
+  await expect(page.getByRole("status")).not.toContainText(/origin/i);
   await expect(page.locator(".account-auth-dock button")).toBeDisabled();
 
   await page.goto("/login?auth_test=error");
@@ -2025,6 +2030,115 @@ test("account sign-out from Mazer heads for Mazer, never the login page", async 
   await page.waitForTimeout(600);
   await expect(page).toHaveURL(/\/account\?auth_test=session&app=mazer$/);
   await expect(page.locator("html")).not.toHaveAttribute("data-session-lost-redirect", /.+/);
+});
+
+test("the account page signs out everywhere, the recovery session only itself", async ({ browserName, page }) => {
+  test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
+  await page.goto("/account?auth_test=session");
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-sign-out-scope", "everywhere");
+
+  // Choosing a new password ends the throw-away recovery session, not the person's apps.
+  await page.goto("/reset-password?recovery=1&auth_test=success&code=one-time-code");
+  await expect(page.getByLabel("New password", { exact: true })).toBeVisible();
+  await page.getByLabel("New password", { exact: true }).fill("correct-horse-battery-staple");
+  await page.getByLabel("Confirm password").fill("correct-horse-battery-staple");
+  await page.locator('.account-auth-dock button[type="submit"]').click();
+  await expect(page.locator("html")).toHaveAttribute("data-sign-out-scope", "this-session");
+});
+
+test("a session another app ended is found on load and sends the person to sign in", async ({ page }) => {
+  await page.goto("/account?auth_test=session-revoked-elsewhere&app=fitness");
+  await expect(page).toHaveURL(/\/login\?app=fitness$/);
+});
+
+/** Dispatches the page events the account page revalidates on, in a controlled way. */
+async function fireReturnEvent(
+  page: import("@playwright/test").Page,
+  kind: "focus" | "visible" | "hidden" | "restored" | "navigated",
+) {
+  await page.evaluate((eventKind) => {
+    if (eventKind === "focus") {
+      window.dispatchEvent(new Event("focus"));
+    } else if (eventKind === "visible" || eventKind === "hidden") {
+      Object.defineProperty(document, "visibilityState", {
+        configurable: true,
+        get: () => eventKind,
+      });
+      document.dispatchEvent(new Event("visibilitychange"));
+      delete (document as unknown as Record<string, unknown>).visibilityState;
+    } else {
+      window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: eventKind === "restored" }));
+    }
+  }, kind);
+}
+
+const sessionValidations = (page: import("@playwright/test").Page) =>
+  page.locator("html").getAttribute("data-session-validations");
+
+test("the account page revalidates on focus, return and page restore, at most once per interval", async ({ page }) => {
+  await page.clock.install();
+  await page.goto("/account?auth_test=session");
+  await expect.poll(() => sessionValidations(page)).toBe("1");
+
+  // Focus, visibility and page-restore fire together on a return: still one check in the interval.
+  await fireReturnEvent(page, "focus");
+  await fireReturnEvent(page, "visible");
+  await fireReturnEvent(page, "restored");
+  expect(await sessionValidations(page)).toBe("1");
+
+  await page.clock.fastForward(30_000);
+  await fireReturnEvent(page, "focus");
+  await expect.poll(() => sessionValidations(page)).toBe("2");
+
+  await page.clock.fastForward(30_000);
+  await fireReturnEvent(page, "hidden"); // leaving the tab is not a return
+  expect(await sessionValidations(page)).toBe("2");
+  await fireReturnEvent(page, "visible");
+  await expect.poll(() => sessionValidations(page)).toBe("3");
+
+  await page.clock.fastForward(30_000);
+  await fireReturnEvent(page, "navigated"); // pageshow without bfcache is a normal load
+  expect(await sessionValidations(page)).toBe("3");
+  await fireReturnEvent(page, "restored");
+  await expect.poll(() => sessionValidations(page)).toBe("4");
+});
+
+test("a session another app ends while this tab is away is found when the person returns", async ({ page }) => {
+  await page.clock.install();
+  await page.goto("/account?auth_test=session-revoked-on-return");
+  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await expect.poll(() => sessionValidations(page)).toBe("1");
+  await expect(page).toHaveURL(/\/account\?auth_test=session-revoked-on-return$/);
+  await page.clock.fastForward(30_000);
+  await fireReturnEvent(page, "visible");
+  await expect(page).toHaveURL(/\/login$/);
+});
+
+test("a failed session check never signs the person out", async ({ page }) => {
+  await page.clock.install();
+  await page.goto("/account?auth_test=session-validation-unavailable");
+  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await expect.poll(() => sessionValidations(page)).toBe("1");
+  await page.clock.fastForward(30_000);
+  await fireReturnEvent(page, "visible");
+  await expect.poll(() => sessionValidations(page)).toBe("2");
+  // Let the rejected check's promise handlers run (a message-channel task is not faked by the clock).
+  await page.evaluate(
+    () => new Promise<void>((resolve) => {
+      const channel = new MessageChannel();
+      channel.port1.onmessage = () => resolve();
+      channel.port2.postMessage(0);
+    }),
+  );
+  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await expect(page).toHaveURL(/\/account\?auth_test=session-validation-unavailable$/);
+  await expect(page.locator("html")).not.toHaveAttribute("data-session-lost-redirect", /.+/);
+});
+
+test("the provider's fresh account details are applied even when the SDK announces a session event during the check", async ({ page }) => {
+  await page.goto("/account?auth_test=session-refreshed-on-check");
+  await expect(page.getByLabel("Email")).toHaveValue("renamed.user@example.test");
 });
 
 test("a session lost without this page signing out still redirects to login", async ({ page }) => {

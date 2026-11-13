@@ -1,6 +1,14 @@
 "use client";
 
-import { createClient, type EmailOtpType, type Session } from "@supabase/supabase-js";
+import {
+  createClient,
+  isAuthApiError,
+  isAuthSessionMissingError,
+  type EmailOtpType,
+  type Session,
+  type SupabaseClient,
+  type User,
+} from "@supabase/supabase-js";
 import {
   accountContract,
   accountConfirmUrl,
@@ -22,10 +30,30 @@ export type PortalSession = {
   userId: string;
 };
 
+/**
+ * What a portal sign-out ends. `everywhere` is the account page's Sign out: it revokes every
+ * session the account holds at the provider (the portal's, Fitness's, Mazer's, other devices),
+ * so the account site and the apps always agree on who is signed in. `this-session` is only for
+ * the portal's own throw-away recovery session (after a password reset), which must not sign the
+ * person out of the apps they are using.
+ */
+export type PortalSignOutScope = "everywhere" | "this-session";
+
+export const PORTAL_SIGN_OUT_SCOPES = {
+  everywhere: "global",
+  "this-session": "local",
+} as const satisfies Record<PortalSignOutScope, "global" | "local">;
+
 export type PortalAuthAdapter = {
   kind: "supabase" | "test";
   getAuthGeneration(): string | null;
   getSession(): Promise<PortalSession | null>;
+  /**
+   * Asks the provider whether the cached session is still alive and returns the provider's own
+   * view of the account. A session another app ended (sign out everywhere) is cleared here and
+   * answers null. A provider or network failure never signs anyone out: it keeps the cache.
+   */
+  validateSession(): Promise<PortalSession | null>;
   onSessionChange(listener: (session: PortalSession | null) => void): () => void;
   signIn(email: string, password: string): Promise<PortalSession | null>;
   handoffToFitness(returnTarget: string, expectedUserId: string): Promise<string>;
@@ -37,7 +65,7 @@ export type PortalAuthAdapter = {
     contextId: AccountExperienceContextId,
     returnTarget?: string,
   ): Promise<PortalSession | null>;
-  signOut(): Promise<void>;
+  signOut(scope?: PortalSignOutScope): Promise<void>;
   requestPasswordReset(
     email: string,
     contextId: AccountExperienceContextId,
@@ -163,13 +191,110 @@ export type PortalAuthAdapterDependencies = {
 
 let supabaseAdapter: PortalAuthAdapter | null = null;
 
-function toPortalSession(session: Session | null): PortalSession | null {
-  if (!session?.user) return null;
-  const metadata = session.user.user_metadata;
+function toPortalUser(user: User): PortalSession {
+  const metadata = user.user_metadata;
   const displayName = [metadata?.username, metadata?.display_name]
     .find((candidate) => typeof candidate === "string" && candidate.trim())
     ?.trim() ?? null;
-  return { displayName, email: session.user.email ?? null, userId: session.user.id };
+  return { displayName, email: user.email ?? null, userId: user.id };
+}
+
+function toPortalSession(session: Session | null): PortalSession | null {
+  if (!session?.user) return null;
+  return toPortalUser(session.user);
+}
+
+type PortalSignOutAuth = Pick<SupabaseClient["auth"], "getSession" | "signOut">;
+type PortalValidationAuth = Pick<SupabaseClient["auth"], "getSession" | "getUser" | "signOut">;
+
+/**
+ * Provider answers that mean the session itself is gone (signed out elsewhere, refresh token
+ * spent or unknown). Anything else that fails a refresh (rate limit, a gateway rejecting the API
+ * key, a 5xx) says nothing about the session and must never read as "already signed out".
+ */
+const SESSION_REVOKED_CODES: ReadonlySet<string> = new Set([
+  "refresh_token_not_found",
+  "refresh_token_already_used",
+  "session_not_found",
+  "invalid_grant",
+]);
+
+function isSessionRevokedError(error: unknown) {
+  if (isAuthSessionMissingError(error)) return true;
+  if (!isAuthApiError(error)) return false;
+  if (error.code) return SESSION_REVOKED_CODES.has(error.code);
+  // Older Auth servers answer a dead refresh token with no error code.
+  return error.status === 400 &&
+    /invalid refresh token|refresh token not found|already used/i.test(error.message);
+}
+
+/** Provider answers to the access token itself that mean this session can no longer be used. */
+const SESSION_REJECTED_CODES: ReadonlySet<string> = new Set([
+  "bad_jwt",
+  "user_not_found",
+  "user_banned",
+  "session_not_found",
+]);
+
+/**
+ * Ends the portal's session at the provider with the requested reach (see PortalSignOutScope).
+ * A failure the provider caused (network, 5xx, rate limit) stays an error, so the page can say
+ * so. The one exception is a session another app already revoked: the SDK clears the local copy
+ * and may still report the refresh it could not do, and a person with nothing left to sign out
+ * of has signed out, so that is a success. Only revocation-class answers count: the SDK also
+ * clears the local copy for other non-retryable refresh failures (429, a gateway 4xx), and then
+ * the logout call was never sent, so that must surface as an error, not as success.
+ */
+export async function signOutOfPortal(
+  auth: PortalSignOutAuth,
+  scope: PortalSignOutScope = "everywhere",
+) {
+  const { error } = await auth.signOut({ scope: PORTAL_SIGN_OUT_SCOPES[scope] });
+  if (!error) return;
+  if (isSessionRevokedError(error)) {
+    const remaining = await auth.getSession().catch(() => null);
+    if (remaining && !remaining.error && !remaining.data.session) return;
+  }
+  throw error;
+}
+
+/**
+ * Checks the cached session against the provider with the access token it already holds
+ * (`getUser`), which is how a sign-out everywhere done in Fitness or Mazer becomes visible here
+ * before the cached token expires. The check itself does not use the refresh token, but the SDK
+ * may: like `getSession`, `getUser` refreshes when the held access token is expired or inside 90 s
+ * of expiry, so this adds no refresh-lineage exposure beyond what every `getSession` call carries.
+ * Only a revocation or rejection code clears the local copy; any other failure (offline, 5xx, a
+ * gateway answer) keeps what is cached.
+ */
+export async function validatePortalSession(
+  auth: PortalValidationAuth,
+): Promise<PortalSession | null> {
+  const { data, error } = await auth.getUser();
+  if (!error && data.user) return toPortalUser(data.user);
+  if (
+    isAuthApiError(error) &&
+    (error.status === 401 || error.status === 403) &&
+    error.code &&
+    SESSION_REJECTED_CODES.has(error.code)
+  ) {
+    // The provider says this access token's session or user is gone. The SDK only clears its own
+    // copy for a missing session, so clear it here. The provider already treats the session as
+    // dead, so the local sign-out costs nothing; if even that fails the caller changes nothing.
+    const { error: clearError } = await auth.signOut({ scope: "local" });
+    if (clearError) throw clearError;
+    return null;
+  }
+  // A missing or revoked session was already cleared by the SDK, so reading it back answers null.
+  // Provider or network trouble leaves the cached session in place and it is returned as it is;
+  // being offline is not a sign-out. If even the cache cannot be read the error is thrown so the
+  // caller changes nothing.
+  const current = await auth.getSession();
+  if (current.error) {
+    if (isAuthSessionMissingError(current.error)) return null;
+    throw current.error;
+  }
+  return toPortalSession(current.data.session);
 }
 
 function createBrowserBoundConfirmationState() {
@@ -213,7 +338,7 @@ export function createAuthGenerationCoordinator(
   };
 }
 
-function createSupabaseAdapter(
+export function createSupabaseAdapter(
   url: string,
   publishableKey: string,
   runtimeOrigin: string,
@@ -256,6 +381,9 @@ function createSupabaseAdapter(
       const { data, error } = await client.auth.getSession();
       if (error) throw error;
       return toPortalSession(data.session);
+    },
+    validateSession() {
+      return validatePortalSession(client.auth);
     },
     onSessionChange(listener) {
       const { data } = client.auth.onAuthStateChange((_event, session) => {
@@ -382,10 +510,9 @@ function createSupabaseAdapter(
       }
       return data.session.access_token;
     },
-    async signOut() {
+    async signOut(scope = "everywhere") {
       beginAuthMutation();
-      const { error } = await client.auth.signOut({ scope: "local" });
-      if (error) throw error;
+      await signOutOfPortal(client.auth, scope);
     },
     async requestPasswordReset(email, contextId, returnTarget) {
       const { error } = await client.auth.resetPasswordForEmail(email, {
@@ -428,7 +555,16 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
     authGeneration.advance();
   };
   let session: PortalSession | null =
-    ["session", "session-expires", "oauth-auto", "oauth-hostile"].includes(scenario)
+    [
+      "session",
+      "session-expires",
+      "session-revoked-elsewhere",
+      "session-revoked-on-return",
+      "session-validation-unavailable",
+      "session-refreshed-on-check",
+      "oauth-auto",
+      "oauth-hostile",
+    ].includes(scenario)
       ? { displayName: "fawxzzy", email: "preview.user@example.test", userId: "preview-user" }
       : null;
   const listeners = new Set<(value: PortalSession | null) => void>();
@@ -467,6 +603,7 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
     }
   };
   const publish = () => listeners.forEach((listener) => listener(session));
+  let validations = 0;
   return {
     kind: "test",
     getAuthGeneration() {
@@ -477,6 +614,32 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
         return new Promise<PortalSession | null>(() => undefined);
       }
       fail();
+      return session;
+    },
+    async validateSession() {
+      validations += 1;
+      // Harness marker: how many provider checks this page has made.
+      document.documentElement.dataset.sessionValidations = String(validations);
+      // The provider ended this session while the page held a cached copy: found at the first check
+      // (`revoked-elsewhere`) or only when the person comes back to the tab (`revoked-on-return`).
+      if (
+        scenario === "session-revoked-elsewhere" ||
+        (scenario === "session-revoked-on-return" && validations > 1)
+      ) {
+        session = null;
+        publish();
+        return null;
+      }
+      // A failed check must change nothing.
+      if (scenario === "session-validation-unavailable") {
+        throw new Error("Deterministic provider outage");
+      }
+      // The SDK announces a session event while the check runs; the provider's fresh answer must
+      // still be applied afterwards.
+      if (scenario === "session-refreshed-on-check" && session) {
+        publish();
+        return { ...session, email: "renamed.user@example.test" };
+      }
       return session;
     },
     onSessionChange(listener) {
@@ -526,9 +689,11 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       }
       return `local-${scenario ?? "default"}-oauth-token-1234567890`;
     },
-    async signOut() {
+    async signOut(scope = "everywhere") {
       beginAuthMutation();
       fail();
+      // Harness marker so the browser tests can see which reach the page asked for.
+      document.documentElement.dataset.signOutScope = scope;
       session = null;
       publish();
     },
@@ -615,6 +780,10 @@ export function resolvePortalAuthAdapter(
       "signup-username-taken",
       "signup-database-error",
       "session-expires",
+      "session-revoked-elsewhere",
+      "session-revoked-on-return",
+      "session-validation-unavailable",
+      "session-refreshed-on-check",
       "login-throttled",
       "fitness-handoff-error",
       "oauth-auto",

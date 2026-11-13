@@ -78,6 +78,34 @@ redirects must be admitted individually in a future packet; do not add a broad p
 - Browser persistence is origin-scoped. No `Domain=.fawxzzy.com` cookie is created, and refresh
   tokens are not shared between product origins.
 - Phase one shares credentials, not seamless sessions. A person signs in once per product origin.
+  (The Fitness handoff below is the one deliberate exception: it hands Fitness the portal's current
+  session pair, so both origins then hold one provider session.)
+- Sign-out reach (FF-ACCOUNT-004 W-2). "Sign out" on the account page asks the provider to
+  revoke the account's sessions everywhere (Supabase `scope: "global"`: every session and refresh
+  token for the account, so the portal, Fitness, Mazer and other devices can no longer refresh),
+  because a Fitness sign-out already behaves that way and a narrower portal sign-out left the apps
+  apparently signed in. Access tokens already issued stay valid until they expire, so anything that
+  verifies them offline (rather than asking the provider) keeps working until then; whether Mazer
+  notices a revoked session promptly is not verified. The one narrower use is ending the portal's
+  own throw-away recovery session after "Save new password" (`scope: "local"`): choosing a new
+  password does not sign the person out of the apps they are using. A sign-out the provider cannot
+  complete (network, 5xx, rate limit) is reported as an error. Only a session another app already
+  revoked (revoked or unknown refresh token, missing session) counts as signed out, never as a
+  failure. Caveat: for an expired access token the SDK clears the local copy on any non-retryable
+  refresh failure (a 429, a gateway 4xx) before the logout call can be sent; that case is reported
+  as an error and the person signs in again before retrying, because the provider session may still
+  be alive.
+- Stale cached sessions. The portal's browser storage can hold a session another app has already
+  revoked (Fitness "sign out" is global). The account page therefore asks the provider whether the
+  session is still alive right after loading and again when the person returns to the page (tab
+  visible, window focus, back/forward restore), at most once per 20 s, using the access token it
+  already holds. The check itself does not use the refresh token, but the SDK may: when the held
+  access token is expired or inside its last 90 s, `getUser()` refreshes it, as any `getSession`
+  does. A session the provider reports revoked or rejected (`session_not_found`, `bad_jwt`,
+  `user_not_found`, `user_banned`) is cleared locally and the person is sent to sign in. Any other
+  failed check (offline, 5xx, a gateway answer such as an invalid-API-key 401) changes nothing:
+  being offline is not a sign-out. The provider's answer also refreshes the displayed username and
+  email.
 - Phase-two SSO is deferred. Its only admissible starting points are PKCE/OIDC or a one-time
   backend exchange; access and refresh tokens never travel in URLs.
 - Email/password is the only initial provider. Email verification is off. Social, phone,
@@ -263,7 +291,7 @@ existing account, or treat a client-side value as authoritative.
 1. Confirm exact Vercel project, Git revision, Preview/production target, custom domain, and prior
    rollback deployment before mutation.
 2. Prove TLS and canonical behavior for the account origin without changing the public hub.
-3. Exercise signup (10 and 128+ characters), legacy-short login, normal login, local sign-out (which must land on the product origin, never on the login page),
+3. Exercise signup (10 and 128+ characters), legacy-short login, normal login, sign-out everywhere (which must land on the product origin, never on the login page, and must leave Fitness and Mazer signed out at the provider),
    email update, password update, reset request, recovery completion, confirm, and PKCE callback.
 4. Prove non-enumerating error copy, cooldown, callback idempotency, state mismatch rejection,
    URL sanitization, and rejection of access/refresh-token URLs and open redirects.

@@ -28,6 +28,7 @@ import {
   sanitizeRecoveryUrl,
 } from "@/lib/auth/callback-contract";
 import {
+  createRevalidationGate,
   scheduleCooldownTicks,
   scheduleDeferredAttempt,
   type OneShotAttemptState,
@@ -536,7 +537,7 @@ function LoginPanel({
         const destination = context.id === "fitness" && !postAuthTarget.startsWith("/")
           ? await adapter.handoffToFitness(postAuthTarget, session.userId)
           : postAuthTarget;
-        transient.show({ kind: "success", text: "Signed in on this account origin." });
+        transient.show({ kind: "success", text: safeAuthSuccess("login") });
         if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
           document.documentElement.dataset.postAuthDestination = destination;
         } else {
@@ -727,13 +728,45 @@ function usePortalSession(adapter: PortalAuthAdapter | null) {
   useEffect(() => {
     if (!adapter) return;
     let active = true;
+    const gate = createRevalidationGate();
+    // Counts the sign-outs the provider announces. A check that started before one describes a
+    // session that no longer exists and must not bring it back. Other events (the SDK re-announces
+    // the session on tab return and after a refresh) do not make a check stale.
+    let signOuts = 0;
     const unsubscribe = adapter.onSessionChange((next) => {
+      if (next === null) signOuts += 1;
       if (active) setSession(next);
     });
+    // The cached session can outlive the provider's: signing out everywhere in Fitness or Mazer ends
+    // it at the provider while this origin's storage still holds a copy. Ask the provider after load
+    // and whenever the person comes back to the page (at most once per interval); a null answer is a
+    // sign-out, and a check that fails changes nothing (being offline is not a sign-out).
+    const revalidate = () => {
+      if (!gate.begin()) return;
+      const startedAt = signOuts;
+      adapter
+        .validateSession()
+        .then((next) => {
+          if (active && (next === null || signOuts === startedAt)) setSession(next);
+        })
+        .catch(() => undefined)
+        .finally(gate.end);
+    };
+    const revalidateWhenVisible = () => {
+      if (document.visibilityState === "visible") revalidate();
+    };
+    const revalidateWhenRestored = (event: PageTransitionEvent) => {
+      if (event.persisted) revalidate();
+    };
+    document.addEventListener("visibilitychange", revalidateWhenVisible);
+    window.addEventListener("focus", revalidate);
+    window.addEventListener("pageshow", revalidateWhenRestored);
     adapter
       .getSession()
       .then((next) => {
-        if (active) setSession(next);
+        if (!active) return;
+        setSession(next);
+        if (next) revalidate();
       })
       .catch(() => {
         if (active) setError(true);
@@ -744,6 +777,9 @@ function usePortalSession(adapter: PortalAuthAdapter | null) {
     return () => {
       active = false;
       unsubscribe();
+      document.removeEventListener("visibilitychange", revalidateWhenVisible);
+      window.removeEventListener("focus", revalidate);
+      window.removeEventListener("pageshow", revalidateWhenRestored);
     };
   }, [adapter]);
 
@@ -1009,7 +1045,9 @@ function ResetPanel({
       cooldown.start();
       try {
         await adapter.updatePassword(password);
-        await adapter.signOut();
+        // Ends only this throw-away recovery session. Signing the person out of the apps they are
+        // using is the account page's Sign out, not a side effect of choosing a new password.
+        await adapter.signOut("this-session");
         formElement.reset();
         transient.show({ kind: "success", text: safeAuthSuccess("reset-complete") });
         window.setTimeout(() => {
