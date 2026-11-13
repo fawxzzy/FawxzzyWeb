@@ -128,17 +128,16 @@ rendering alone cannot prove this: the portal checks `readiness.sourceCommit`
 before retrieving credentials. An unlisted candidate must block the release.
 
 The seven-source transition list includes the Fitness main commit
-`529eb6c4b01706521bb4f1f2708c583030118fa7`
-(PR211-232: custom workout engine, card-system redesign, account/sign-out and password
-changes, dev-route guard, Next 14.2.35 patch, CI hardening) as the current source. It
-retains `76f04dfcd66c6ebbdbbb6a65a8d516accdd6b2e3` (PR206-210, the production build
-before the 2026-11-13 release) as the rollback source, the PR206-209 main commit
-`2a47cd4b6b1bfb70d6d2b5b913e9f917acc4716e`, the PR203-205 login-autofill merge
-`06db3f234ee0b90c00b32507351fe1d902661bdf`, the reviewed PR202 password-policy merge
-`c086111c4ca3374c6f0c6d57f5e090b22cb57063` and earlier accepted sources, including
-`0467722373da14760779392d94a212e3f10aac92` and `dbb63556d8b01b383dd61d326ce551635cb8b4d8`.
-The oldest sources `389d4d21aa79725ba6cd716dcc84d7aa917ada3e` and
-`5a9ba02e2b950285342fb189d680564ce5cdc489` were dropped.
+`bca97957aea3b856caff87dde99ebc959cce6c43`
+(PR233-235: Today screen on the card system, recovery timing, board sync) as the current source.
+It retains `529eb6c4b01706521bb4f1f2708c583030118fa7` (PR211-232, the production build
+before this release) as the rollback source, `76f04dfcd66c6ebbdbbb6a65a8d516accdd6b2e3`
+(PR206-210), the PR206-209 main commit `2a47cd4b6b1bfb70d6d2b5b913e9f917acc4716e`, the
+PR203-205 login-autofill merge `06db3f234ee0b90c00b32507351fe1d902661bdf`, the reviewed PR202
+password-policy merge `c086111c4ca3374c6f0c6d57f5e090b22cb57063` and
+`0467722373da14760779392d94a212e3f10aac92`. The oldest sources
+`389d4d21aa79725ba6cd716dcc84d7aa917ada3e`, `5a9ba02e2b950285342fb189d680564ce5cdc489` and
+`dbb63556d8b01b383dd61d326ce551635cb8b4d8` were dropped.
 Fitness must also expose that exact 40-hex commit through
 `NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA`/`VERCEL_GIT_COMMIT_SHA` at deploy time; a CLI-only
 deploy without git metadata (this project has no Git link, so pass
