@@ -11,9 +11,8 @@ export const FITNESS_HANDOFF_MASTER_PROJECT_REF = "bxtcuhkotumitoqtrcej";
 
 export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
   fitnessConsumerMerges: [
-    // Retained production rollback and reviewed username/reset release candidate.
+    // Reviewed username/reset release candidate (oldest retained source).
     // Release acceptance and canonical cutover remain separate from this source list.
-    "5a9ba02e2b950285342fb189d680564ce5cdc489",
     "dbb63556d8b01b383dd61d326ce551635cb8b4d8",
     // Reviewed PR198-201 release; the portal must ship this binding first.
     "0467722373da14760779392d94a212e3f10aac92",
@@ -23,8 +22,10 @@ export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
     "06db3f234ee0b90c00b32507351fe1d902661bdf",
     // Reviewed Fitness main after PR206-209 (session-start atomicity, board registry, sign-in fixes, CI pin).
     "2a47cd4b6b1bfb70d6d2b5b913e9f917acc4716e",
-    // Reviewed Fitness main after PR206-210 (current source; PR206-209 commit above retained as rollback).
+    // Reviewed Fitness main after PR206-210 (live production until the 2026-11-13 release; retained as the rollback source).
     "76f04dfcd66c6ebbdbbb6a65a8d516accdd6b2e3",
+    // Reviewed Fitness main after PR211-232 (current source: engine, card system, account/sign-out, dev-route guard, Next 14.2.35).
+    "529eb6c4b01706521bb4f1f2708c583030118fa7",
   ],
   state: "active",
 } as const satisfies FitnessHandoffActivation);
