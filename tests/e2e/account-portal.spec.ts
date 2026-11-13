@@ -2578,7 +2578,7 @@ test("the public legal center publishes all versioned canonical documents", asyn
     const document = page.locator(`[data-legal-document="${documentId}"]`);
     await expect(document).toHaveAttribute(
       "data-legal-version",
-      documentId === "platform-privacy" ? "2026-10-28" : "2026-09-13",
+      documentId === "platform-privacy" ? "2026-11-13" : "2026-09-13",
     );
     await expect(document.getByText("Last updated")).toContainText(
       documentId === "platform-privacy" ? "October 28, 2026" : legalCenter.lastUpdated.label,

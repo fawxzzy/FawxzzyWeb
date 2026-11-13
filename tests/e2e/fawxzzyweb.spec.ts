@@ -113,6 +113,28 @@ test("root has no home page and continues to the Apps catalog", async ({ page })
   expect(fallbackHtml).not.toContain("Creator. Builder. Fitness. Gamer.");
 });
 
+test("the header shows the live-count slot instead of the brand text and opens no live connection off production", async ({ page }) => {
+  const sockets: string[] = [];
+  page.on("websocket", (socket) => sockets.push(socket.url()));
+  await page.goto("/apps");
+  const primaryNav = page.getByRole("navigation", { name: "Primary" });
+  // The visible "Fawxzzy" label is gone: the brand link is the logo alone, still named for assistive tech.
+  await expect(primaryNav.locator(".site-nav__brand-label")).toHaveCount(0);
+  await expect(primaryNav.getByRole("link", { name: "Fawxzzy apps" })).toHaveAttribute("href", "/apps");
+  const brandWidth = await primaryNav.locator(".site-nav__brand").evaluate((element) => element.getBoundingClientRect().width);
+  expect(brandWidth).toBeLessThan(64);
+  // The slot is a dim dot with no number, not a link, and not on the keyboard path.
+  const presence = primaryNav.locator(".site-nav__presence");
+  await expect(presence).toBeVisible();
+  await expect(presence).toHaveAttribute("data-state", "idle");
+  await expect(presence).toHaveText("");
+  await expect(presence.locator("a, button, [tabindex]")).toHaveCount(0);
+  // Presence is inert off the production origins: no websocket even after the deferred start window.
+  await page.waitForTimeout(2500);
+  expect(sockets).toEqual([]);
+  await expect(presence).toHaveAttribute("data-state", "idle");
+});
+
 test("the shared shell has no Home or social-profile surface", async ({ page }) => {
   await page.goto("/apps");
 
@@ -785,7 +807,7 @@ test("primary navigation adapts without clipping from 320px through desktop", as
       expect(geometry.linksScrollWidth).toBeLessThanOrEqual(geometry.linksClientWidth);
       expect(geometry.targetsInsideNav).toBe(true);
       expect(geometry.minimumTargetHeight).toBeGreaterThanOrEqual(44);
-      await expect(primaryNav.locator(".site-nav__brand-label")).toBeVisible();
+      await expect(primaryNav.locator(".site-nav__presence")).toBeVisible();
       await expect(primaryNav.locator('a[aria-current="page"]')).toHaveCount(1);
     }
   }
