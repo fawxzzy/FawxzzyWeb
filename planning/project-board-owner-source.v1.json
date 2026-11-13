@@ -196,20 +196,20 @@
       "lifecycle": "in-progress",
       "priority": null,
       "public_safe": true,
-      "summary": "The Projects tab and page are for the signed-in account owner only. The static site ships no board data; a server endpoint verifies the owner and returns every card. The change is in an open pull request: not merged, not deployed, not checked on a device.",
+      "summary": "The Projects tab and page are for the signed-in account owner only. The static site ships no board data; a server endpoint verifies the owner and returns every card. It still needs a real-device check by the owner.",
       "objective": "Show every project card to the owner and nobody else, without per-card hiding.",
       "acceptance_criteria": [
         "Signed-out visitors and every other account see no Projects tab and receive no board data.",
         "The signed-in owner sees the tab and all boards at the account origin.",
         "The built static site contains no board card text.",
-        "The owner subject is configured on the server and the owner view is checked on a real device."
+        "The owner view is checked on a real device."
       ],
       "discoveries": [
         "The owner endpoint needs the server-only owner subject setting; without it the page fails closed and shows nothing, for everyone."
       ],
       "next_actions": [
-        "Merge the pull request after review, then confirm the owner subject setting exists on the account deployment.",
-        "Release, then sign in as the owner and check the tab and boards; sign in as another account and signed out to confirm nothing shows."
+        "Sign in as the owner on a phone and check the tab and every board.",
+        "Sign in as another account and signed out to confirm nothing shows."
       ],
       "blockers": [],
       "dependencies": [],

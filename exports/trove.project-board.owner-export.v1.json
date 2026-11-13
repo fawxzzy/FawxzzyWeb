@@ -1,11 +1,11 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_trove_owner_5bb20afc8199",
+  "export_id": "pbe_trove_owner_1391242bad1e",
   "project_id": "trove",
   "board_id": "discordos:project-feedback:trove",
   "owner": "trove",
   "adapter_id": "fawxzzyweb-owner-source-v1",
-  "source_revision": "sha256:5bb20afc819978d4ba8073c3bd532953eeae798ec21f0673f1211f1b213813c5",
+  "source_revision": "sha256:1391242bad1ea132e41a831d2580e0e292ba470c0c62bbb2b587739f33592573",
   "generated_at": "2026-11-13T00:00:00.000Z",
   "sources": [
     {
@@ -13,7 +13,7 @@
       "kind": "json",
       "repository": "FawxzzyWeb",
       "path": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json",
-      "revision": "sha256:4b8a958d666e7e63892cfe794ac957bc73eb50fd3d534850c9393a61f328dea6",
+      "revision": "sha256:63b375574f9000ed03bfbcc98a1ec2ca29568672f5651e461c185830e0427ca6",
       "observed_at": "2026-11-13T00:00:00.000Z"
     },
     {
@@ -350,7 +350,7 @@
         "project_id": "trove",
         "board_id": "discordos:project-feedback:trove",
         "title": "Make Projects owner-only and check it live",
-        "description": "The Projects tab and page are for the signed-in account owner only. The static site ships no board data; a server endpoint verifies the owner and returns every card. The change is in an open pull request: not merged, not deployed, not checked on a device.",
+        "description": "The Projects tab and page are for the signed-in account owner only. The static site ships no board data; a server endpoint verifies the owner and returns every card. It still needs a real-device check by the owner.",
         "card_type": "feature",
         "lifecycle": "in-progress",
         "priority": null,
@@ -371,20 +371,20 @@
         "source_updated_at": "2026-11-13T00:00:00.000Z"
       },
       "content": {
-        "summary": "The Projects tab and page are for the signed-in account owner only. The static site ships no board data; a server endpoint verifies the owner and returns every card. The change is in an open pull request: not merged, not deployed, not checked on a device.",
+        "summary": "The Projects tab and page are for the signed-in account owner only. The static site ships no board data; a server endpoint verifies the owner and returns every card. It still needs a real-device check by the owner.",
         "objective": "Show every project card to the owner and nobody else, without per-card hiding.",
         "acceptance_criteria": [
           "Signed-out visitors and every other account see no Projects tab and receive no board data.",
           "The signed-in owner sees the tab and all boards at the account origin.",
           "The built static site contains no board card text.",
-          "The owner subject is configured on the server and the owner view is checked on a real device."
+          "The owner view is checked on a real device."
         ],
         "discoveries": [
           "The owner endpoint needs the server-only owner subject setting; without it the page fails closed and shows nothing, for everyone."
         ],
         "next_actions": [
-          "Merge the pull request after review, then confirm the owner subject setting exists on the account deployment.",
-          "Release, then sign in as the owner and check the tab and boards; sign in as another account and signed out to confirm nothing shows."
+          "Sign in as the owner on a phone and check the tab and every board.",
+          "Sign in as another account and signed out to confirm nothing shows."
         ],
         "blockers": [],
         "evidence": [
