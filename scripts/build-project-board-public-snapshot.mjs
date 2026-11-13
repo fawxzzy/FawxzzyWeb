@@ -103,9 +103,9 @@ export function buildPublicSnapshot(root = process.cwd()) {
   for (const id of included) if (!seen.has(id)) throw new Error(`allowlisted card ${id} was not found in any pinned source`);
 
   const atlas = boards.find((board) => board.id === "atlas-stack");
-  const components = { _stack: "Stack", atlas: "Atlas", cortex: "Cortex", foundation: "Foundation", lifeline: "Lifeline" };
+  const components = { _stack: "Stack", atlas: "Atlas", cortex: "Cortex", foundation: "Foundation", lifeline: "Lifeline", playbook: "Playbook" };
   for (const card of atlas.cards) card.component = components[card.sourceProjectId];
-  const order = ["atlas", "cortex", "foundation", "lifeline", "_stack"];
+  const order = ["atlas", "playbook", "cortex", "foundation", "lifeline", "_stack"];
   atlas.cards.sort((a, b) => order.indexOf(a.sourceProjectId) - order.indexOf(b.sourceProjectId));
 
   sourceDates.sort();
