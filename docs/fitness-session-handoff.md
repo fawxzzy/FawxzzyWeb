@@ -81,13 +81,15 @@ declared size and streamed size before invoking its store or Auth validator.
 
 Sign-out. After a handoff both products hold one provider session, so a sign-out must end it for
 both. Fitness's sign-out is global (supabase-js default scope), and the portal's account-page
-sign-out is now global as well (`scope: "global"`, which also ends the person's Mazer session and
-other devices). Fitness validates its session server-side on protected pages (`getUser()` in its
+sign-out is now global as well (`scope: "global"`, which revokes the refresh tokens of the
+person's Mazer session and other devices too; access tokens already issued live until they expire,
+and Mazer's own handling of a revoked session was not checked). Fitness validates its session server-side on protected pages (`getUser()` in its
 `requireUser`, which sends "Auth session missing!" to `/login`; source-read, not exercised live), so
 a portal sign-out is seen on Fitness's next protected page load. The portal's
 own cached copy is revalidated against the provider on load and when the person returns to the page
-(`validatePortalSession`), so a Fitness sign-out is seen on the account site without waiting for the
-token to expire. Neither side signs the person out because a check could not reach the provider.
+(`validatePortalSession`, at most once per 20 s), so a Fitness sign-out is seen on the account site
+without waiting for the token to expire. Neither side signs the person out because a check could
+not reach the provider.
 
 Open finding: two refreshers on one lineage (not fixed here, needs evidence first).
 

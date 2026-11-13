@@ -88,3 +88,31 @@ export function scheduleCooldownTicks(
   handle = scheduler.schedule(tick, intervalMs);
   return stop;
 }
+
+/** Least time between two provider checks of a cached session. */
+export const SESSION_REVALIDATE_MIN_INTERVAL_MS = 20_000;
+
+/**
+ * Admits one provider check at a time and no more often than `minIntervalMs`, so coming back to a
+ * page (focus, visibility and page-restore events often fire together) costs one request, not
+ * three. `begin()` returns whether the caller may start a check; call `end()` when it settles.
+ */
+export function createRevalidationGate(
+  minIntervalMs = SESSION_REVALIDATE_MIN_INTERVAL_MS,
+  now: () => number = Date.now,
+) {
+  let inFlight = false;
+  let lastStartedAt: number | null = null;
+  return {
+    begin() {
+      const at = now();
+      if (inFlight || (lastStartedAt !== null && at - lastStartedAt < minIntervalMs)) return false;
+      inFlight = true;
+      lastStartedAt = at;
+      return true;
+    },
+    end() {
+      inFlight = false;
+    },
+  };
+}

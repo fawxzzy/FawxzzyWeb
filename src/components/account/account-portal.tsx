@@ -26,6 +26,7 @@ import {
   sanitizeRecoveryUrl,
 } from "@/lib/auth/callback-contract";
 import {
+  createRevalidationGate,
   scheduleCooldownTicks,
   scheduleDeferredAttempt,
   type OneShotAttemptState,
@@ -719,31 +720,29 @@ function usePortalSession(adapter: PortalAuthAdapter | null) {
   useEffect(() => {
     if (!adapter) return;
     let active = true;
-    let checking = false;
-    // Counts every change the provider announces (sign-out, refresh, sign-in). A check that started
-    // before one of them describes an older session and must not overwrite the newer state.
-    let changes = 0;
+    const gate = createRevalidationGate();
+    // Counts the sign-outs the provider announces. A check that started before one describes a
+    // session that no longer exists and must not bring it back. Other events (the SDK re-announces
+    // the session on tab return and after a refresh) do not make a check stale.
+    let signOuts = 0;
     const unsubscribe = adapter.onSessionChange((next) => {
-      changes += 1;
+      if (next === null) signOuts += 1;
       if (active) setSession(next);
     });
     // The cached session can outlive the provider's: signing out everywhere in Fitness or Mazer ends
     // it at the provider while this origin's storage still holds a copy. Ask the provider after load
-    // and whenever the person comes back to the page; a null answer is a sign-out, and a check that
-    // fails changes nothing (being offline is not a sign-out).
+    // and whenever the person comes back to the page (at most once per interval); a null answer is a
+    // sign-out, and a check that fails changes nothing (being offline is not a sign-out).
     const revalidate = () => {
-      if (checking) return;
-      checking = true;
-      const startedAt = changes;
+      if (!gate.begin()) return;
+      const startedAt = signOuts;
       adapter
         .validateSession()
         .then((next) => {
-          if (active && changes === startedAt) setSession(next);
+          if (active && (next === null || signOuts === startedAt)) setSession(next);
         })
         .catch(() => undefined)
-        .finally(() => {
-          checking = false;
-        });
+        .finally(gate.end);
     };
     const revalidateWhenVisible = () => {
       if (document.visibilityState === "visible") revalidate();
