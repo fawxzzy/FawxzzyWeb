@@ -11,8 +11,6 @@ export const FITNESS_HANDOFF_MASTER_PROJECT_REF = "bxtcuhkotumitoqtrcej";
 
 export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
   fitnessConsumerMerges: [
-    // Reviewed PR198-201 release; the portal must ship this binding first.
-    "0467722373da14760779392d94a212e3f10aac92",
     // Reviewed PR202 password-policy release; deploy this portal binding first.
     "c086111c4ca3374c6f0c6d57f5e090b22cb57063",
     // Reviewed PR203-205 release (login autofill) served by the Nov-5 CLI production deploy.
@@ -23,8 +21,10 @@ export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
     "76f04dfcd66c6ebbdbbb6a65a8d516accdd6b2e3",
     // Reviewed Fitness main after PR211-232 (engine, card system, account/sign-out, dev-route guard, Next 14.2.35; live until the PR233-235 release).
     "529eb6c4b01706521bb4f1f2708c583030118fa7",
-    // Reviewed Fitness main after PR233-235 (Today cards, recovery timing, board sync; current source; 529eb6c4 above is the live rollback).
+    // Reviewed Fitness main after PR233-235 (Today cards, recovery timing, board sync; live until the PR237-239 release).
     "bca97957aea3b856caff87dde99ebc959cce6c43",
+    // Reviewed Fitness main after PR237-239 (Settings, Session and History on the card system; current source; bca97957 above is the live rollback).
+    "d6a625c4b78786b56564b5d29497050fa96183ae",
   ],
   state: "active",
 } as const satisfies FitnessHandoffActivation);
