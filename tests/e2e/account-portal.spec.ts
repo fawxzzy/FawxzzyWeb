@@ -2430,18 +2430,24 @@ test("recovery exchanges PKCE before exposing the password form", async ({ brows
 
   await page.goto("/reset-password?recovery=1&auth_test=error&code=failed-code");
   await expect(page.locator('.account-auth-live-notice[role="alert"]')).toContainText(
-    safeAuthError("reset-complete"),
+    safeAuthError("confirm"),
   );
+  await expect(page.locator("[data-recovery-new-link]")).toHaveAttribute("href", "/reset-password");
   await expect(page.getByLabel("New password", { exact: true })).toHaveCount(0);
   await expect(page).toHaveURL(/\/reset-password\?recovery=1$/);
 
   await page.goto("/reset-password?recovery=1&auth_test=success&token=blocked");
   await expect(page.locator(".account-auth-dock button")).toHaveText("Recovery link invalid.");
+  await expect(page.locator("[data-recovery-new-link]")).toHaveAttribute("href", "/reset-password");
   await expect(page.getByLabel("New password", { exact: true })).toHaveCount(0);
   await expect(page).toHaveURL(/\/reset-password\?recovery=1$/);
 
   await page.goto("/reset-password?recovery=1&auth_test=success");
   await expect(page.locator(".account-auth-dock button")).toHaveText("Recovery link expired.");
+  await expect(page.locator("[data-recovery-new-link]")).toHaveAttribute("href", "/reset-password");
+  await page.locator("[data-recovery-new-link]").click();
+  await expect(page).toHaveURL(/\/reset-password$/);
+  await expect(page.getByLabel("Email")).toBeVisible();
   await expect(page.getByLabel("New password", { exact: true })).toHaveCount(0);
 
   await page.goto("/reset-password?recovery=1&auth_test=success&code=one-time-code");
