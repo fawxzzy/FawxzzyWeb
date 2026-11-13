@@ -1728,7 +1728,7 @@ test("intent=signup from Fitness keeps the secure handoff and the plain-language
   await expect(page.locator("[data-auth-guidance]")).toBeVisible();
   await expect(page.locator("html")).not.toHaveAttribute("data-post-auth-destination", /.+/);
   // The handoff and return path are the ordinary Fitness sign-up ones.
-  await page.getByLabel("Username").fill("new.fitness.user");
+  await page.getByLabel("Username", { exact: true }).fill("new.fitness.user");
   await page.getByLabel("Email", { exact: true }).fill("new.fitness.user@example.test");
   await page.getByLabel("Password", { exact: true }).fill("correct-horse-battery-staple");
   await page.locator(".account-auth-dock").getByRole("button", { name: "Create account" }).click();
@@ -1738,11 +1738,14 @@ test("intent=signup from Fitness keeps the secure handoff and the plain-language
   );
 });
 
-test("intent=signup never widens the return allowlist", async ({ page }) => {
+test("intent=signup never widens the return allowlist", async ({ browserName, page }) => {
+  test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
   await page.goto(
     "/login?app=fitness&intent=signup&auth_test=success&returnTo=https%3A%2F%2Fattacker.example.test%2F",
   );
-  await page.getByLabel("Username").fill("new.fitness.user");
+  // The form swaps from sign-in to sign-up on hydration; wait for it before typing into it.
+  await expect(page.getByRole("heading", { name: "Create Account" })).toBeVisible();
+  await page.getByLabel("Username", { exact: true }).fill("new.fitness.user");
   await page.getByLabel("Email", { exact: true }).fill("new.fitness.user@example.test");
   await page.getByLabel("Password", { exact: true }).fill("correct-horse-battery-staple");
   await page.locator(".account-auth-dock").getByRole("button", { name: "Create account" }).click();
