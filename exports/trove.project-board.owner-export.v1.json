@@ -1,11 +1,11 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_trove_owner_4f726542a772",
+  "export_id": "pbe_trove_owner_e4d1c46b7a6e",
   "project_id": "trove",
   "board_id": "discordos:project-feedback:trove",
   "owner": "trove",
   "adapter_id": "fawxzzyweb-owner-source-v1",
-  "source_revision": "sha256:4f726542a772c59bd0cf0b15059bac3b62a8f60628a4ab697f38195be0cda51c",
+  "source_revision": "sha256:e4d1c46b7a6ea506f5dcd63afa0de8dc61e5f79cce451bca44b95fc4bfbcad27",
   "generated_at": "2026-11-13T00:00:00.000Z",
   "sources": [
     {
@@ -13,7 +13,7 @@
       "kind": "json",
       "repository": "FawxzzyWeb",
       "path": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json",
-      "revision": "sha256:12004f30d6efcd85d51d52368dffd3ca1ae28c31c3b063020d8dd5004771fa2c",
+      "revision": "sha256:afaf8206f6140b2bb8964d6f4e0aec63b5a3460e138dace54d128d8807e240b6",
       "observed_at": "2026-11-13T00:00:00.000Z"
     },
     {
@@ -168,16 +168,16 @@
     {
       "idempotency_key": "pbk_trove_fw-device-001_v1",
       "record_kind": "project-work",
-      "record_status": "candidate",
+      "record_status": "active",
       "record": {
         "contract_version": "atlas.card-record.v2",
         "card_id": "FW-DEVICE-001",
         "project_id": "trove",
         "board_id": "discordos:project-feedback:trove",
         "title": "Check the account pages and project boards on a real phone",
-        "description": "The account pages and the public project boards are verified in headless browsers on narrow and wide screens; a real-phone pass is still outstanding.",
+        "description": "The account pages and the public project boards were checked on a real phone on 2026-11-13: nothing looked off. Reported by the owner; not independently observed.",
         "card_type": "reliability",
-        "lifecycle": "planning",
+        "lifecycle": "completed",
         "priority": null,
         "owner": "trove",
         "dependencies": [],
@@ -196,17 +196,18 @@
         "source_updated_at": "2026-11-13T00:00:00.000Z"
       },
       "content": {
-        "summary": "The account pages and the public project boards are verified in headless browsers on narrow and wide screens; a real-phone pass is still outstanding.",
+        "summary": "The account pages and the public project boards were checked on a real phone on 2026-11-13: nothing looked off. Reported by the owner; not independently observed.",
         "objective": "Confirm sign-in, sign-out, the account pages and the project boards behave on an actual phone, including the home-screen app.",
         "acceptance_criteria": [
           "Sign-in, sign-out and the Fitness handoff work on a real phone.",
           "The four project-board tabs and card details open, scroll and close without layout breaks.",
           "Findings are recorded and any fix ships through the normal reviewed path."
         ],
-        "discoveries": [],
+        "discoveries": [
+          "Owner report, 2026-11-13: sign-in, sign-out, the four board tabs and the account pages looked right on a phone."
+        ],
         "next_actions": [
-          "Run the pass on the owner's phone with the checklist from the account-site tests.",
-          "File each finding as a card or a fix."
+          "Repeat the pass after any large change to the account pages or the boards."
         ],
         "blockers": [],
         "evidence": [
