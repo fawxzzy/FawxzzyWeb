@@ -82,7 +82,9 @@ consent, retention, bot, and cross-tab contract. Active presence additionally re
 reviewed heartbeat and expiry contract. No such collector or provider contract is installed by
 this source-only projection.
 
-The projection is not a live counter, public API, board value, or deployment claim. It is a
+The projection is not a live counter, public API, board value, or deployment claim. The header's
+live "online now" display is a separate, ephemeral mechanism documented in `docs/live-presence.md`;
+it does not use this table and does not change `activeNow` here. It is a
 validation boundary for a future approved aggregate reader. Provider activation, owner-board
 adoption, public rendering, and observed browser acceptance remain separate decisions.
 

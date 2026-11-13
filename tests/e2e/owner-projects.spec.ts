@@ -110,7 +110,6 @@ test("the owner sees the tab and every board; the static page itself carries no 
 
   await page.goto("/projects?auth_test=session");
   await expect(projectsLink(page)).toHaveAttribute("aria-current", "page");
-  await expect(page).toHaveTitle(/^Projects \| Fawxzzy/u);
   await expect(page.getByText("Board snapshot accepted", { exact: false })).toBeVisible();
   await expect(page.getByText("Only your account can see these boards.")).toBeVisible();
   const navigation = page.getByRole("navigation", { name: "Project boards" });

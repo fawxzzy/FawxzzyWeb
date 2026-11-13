@@ -5,7 +5,6 @@ import { emitAccountProjectsPageView } from "@/components/analytics/first-party-
 import { ProjectBoard } from "@/components/projects/project-board";
 import { NotFoundState } from "@/components/system/not-found-state";
 import { accountContract, accountProjectsUrl } from "@/config/account";
-import { productIdentity } from "@/config/product";
 import emptyPreview from "@/data/project-board-preview.generated.json";
 import { buildOwnerBoardState } from "@/data/project-board-owner-state.mjs";
 import { resolvePortalAuthAdapter } from "@/lib/auth/browser-adapter";
@@ -73,13 +72,6 @@ export function OwnerProjectBoard() {
       unsubscribe();
     };
   }, []);
-
-  useEffect(() => {
-    if (view.status !== "ready") return;
-    const previous = document.title;
-    document.title = `Projects | ${productIdentity.publicName}`;
-    return () => { document.title = previous; };
-  }, [view.status]);
 
   if (view.status === "ready") return <ProjectBoard boardState={view.state} />;
   if (view.status === "hidden") return <NotFoundState />;

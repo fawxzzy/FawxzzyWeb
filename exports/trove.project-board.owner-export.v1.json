@@ -1,11 +1,11 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_trove_owner_1391242bad1e",
+  "export_id": "pbe_trove_owner_b8698fe37a07",
   "project_id": "trove",
   "board_id": "discordos:project-feedback:trove",
   "owner": "trove",
   "adapter_id": "fawxzzyweb-owner-source-v1",
-  "source_revision": "sha256:1391242bad1ea132e41a831d2580e0e292ba470c0c62bbb2b587739f33592573",
+  "source_revision": "sha256:b8698fe37a070246d69a95a4d7b853ede621a628f68e3408d202cb369907bf4c",
   "generated_at": "2026-11-13T00:00:00.000Z",
   "sources": [
     {
@@ -13,7 +13,7 @@
       "kind": "json",
       "repository": "FawxzzyWeb",
       "path": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json",
-      "revision": "sha256:63b375574f9000ed03bfbcc98a1ec2ca29568672f5651e461c185830e0427ca6",
+      "revision": "sha256:b2c54352e59b682ac690ed80742fde8972c1c483dbdee68481649de52225692b",
       "observed_at": "2026-11-13T00:00:00.000Z"
     },
     {
@@ -222,6 +222,66 @@
       }
     },
     {
+      "idempotency_key": "pbk_trove_fw-presence-001_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FW-PRESENCE-001",
+        "project_id": "trove",
+        "board_id": "discordos:project-feedback:trove",
+        "title": "Show a live online-now count in the site header",
+        "description": "The site header shows how many people are on the website right now, in place of the brand text: a dim dot, then a count once connected. It counts visible site tabs through an anonymous live connection that stores nothing and needs no database change. Historical traffic, referrers and per-app counts stay on FW-ANALYTICS-001.",
+        "card_type": "feature",
+        "lifecycle": "in-progress",
+        "priority": null,
+        "owner": "trove",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-11-13T00:00:00.000Z",
+        "source_ref": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json#FW-PRESENCE-001",
+        "extensions": {
+          "public_safe": true,
+          "source_baseline_commit": "af6a2076712ce7517b1e021bf4841048f6f97085"
+        }
+      },
+      "source": {
+        "source_id": "fawxzzyweb-owner-work",
+        "source_ref": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json#FW-PRESENCE-001",
+        "source_status": "current",
+        "source_updated_at": "2026-11-13T00:00:00.000Z"
+      },
+      "content": {
+        "summary": "The site header shows how many people are on the website right now, in place of the brand text: a dim dot, then a count once connected. It counts visible site tabs through an anonymous live connection that stores nothing and needs no database change. Historical traffic, referrers and per-app counts stay on FW-ANALYTICS-001.",
+        "objective": "Give a truthful, privacy-safe live count that never shows a made-up number.",
+        "acceptance_criteria": [
+          "The header shows a dim dot when the count is unknown and a number only for a real positive count.",
+          "The count is recomputed from the current presence snapshot and counts each visible tab once.",
+          "Nothing identifying is sent or stored, and the privacy page says so.",
+          "It runs only on the production site origins and is loaded after the page settles.",
+          "The header looks right on a real phone."
+        ],
+        "discoveries": [
+          "The channel is public, so anyone with the public key could inflate the number; treat it as a casual indicator.",
+          "Realtime connection quotas on the shared project apply; past them the display goes dim."
+        ],
+        "next_actions": [
+          "Check the header on a real phone with the live count showing.",
+          "Decide whether a per-browser count and a public traffic view belong to FW-ANALYTICS-001."
+        ],
+        "blockers": [],
+        "evidence": [
+          "docs/live-presence.md",
+          "src/lib/presence/presence-contract.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
       "idempotency_key": "pbk_trove_fw-projects-001_v1",
       "record_kind": "project-work",
       "record_status": "active",
@@ -400,8 +460,8 @@
     }
   ],
   "extensions": {
-    "source_work_item_count": 6,
-    "exported_card_count": 6,
+    "source_work_item_count": 7,
+    "exported_card_count": 7,
     "excluded_record_count": 3,
     "excluded_record_identities": [
       "SOC-024",

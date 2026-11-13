@@ -6,7 +6,7 @@ export const legalCenter = {
   documents: {
     platformPrivacy: {
       description: "How Fawxzzy handles information across the website and shared account service.",
-      lastUpdated: { dateTime: "2026-10-28", label: "October 28, 2026" },
+      lastUpdated: { dateTime: "2026-11-13", label: "November 13, 2026" },
       eyebrow: "Fawxzzy legal",
       id: "platform-privacy",
       path: "/privacy",
@@ -23,6 +23,7 @@ export const legalCenter = {
           paragraphs: [
             "We use this information to authenticate you, recover your account, connect supported Fawxzzy apps to the same account, prevent stale or replayed sign-in requests, and operate and secure the services.",
             "When first-party analytics is enabled, the public Fawxzzy website may send closed navigation events. The account Projects page may send one page-view event for each signed-in visit. That event contains only the event name, Web product, and Projects route; it excludes account identifiers, session details, private work, query text, and free-form text. Other account pages do not send storefront analytics.",
+            "While the Fawxzzy website is open and visible in your browser, it may open an anonymous live connection to Supabase so the header can show how many people are online. The connection uses a random identifier that exists only in memory for that tab, is not linked to you or your account, is not stored, and ends when you leave or switch tabs.",
           ],
         },
         {
@@ -40,7 +41,7 @@ export const legalCenter = {
         },
       ],
       title: "Privacy Policy",
-      version: "2026-10-28",
+      version: "2026-11-13",
     },
     platformTerms: {
       description: "Terms for the Fawxzzy website and shared account service.",
