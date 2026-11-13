@@ -1,8 +1,8 @@
 const board = {
   "schema": "fawxzzy.project-board.public-preview.v1",
-  "preparedAt": "2026-11-13",
+  "preparedAt": "2026-11-14",
   "publicationReady": true,
-  "sourceKind": "owner-export snapshot of every card in the listed project boards, owner-only view; source exports generated 2026-07-14 to 2026-11-13; not live",
+  "sourceKind": "owner-export snapshot of every card in the listed project boards, owner-only view; source exports generated 2026-07-14 to 2026-11-14; not live",
   "boards": [
     {
       "id": "fitness",
@@ -5770,7 +5770,7 @@ const board = {
           "id": "PB-V04-PLAN-APPLY-001",
           "sourceProjectId": "playbook",
           "component": "Playbook",
-          "sourceRevision": "sha256:10a40c432c9b0810cbc88aa7b31750b3721a9d83ae9e5c0fe8b091a81de5cda0",
+          "sourceRevision": "sha256:9035e45abb0da20f749cbd46121a77cf4e4f38a3656bc4d23efc310434285a5a",
           "owner": "playbook",
           "title": "Plan/apply trust-model hardening",
           "summary": "Strengthen apply safety boundaries and keep remediation derivation deterministic.",
@@ -5781,32 +5781,13 @@ const board = {
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
-          "updatedAt": "2026-11-13T00:00:00.000Z"
-        },
-        {
-          "id": "PB-V05-PACKAGE-BOUNDARIES-001",
-          "sourceProjectId": "playbook",
-          "component": "Playbook",
-          "sourceRevision": "sha256:10a40c432c9b0810cbc88aa7b31750b3721a9d83ae9e5c0fe8b091a81de5cda0",
-          "owner": "playbook",
-          "title": "Canonical command ownership and plugin convergence",
-          "summary": "Remove duplicated command implementations and align plugin loading across command surfaces.",
-          "lifecycle": "in_progress",
-          "workType": "feature",
-          "priority": null,
-          "dependencies": [
-            "PB-V04-PLAN-APPLY-001"
-          ],
-          "parentId": null,
-          "duplicateOf": null,
-          "supersededBy": null,
-          "updatedAt": "2026-11-13T00:00:00.000Z"
+          "updatedAt": "2026-11-14T00:00:00.000Z"
         },
         {
           "id": "PB-V06-FAILURE-TAXONOMY-001",
           "sourceProjectId": "playbook",
           "component": "Playbook",
-          "sourceRevision": "sha256:10a40c432c9b0810cbc88aa7b31750b3721a9d83ae9e5c0fe8b091a81de5cda0",
+          "sourceRevision": "sha256:9035e45abb0da20f749cbd46121a77cf4e4f38a3656bc4d23efc310434285a5a",
           "owner": "playbook",
           "title": "General failure taxonomy, ingest and prevention mapping",
           "summary": "Capture failures from any source as structured intelligence with a stable taxonomy and deterministically map them into rules, tests, docs and remediation scaffolds.",
@@ -5817,32 +5798,30 @@ const board = {
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
-          "updatedAt": "2026-11-13T00:00:00.000Z"
+          "updatedAt": "2026-11-14T00:00:00.000Z"
         },
         {
           "id": "PB-V07-ARCH-INTELLIGENCE-GRAPH-001",
           "sourceProjectId": "playbook",
           "component": "Playbook",
-          "sourceRevision": "sha256:10a40c432c9b0810cbc88aa7b31750b3721a9d83ae9e5c0fe8b091a81de5cda0",
+          "sourceRevision": "sha256:9035e45abb0da20f749cbd46121a77cf4e4f38a3656bc4d23efc310434285a5a",
           "owner": "playbook",
           "title": "Architecture intelligence graph v2",
           "summary": "Evolve repository graph artifacts into a semantic architecture graph that powers explain/query/analyze-pr impact and risk reasoning.",
           "lifecycle": "in_progress",
           "workType": "feature",
           "priority": null,
-          "dependencies": [
-            "PB-V05-PACKAGE-BOUNDARIES-001"
-          ],
+          "dependencies": [],
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
-          "updatedAt": "2026-11-13T00:00:00.000Z"
+          "updatedAt": "2026-11-14T00:00:00.000Z"
         },
         {
           "id": "PB-V08-GRAPH-MEMORY-001",
           "sourceProjectId": "playbook",
           "component": "Playbook",
-          "sourceRevision": "sha256:10a40c432c9b0810cbc88aa7b31750b3721a9d83ae9e5c0fe8b091a81de5cda0",
+          "sourceRevision": "sha256:9035e45abb0da20f749cbd46121a77cf4e4f38a3656bc4d23efc310434285a5a",
           "owner": "playbook",
           "title": "Graph-memory composition bootstrap",
           "summary": "Define graph-memory composition between architecture intelligence and memory workflows for deterministic retrieval and explainability.",
@@ -5855,13 +5834,13 @@ const board = {
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
-          "updatedAt": "2026-11-13T00:00:00.000Z"
+          "updatedAt": "2026-11-14T00:00:00.000Z"
         },
         {
           "id": "PB-V09-CAPABILITY-ROUTING-001",
           "sourceProjectId": "playbook",
           "component": "Playbook",
-          "sourceRevision": "sha256:10a40c432c9b0810cbc88aa7b31750b3721a9d83ae9e5c0fe8b091a81de5cda0",
+          "sourceRevision": "sha256:9035e45abb0da20f749cbd46121a77cf4e4f38a3656bc4d23efc310434285a5a",
           "owner": "playbook",
           "title": "Capability and model routing",
           "summary": "Define explicit capability-routing and any future bounded model-routing policy only after interface surfaces are grounded on the deterministic platform runtime.",
@@ -5874,13 +5853,13 @@ const board = {
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
-          "updatedAt": "2026-11-13T00:00:00.000Z"
+          "updatedAt": "2026-11-14T00:00:00.000Z"
         },
         {
           "id": "PB-V09-EXECUTION-ORCHESTRATION-001",
           "sourceProjectId": "playbook",
           "component": "Playbook",
-          "sourceRevision": "sha256:10a40c432c9b0810cbc88aa7b31750b3721a9d83ae9e5c0fe8b091a81de5cda0",
+          "sourceRevision": "sha256:9035e45abb0da20f749cbd46121a77cf4e4f38a3656bc4d23efc310434285a5a",
           "owner": "playbook",
           "title": "Execution orchestration hardening",
           "summary": "Extend the current verify/plan/apply runtime into broader policy-gated orchestration only after control-plane foundations exist, without broadening the current 4-week implementation scope.",
@@ -5893,13 +5872,13 @@ const board = {
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
-          "updatedAt": "2026-11-13T00:00:00.000Z"
+          "updatedAt": "2026-11-14T00:00:00.000Z"
         },
         {
           "id": "PB-V09-GOVERNED-INTERFACE-API-001",
           "sourceProjectId": "playbook",
           "component": "Playbook",
-          "sourceRevision": "sha256:10a40c432c9b0810cbc88aa7b31750b3721a9d83ae9e5c0fe8b091a81de5cda0",
+          "sourceRevision": "sha256:9035e45abb0da20f749cbd46121a77cf4e4f38a3656bc4d23efc310434285a5a",
           "owner": "playbook",
           "title": "Governed interface/API surfaces for multi-repo control planes",
           "summary": "Define optional, policy-aware server/API interface surfaces that coordinate many Playbook-enabled repositories over one deterministic runtime without collapsing per-repo boundaries.",
@@ -5912,13 +5891,13 @@ const board = {
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
-          "updatedAt": "2026-11-13T00:00:00.000Z"
+          "updatedAt": "2026-11-14T00:00:00.000Z"
         },
         {
           "id": "PB-V09-INTERFACE-SURFACES-001",
           "sourceProjectId": "playbook",
           "component": "Playbook",
-          "sourceRevision": "sha256:10a40c432c9b0810cbc88aa7b31750b3721a9d83ae9e5c0fe8b091a81de5cda0",
+          "sourceRevision": "sha256:9035e45abb0da20f749cbd46121a77cf4e4f38a3656bc4d23efc310434285a5a",
           "owner": "playbook",
           "title": "Platform interface surfaces",
           "summary": "Sequence broader interface surfaces over the deterministic runtime after multi-repo transfer and core control layers are defined, without treating those surfaces as present commitments.",
@@ -5933,13 +5912,13 @@ const board = {
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
-          "updatedAt": "2026-11-13T00:00:00.000Z"
+          "updatedAt": "2026-11-14T00:00:00.000Z"
         },
         {
           "id": "PB-V09-KNOWLEDGE-PERSISTENCE-001",
           "sourceProjectId": "playbook",
           "component": "Playbook",
-          "sourceRevision": "sha256:10a40c432c9b0810cbc88aa7b31750b3721a9d83ae9e5c0fe8b091a81de5cda0",
+          "sourceRevision": "sha256:9035e45abb0da20f749cbd46121a77cf4e4f38a3656bc4d23efc310434285a5a",
           "owner": "playbook",
           "title": "Knowledge persistence layer",
           "summary": "Define the post-observation persistence layer that retains deterministic evidence and knowledge artifacts with explicit lifecycle boundaries before broader platform scheduling.",
@@ -5952,13 +5931,13 @@ const board = {
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
-          "updatedAt": "2026-11-13T00:00:00.000Z"
+          "updatedAt": "2026-11-14T00:00:00.000Z"
         },
         {
           "id": "PB-V09-METRICS-ROI-PROOF-OF-VALUE-001",
           "sourceProjectId": "playbook",
           "component": "Playbook",
-          "sourceRevision": "sha256:10a40c432c9b0810cbc88aa7b31750b3721a9d83ae9e5c0fe8b091a81de5cda0",
+          "sourceRevision": "sha256:9035e45abb0da20f749cbd46121a77cf4e4f38a3656bc4d23efc310434285a5a",
           "owner": "playbook",
           "title": "Metrics / ROI / Proof-of-Value Architecture",
           "summary": "Define canonical value measurement architecture grounded in deterministic repository outcomes, trust, governance impact, and evidence-linked attribution across Open Core, Team, and Enterprise without cloud-required instrumentation.",
@@ -5971,13 +5950,13 @@ const board = {
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
-          "updatedAt": "2026-11-13T00:00:00.000Z"
+          "updatedAt": "2026-11-14T00:00:00.000Z"
         },
         {
           "id": "PB-V09-MULTI-REPO-TRANSFER-001",
           "sourceProjectId": "playbook",
           "component": "Playbook",
-          "sourceRevision": "sha256:10a40c432c9b0810cbc88aa7b31750b3721a9d83ae9e5c0fe8b091a81de5cda0",
+          "sourceRevision": "sha256:9035e45abb0da20f749cbd46121a77cf4e4f38a3656bc4d23efc310434285a5a",
           "owner": "playbook",
           "title": "Governed cross-repo pattern promotion and transfer",
           "summary": "Promote proven, governed patterns across repositories only after local promotion and outcome evidence validate transfer readiness.",
@@ -5988,13 +5967,13 @@ const board = {
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
-          "updatedAt": "2026-11-13T00:00:00.000Z"
+          "updatedAt": "2026-11-14T00:00:00.000Z"
         },
         {
           "id": "PB-V09-PACKAGING-SKU-ARCHITECTURE-001",
           "sourceProjectId": "playbook",
           "component": "Playbook",
-          "sourceRevision": "sha256:10a40c432c9b0810cbc88aa7b31750b3721a9d83ae9e5c0fe8b091a81de5cda0",
+          "sourceRevision": "sha256:9035e45abb0da20f749cbd46121a77cf4e4f38a3656bc4d23efc310434285a5a",
           "owner": "playbook",
           "title": "Packaging / SKU architecture (Open Core -> Team -> Enterprise)",
           "summary": "Define a canonical SKU architecture where Open Core, Team, and Enterprise package coordination/governance/deployment surfaces over one deterministic runtime without introducing cloud-required or SKU-specific engine semantics.",
@@ -6007,13 +5986,13 @@ const board = {
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
-          "updatedAt": "2026-11-13T00:00:00.000Z"
+          "updatedAt": "2026-11-14T00:00:00.000Z"
         },
         {
           "id": "PB-V09-PILOT-DESIGN-PARTNER-ROLLOUT-001",
           "sourceProjectId": "playbook",
           "component": "Playbook",
-          "sourceRevision": "sha256:10a40c432c9b0810cbc88aa7b31750b3721a9d83ae9e5c0fe8b091a81de5cda0",
+          "sourceRevision": "sha256:9035e45abb0da20f749cbd46121a77cf4e4f38a3656bc4d23efc310434285a5a",
           "owner": "playbook",
           "title": "Pilot / Design-Partner / Rollout Architecture",
           "summary": "Define canonical staged adoption from local read-only proof through team/workspace and enterprise governance readiness so rollout is evidence-driven, trust-gated, and aligned to deterministic runtime/control-plane maturity.",
@@ -6026,13 +6005,13 @@ const board = {
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
-          "updatedAt": "2026-11-13T00:00:00.000Z"
+          "updatedAt": "2026-11-14T00:00:00.000Z"
         },
         {
           "id": "PB-V09-PLATFORM-OBSERVATION-001",
           "sourceProjectId": "playbook",
           "component": "Playbook",
-          "sourceRevision": "sha256:10a40c432c9b0810cbc88aa7b31750b3721a9d83ae9e5c0fe8b091a81de5cda0",
+          "sourceRevision": "sha256:9035e45abb0da20f749cbd46121a77cf4e4f38a3656bc4d23efc310434285a5a",
           "owner": "playbook",
           "title": "Platform observation layer evolution",
           "summary": "Extend the existing deterministic repo-intelligence and governance observation substrate into a broader platform observation layer without expanding the current 4-week delivery scope.",
@@ -6045,13 +6024,13 @@ const board = {
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
-          "updatedAt": "2026-11-13T00:00:00.000Z"
+          "updatedAt": "2026-11-14T00:00:00.000Z"
         },
         {
           "id": "PB-V09-TRUST-EVIDENCE-001",
           "sourceProjectId": "playbook",
           "component": "Playbook",
-          "sourceRevision": "sha256:10a40c432c9b0810cbc88aa7b31750b3721a9d83ae9e5c0fe8b091a81de5cda0",
+          "sourceRevision": "sha256:9035e45abb0da20f749cbd46121a77cf4e4f38a3656bc4d23efc310434285a5a",
           "owner": "playbook",
           "title": "Platform trust and evidence model",
           "summary": "Evolve current evidence-linked remediation and private-first trust boundaries into a broader platform trust model after persistence and longitudinal state foundations exist.",
@@ -6064,13 +6043,13 @@ const board = {
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
-          "updatedAt": "2026-11-13T00:00:00.000Z"
+          "updatedAt": "2026-11-14T00:00:00.000Z"
         },
         {
           "id": "PB-V09-WORKSPACE-TENANT-GOVERNANCE-001",
           "sourceProjectId": "playbook",
           "component": "Playbook",
-          "sourceRevision": "sha256:10a40c432c9b0810cbc88aa7b31750b3721a9d83ae9e5c0fe8b091a81de5cda0",
+          "sourceRevision": "sha256:9035e45abb0da20f749cbd46121a77cf4e4f38a3656bc4d23efc310434285a5a",
           "owner": "playbook",
           "title": "Workspace / tenant governance + optional hosted deployment model",
           "summary": "Define explicit workspace/tenant policy boundaries and optional hosted/self-hosted control-plane packaging over one deterministic runtime without weakening CLI-first, offline-capable, private-first guarantees.",
@@ -6083,13 +6062,13 @@ const board = {
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
-          "updatedAt": "2026-11-13T00:00:00.000Z"
+          "updatedAt": "2026-11-14T00:00:00.000Z"
         },
         {
           "id": "PB-V1-DEMO-REFRESH-001",
           "sourceProjectId": "playbook",
           "component": "Playbook",
-          "sourceRevision": "sha256:10a40c432c9b0810cbc88aa7b31750b3721a9d83ae9e5c0fe8b091a81de5cda0",
+          "sourceRevision": "sha256:9035e45abb0da20f749cbd46121a77cf4e4f38a3656bc4d23efc310434285a5a",
           "owner": "playbook",
           "title": "PR-based playbook-demo refresh automation",
           "summary": "Refresh committed playbook-demo artifacts/docs with branch-accurate local CLI builds through dedicated maintenance workflows and PR-based delivery.",
@@ -6100,7 +6079,7 @@ const board = {
           "parentId": null,
           "duplicateOf": null,
           "supersededBy": null,
-          "updatedAt": "2026-11-13T00:00:00.000Z"
+          "updatedAt": "2026-11-14T00:00:00.000Z"
         },
         {
           "id": "lane-cortex-boundary-decision",
