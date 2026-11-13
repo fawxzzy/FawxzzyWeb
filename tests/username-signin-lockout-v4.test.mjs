@@ -147,16 +147,10 @@ test("note-failure posts both keys to account_api and never throws", async () =>
   );
 });
 
-test("edge function v4 flow: bucketed client address, failures noted after the password check, success clears the pair", () => {
+test("edge function v4 flow stays available as the v5 fallback: failures noted after the password check, success clears the pair", () => {
   const source = readFileSync("supabase/functions/username-password-signin/index.ts", "utf8");
-  assert.match(
-    source,
-    /clientBucket\(\s*request\.headers\.get\("cf-connecting-ip"\)\s*\?\?\s*request\.headers\.get\("x-forwarded-for"\)\?\.split\(",", 1\)\[0\]\s*\?\?\s*"unknown",?\s*\)/,
-    "the client key is the grouped bucket with the same header precedence as v3",
-  );
-  assert.ok(source.includes("v4Args: {"));
-  assert.ok(source.includes("sha256(`username-aggregate-v4:${normalized}`)"));
-  assert.ok(source.includes("sha256(`username-client-v4:${normalized}:${clientAddress}`)"));
+  assert.ok(source.includes("v4Args: keys.v4"));
+  assert.ok(source.includes("clientAddressFromHeaders(request.headers)"), "the client key is the grouped bucket from cf-connecting-ip only");
 
   const throttle = source.indexOf("resolution.throttled");
   const password = source.indexOf("signInWithPassword");
@@ -168,8 +162,8 @@ test("edge function v4 flow: bucketed client address, failures noted after the p
   assert.ok(guard > password, "the failure guard follows the password check");
   assert.ok(failure > guard && failure < generic, "the failure note sits inside the failed-sign-in branch, before its response");
   assert.ok(success > generic, "the success note follows the failed-sign-in branch");
-  assert.ok(source.includes("attemptKey: resolution.version === 4 ? pairAttemptKey : attemptKey"));
-  assert.ok(source.includes("if (resolution.version === 4) {"), "failures are only recorded when v4 resolved the request");
+  assert.ok(source.includes("keys.v4.p_pair_attempt_key"));
+  assert.ok(source.includes("} else if (resolution.version === 4) {"), "v4 failures are only recorded when v4 resolved the request");
 });
 
 test("v4 migration is additive, keeps v3, and checks client, then global, then failure counters", () => {

@@ -106,12 +106,32 @@ export function resolveUsernameSignInV4Rpc({ args, fetchImpl, serviceRole, url }
 }
 
 /**
- * Prefers v4 when `v4Args` is given, then v3, then v2 (which cannot report a throttle). A step is
- * skipped only when PostgREST says that function is absent; a 500 or a malformed answer from an
- * installed version fails closed and is never retried on an older version.
- * `args` are the v3 arguments; `v4Args` are the v4 arguments.
+ * v5 resolver: a read-only CHECK with the same row shape and fail-closed behavior as v4, taking the v5 keys in `args`
+ * (`p_attempt_key` aggregate, `p_client_attempt_key`, `p_pair_attempt_key`). It never counts anything; failures are
+ * recorded afterwards with `noteUsernameSignInFailureV2Rpc`. Returns `{ userId, throttled, version: 5 }`;
+ * `version: null` means v5 is not installed (caller falls back to v4).
  */
-export async function resolveUsernameSignIn({ v4Args, ...options }) {
+export function resolveUsernameSignInV5Rpc({ args, fetchImpl, serviceRole, url }) {
+  return resolveThrottledRpc({
+    args,
+    fetchImpl,
+    name: "account_resolve_username_signin_v5",
+    serviceRole,
+    url,
+    version: 5,
+  });
+}
+
+/**
+ * Prefers v5 when `v5Args` is given, then v4 when `v4Args` is given, then v3, then v2 (which cannot report a throttle).
+ * A step is skipped only when PostgREST says that function is absent; a 500 or a malformed answer from an installed
+ * version fails closed and is never retried on an older version. `args` are the v3 arguments.
+ */
+export async function resolveUsernameSignIn({ v4Args, v5Args, ...options }) {
+  if (v5Args) {
+    const v5 = await resolveUsernameSignInV5Rpc({ ...options, args: v5Args });
+    if (v5.version !== null) return v5;
+  }
   if (v4Args) {
     const v4 = await resolveUsernameSignInV4Rpc({ ...options, args: v4Args });
     if (v4.version !== null) return v4;
@@ -152,6 +172,37 @@ export async function noteUsernameSignInFailureRpc({ attemptKey, fetchImpl, pair
       args: { p_attempt_key: attemptKey, p_pair_attempt_key: pairAttemptKey },
       fetchImpl,
       name: "account_note_username_signin_failure_v1",
+      serviceRole,
+      url,
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * v5: records a FAILED password check (known or unknown username alike) against the per-(username, client), per-username,
+ * per-client and global failure counters. This is the only call that increments anything. Best effort: never throws and
+ * never affects the sign-in result. Returns false when v5 is not installed or the call failed.
+ */
+export async function noteUsernameSignInFailureV2Rpc({
+  attemptKey,
+  clientAttemptKey,
+  fetchImpl,
+  pairAttemptKey,
+  serviceRole,
+  url,
+}) {
+  try {
+    const response = await rpcRequest({
+      args: {
+        p_attempt_key: attemptKey,
+        p_client_attempt_key: clientAttemptKey,
+        p_pair_attempt_key: pairAttemptKey,
+      },
+      fetchImpl,
+      name: "account_note_username_signin_failure_v2",
       serviceRole,
       url,
     });
