@@ -68,6 +68,23 @@ redirects must be admitted individually in a future packet; do not add a broad p
 - Browser persistence is origin-scoped. No `Domain=.fawxzzy.com` cookie is created, and refresh
   tokens are not shared between product origins.
 - Phase one shares credentials, not seamless sessions. A person signs in once per product origin.
+  (The Fitness handoff below is the one deliberate exception: it hands Fitness the portal's current
+  session pair, so both origins then hold one provider session.)
+- Sign-out reach (FF-ACCOUNT-004 W-2). "Sign out" on the account page ends the account's sessions
+  everywhere at the provider (Supabase `scope: "global"`: the portal, Fitness, Mazer and other
+  devices), because a Fitness sign-out already behaves that way and a narrower portal sign-out left
+  Fitness and Mazer apparently signed in. The one narrower use is ending the portal's own
+  throw-away recovery session after "Save new password" (`scope: "local"`): choosing a new password
+  does not sign the person out of the apps they are using. A sign-out the provider cannot complete
+  (network, 5xx) is reported and keeps the session so the person can retry; a session another app
+  already revoked counts as signed out, never as a failure.
+- Stale cached sessions. The portal's browser storage can hold a session another app has already
+  revoked (Fitness "sign out" is global). The account page therefore asks the provider whether the
+  session is still alive right after loading and again when the person returns to the page (tab
+  visible, window focus, back/forward restore) using the access token it already holds; it does not
+  spend the refresh token. A revoked session is cleared locally and the person is sent to sign in.
+  A failed check (offline, provider error) changes nothing: being offline is not a sign-out. The
+  provider's answer also refreshes the displayed username and email.
 - Phase-two SSO is deferred. Its only admissible starting points are PKCE/OIDC or a one-time
   backend exchange; access and refresh tokens never travel in URLs.
 - Email/password is the only initial provider. Email verification is off. Social, phone,
@@ -253,7 +270,7 @@ existing account, or treat a client-side value as authoritative.
 1. Confirm exact Vercel project, Git revision, Preview/production target, custom domain, and prior
    rollback deployment before mutation.
 2. Prove TLS and canonical behavior for the account origin without changing the public hub.
-3. Exercise signup (10 and 128+ characters), legacy-short login, normal login, local sign-out (which must land on the product origin, never on the login page),
+3. Exercise signup (10 and 128+ characters), legacy-short login, normal login, sign-out everywhere (which must land on the product origin, never on the login page, and must leave Fitness and Mazer signed out at the provider),
    email update, password update, reset request, recovery completion, confirm, and PKCE callback.
 4. Prove non-enumerating error copy, cooldown, callback idempotency, state mismatch rejection,
    URL sanitization, and rejection of access/refresh-token URLs and open redirects.
