@@ -485,7 +485,8 @@
 .account-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  text-align: center;
   gap: 1rem;
   color: rgb(var(--subtle));
   padding: 0.5rem 0.35rem;
@@ -740,7 +741,6 @@
 .account-footer {
   border-top: 1px solid rgb(255 255 255 / 0.08);
   padding-top: 1rem;
-  color: rgb(var(--subtle));
 }
 
 .system-state {

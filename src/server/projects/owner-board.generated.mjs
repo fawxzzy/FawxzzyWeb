@@ -1,4 +1,4 @@
-export default {
+const board = {
   "schema": "fawxzzy.project-board.public-preview.v1",
   "preparedAt": "2026-11-13",
   "publicationReady": true,
@@ -6145,3 +6145,5 @@ export default {
     }
   ]
 };
+
+export default board;

@@ -6,8 +6,8 @@ import { readFileSync } from 'node:fs';
 // unauthenticated probe sees, instead of failing quietly for the owner later.
 // Node-only helpers for the builder, the release gate and tests; never import
 // this or the generated module from client or static-page code.
-const PREFIX = 'export default ';
-const SUFFIX = ';\n';
+const PREFIX = 'const board = ';
+const SUFFIX = ';\n\nexport default board;\n';
 
 export const OWNER_BOARD_MODULE = new URL('./owner-board.generated.mjs', import.meta.url);
 
