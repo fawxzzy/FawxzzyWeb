@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 const boards = [
   { name: "Fawxzzy Fitness", count: 29, sample: "Add Calendar View" },
   { name: "Mazer", count: 217, sample: "Maintain the mobile-clean 2D shipping baseline" },
-  { name: "Fawxzzy Web", count: 1, sample: "Publish the master-backed Fawxzzy project board" },
+  { name: "Fawxzzy Web", count: 4, sample: "Connect the public project boards to the live master read model" },
   { name: "Atlas Stack", count: 54, sample: "Deterministic roadmap next command" },
 ];
 

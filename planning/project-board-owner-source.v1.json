@@ -5,7 +5,7 @@
   "board_id": "discordos:project-feedback:trove",
   "owner": "trove",
   "state": "active",
-  "updated_at": "2026-10-18T05:32:26.000Z",
+  "updated_at": "2026-11-13T00:00:00.000Z",
   "source_baseline": {
     "repository": "fawxzzy/FawxzzyWeb",
     "commit": "af6a2076712ce7517b1e021bf4841048f6f97085",
@@ -20,45 +20,40 @@
   "work_items": [
     {
       "id": "FW-PROJECTS-001",
-      "title": "Publish the master-backed Fawxzzy project board",
+      "title": "Connect the public project boards to the live master read model",
       "record_kind": "project-work",
       "card_type": "feature",
       "lifecycle": "blocked",
       "priority": null,
-      "summary": "The read-only /projects route and guarded public HTTP reader are merged source. The Mazer owner export is available; live public cards and website synchronization await the sole canonical writer's accepted sanitized projection, approved public source location, and refresh policy.",
-      "objective": "Publish a responsive, accessible read-only project-board experience from current owner exports and the master public read model without restoring DiscordOS as a runtime dependency or exposing private evidence.",
+      "summary": "The public /projects page serves an owner-approved snapshot of the Fitness, Mazer, Web and Atlas Stack boards. Live synchronization from the master public read model, with a refresh policy and stale-source behavior, is not connected yet.",
+      "objective": "Serve current board cards from the master public read model without restoring DiscordOS as a runtime dependency and without exposing private evidence.",
       "acceptance_criteria": [
-        "Current FawxzzyWeb main contains the read-only /projects consumer with no runtime or build dependency on DiscordOS.",
-        "Every displayed card retains its stable project, card, owner, lifecycle, relationship, and source-revision identity.",
-        "Public output excludes provider identifiers, private evidence, secrets, raw transcripts, and privileged credentials.",
-        "Lifecycle counts, completed history, stale-source behavior, accessibility, and narrow-screen interaction pass deterministic verification.",
+        "The public boards read cards from an approved live source instead of a committed snapshot.",
+        "Every displayed card keeps its stable project, card, owner, lifecycle, relationship and source-revision identity.",
+        "Public output excludes provider identifiers, private evidence and privileged credentials.",
+        "Stale-source, unavailable-source and narrow-screen states pass deterministic verification.",
         "Source publication and production release remain separate guarded owner boundaries."
       ],
       "discoveries": [
-        "The canonical Fitness owner export is complete and merged.",
-        "The Mazer owner export is available on Mazer main after merged PR #360; its current source revision is sha256:42b6517eeb0cfdb64727caf277d45e4323170ceb0bb807fe4ad785fbbc6ba5d0 and it contains three public-safe owner cards.",
-        "FawxzzyWeb main has the /projects route and an inactive guarded public HTTP reader, but no approved public projection source or real-card synchronization readback.",
-        "The prior FawxzzyWeb /projects implementation is reusable design evidence but its retired DiscordOS-backed generator is not authoritative.",
-        "SOC-024 remains Socials OS program work and is not duplicated onto the FawxzzyWeb owner board."
+        "Fitness, Mazer, Web and Atlas Stack (including the Playbook roadmap) boards are published from owner-approved snapshots on fawxzzy.com/projects.",
+        "A guarded public HTTP reader exists in source but is not wired to a live source.",
+        "A private card reader exists for the signed-in owner view only."
       ],
       "next_actions": [
-        "Receive the sole canonical writer's reconciled sanitized public projection and approved artifact or endpoint, revision or watermark, and refresh policy.",
-        "Wire the merged guarded public reader into /projects against the approved source and verify current, stale, unavailable, and public-safe states.",
-        "Verify one authorized real-card change through the canonical writer and website refresh readback, then run separate guarded source, release, and product acceptance."
+        "Decide the approved public source location and refresh policy for live board cards.",
+        "Wire the guarded reader to that source and verify current, stale, unavailable and public-safe states.",
+        "Verify one real card change end to end, then run separate guarded release and product acceptance."
       ],
       "blockers": [
-        "The sole canonical writer has not returned an accepted sanitized public projection with an approved public source location and refresh policy; no real-card website synchronization readback exists."
+        "Needs an owner decision on the public source location and the refresh policy; no live card synchronization readback exists."
       ],
       "dependencies": [],
       "evidence": [
-        "runtime/atlas/continuity/owner-fawxzzyweb-project-board-ui-r001-source-receipt-20260914.json",
-        "runtime/atlas/continuity/fitness-project-board-owner-export-terminal-r001-20260914.json",
-        "runtime/atlas/continuity/discordos-to-fawxzzyweb-project-board-plan-reconciliation-20260914.json",
-        "docs/architecture/FAWXZZYWEB-OPERATIONAL-IDENTITY-COMPATIBILITY.md",
-        "repos/mazer/exports/mazer.project-board.owner-export.v1.json",
-        "repos/FawxzzyWeb/src/data/project-board-public-read.mjs"
+        "src/data/project-board-public-read.mjs",
+        "docs/project-board-adapter.md",
+        "planning/project-board-public-allowlist.v1.json"
       ],
-      "updated_at": "2026-10-18T05:32:26.000Z"
+      "updated_at": "2026-11-13T00:00:00.000Z"
     },
     {
       "id": "FW-ANALYTICS-001",
@@ -106,6 +101,92 @@
         "docs/first-party-analytics.md"
       ],
       "updated_at": "2026-10-16T01:27:12.356Z"
+    },
+    {
+      "id": "FW-CAPTCHA-001",
+      "title": "Add a bot check to the sign-in, sign-up and reset forms",
+      "record_kind": "project-work",
+      "card_type": "feature",
+      "lifecycle": "planning",
+      "priority": null,
+      "public_safe": true,
+      "summary": "Add a bot check to the account forms before public launch, using a free provider that the account backend supports natively.",
+      "objective": "Keep automated abuse out of the account forms without adding friction for most people.",
+      "acceptance_criteria": [
+        "The sign-in, sign-up and reset forms show the provider widget and send its result with each request.",
+        "The account backend verifies the result and rejects requests without a valid one.",
+        "The forms stay usable on narrow screens and with keyboard-only input.",
+        "Turning the check on is a separate, approved provider-settings step with a rollback."
+      ],
+      "discoveries": [],
+      "next_actions": [
+        "Create the provider widget for the account site and record its public site identifier.",
+        "Add the widget to the three forms in one reviewed change, behind the provider-settings step.",
+        "Verify sign-in, sign-up and reset end to end on a phone and a desktop browser."
+      ],
+      "blockers": [],
+      "dependencies": [],
+      "evidence": [
+        "docs/shared-account-portal-phase1.md",
+        "tests/e2e/account-portal.spec.ts"
+      ],
+      "updated_at": "2026-11-13T00:00:00.000Z"
+    },
+    {
+      "id": "FW-DEVICE-001",
+      "title": "Check the account pages and project boards on a real phone",
+      "record_kind": "project-work",
+      "card_type": "reliability",
+      "lifecycle": "planning",
+      "priority": null,
+      "public_safe": true,
+      "summary": "The account pages and the public project boards are verified in headless browsers on narrow and wide screens; a real-phone pass is still outstanding.",
+      "objective": "Confirm sign-in, sign-out, the account pages and the project boards behave on an actual phone, including the home-screen app.",
+      "acceptance_criteria": [
+        "Sign-in, sign-out and the Fitness handoff work on a real phone.",
+        "The four project-board tabs and card details open, scroll and close without layout breaks.",
+        "Findings are recorded and any fix ships through the normal reviewed path."
+      ],
+      "discoveries": [],
+      "next_actions": [
+        "Run the pass on the owner's phone with the checklist from the account-site tests.",
+        "File each finding as a card or a fix."
+      ],
+      "blockers": [],
+      "dependencies": [],
+      "evidence": [
+        "tests/e2e/account-portal.spec.ts",
+        "tests/e2e/project-board-preview.spec.ts"
+      ],
+      "updated_at": "2026-11-13T00:00:00.000Z"
+    },
+    {
+      "id": "FW-PROJECTS-002",
+      "title": "Refresh the Atlas Stack board from current work",
+      "record_kind": "project-work",
+      "card_type": "documentation",
+      "lifecycle": "planning",
+      "priority": null,
+      "public_safe": true,
+      "summary": "The Atlas Stack tab shows the current Playbook roadmap next to Atlas, Cortex, Foundation and Lifeline cards that come from July exports and need a fresh audit.",
+      "objective": "Make every Atlas Stack card reflect current evidence, or retire it with a recorded reason.",
+      "acceptance_criteria": [
+        "Each non-Playbook Atlas Stack card is audited against current repository and provider evidence.",
+        "Stale cards are re-statused or removed from the public list with a recorded reason.",
+        "The board snapshot and its tests are regenerated and verified."
+      ],
+      "discoveries": [],
+      "next_actions": [
+        "Audit the open Atlas lanes (delivery health, default-branch policy, release policy, source hierarchy) against current evidence.",
+        "Update the owner registry and regenerate the owner export, then re-pin the snapshot."
+      ],
+      "blockers": [],
+      "dependencies": [],
+      "evidence": [
+        "planning/project-board-public-allowlist.v1.json",
+        "docs/project-board-adapter.md"
+      ],
+      "updated_at": "2026-11-13T00:00:00.000Z"
     }
   ],
   "excluded_records": [
