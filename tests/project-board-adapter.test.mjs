@@ -235,7 +235,6 @@ test("renderer follows a supplied validated state and shows honest freshness", a
       boardView, initialBoardState, resolveCardReference, resolveDetailDependency, resolveVisibleSelection,
     };
     if (specifier === "@/data/project-board-label.mjs") return { projectBoardLabel };
-    if (specifier === "@/data/project-board-preview.generated.json") return preview;
     throw new Error(`Unexpected renderer import: ${specifier}`);
   };
   new Function("require", "module", "exports", compiled)(componentRequire, componentModule, componentModule.exports);
@@ -243,14 +242,15 @@ test("renderer follows a supplied validated state and shows honest freshness", a
   const render = (state, selectedKey = null) => {
     hookIndex = 0;
     selectedForRender = selectedKey;
-    return renderToStaticMarkup(React.createElement(ProjectBoard, state ? { publicBoardState: state } : {}));
+    return renderToStaticMarkup(React.createElement(ProjectBoard, { boardState: state }));
   };
 
-  const previewMarkup = render();
-  assert.match(previewMarkup, /Live master sync is pending/);
-  assert.match(previewMarkup, /Public view.*Fawxzzy project boards/);
-  assert.match(previewMarkup, /Public boards stay visible. Private work appears here after account access is verified/);
-  assert.match(previewMarkup, /Fawxzzy Fitness/);
+  // The board always renders a state the owner endpoint supplied; the empty placeholder is not a page state.
+  const placeholderMarkup = render(initialBoardState(preview));
+  assert.match(placeholderMarkup, /Owner view.*Fawxzzy project boards/);
+  assert.match(placeholderMarkup, /Only your account can see these boards/);
+  assert.doesNotMatch(placeholderMarkup, /Public boards stay visible|Live master sync is pending|owner review remains pending/);
+  assert.match(placeholderMarkup, /Fawxzzy Fitness/);
 
   const changed = copy(approved);
   changed.boards[2].name = "outdated source label";
@@ -261,13 +261,13 @@ test("renderer follows a supplied validated state and shows honest freshness", a
   const acceptedMarkup = render(accepted);
   assert.match(acceptedMarkup, /Synthetic accepted board revision/);
   assert.match(acceptedMarkup, /data-lifecycle="in_progress"/);
-  assert.match(acceptedMarkup, /Public board snapshot accepted 2026-10-13T19:00:00.000Z/);
+  assert.match(acceptedMarkup, /Board snapshot accepted 2026-10-13T19:00:00.000Z/);
   assert.match(acceptedMarkup, /Fawxzzy Web, 1 cards/);
   assert.doesNotMatch(acceptedMarkup, /outdated source label/);
   const webDetailMarkup = render(accepted, "trove:SYNTHETIC-WEB-001");
   assert.match(webDetailMarkup, /Fawxzzy Web · SYNTHETIC-WEB-001/);
   assert.doesNotMatch(webDetailMarkup, /outdated source label/);
-  assert.doesNotMatch(acceptedMarkup, /Live master sync is pending/);
+  assert.doesNotMatch(acceptedMarkup, /Live master sync is pending|Public board snapshot/);
 
   const repeat = applyBoardEnvelope(accepted, envelope(changed));
   assert.strictEqual(repeat, accepted);

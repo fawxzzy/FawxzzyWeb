@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { VERCEL_PRODUCTION_CONTRACT as contract } from './vercel-production-contract.mjs';
 import { assertCanonicalAliasBindings, recoverFailedProductionRelease,
   validateCandidateObservations, validateRollbackObservations } from './recover-production-release.mjs';
-import { verifyProductionRelease, smokeRoutes, expectedProjectsBoards, loadCandidateProjectSnapshot, projectSnapshotDigest, accountRoutes, legalRoutes } from './verify-production-release.mjs';
+import { verifyProductionRelease, smokeRoutes, loadCandidateProjectSnapshot, projectSnapshotDigest, accountRoutes, legalRoutes } from './verify-production-release.mjs';
 import { canonicalJson, parsePhaseFrame, handlePhaseRequest, PHASE_SCHEMA, MAX_FRAME_BYTES } from './deploy-production.mjs';
 
 const identity = {
@@ -26,15 +26,13 @@ const deployment = (rollback = false) => ({ id: rollback ? identity.rollbackDepl
   url: rollback ? 'prior.vercel.app' : 'candidate.vercel.app', projectId: identity.projectId, teamId: identity.teamId,
   target: 'production', readyState: 'READY', commit: rollback ? identity.rollbackCommit : identity.commit,
   tree: rollback ? identity.rollbackTree : identity.tree, attemptId: rollback ? null : identity.attemptId });
-const openCards = () => loadCandidateProjectSnapshot().boards[0].cards
-  .filter((card) => !['completed', 'complete', 'closed', 'archived', 'retired'].includes(card.lifecycle))
-  .map((card) => `<button class="project-card" type="button"><h3>${card.title.replaceAll('&', '&amp;').replaceAll('<', '&lt;')}</h3></button>`).join('');
-const page = (canonical) => `<html><head>${canonical ? `<link rel="canonical" href="${canonical}">` : ''}<meta name="robots" content="noindex, nofollow"></head><body>${expectedProjectsBoards().map(({ name, count }) => `<button class="project-tab"><span>${name}</span><strong>${count}</strong></button>`).join('')}${openCards()}</body></html>`;
+const page = (canonical) => `<html><head>${canonical ? `<link rel="canonical" href="${canonical}">` : ''}<meta name="robots" content="noindex, nofollow"></head><body><p>Projects is private.</p></body></html>`;
 const digest = (body) => createHash('sha256').update(body, 'utf8').digest('hex');
 const followedPublicRedirects = {
+  '/': 'https://fawxzzy.com/apps',
   '/apps/fitness': 'https://fitness.fawxzzy.com/',
   '/apps/mazer': 'https://mazer.fawxzzy.com/',
-  '/discover': 'https://fawxzzy.com/?compatibility=discover',
+  '/discover': 'https://fawxzzy.com/apps?compatibility=discover',
   '/trove': 'https://fawxzzy.com/apps?compatibility=trove',
 };
 function routes(list, kind, padding = 0) {
@@ -51,7 +49,7 @@ function acceptance(padding = 0) {
   return { project: project(identity.candidateDeploymentId), deployment: deployment(), rollbackDeployment: deployment(true),
     aliases: aliases(identity.candidateDeploymentId), smoke: routes(smokeRoutes, 'public', padding),
     account: routes(accountRoutes, 'account', padding), legal: routes(legalRoutes, 'legal', padding),
-    privateApi: { status: 403, cacheControl: 'private, no-store', body: '{"error":"CARD_ACCESS_DENIED"}', bodyDigest: digest('{"error":"CARD_ACCESS_DENIED"}') },
+    privateApi: { status: 403, cacheControl: 'private, no-store', body: '{"error":"PROJECTS_ACCESS_DENIED"}', bodyDigest: digest('{"error":"PROJECTS_ACCESS_DENIED"}') },
     pendingApi: [{ case: 'missing_host_only_cookie', status: 404, cacheControl: 'no-store', bodyDigest: digest('') },
       { case: 'wrong_origin', status: 403, cacheControl: 'no-store', bodyDigest: digest('') }],
     www: { status: 308, location: 'https://fawxzzy.com/', bodyDigest: digest('') },
@@ -174,7 +172,7 @@ test('canonical and Projects HTML predicates remain enforced', () => {
   }
 });
 
-test('apex Projects acceptance is apex-only, canonical to the apex, and matches the candidate snapshot', () => {
+test('apex Projects acceptance is apex-only, canonical to the apex, a data-free shell, and bound to the candidate snapshot', () => {
   const mutate = (change) => {
     const o = acceptance(); const entry = o.smoke.find((item) => item.route === '/projects');
     change(entry); entry.bodyDigest = digest(entry.html); return o;
@@ -186,15 +184,18 @@ test('apex Projects acceptance is apex-only, canonical to the apex, and matches 
   assert.throws(() => runAcceptance(mutate((e) => { e.url = 'https://account.fawxzzy.com/projects'; })), /admitted route/u);
   assert.throws(() => runAcceptance(mutate((e) => { e.html = e.html.replace(/<link rel="canonical"[^>]*>/u, ''); })), /canonical/u);
   assert.throws(() => runAcceptance(mutate((e) => { e.html = e.html.replace('https://fawxzzy.com/projects', 'https://account.fawxzzy.com/projects'); })), /canonical/u);
-  assert.throws(() => runAcceptance(mutate((e) => { e.html = e.html.replace(/<button class="project-card"/u, '<button class="x"'); })), /snapshot/u);
-  assert.throws(() => runAcceptance(mutate((e) => { e.html = e.html.replace(/(<button class="project-card"[^>]*><h3>)[^<]*/u, '$1Invented card'); })), /snapshot/u);
+  const [first] = loadCandidateProjectSnapshot().boards[1].cards;
+  assert.throws(() => runAcceptance(mutate((e) => { e.html = e.html.replace('<body>', '<body><button class="project-card" type="button"><h3>x</h3></button>'); })), /no board data/u);
+  assert.throws(() => runAcceptance(mutate((e) => { e.html = e.html.replace('<body>', '<body><button class="project-tab"><span>Mazer</span></button>'); })), /no board data/u);
+  assert.throws(() => runAcceptance(mutate((e) => { e.html = e.html.replace('</body>', `<p>${first.title}</p></body>`); })), /no board data/u);
+  assert.throws(() => runAcceptance(mutate((e) => { e.html = e.html.replace('</body>', `<p>${first.id}</p></body>`); })), /no board data/u);
 });
 
 test('private API, pending denial, redirect, range and log failure each deny acceptance', () => {
   for (const change of [
     (o) => { o.privateApi.status = 200; }, (o) => { o.privateApi.cacheControl = 'public'; },
-    (o) => { o.privateApi.body = '{"error":"CARD_ACCESS_DENIED","secret":"data"}'; },
-    (o) => { o.privateApi.body = '{"error":"CARD_ACCESS_DENIED","error":"CARD_ACCESS_DENIED"}'; },
+    (o) => { o.privateApi.body = '{"error":"PROJECTS_ACCESS_DENIED","secret":"data"}'; },
+    (o) => { o.privateApi.body = '{"error":"PROJECTS_ACCESS_DENIED","error":"PROJECTS_ACCESS_DENIED"}'; },
     (o) => o.pendingApi.reverse(), (o) => { o.pendingApi[1].status = 200; },
     (o) => { o.www.location = 'https://hostile.example/'; },
     (o) => { o.ranges[0].contentRange = 'bytes 1-1024/99999'; },

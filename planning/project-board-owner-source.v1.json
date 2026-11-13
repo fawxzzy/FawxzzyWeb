@@ -20,38 +20,37 @@
   "work_items": [
     {
       "id": "FW-PROJECTS-001",
-      "title": "Connect the public project boards to the live master read model",
+      "title": "Connect the owner project boards to the live master read model",
       "record_kind": "project-work",
       "card_type": "feature",
       "lifecycle": "blocked",
       "priority": null,
-      "summary": "The public /projects page serves an owner-approved snapshot of the Fitness, Mazer, Web and Atlas Stack boards. Live synchronization from the master public read model, with a refresh policy and stale-source behavior, is not connected yet.",
-      "objective": "Serve current board cards from the master public read model without restoring DiscordOS as a runtime dependency and without exposing private evidence.",
+      "summary": "The owner-only /projects page serves a committed snapshot of every card on the Fitness, Mazer, Web and Atlas Stack boards. Live synchronization from the master read model, with a refresh policy and stale-source behavior, is not connected yet.",
+      "objective": "Serve current board cards to the signed-in owner from the master read model without restoring DiscordOS as a runtime dependency.",
       "acceptance_criteria": [
-        "The public boards read cards from an approved live source instead of a committed snapshot.",
+        "The owner boards read cards from an approved live source instead of a committed snapshot.",
         "Every displayed card keeps its stable project, card, owner, lifecycle, relationship and source-revision identity.",
-        "Public output excludes provider identifiers, private evidence and privileged credentials.",
+        "The endpoint stays owner-verified on the server and never returns provider identifiers or privileged credentials.",
         "Stale-source, unavailable-source and narrow-screen states pass deterministic verification.",
         "Source publication and production release remain separate guarded owner boundaries."
       ],
       "discoveries": [
-        "Fitness, Mazer, Web and Atlas Stack (including the Playbook roadmap) boards are published from owner-approved snapshots on fawxzzy.com/projects.",
-        "A guarded public HTTP reader exists in source but is not wired to a live source.",
-        "A private card reader exists for the signed-in owner view only."
+        "Fitness, Mazer, Web and Atlas Stack (including the Playbook roadmap) boards are served in full to the signed-in owner at account.fawxzzy.com/projects; nobody else sees the tab or the cards.",
+        "A guarded HTTP reader seam exists in source but is not wired to a live source."
       ],
       "next_actions": [
-        "Decide the approved public source location and refresh policy for live board cards.",
-        "Wire the guarded reader to that source and verify current, stale, unavailable and public-safe states.",
+        "Decide the approved source location and refresh policy for live board cards.",
+        "Wire the guarded reader to that source and verify current, stale and unavailable states.",
         "Verify one real card change end to end, then run separate guarded release and product acceptance."
       ],
       "blockers": [
-        "Needs an owner decision on the public source location and the refresh policy; no live card synchronization readback exists."
+        "Needs an owner decision on the source location and the refresh policy; no live card synchronization readback exists."
       ],
       "dependencies": [],
       "evidence": [
         "src/data/project-board-public-read.mjs",
         "docs/project-board-adapter.md",
-        "planning/project-board-public-allowlist.v1.json"
+        "planning/project-board-sources.v1.json"
       ],
       "updated_at": "2026-11-13T00:00:00.000Z"
     },
@@ -172,19 +171,50 @@
       "objective": "Make every Atlas Stack card reflect current evidence, or retire it with a recorded reason.",
       "acceptance_criteria": [
         "Each non-Playbook Atlas Stack card is audited against current repository and provider evidence.",
-        "Stale cards are re-statused or removed from the public list with a recorded reason.",
+        "Stale cards are re-statused or removed from the list with a recorded reason.",
         "The board snapshot and its tests are regenerated and verified."
       ],
       "discoveries": [],
       "next_actions": [
         "Audit the open Atlas lanes (delivery health, default-branch policy, release policy, source hierarchy) against current evidence.",
-        "Update the owner registry and regenerate the owner export, then re-pin the snapshot."
+        "Update the owner registry and regenerate the owner export, then regenerate the owner snapshot."
       ],
       "blockers": [],
       "dependencies": [],
       "evidence": [
-        "planning/project-board-public-allowlist.v1.json",
+        "planning/project-board-sources.v1.json",
         "docs/project-board-adapter.md"
+      ],
+      "updated_at": "2026-11-13T00:00:00.000Z"
+    },
+    {
+      "id": "FW-PROJECTS-003",
+      "title": "Make Projects owner-only and check it live",
+      "record_kind": "project-work",
+      "card_type": "feature",
+      "lifecycle": "in-progress",
+      "priority": null,
+      "public_safe": true,
+      "summary": "The Projects tab and page are for the signed-in account owner only. The static site ships no board data; a server endpoint verifies the owner and returns every card. The change is in an open pull request: not merged, not deployed, not checked on a device.",
+      "objective": "Show every project card to the owner and nobody else, without per-card hiding.",
+      "acceptance_criteria": [
+        "Signed-out visitors and every other account see no Projects tab and receive no board data.",
+        "The signed-in owner sees the tab and all boards at the account origin.",
+        "The built static site contains no board card text.",
+        "The owner subject is configured on the server and the owner view is checked on a real device."
+      ],
+      "discoveries": [
+        "The owner endpoint needs the server-only owner subject setting; without it the page fails closed and shows nothing, for everyone."
+      ],
+      "next_actions": [
+        "Merge the pull request after review, then confirm the owner subject setting exists on the account deployment.",
+        "Release, then sign in as the owner and check the tab and boards; sign in as another account and signed out to confirm nothing shows."
+      ],
+      "blockers": [],
+      "dependencies": [],
+      "evidence": [
+        "docs/project-board-adapter.md",
+        "src/server/projects/owner-projects-http.mjs"
       ],
       "updated_at": "2026-11-13T00:00:00.000Z"
     }

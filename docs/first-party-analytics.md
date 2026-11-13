@@ -8,7 +8,7 @@ compatibility routes can be retired.
 
 The client may send only:
 
-- event: `page_view`, `tiktok_open`, `catalog_app_view`, `app_launch`, or `compatibility_visit`
+- event: `page_view`, `catalog_app_view`, `app_launch`, or `compatibility_visit`
 - product: `web`, `fitness`, or `mazer`
 - canonical website route: `/`, `/apps`, or `/projects`; retired website detail paths normalize to `/apps`
 - fixed app route: `app` for legacy Fitness and Mazer compatibility visits
@@ -22,17 +22,30 @@ The table lives in a private schema, is not granted to `anon` or `authenticated`
 only through the bounded Edge Function.
 
 `/projects` is a closed website route. The public client preserves it for `page_view` instead of
-counting it as `/`. The public Projects boards live on `fawxzzy.com/projects`, so the storefront
-listener counts them like any other website route. The account-origin Projects page (the owner's
-private view) sends one `page_view` for each signed-in page mount,
-including a late sign-in, after the existing account reader establishes signed-in state. Board
-switches and private-card refreshes do not add views. The event contains only `page_view`, `web`,
-and `/projects`; it carries no account identifier, session, private-card data, query, app, or
+counting it as `/`. On `fawxzzy.com/projects` the page is only a sign-in link, so the website
+listener counts it like any other website route. The account-origin Projects page (the owner's
+private view) sends one `page_view` for each page mount where the owner-verified board loaded,
+including a late sign-in. Board
+switches do not add views. The event contains only `page_view`, `web`,
+and `/projects`; it carries no account identifier, session, board data, query, app, or
 compatibility source. The account origin can send only this exact tuple; Origin restricts transport
 and is not proof of authentication. The global storefront listener remains disabled on account pages.
 Local browser tests exercise this path only on an approved loopback origin with the existing
 `auth_test=session` synthetic adapter; that branch is unavailable on deployed origins.
 Unknown website paths still normalize to `/`, and unknown collector routes are rejected.
+The website has no home page; `/` remains in the closed route vocabulary only as that
+normalization fallback and because the collector and table still accept it.
+
+## Retired `tiktok_open` event
+
+The website no longer has a TikTok destination, so `tiktok_open` was removed from the
+client vocabulary (`src/lib/analytics/contract.ts`). The database side was deliberately not
+changed: the Edge Function allow-list (`supabase/functions/first-party-analytics/index.ts`) and the
+`event_name` check constraint (`supabase/migrations/202608200001_first_party_analytics.sql`) still list
+`tiktok_open`, because narrowing them is a gated Edge deploy and SQL apply that need separate
+approval. Existing `tiktok_open` rows remain valid history. `projectAnalyticsSnapshot` accepts only the
+client vocabulary, so an approved aggregate source must exclude that retired event or the projection
+rejects the row.
 
 ## Activation boundary
 
@@ -70,12 +83,13 @@ reviewed heartbeat and expiry contract. No such collector or provider contract i
 this source-only projection.
 
 The projection is not a live counter, public API, board value, or deployment claim. It is a
-validation boundary for a future approved aggregate reader. Provider activation, private-card
+validation boundary for a future approved aggregate reader. Provider activation, owner-board
 adoption, public rendering, and observed browser acceptance remain separate decisions.
 
 ## Compatibility retirement
 
 `/discover`, `/trove`, and the old Fitness and Mazer Vercel origins remain compatibility redirects.
+(`/` also redirects to `/apps`, but it is the site root, not a compatibility source.)
 Their destinations add a one-use `compatibility` marker; the destination product records it once
 and removes it from the address bar. A route or origin may be retired only after a declared
 observation window has zero matching compatibility events, rollback evidence is retained, and a

@@ -1143,25 +1143,20 @@ test("utility shell stays usable without overflow at 320px and 360px", async ({ 
 test("public navigation exposes the shared account host without duplicating auth", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/apps");
   const navigation = page.getByRole("navigation", { name: "Primary" });
-  await expect(navigation.getByRole("link", { name: "Home", exact: true })).toHaveAttribute(
-    "href",
-    "/",
-  );
+  await expect(navigation.getByRole("link", { name: "Home", exact: true })).toHaveCount(0);
   await expect(navigation.getByRole("link", { name: "Apps", exact: true })).toHaveAttribute(
     "href",
     "/apps",
   );
-  await expect(navigation.getByRole("link", { name: "Projects", exact: true })).toHaveAttribute(
-    "href",
-    "/projects",
-  );
+  // Projects is the owner's private tab: a signed-out visitor never sees it.
+  await expect(navigation.getByRole("link", { name: "Projects", exact: true })).toHaveCount(0);
   await expect(navigation.getByRole("link", { name: "Account", exact: true })).toHaveAttribute(
     "href",
     accountUrls.account,
   );
-  await expect(navigation.locator("a")).toHaveCount(5);
+  await expect(navigation.locator("a")).toHaveCount(3);
 });
 
 test("login accepts a legacy short password and maps adapter errors safely", async ({ browserName, page }) => {
@@ -1992,15 +1987,8 @@ test("account status copies the compact Mazer hierarchy without unfinished servi
     "href",
     "/reset-password",
   );
-  const projectLinks = page.locator("[data-account-projects-links]");
-  await expect(projectLinks.getByRole("link", { name: "Projects", exact: true })).toHaveAttribute(
-    "href",
-    "https://fawxzzy.com/projects",
-  );
-  await expect(projectLinks.getByRole("link", { name: "Private projects" })).toHaveAttribute(
-    "href",
-    "/projects",
-  );
+  // Projects is reached through the owner-only nav tab, not a link in this panel.
+  await expect(page.locator("[data-account-projects-links]")).toHaveCount(0);
   expect(await context.cookies()).toEqual([]);
 
   const secondaryBox = await page.locator(".account-auth-secondary").boundingBox();
@@ -2428,24 +2416,6 @@ test("serialized duplicate username reconciliation keeps both users and restores
   expect(index.get("other")).toBe("user-b");
 });
 
-test("the website sign-in presentation marker expires while an idle tab remains open", async ({ page }) => {
-  await page.addInitScript(() => {
-    let now = 1_000;
-    Date.now = () => now;
-    Object.defineProperty(window, "__advanceDisplayClock", {
-      value: (milliseconds: number) => { now += milliseconds; },
-    });
-  });
-  await page.goto("/?signedIn=1");
-  await expect(page.getByRole("link", { name: "Sign in" })).toHaveCount(0);
-  await page.evaluate(() => {
-    (window as typeof window & { __advanceDisplayClock(milliseconds: number): void })
-      .__advanceDisplayClock(5 * 60 * 1000 + 1);
-    window.dispatchEvent(new Event("focus"));
-  });
-  await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
-});
-
 test("recovery exchanges PKCE before exposing the password form", async ({ browserName, page }) => {
   test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
   await page.goto("/reset-password?auth_test=error");
@@ -2495,7 +2465,7 @@ test("recovery exchanges PKCE before exposing the password form", async ({ brows
 });
 
 test("confirmation is browser-bound, one-time, and works from a new tab", async ({ context, page }) => {
-  await page.goto("/");
+  await page.goto("/apps");
   await page.evaluate((key) => window.localStorage.setItem(key, "fitness-confirm-state"), accountContract.confirmationStateKey);
   const confirmationPage = await context.newPage();
   await confirmationPage.goto(
@@ -2511,7 +2481,7 @@ test("confirmation is browser-bound, one-time, and works from a new tab", async 
 });
 
 test("Fitness confirmation fails closed when its secure session handoff cannot complete", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/apps");
   await page.evaluate((key) => window.localStorage.setItem(key, "fitness-confirm-state"), accountContract.confirmationStateKey);
   await page.goto(
     "/auth/confirm?app=fitness&auth_test=fitness-handoff-error&token_hash=private-hash&type=signup&state=fitness-confirm-state&returnTo=https%3A%2F%2Ffitness.fawxzzy.com%2F",
@@ -2546,7 +2516,7 @@ test("confirmation fallback actions preserve the selected product context", asyn
 });
 
 test("callback validates state, exchanges once, and never retains token material", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/apps");
   await page.evaluate((key) => window.sessionStorage.setItem(key, "expected-state"), accountContract.callbackStateKey);
   const callback =
     "/auth/callback?auth_test=success&code=one-time-code&state=expected-state&returnTo=%2Faccount";
@@ -2571,7 +2541,7 @@ test("callback validates state, exchanges once, and never retains token material
 });
 
 test("Fitness callbacks establish the secure consumer session before returning", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/apps");
   await page.evaluate((key) => window.sessionStorage.setItem(key, "fitness-state"), accountContract.callbackStateKey);
   await page.goto(
     "/auth/callback?app=fitness&auth_test=success&code=fitness-code&state=fitness-state&returnTo=https%3A%2F%2Ffitness.fawxzzy.com%2Ftoday",
@@ -2584,7 +2554,7 @@ test("Fitness callbacks establish the secure consumer session before returning",
 });
 
 test("Fitness callbacks do not redirect when the secure consumer session fails", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/apps");
   await page.evaluate((key) => window.sessionStorage.setItem(key, "fitness-state"), accountContract.callbackStateKey);
   await page.goto(
     "/auth/callback?app=fitness&auth_test=fitness-handoff-error&code=fitness-code&state=fitness-state&returnTo=https%3A%2F%2Ffitness.fawxzzy.com%2Ftoday",
@@ -2817,7 +2787,7 @@ test("retained Mazer consent card fails closed after a cross-tab auth-generation
   );
   await expect(page.getByRole("button", { name: "Continue to Mazer" })).toBeVisible();
   const sibling = await context.newPage();
-  await sibling.goto("/");
+  await sibling.goto("/apps");
   await sibling.evaluate(
     ({ key, value }) => window.localStorage.setItem(key, value),
     { key: accountContract.authGenerationKey, value: "c".repeat(64) },
@@ -2842,7 +2812,7 @@ test("Mazer authorization accepts only a previously approved exact app redirect"
 });
 
 test("callback rejects a mismatched state without an exchange", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/apps");
   await page.evaluate((key) => window.sessionStorage.setItem(key, "expected"), accountContract.callbackStateKey);
   await page.goto("/auth/callback?auth_test=success&code=code&state=wrong");
   await expect(page.locator('[data-auth-state="unauthorized"] [role="alert"]')).toContainText(

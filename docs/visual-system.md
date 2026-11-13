@@ -9,15 +9,15 @@ decoration—to establish hierarchy.
 
 ## Page families
 
-Shared identity does not require identical composition. Active public routes use four
+Shared identity does not require identical composition. Active public routes use three
 page families:
 
-1. Brand and marketing: the Home route.
-2. Product catalog: the Apps and Trove compatibility routes.
-3. Compatibility and provenance: the Discover fallback and retired editorial history.
-4. Utility and system: Login, confirmation, callback, reset, Account, and 404 recovery.
+1. Product catalog: the Apps and Trove compatibility routes.
+2. Compatibility and provenance: the root and Discover fallbacks and retired editorial history.
+3. Utility and system: Login, confirmation, callback, reset, Account, and 404 recovery.
 
-Wave 1 established the first two families. The retired Wave 2A product-detail and
+Wave 1 established the catalog family; its brand-and-marketing family (the Home route) was
+retired when the Home page was removed on 2026-11-13. The retired Wave 2A product-detail and
 Wave 2B editorial families remain historical provenance only.
 The secure utility shell gives Login, confirmation, callback, and reset a focused
 task layout; the Account dashboard remains the operational branch of the same
@@ -52,7 +52,7 @@ styles belong to the narrowest established owner:
   because `utility.css` is at its line-count cap; it loads right after it.
 - `src/styles/page-families/product-detail.css` retains historical Fitness and Mazer
   detail styling for provenance and ordered-cascade compatibility; it does not authorize active detail routes.
-- `src/styles/page-families/studio-public.css` owns the Home/catalog studio
+- `src/styles/page-families/studio-public.css` owns the catalog studio
   frame and its current shared footer/navigation refinements.
 - `src/styles/page-families/editorial.css` retains historical Discover and
   Newsletter styling as provenance only; it does not authorize an active
@@ -70,7 +70,7 @@ screenshot-proven migration instead.
 This section records the retired Wave 2B editorial design for provenance only.
 It is not current route or product authority: `/newsletter` is intentionally
 absent and returns 404, while `/discover` is a lightweight compatibility entry
-for canonical Home.
+for Apps.
 
 - Historical Discover oriented visitors around Build/Train/Create,
   catalog-backed work, verified profiles, community, and the build log.
@@ -82,8 +82,8 @@ for canonical Home.
   dates, metrics, readership, releases, or social proof.
 - The historical issue archive used an explicit empty state until a real issue
   had a stable URL and verified publication metadata.
-- Verified profile targets were centralized in `src/data/discovery.ts`. This
-  provenance does not authorize restoring retired destinations.
+- Verified profile targets were centralized in a data module that was removed with
+  the Home page. This provenance does not authorize restoring retired destinations.
 
 The historical production-before contact sheet for Wave 2B is stored at
 `docs/visual-baselines/2026-07-20-wave2b-production-before.png`. It captures
@@ -115,9 +115,8 @@ the canvas unless a panel communicates a real section boundary.
 
 ## Product media
 
-Home uses the compact product card while Apps uses a phone-home-screen launcher.
-Both read icons, current storefront previews, status, app origins, and copy from
-`src/data/apps.ts`. On Apps, only the app icon and name form the primary launch
+Apps uses a phone-home-screen launcher. It reads icons, current storefront previews,
+status, app origins, and copy from `src/data/apps.ts`. On Apps, only the app icon and name form the primary launch
 action. The current source-bound WebP appears only after the visitor selects
 `Preview`; no secondary detail route or screenshot gallery competes with launch.
 
@@ -159,10 +158,9 @@ The shared primary navigation is sticky, preserves one active destination, and
 keeps 44px targets at 320px and wider. Account entry points live in the footer
 during this wave so the narrow primary navigation remains uncluttered.
 
-The current footer uses only Home, Apps, the centralized TikTok destination, and
-Account. Newsletter, build-log, Discover, and retired social destinations must
-not return to the footer without a new current owner decision. Do not invent
-legal, support, or social destinations.
+The current footer uses only Apps and Account. Home, Newsletter, build-log,
+Discover, and retired social destinations must not return to the footer without a
+new current owner decision. Do not invent legal, support, or social destinations.
 
 ## Accessibility and motion
 

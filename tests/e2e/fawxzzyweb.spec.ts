@@ -5,7 +5,6 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { productIdentity } from "../../src/config/product";
 import { apps } from "../../src/data/apps";
-import { discoveryDestinations } from "../../src/data/discovery";
 import {
   analyticsApps,
   analyticsEvents,
@@ -26,7 +25,7 @@ test("visual-system documentation keeps Newsletter historical only", async () =>
   expect(visualSystem).toContain("## Historical editorial template");
   expect(visualSystem).toContain("`/newsletter` is intentionally\nabsent and returns 404");
   expect(visualSystem).toContain("immutable comparison evidence");
-  expect(visualSystem).toContain("The current footer uses only Home, Apps");
+  expect(visualSystem).toContain("The current footer uses only Apps and Account");
   expect(visualSystem).toContain(
     "Wave 2B editorial families remain historical provenance only",
   );
@@ -39,7 +38,6 @@ test("visual-system documentation keeps Newsletter historical only", async () =>
 test("first-party analytics stays closed, anonymous, and provider-gated", async () => {
   expect(analyticsEvents).toEqual([
     "page_view",
-    "tiktok_open",
     "catalog_app_view",
     "app_launch",
     "compatibility_visit",
@@ -88,53 +86,66 @@ test("first-party analytics stays closed, anonymous, and provider-gated", async 
   expect(client).not.toContain("document.cookie");
 });
 
-test("root is the canonical Fawxzzy experience", async ({ page }) => {
+test("root has no home page and continues to the Apps catalog", async ({ page }) => {
+  // Vercel redirects `/` before the static file is served; the static fallback asks the
+  // browser to continue to Apps, so local and non-Vercel hosts land in the same place.
   await page.goto("/");
+  await expect(page).toHaveURL(/\/apps$/);
 
-  await expect(page).toHaveTitle("Fawxzzy");
-  await expect(page.getByRole("navigation", { name: "Primary" })).toContainText("Fawxzzy");
+  await expect(page).toHaveTitle("Apps | Fawxzzy");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("How to install my apps");
   await expect(page.locator('meta[name="apple-mobile-web-app-title"]')).toHaveAttribute(
     "content",
     "Fawxzzy",
   );
   await expect(page.locator("body")).not.toContainText("FawxzzyWeb");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
-    "Built by Fawxzzy.",
-  );
-  await expect(page.getByRole("link", { name: "Fawxzzy home" })).toHaveAttribute("href", "/");
-  await expect(page.locator('a[aria-current="page"]')).toHaveCount(1);
-  await expect(page.locator(".site-nav__links a")).toHaveCount(4);
-  await expect(
-    page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Account" }),
-  ).toHaveAttribute("href", "https://account.fawxzzy.com/account");
-  await expect(page.getByRole("link", { name: "Explore apps" })).toHaveAttribute("href", "/apps");
-  await expect(page.getByRole("link", { name: "Sign in", exact: true })).toHaveAttribute(
-    "href",
-    "https://account.fawxzzy.com/login",
-  );
-  await expect(page.getByRole("navigation", { name: "Primary" })).not.toContainText("Discover");
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
-    productIdentity.canonicalOrigin,
-  );
-  await expect(page.locator('img[src="/brand/fawxzzy-banner-v2-hero.webp"]')).toHaveAttribute(
-    "alt",
-    /Fawxzzy/,
+    `${productIdentity.canonicalOrigin}/apps`,
   );
 
-  await expect(page.getByRole("heading", { name: "Creator. Builder. Fitness. Gamer." })).toBeVisible();
-  await expect(page.locator("[data-app-card], [data-app-launcher]")).toHaveCount(0);
-  await expect(page.locator("[data-product-showcase], video")).toHaveCount(0);
-  await expect(page.locator('.creator-profile [data-analytics-event="tiktok_open"]')).toHaveCount(1);
-  await expect(page.locator('.site-footer [data-analytics-event="tiktok_open"]')).toHaveCount(1);
-  await expect(page.locator("body")).not.toContainText("&nearr;");
-  await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
-  await expect(
-    page.getByRole("navigation", { name: "Footer" }).getByRole("link", { name: "Account" }),
-  ).toHaveAttribute(
+  const fallback = await page.request.get("/");
+  expect(fallback.ok()).toBe(true);
+  const fallbackHtml = await fallback.text();
+  expect(fallbackHtml).toContain('http-equiv="refresh" content="0;url=/apps"');
+  expect(fallbackHtml).toContain('data-compatibility-identity="home"');
+  expect(fallbackHtml).not.toContain("Built by Fawxzzy.");
+  expect(fallbackHtml).not.toContain("Creator. Builder. Fitness. Gamer.");
+});
+
+test("the shared shell has no Home or social-profile surface", async ({ page }) => {
+  await page.goto("/apps");
+
+  const primaryNav = page.getByRole("navigation", { name: "Primary" });
+  await expect(primaryNav).toContainText("Fawxzzy");
+  await expect(primaryNav.getByRole("link", { name: "Home", exact: true })).toHaveCount(0);
+  await expect(primaryNav.getByRole("link", { name: "Fawxzzy apps" })).toHaveAttribute(
+    "href",
+    "/apps",
+  );
+  await expect(primaryNav.getByRole("link", { name: "Apps", exact: true })).toHaveAttribute(
+    "href",
+    "/apps",
+  );
+  await expect(primaryNav.getByRole("link", { name: "Account", exact: true })).toHaveAttribute(
     "href",
     "https://account.fawxzzy.com/account",
   );
+  await expect(primaryNav.locator('a[aria-current="page"]')).toHaveCount(1);
+
+  const footer = page.getByRole("navigation", { name: "Footer" });
+  await expect(footer.getByRole("link")).toHaveText(["Apps", "Account"]);
+  await expect(footer.getByRole("link", { name: "Account" })).toHaveAttribute(
+    "href",
+    "https://account.fawxzzy.com/account",
+  );
+  // The shell links only to Fawxzzy surfaces: no social-profile destination remains.
+  await expect(
+    page.locator('.site-nav a[href^="http"]:not([href^="https://account.fawxzzy.com/"]), .site-footer a[href^="http"]:not([href^="https://account.fawxzzy.com/"])'),
+  ).toHaveCount(0);
+  await expect(
+    page.locator(".site-nav [data-analytics-event], .site-footer [data-analytics-event]"),
+  ).toHaveCount(0);
 });
 
 test("public discovery files expose only canonical indexable routes", async ({
@@ -144,15 +155,14 @@ test("public discovery files expose only canonical indexable routes", async ({
   expect(sitemapResponse.ok()).toBe(true);
   expect(sitemapResponse.headers()["content-type"]).toContain("application/xml");
   const sitemap = await sitemapResponse.text();
-  const expectedRoutes = ["/", "/apps"];
+  const expectedRoutes = ["/apps"];
 
   for (const route of expectedRoutes) {
-    const canonical =
-      route === "/"
-        ? productIdentity.canonicalOrigin
-        : new URL(route, productIdentity.canonicalOrigin).href;
-    expect(sitemap).toContain(`<loc>${canonical}</loc>`);
+    expect(sitemap).toContain(`<loc>${new URL(route, productIdentity.canonicalOrigin).href}</loc>`);
   }
+  // The root has no page of its own: it redirects to Apps, so it is not a sitemap entry.
+  expect(sitemap).not.toContain(`<loc>${productIdentity.canonicalOrigin}</loc>`);
+  expect(sitemap).not.toContain(`<loc>${productIdentity.canonicalOrigin}/</loc>`);
   for (const excluded of [
     "/discover",
     "/trove",
@@ -182,7 +192,6 @@ test("public routes carry social metadata and grounded structured data", async (
   page,
 }) => {
   const publicRoutes = [
-    { path: "/", image: productIdentity.linkPreview.url },
     { path: "/apps", image: productIdentity.linkPreview.url },
     { path: "/discover", image: productIdentity.linkPreview.url },
   ];
@@ -218,7 +227,7 @@ test("public routes carry social metadata and grounded structured data", async (
     );
   }
 
-  await page.goto("/");
+  await page.goto("/apps");
   const siteGraph = JSON.parse(
     (await page.locator("#fawxzzy-site-structured-data").textContent()) ?? "{}",
   );
@@ -262,31 +271,21 @@ test("public routes carry social metadata and grounded structured data", async (
   }
 });
 
-test("discover route is a lightweight compatibility entry for canonical Home", async ({ page }) => {
+test("discover route is a lightweight compatibility entry for Apps", async ({ page }) => {
   await page.goto("/discover");
 
   await expect(page).toHaveTitle("Fawxzzy");
   await expect(page.locator('main[data-compatibility-identity="discover"]')).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Everything is together now.");
-  await expect(page.getByRole("link", { name: "Go to Fawxzzy" })).toHaveAttribute("href", "/");
+  await expect(page.getByRole("link", { name: "Browse apps" })).toHaveAttribute("href", "/apps");
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
-    productIdentity.canonicalOrigin,
+    `${productIdentity.canonicalOrigin}/apps`,
   );
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
   await expect(page.locator("[data-app-card], [data-product-showcase], video")).toHaveCount(0);
-  await expect(page.locator('[data-analytics-event="tiktok_open"]')).toHaveCount(1);
-  expect(discoveryDestinations.some((destination) => destination.href?.includes("link.me"))).toBe(
-    false,
-  );
-  expect(discoveryDestinations.map((destination) => destination.id)).toEqual(["tiktok"]);
-  expect(discoveryDestinations[0]).toMatchObject({
-    displayValue: "@fawxzzy",
-    href: "https://www.tiktok.com/@fawxzzy",
-  });
-  expect(JSON.stringify(discoveryDestinations)).not.toContain("fukitzzzzz");
-  expect(discoveryDestinations.map((destination) => String(destination.id))).not.toContain("instagram");
-  await expect(page.locator('a[href*="youtube"], a[href*="twitter"], a[href*="snapchat"]')).toHaveCount(0);
+  await expect(page.locator("[data-analytics-event]")).toHaveCount(0);
+  await expect(page.locator('a[href^="http"]:not([href^="https://account.fawxzzy.com/"])')).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
 });
 
@@ -324,7 +323,7 @@ test("editorial pages keep clear mobile hierarchy and interaction contracts", as
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/discover");
-  const motion = await page.getByRole("link", { name: "Go to Fawxzzy" }).evaluate((element) => {
+  const motion = await page.getByRole("link", { name: "Browse apps" }).evaluate((element) => {
     const styles = getComputedStyle(element);
     return { animation: styles.animationName, transition: styles.transitionDuration };
   });
@@ -439,12 +438,8 @@ test("apps route presents install help first and a direct-launch app grid", asyn
   await expect(page.getByRole("navigation", { name: "Footer" })).toBeVisible();
 });
 
-test("Home stays creator-focused and Apps launches each product without an extra detail page", async ({ page }) => {
+test("Apps launches each product without an extra detail page", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
-
-  await page.goto("/");
-  await expect(page.locator("[data-app-card], [data-app-launcher]")).toHaveCount(0);
-  await expect(page.locator("[data-product-showcase], video")).toHaveCount(0);
 
   await page.goto("/apps");
   const cards = page.locator("[data-app-launcher]");
@@ -461,10 +456,6 @@ test("Home stays creator-focused and Apps launches each product without an extra
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Built by Fawxzzy." })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Explore apps" })).toBeVisible();
-
   await page.goto("/apps");
   const launcherRects = await page.locator("[data-app-launcher]").evaluateAll((elements) =>
     elements.map((element) => {
@@ -637,7 +628,7 @@ test("provider redirects preserve permanent and reversible compatibility boundar
   const vercelConfig = JSON.parse(await readFile(resolve(process.cwd(), "vercel.json"), "utf8"));
   const readme = await readFile(resolve(process.cwd(), "README.md"), "utf8");
 
-  expect(readme).toContain("Real static fallback pages exist only for `/discover` and `/trove`");
+  expect(readme).toContain("Real static fallback pages exist only for `/`, `/discover`, and `/trove`");
   expect(readme).toContain("paths are provider-only redirects");
   expect(readme).toContain("local and non-Vercel static hosts intentionally return 404");
 
@@ -657,8 +648,13 @@ test("provider redirects preserve permanent and reversible compatibility boundar
     permanent: true,
   });
   expect(vercelConfig.redirects).toContainEqual({
+    source: "/",
+    destination: "/apps",
+    permanent: false,
+  });
+  expect(vercelConfig.redirects).toContainEqual({
     source: "/discover",
-    destination: "/?compatibility=discover",
+    destination: "/apps?compatibility=discover",
     permanent: true,
   });
   expect(vercelConfig.redirects).toContainEqual({
@@ -670,7 +666,6 @@ test("provider redirects preserve permanent and reversible compatibility boundar
 
 test("public routes load without browser errors or framework overlays", async ({ context }, testInfo) => {
   for (const route of [
-    "/",
     "/apps",
     "/discover",
     "/trove",
@@ -704,7 +699,6 @@ test("public routes load without browser errors or framework overlays", async ({
 });
 
 for (const route of [
-  "/",
   "/apps",
   "/discover",
   "/trove",
@@ -721,13 +715,11 @@ for (const route of [
 
 test("primary navigation adapts without clipping from 320px through desktop", async ({ page }) => {
   const routes = [
-    "/",
     "/apps",
     "/discover",
     "/trove",
   ];
   const destinations = [
-    ["Home", "/"],
     ["Apps", "/apps"],
   ] as const;
 
@@ -823,21 +815,9 @@ test("primary navigation adapts without clipping from 320px through desktop", as
   await expect(primaryNav.locator('a[aria-current="page"]')).toHaveCount(1);
 });
 
-test("creator home keeps its primary actions close and app names inside launcher tiles", async ({
+test("app names stay inside launcher tiles", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/");
-
-  const mobileGeometry = await page.evaluate(() => ({
-    actionsBottom:
-      document.querySelector(".storefront-hero__actions")?.getBoundingClientRect().bottom ??
-      Number.POSITIVE_INFINITY,
-    heroHeight: document.querySelector(".storefront-hero")?.getBoundingClientRect().height ?? 0,
-  }));
-  expect(mobileGeometry.heroHeight).toBeLessThanOrEqual(500);
-  expect(mobileGeometry.actionsBottom).toBeLessThanOrEqual(760);
-
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/apps");
   const cardGeometry = await page.locator("[data-app-launcher]").evaluateAll((cards) =>
@@ -865,7 +845,6 @@ test("primary navigation stays viewport-sticky while the document owns scrolling
   await page.setViewportSize({ width: 390, height: 520 });
 
   for (const route of [
-    "/",
     "/apps",
     "/discover",
   ]) {
@@ -940,5 +919,5 @@ test("health and manifest remain available with the public identity", async ({ r
   expect(manifestResponse.ok()).toBe(true);
   const manifest = await manifestResponse.json();
   expect(manifest.name).toBe(productIdentity.publicName);
-  expect(manifest.start_url).toBe("/");
+  expect(manifest.start_url).toBe(productIdentity.appsPath);
 });

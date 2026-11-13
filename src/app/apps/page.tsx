@@ -3,7 +3,7 @@ import { CatalogExperience } from "@/components/catalog/catalog-experience";
 import { StructuredData } from "@/components/seo/structured-data";
 import { productIdentity } from "@/config/product";
 import { apps } from "@/data/apps";
-import { catalogAppsStructuredData, publicPageMetadata } from "@/lib/seo";
+import { catalogAppsStructuredData, publicPageMetadata, siteStructuredData } from "@/lib/seo";
 
 export const metadata: Metadata = publicPageMetadata({
   title: "Apps",
@@ -15,6 +15,7 @@ export const metadata: Metadata = publicPageMetadata({
 export default function AppsPage() {
   return (
     <>
+      <StructuredData data={siteStructuredData()} id="fawxzzy-site-structured-data" />
       <StructuredData
         data={catalogAppsStructuredData(apps)}
         id="fawxzzy-app-catalog-structured-data"

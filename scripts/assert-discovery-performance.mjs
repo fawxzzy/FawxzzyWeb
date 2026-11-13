@@ -67,8 +67,8 @@ assert(
   "Portable evidence must track pre-interaction MP4 requests.",
 );
 
+// `/` is a redirect fallback with no page weight of its own; only Apps carries a budget.
 const routeFiles = {
-  "/": "out/index.html",
   "/apps": "out/apps.html",
 };
 

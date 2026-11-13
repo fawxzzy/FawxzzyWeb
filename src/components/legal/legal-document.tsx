@@ -10,7 +10,7 @@ export function LegalDocument({ document }: { document: LegalDocumentDefinition 
     <main className="legal-page app-theme-fawxzzy" id="main-content">
       <AmbientBrandBackground intensity="soft" particleCount={8} pulseEnabled={false} />
       <div className="shell-container legal-shell">
-        <SiteNav current="home" />
+        <SiteNav current="apps" />
         <article
           aria-labelledby="legal-title"
           className="legal-document surface-panel"
@@ -39,7 +39,7 @@ export function LegalDocument({ document }: { document: LegalDocumentDefinition 
         </article>
         <footer className="legal-footer">
           <p>&copy; 2026 {productIdentity.publicName}</p>
-          <StaticLink href="/">Home</StaticLink>
+          <StaticLink href={productIdentity.appsPath}>Apps</StaticLink>
         </footer>
       </div>
     </main>

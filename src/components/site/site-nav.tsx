@@ -1,21 +1,20 @@
 import Image from "next/image";
+import { OwnerProjectsLink } from "@/components/site/owner-projects-link";
 import { StaticLink } from "@/components/site/static-link";
 import { accountUrls } from "@/config/account";
 import { productIdentity } from "@/config/product";
 
 type SiteNavProps = {
-  current: "account" | "apps" | "home" | "projects";
-  /** Origin-relative by default; account-host shells pass the absolute main-site URL. */
-  projectsHref?: string;
+  current: "account" | "apps" | "projects";
 };
 
-export function SiteNav({ current, projectsHref = "/projects" }: SiteNavProps) {
+export function SiteNav({ current }: SiteNavProps) {
   return (
     <nav aria-label="Primary" className="site-nav surface-panel">
       <StaticLink
-        aria-label={`${productIdentity.publicName} home`}
+        aria-label={`${productIdentity.publicName} apps`}
         className="site-nav__brand"
-        href="/"
+        href={productIdentity.appsPath}
       >
         <Image
           alt=""
@@ -30,20 +29,12 @@ export function SiteNav({ current, projectsHref = "/projects" }: SiteNavProps) {
       </StaticLink>
       <div className="site-nav__links">
         <StaticLink
-          aria-current={current === "home" ? "page" : undefined}
-          href="/"
-        >
-          Home
-        </StaticLink>
-        <StaticLink
           aria-current={current === "apps" ? "page" : undefined}
           href={productIdentity.appsPath}
         >
           Apps
         </StaticLink>
-        <StaticLink aria-current={current === "projects" ? "page" : undefined} href={projectsHref}>
-          Projects
-        </StaticLink>
+        <OwnerProjectsLink current={current === "projects"} />
         <StaticLink href={accountUrls.account}>Account</StaticLink>
       </div>
     </nav>

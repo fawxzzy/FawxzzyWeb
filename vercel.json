@@ -28,8 +28,13 @@
   ],
   "redirects": [
     {
+      "source": "/",
+      "destination": "/apps",
+      "permanent": false
+    },
+    {
       "source": "/discover",
-      "destination": "/?compatibility=discover",
+      "destination": "/apps?compatibility=discover",
       "permanent": true
     },
     {

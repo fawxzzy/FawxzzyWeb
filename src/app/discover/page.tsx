@@ -3,14 +3,14 @@ import { CompatibilityRoute } from "@/components/system/compatibility-route";
 import { productIdentity } from "@/config/product";
 import { publicPageMetadata } from "@/lib/seo";
 
-const unifiedStorefrontMetadata = publicPageMetadata({
+const appsMetadata = publicPageMetadata({
   title: productIdentity.publicName,
   description: productIdentity.description,
-  path: "/",
+  path: productIdentity.appsPath,
 });
 
 export const metadata: Metadata = {
-  ...unifiedStorefrontMetadata,
+  ...appsMetadata,
   title: { absolute: productIdentity.publicName },
   robots: {
     index: false,
@@ -21,10 +21,9 @@ export const metadata: Metadata = {
 export default function DiscoverPage() {
   return (
     <CompatibilityRoute
-      actionLabel="Go to Fawxzzy"
-      current="home"
-      description="Discovery now lives on the Fawxzzy home page."
-      destination="/"
+      actionLabel="Browse apps"
+      description="Discovery now lives on the Fawxzzy apps page."
+      destination={productIdentity.appsPath}
       identity="discover"
       label="Discovery"
       title="Everything is together now."

@@ -45,15 +45,6 @@ export function emitAccountProjectsPageView() {
   return true;
 }
 
-export function shouldCountAccountProjectsPageView(
-  projectView: boolean,
-  signedIn: boolean,
-  status: string,
-) {
-  return projectView && signedIn &&
-    !["loading", "unknown", "unavailable", "signed-out"].includes(status);
-}
-
 function analyticsEnvelope(event: AnalyticsEnvelope["event"], target?: Element) {
   const url = new URL(window.location.href);
   const app = parseAnalyticsApp(target?.getAttribute("data-analytics-app") ?? null);

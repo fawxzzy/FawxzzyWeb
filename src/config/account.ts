@@ -252,16 +252,10 @@ export function isLiveAccountAdapterOrigin(rawOrigin: string) {
 }
 
 /**
- * Projects belongs to the main site. The account origin serves the same static
- * page only as the owner's private view, because the Auth session lives there.
+ * Projects is the owner's private view and works only on the account origin,
+ * where the Auth session lives. Other origins link here to sign in.
  */
-export const projectsPaths = {
-  public: "/projects",
-  private: "/projects",
-} as const;
-
-export const publicProjectsUrl = `${accountContract.publicHubOrigin}${projectsPaths.public}`;
-export const privateProjectsSignInUrl = `${accountUrls.login}?returnTo=${encodeURIComponent(projectsPaths.private)}`;
+export const privateProjectsSignInUrl = `${accountUrls.login}?returnTo=${encodeURIComponent("/projects")}`;
 
 export function accountCanonicalUrl(path: string) {
   return new URL(path, accountContract.canonicalOrigin).href;

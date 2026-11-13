@@ -6,21 +6,25 @@ import { SystemState } from "@/components/system/system-state";
 
 type CompatibilityRouteProps = {
   actionLabel: string;
-  current: "apps" | "home";
   description: string;
   destination: string;
-  identity: "discover" | "trove";
+  identity: "discover" | "home" | "trove";
   label: string;
+  /**
+   * Static-export fallback for hosts that do not apply vercel.json redirects:
+   * asks the browser to continue to `destination` immediately.
+   */
+  redirectToDestination?: boolean;
   title: string;
 };
 
 export function CompatibilityRoute({
   actionLabel,
-  current,
   description,
   destination,
   identity,
   label,
+  redirectToDestination = false,
   title,
 }: CompatibilityRouteProps) {
   return (
@@ -29,9 +33,12 @@ export function CompatibilityRoute({
       data-compatibility-identity={identity}
       id="main-content"
     >
+      {redirectToDestination ? (
+        <meta httpEquiv="refresh" content={`0;url=${destination}`} />
+      ) : null}
       <AmbientBrandBackground intensity="soft" particleCount={6} pulseEnabled={false} />
       <div className="shell-container system-shell">
-        <SiteNav current={current} />
+        <SiteNav current="apps" />
         <SystemState
           actions={
             <StaticLink className="catalog-button catalog-button--primary" href={destination}>

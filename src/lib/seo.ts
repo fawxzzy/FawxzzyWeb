@@ -5,7 +5,6 @@ import type { CatalogApp } from "@/data/apps";
 const defaultSocialImage = productIdentity.linkPreview;
 
 export const publicIndexableRoutes = [
-  "/",
   productIdentity.appsPath,
   "/privacy",
   "/terms",

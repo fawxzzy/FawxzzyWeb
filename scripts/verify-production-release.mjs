@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { createHash } from 'node:crypto';
+import { readOwnerBoardSnapshot } from '../src/server/projects/owner-board-file.mjs';
 import htmlParser from 'next/dist/compiled/node-html-parser/index.js';
 import { assertKeys, assertReleaseIdentity, assertProjectObservation, assertDeploymentObservation,
   assertCanonicalAliasBindings, requireCondition } from './recover-production-release.mjs';
@@ -88,12 +88,13 @@ export function hasExactCanonicalLink(html, expectedCanonical) {
     && canonicalLinks[0].getAttribute("href") === expectedCanonical;
 }
 
-// The published board is the committed owner-approved snapshot; derive the expected tabs from it.
-// The verifier runs from the candidate checkout, so its generated snapshot is the candidate tree's.
-// The `snapshot` option of verifyProductionRelease exists for tests only: whatever is used must hash
-// to identity.projectSnapshotDigest or acceptance fails.
+// Projects is the owner's private view: the static /projects page must contain no board data at all.
+// The board lives only in the owner-verified /api/projects/board function bundle, built from the
+// committed owner snapshot below. The verifier runs from the candidate checkout, so this is the
+// candidate tree's snapshot. The `snapshot` option of verifyProductionRelease exists for tests
+// only: whatever is used must hash to identity.projectSnapshotDigest or acceptance fails.
 export function loadCandidateProjectSnapshot() {
-  return JSON.parse(readFileSync(new URL('../src/data/project-board-public.generated.json', import.meta.url), 'utf8'));
+  return readOwnerBoardSnapshot();
 }
 
 function sortedJson(value) {
@@ -104,51 +105,37 @@ function sortedJson(value) {
   return JSON.stringify(value);
 }
 
-// sha256 of the key-sorted JSON of the generated public snapshot. The release identity carries this
-// digest, so the expected board is bound to the release rather than to whatever tree verifies it.
+// sha256 of the key-sorted JSON of the generated owner snapshot. The release identity carries this
+// digest, so the board the function serves is bound to the release rather than to whatever tree
+// verifies it.
 export function projectSnapshotDigest(snapshot) {
   return createHash('sha256').update(sortedJson(snapshot), 'utf8').digest('hex');
 }
 
-// Mirrors the board's own open/completed split (src/components/projects/project-board.tsx).
-const completedLifecycles = new Set(['completed', 'complete', 'closed', 'archived', 'retired']);
-
-export function expectedProjectsBoards(snapshot = loadCandidateProjectSnapshot()) {
-  return snapshot.boards.map((board) => ({ name: board.name, count: String(board.cards.length) }));
-}
-
+// The static Projects HTML is a noindex shell. It must not render any board structure and must not
+// contain any card id or title from the snapshot, so a build that leaks the owner board into the
+// static site fails acceptance.
 export function verifyProjectsPublicHtml(html, expectedDigest, snapshot = loadCandidateProjectSnapshot()) {
   requireCondition(/^[0-9a-f]{64}$/u.test(expectedDigest ?? '') && projectSnapshotDigest(snapshot) === expectedDigest,
     'Project board snapshot does not match the release identity digest.');
   const document = htmlParser.parse(html);
   const robots = document.querySelector('head > meta[name="robots"]')?.getAttribute('content') ?? '';
-  const boards = document.querySelectorAll('.project-tab').map((tab) => ({
-    name: tab.querySelector('span')?.text.trim(),
-    count: tab.querySelector('strong')?.text.trim(),
-  }));
-  const expected = expectedProjectsBoards(snapshot);
-  // The static HTML renders exactly the default (first) board's open cards, each present in the snapshot.
-  const openTitles = (snapshot.boards[0]?.cards ?? [])
-    .filter((card) => !completedLifecycles.has(card.lifecycle)).map((card) => card.title);
-  const renderedTitles = document.querySelectorAll('.project-card').map((card) => card.querySelector('h3')?.text.trim());
-  const rendered = renderedTitles.length;
-  if (rendered !== openTitles.length || openTitles.length < 1
-    || [...renderedTitles].sort().join('\u0000') !== [...openTitles].sort().join('\u0000')
-    || !robots.split(',').some((part) => part.trim().toLowerCase() === 'noindex')
-    || boards.length !== expected.length
-    || boards.some((board, index) => board.name !== expected[index].name || board.count !== expected[index].count)
-    || html.includes('FW-ANALYTICS-001') || html.includes('FF-WEB-ANALYTICS-001')) {
-    throw new Error('Projects public HTML is not the approved noindex public board snapshot view.');
+  const structure = document.querySelectorAll('.project-tab').length + document.querySelectorAll('.project-card').length;
+  const leaked = snapshot.boards.flatMap((board) => board.cards)
+    .some((card) => html.includes(card.id) || html.includes(card.title.replaceAll('&', '&amp;').replaceAll('<', '&lt;')));
+  if (structure !== 0 || leaked || !robots.split(',').some((part) => part.trim().toLowerCase() === 'noindex')) {
+    throw new Error('Projects public HTML is not the noindex shell with no board data.');
   }
-  return { noindex: true, boardCount: boards.length, publicCardCount: rendered };
+  return { noindex: true, boardCount: 0, publicCardCount: 0 };
 }
 
 
 // Final response URLs after following the exact committed public redirects.
 const publicRedirectResponses = Object.freeze({
+  '/': 'https://fawxzzy.com/apps',
   '/apps/fitness': 'https://fitness.fawxzzy.com/',
   '/apps/mazer': 'https://mazer.fawxzzy.com/',
-  '/discover': 'https://fawxzzy.com/?compatibility=discover',
+  '/discover': 'https://fawxzzy.com/apps?compatibility=discover',
   '/trove': 'https://fawxzzy.com/apps?compatibility=trove',
 });
 
@@ -228,12 +215,12 @@ export function verifyProductionRelease(input, { snapshot = loadCandidateProject
   requireCondition([403, 503].includes(o.privateApi.status) && typeof o.privateApi.cacheControl === 'string'
     && o.privateApi.cacheControl.split(',').some((token) => token.trim().toLowerCase() === 'no-store')
     && typeof o.privateApi.body === 'string' && Buffer.byteLength(o.privateApi.body) <= 256,
-  'Signed-out private card observation did not fail closed.');
+  'Signed-out owner Projects endpoint observation did not fail closed.');
   assertBodyDigest(o.privateApi.bodyDigest, o.privateApi.body);
   let error;
   try { error = JSON.parse(o.privateApi.body); } catch { throw new Error('Invalid private denial JSON.'); }
   assertKeys(error, ['error'], 'private denial');
-  requireCondition(['CARD_ACCESS_DENIED', 'CARD_UNAVAILABLE'].includes(error.error)
+  requireCondition(['PROJECTS_ACCESS_DENIED', 'PROJECTS_UNAVAILABLE'].includes(error.error)
     && o.privateApi.body === JSON.stringify(error), 'Private denial must be minimal canonical JSON.');
   requireCondition(Array.isArray(o.pendingApi) && o.pendingApi.length === 2, 'Incomplete pending API observations.');
   o.pendingApi.forEach((item, index) => {
