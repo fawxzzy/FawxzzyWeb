@@ -66,6 +66,9 @@ test("a broken widget shows a plain note and the form still submits", async ({ p
 test("the widget is reset after a failed sign-in", async ({ page }) => {
   await stubTurnstile(page, "ok");
   await page.goto("/login?auth_test=error");
+  // The widget renders after the page settles (500ms timer where requestIdleCallback is missing, e.g. WebKit);
+  // a reset before it exists is correctly a no-op, so wait for it.
+  await expect(page.locator("[data-stub-widget]")).toHaveCount(1);
   await page.locator("#account-email").fill("person@example.test");
   await page.locator("#account-password").fill("correct horse battery 1");
   await page.locator("#account-auth-form").evaluate((f) => (f as HTMLFormElement).requestSubmit());
