@@ -1,20 +1,20 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_trove_owner_2b5824461cbc",
+  "export_id": "pbe_trove_owner_78714420e638",
   "project_id": "trove",
   "board_id": "discordos:project-feedback:trove",
   "owner": "trove",
   "adapter_id": "fawxzzyweb-owner-source-v1",
-  "source_revision": "sha256:2b5824461cbccca79dc4eb8285b72515c08117f4118e91d08f9c92c8db4f92ba",
-  "generated_at": "2026-11-13T00:00:00.000Z",
+  "source_revision": "sha256:78714420e6387846b72be2c1d0abd294cb14344846cb384b83c5164c23dcaaea",
+  "generated_at": "2026-11-14T00:00:00.000Z",
   "sources": [
     {
       "source_id": "fawxzzyweb-owner-work",
       "kind": "json",
       "repository": "FawxzzyWeb",
       "path": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json",
-      "revision": "sha256:3885f646ddbd11598a26791023fb7917c33bf274251d28d57b2faa5be3bd7342",
-      "observed_at": "2026-11-13T00:00:00.000Z"
+      "revision": "sha256:a6216cf35ddc4ab5ecf4907ccf2b67a7fa6749d1f189997e2594f25a4ec503a2",
+      "observed_at": "2026-11-14T00:00:00.000Z"
     },
     {
       "source_id": "fawxzzyweb-owner-export-adapter",
@@ -22,7 +22,7 @@
       "repository": "FawxzzyWeb",
       "path": "repos/FawxzzyWeb/scripts/export-project-board-owner.mjs",
       "revision": "sha256:316932a991b6422e759acee1921a2abba021c3d73580b80f364f9538efa1053f",
-      "observed_at": "2026-11-13T00:00:00.000Z"
+      "observed_at": "2026-11-14T00:00:00.000Z"
     },
     {
       "source_id": "fawxzzyweb-product-identity",
@@ -30,7 +30,7 @@
       "repository": "FawxzzyWeb",
       "path": "repos/FawxzzyWeb/src/config/product.ts",
       "revision": "sha256:191520ba158b6d8a8953bfaa87f8d113c98f775f1deb23f53217183df88b93bb",
-      "observed_at": "2026-11-13T00:00:00.000Z"
+      "observed_at": "2026-11-14T00:00:00.000Z"
     }
   ],
   "cards": [
@@ -208,6 +208,119 @@
       }
     },
     {
+      "idempotency_key": "pbk_trove_fw-handoff-001_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FW-HANDOFF-001",
+        "project_id": "trove",
+        "board_id": "discordos:project-feedback:trove",
+        "title": "Let the account portal hand a signed-in session to each Fitness release",
+        "description": "The account portal only retrieves a Fitness sign-in after it recognises the exact Fitness release, so it keeps a short list of accepted release commits and stays closed for anything else. The list was bound to the Fitness login release and re-pinned for each Fitness release since (PRs #101, #147, #152, #160, latest c48235cb); these merged before the current production build was created. Whether that Fitness commit is live on the Fitness side was not checked here.",
+        "card_type": "reliability",
+        "lifecycle": "completed",
+        "priority": null,
+        "owner": "trove",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-11-14T00:00:00.000Z",
+        "source_ref": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json#FW-HANDOFF-001",
+        "extensions": {
+          "public_safe": true,
+          "source_baseline_commit": "af6a2076712ce7517b1e021bf4841048f6f97085"
+        }
+      },
+      "source": {
+        "source_id": "fawxzzyweb-owner-work",
+        "source_ref": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json#FW-HANDOFF-001",
+        "source_status": "current",
+        "source_updated_at": "2026-11-14T00:00:00.000Z"
+      },
+      "content": {
+        "summary": "The account portal only retrieves a Fitness sign-in after it recognises the exact Fitness release, so it keeps a short list of accepted release commits and stays closed for anything else. The list was bound to the Fitness login release and re-pinned for each Fitness release since (PRs #101, #147, #152, #160, latest c48235cb); these merged before the current production build was created. Whether that Fitness commit is live on the Fitness side was not checked here.",
+        "objective": "Hand a Fitness sign-in over only to a Fitness release the portal has accepted, and keep the previous release as a rollback source.",
+        "acceptance_criteria": [
+          "The portal refuses the handoff for any Fitness commit that is not on the accepted list.",
+          "The live Fitness release and its rollback source are both on the list.",
+          "The handoff end-to-end test and the build pass."
+        ],
+        "discoveries": [
+          "A Fitness deploy stays closed (503) until the portal accepts its exact commit, so the portal re-pin must merge and ship before or with the Fitness release."
+        ],
+        "next_actions": [
+          "Re-pin the accepted list in the same batch as each new Fitness release."
+        ],
+        "blockers": [],
+        "evidence": [
+          "docs/fitness-session-handoff.md",
+          "src/lib/auth/fitness-handoff.ts",
+          "tests/e2e/fitness-handoff.spec.ts"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_trove_fw-playbook-001_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FW-PLAYBOOK-001",
+        "project_id": "trove",
+        "board_id": "discordos:project-feedback:trove",
+        "title": "Run Playbook verify on every website pull request",
+        "description": "Every website pull request now runs the real Playbook verify as its own CI check, next to the normal verify, through a pinned release-asset bridge shared with Fitness. No Playbook package is added to the site. Merged in PR #163; it changes CI only and ships nothing to the live site.",
+        "card_type": "reliability",
+        "lifecycle": "completed",
+        "priority": null,
+        "owner": "trove",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-11-14T00:00:00.000Z",
+        "source_ref": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json#FW-PLAYBOOK-001",
+        "extensions": {
+          "public_safe": true,
+          "source_baseline_commit": "af6a2076712ce7517b1e021bf4841048f6f97085"
+        }
+      },
+      "source": {
+        "source_id": "fawxzzyweb-owner-work",
+        "source_ref": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json#FW-PLAYBOOK-001",
+        "source_status": "current",
+        "source_updated_at": "2026-11-14T00:00:00.000Z"
+      },
+      "content": {
+        "summary": "Every website pull request now runs the real Playbook verify as its own CI check, next to the normal verify, through a pinned release-asset bridge shared with Fitness. No Playbook package is added to the site. Merged in PR #163; it changes CI only and ships nothing to the live site.",
+        "objective": "Catch repository-governance drift on every change, whoever or whatever wrote it.",
+        "acceptance_criteria": [
+          "A Playbook verify job runs on every pull request, separate from the normal verify.",
+          "The runtime is pinned by version and SHA-256 in one place.",
+          "Nothing from the Playbook runtime is committed or added to package.json.",
+          "A new verify failure blocks the pull request."
+        ],
+        "discoveries": [],
+        "next_actions": [
+          "Bump the pinned Playbook version in the bridge when Fitness bumps its own."
+        ],
+        "blockers": [],
+        "evidence": [
+          "scripts/playbook-runtime.mjs",
+          ".github/workflows/ci.yml",
+          "tests/playbook-runtime.test.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
       "idempotency_key": "pbk_trove_fw-presence-001_v1",
       "record_kind": "project-work",
       "record_status": "active",
@@ -217,14 +330,14 @@
         "project_id": "trove",
         "board_id": "discordos:project-feedback:trove",
         "title": "Show a live online-now count in the site header",
-        "description": "The site header shows how many people are on the website right now, in place of the brand text: a dim dot, then a count once connected. It counts visible site tabs through an anonymous live connection that stores nothing and needs no database change. Checked live in desktop Chrome with two browsers (1, then 2, then 1) and at phone widths; not checked on a real phone. Historical traffic, referrers and per-app counts stay on FW-ANALYTICS-001.",
+        "description": "The site header shows how many people are on the website right now, in place of the brand text: a dim dot, then a count once connected. It counts visible site tabs through an anonymous live connection that stores nothing and needs no database change. Checked live in desktop Chrome with two browsers (1, then 2, then 1) and at phone widths; not checked on a real phone. The privacy page also describes Mazer's separate signed-in online count (PR #158). Historical traffic and per-app counts are not planned; the traffic analytics card was retired.",
         "card_type": "feature",
         "lifecycle": "completed",
         "priority": null,
         "owner": "trove",
         "dependencies": [],
         "board_version": 1,
-        "updated_at": "2026-11-13T00:00:00.000Z",
+        "updated_at": "2026-11-14T00:00:00.000Z",
         "source_ref": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json#FW-PRESENCE-001",
         "extensions": {
           "public_safe": true,
@@ -235,10 +348,10 @@
         "source_id": "fawxzzyweb-owner-work",
         "source_ref": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json#FW-PRESENCE-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-13T00:00:00.000Z"
+        "source_updated_at": "2026-11-14T00:00:00.000Z"
       },
       "content": {
-        "summary": "The site header shows how many people are on the website right now, in place of the brand text: a dim dot, then a count once connected. It counts visible site tabs through an anonymous live connection that stores nothing and needs no database change. Checked live in desktop Chrome with two browsers (1, then 2, then 1) and at phone widths; not checked on a real phone. Historical traffic, referrers and per-app counts stay on FW-ANALYTICS-001.",
+        "summary": "The site header shows how many people are on the website right now, in place of the brand text: a dim dot, then a count once connected. It counts visible site tabs through an anonymous live connection that stores nothing and needs no database change. Checked live in desktop Chrome with two browsers (1, then 2, then 1) and at phone widths; not checked on a real phone. The privacy page also describes Mazer's separate signed-in online count (PR #158). Historical traffic and per-app counts are not planned; the traffic analytics card was retired.",
         "objective": "Give a truthful, privacy-safe live count that never shows a made-up number.",
         "acceptance_criteria": [
           "The header shows a dim dot when the count is unknown and a number only for a real positive count.",
@@ -253,12 +366,13 @@
         ],
         "next_actions": [
           "Look at the header on a real phone once.",
-          "Decide whether a per-browser count and a traffic view belong to FW-ANALYTICS-001."
+          "Decide later whether a per-browser count or a traffic view is wanted; no card exists for it."
         ],
         "blockers": [],
         "evidence": [
           "docs/live-presence.md",
-          "src/lib/presence/presence-contract.mjs"
+          "src/lib/presence/presence-contract.mjs",
+          "src/config/legal.ts"
         ]
       },
       "relationships": {
@@ -277,14 +391,14 @@
         "project_id": "trove",
         "board_id": "discordos:project-feedback:trove",
         "title": "Make Projects owner-only and check it live",
-        "description": "The Projects tab and page are for the signed-in account owner only. The static site ships no board data; a server endpoint verifies the owner and returns every card. The owner signed in on 2026-11-14 and confirmed the Projects tab and boards appear.",
+        "description": "The Projects tab and page are for the signed-in account owner only. The static site ships no board data; a server endpoint verifies the owner and returns every card. The owner signed in on 2026-11-14 and confirmed the Projects tab and boards appear. The tab also shows on the main site after sign-in (a harmless hint cookie set by the account site), several owner accounts are accepted, and the footer links are centered (PR #148, in the current production build).",
         "card_type": "feature",
         "lifecycle": "completed",
         "priority": null,
         "owner": "trove",
         "dependencies": [],
         "board_version": 1,
-        "updated_at": "2026-11-13T00:00:00.000Z",
+        "updated_at": "2026-11-14T00:00:00.000Z",
         "source_ref": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json#FW-PROJECTS-003",
         "extensions": {
           "public_safe": true,
@@ -295,10 +409,10 @@
         "source_id": "fawxzzyweb-owner-work",
         "source_ref": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json#FW-PROJECTS-003",
         "source_status": "current",
-        "source_updated_at": "2026-11-13T00:00:00.000Z"
+        "source_updated_at": "2026-11-14T00:00:00.000Z"
       },
       "content": {
-        "summary": "The Projects tab and page are for the signed-in account owner only. The static site ships no board data; a server endpoint verifies the owner and returns every card. The owner signed in on 2026-11-14 and confirmed the Projects tab and boards appear.",
+        "summary": "The Projects tab and page are for the signed-in account owner only. The static site ships no board data; a server endpoint verifies the owner and returns every card. The owner signed in on 2026-11-14 and confirmed the Projects tab and boards appear. The tab also shows on the main site after sign-in (a harmless hint cookie set by the account site), several owner accounts are accepted, and the footer links are centered (PR #148, in the current production build).",
         "objective": "Show every project card to the owner and nobody else, without per-card hiding.",
         "acceptance_criteria": [
           "Signed-out visitors and every other account see no Projects tab and receive no board data.",
@@ -316,7 +430,8 @@
         "blockers": [],
         "evidence": [
           "docs/project-board-adapter.md",
-          "src/server/projects/owner-projects-http.mjs"
+          "src/server/projects/owner-projects-http.mjs",
+          "src/lib/projects/owner-hint.mjs"
         ]
       },
       "relationships": {
@@ -327,8 +442,8 @@
     }
   ],
   "extensions": {
-    "source_work_item_count": 5,
-    "exported_card_count": 5,
+    "source_work_item_count": 7,
+    "exported_card_count": 7,
     "excluded_record_count": 3,
     "excluded_record_identities": [
       "SOC-024",
