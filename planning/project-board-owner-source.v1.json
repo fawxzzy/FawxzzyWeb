@@ -5,7 +5,7 @@
   "board_id": "discordos:project-feedback:trove",
   "owner": "trove",
   "state": "active",
-  "updated_at": "2026-11-13T00:00:00.000Z",
+  "updated_at": "2026-11-14T00:00:00.000Z",
   "source_baseline": {
     "repository": "fawxzzy/FawxzzyWeb",
     "commit": "af6a2076712ce7517b1e021bf4841048f6f97085",
@@ -87,7 +87,7 @@
       "lifecycle": "completed",
       "priority": null,
       "public_safe": true,
-      "summary": "The Projects tab and page are for the signed-in account owner only. The static site ships no board data; a server endpoint verifies the owner and returns every card. The owner signed in on 2026-11-14 and confirmed the Projects tab and boards appear.",
+      "summary": "The Projects tab and page are for the signed-in account owner only. The static site ships no board data; a server endpoint verifies the owner and returns every card. The owner signed in on 2026-11-14 and confirmed the Projects tab and boards appear. The tab also shows on the main site after sign-in (a harmless hint cookie set by the account site), several owner accounts are accepted, and the footer links are centered (PR #148, in the current production build).",
       "objective": "Show every project card to the owner and nobody else, without per-card hiding.",
       "acceptance_criteria": [
         "Signed-out visitors and every other account see no Projects tab and receive no board data.",
@@ -106,9 +106,10 @@
       "dependencies": [],
       "evidence": [
         "docs/project-board-adapter.md",
-        "src/server/projects/owner-projects-http.mjs"
+        "src/server/projects/owner-projects-http.mjs",
+        "src/lib/projects/owner-hint.mjs"
       ],
-      "updated_at": "2026-11-13T00:00:00.000Z"
+      "updated_at": "2026-11-14T00:00:00.000Z"
     },
     {
       "id": "FW-PRESENCE-001",
@@ -118,7 +119,7 @@
       "lifecycle": "completed",
       "priority": null,
       "public_safe": true,
-      "summary": "The site header shows how many people are on the website right now, in place of the brand text: a dim dot, then a count once connected. It counts visible site tabs through an anonymous live connection that stores nothing and needs no database change. Checked live in desktop Chrome with two browsers (1, then 2, then 1) and at phone widths; not checked on a real phone. Historical traffic, referrers and per-app counts stay on FW-ANALYTICS-001.",
+      "summary": "The site header shows how many people are on the website right now, in place of the brand text: a dim dot, then a count once connected. It counts visible site tabs through an anonymous live connection that stores nothing and needs no database change. Checked live in desktop Chrome with two browsers (1, then 2, then 1) and at phone widths; not checked on a real phone. The privacy page also describes Mazer's separate signed-in online count (PR #158). Historical traffic and per-app counts are not planned; the traffic analytics card was retired.",
       "objective": "Give a truthful, privacy-safe live count that never shows a made-up number.",
       "acceptance_criteria": [
         "The header shows a dim dot when the count is unknown and a number only for a real positive count.",
@@ -133,15 +134,16 @@
       ],
       "next_actions": [
         "Look at the header on a real phone once.",
-        "Decide whether a per-browser count and a traffic view belong to FW-ANALYTICS-001."
+        "Decide later whether a per-browser count or a traffic view is wanted; no card exists for it."
       ],
       "blockers": [],
       "dependencies": [],
       "evidence": [
         "docs/live-presence.md",
-        "src/lib/presence/presence-contract.mjs"
+        "src/lib/presence/presence-contract.mjs",
+        "src/config/legal.ts"
       ],
-      "updated_at": "2026-11-13T00:00:00.000Z"
+      "updated_at": "2026-11-14T00:00:00.000Z"
     },
     {
       "id": "FW-APPS-001",
@@ -171,6 +173,65 @@
       "evidence": [
         "src/components/catalog/catalog-experience.tsx",
         "tests/e2e/fawxzzyweb.spec.ts"
+      ],
+      "updated_at": "2026-11-14T00:00:00.000Z"
+    },
+    {
+      "id": "FW-PLAYBOOK-001",
+      "title": "Run Playbook verify on every website pull request",
+      "record_kind": "project-work",
+      "card_type": "reliability",
+      "lifecycle": "completed",
+      "priority": null,
+      "public_safe": true,
+      "summary": "Every website pull request now runs the real Playbook verify as its own CI check, next to the normal verify, through a pinned release-asset bridge shared with Fitness. No Playbook package is added to the site. Merged in PR #163; it changes CI only and ships nothing to the live site.",
+      "objective": "Catch repository-governance drift on every change, whoever or whatever wrote it.",
+      "acceptance_criteria": [
+        "A Playbook verify job runs on every pull request, separate from the normal verify.",
+        "The runtime is pinned by version and SHA-256 in one place.",
+        "Nothing from the Playbook runtime is committed or added to package.json.",
+        "A new verify failure blocks the pull request."
+      ],
+      "discoveries": [],
+      "next_actions": [
+        "Bump the pinned Playbook version in the bridge when Fitness bumps its own."
+      ],
+      "blockers": [],
+      "dependencies": [],
+      "evidence": [
+        "scripts/playbook-runtime.mjs",
+        ".github/workflows/ci.yml",
+        "tests/playbook-runtime.test.mjs"
+      ],
+      "updated_at": "2026-11-14T00:00:00.000Z"
+    },
+    {
+      "id": "FW-HANDOFF-001",
+      "title": "Let the account portal hand a signed-in session to each Fitness release",
+      "record_kind": "project-work",
+      "card_type": "reliability",
+      "lifecycle": "completed",
+      "priority": null,
+      "public_safe": true,
+      "summary": "The account portal only retrieves a Fitness sign-in after it recognises the exact Fitness release, so it keeps a short list of accepted release commits and stays closed for anything else. The list was bound to the Fitness login release and re-pinned for each Fitness release since (PRs #101, #147, #152, #160, latest c48235cb); these merged before the current production build was created. Whether that Fitness commit is live on the Fitness side was not checked here.",
+      "objective": "Hand a Fitness sign-in over only to a Fitness release the portal has accepted, and keep the previous release as a rollback source.",
+      "acceptance_criteria": [
+        "The portal refuses the handoff for any Fitness commit that is not on the accepted list.",
+        "The live Fitness release and its rollback source are both on the list.",
+        "The handoff end-to-end test and the build pass."
+      ],
+      "discoveries": [
+        "A Fitness deploy stays closed (503) until the portal accepts its exact commit, so the portal re-pin must merge and ship before or with the Fitness release."
+      ],
+      "next_actions": [
+        "Re-pin the accepted list in the same batch as each new Fitness release."
+      ],
+      "blockers": [],
+      "dependencies": [],
+      "evidence": [
+        "docs/fitness-session-handoff.md",
+        "src/lib/auth/fitness-handoff.ts",
+        "tests/e2e/fitness-handoff.spec.ts"
       ],
       "updated_at": "2026-11-14T00:00:00.000Z"
     }
