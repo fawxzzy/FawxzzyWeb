@@ -27,3 +27,7 @@ Before any Mazer monetization is enabled:
 4. Verify the published policy version and checkout behavior before production activation.
 
 This future gate is a design and release requirement. It grants no payment, provider, deployment, or production authority.
+
+## Live online counts
+
+Both privacy policies carry one sentence for the signed-in Mazer live online count (MAZER-UI-024): the platform policy under "How we use information" and the Mazer policy under "How information is used". The website's own header-count sentence stays in the platform policy only. The Mazer policy now has its own last-updated date and version (2026-11-13) because its text changed; `tests/presence-contract.test.mjs` pins the claims. Update the sentence whenever Mazer's counter behaviour changes (`docs/ui/MAZER-ONLINE-COUNTER-2026-11-13.md` in the Mazer repo).

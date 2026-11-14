@@ -48,7 +48,7 @@ export async function assertSiteSmoke(baseUrl) {
   const appsHtml = await assertRoute(
     baseUrl,
     "/apps",
-    "How to install my apps",
+    "Add them to your home screen",
   );
   for (const app of catalogApps) {
     if (!appsHtml.includes(`href="${app.origin}"`)) {
@@ -63,9 +63,7 @@ export async function assertSiteSmoke(baseUrl) {
   }
   for (const asset of [
     "/apps/fitness/storefront-icon.webp",
-    "/apps/fitness/storefront-poster.webp",
     "/apps/mazer/storefront-icon.webp",
-    "/apps/mazer/storefront-poster.webp",
   ]) {
     if (!appsHtml.includes(asset)) {
       throw new Error(`/apps did not render centralized catalog asset ${asset}.`);
@@ -88,8 +86,12 @@ export async function assertSiteSmoke(baseUrl) {
   if ((appsHtml.match(/data-review-placeholder=/g) ?? []).length !== 0) {
     throw new Error("The app catalog still advertises reviews that do not exist.");
   }
-  if (!appsHtml.includes("How to install my apps")) {
+  if (!appsHtml.includes("Add them to your home screen")) {
     throw new Error("The app catalog did not render the brief installation guide.");
+  }
+  // Previews are retired as outdated: no preview or feedback controls and no preview posters.
+  if (/storefront-poster|data-app-preview|data-app-feedback|<dialog\b/u.test(appsHtml)) {
+    throw new Error("/apps still rendered retired preview or feedback controls.");
   }
   if (appsHtml.includes("Pick your app.") || appsHtml.includes("App catalog")) {
     throw new Error("The Apps page rendered retired catalog-introduction copy.");
