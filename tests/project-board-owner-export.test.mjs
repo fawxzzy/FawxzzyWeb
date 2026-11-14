@@ -30,9 +30,9 @@ test("preserves the exact current FawxzzyWeb owner card", () => {
   assert.equal(output.project_id, "trove");
   assert.equal(output.board_id, "discordos:project-feedback:trove");
   assert.equal(output.owner, "trove");
-  assert.deepEqual(output.cards.map((card) => card.record.card_id), ["FW-ANALYTICS-001", "FW-CAPTCHA-001", "FW-DEVICE-001", "FW-PRESENCE-001", "FW-PROJECTS-001", "FW-PROJECTS-002", "FW-PROJECTS-003"]);
-  const original = output.cards.find((card) => card.record.card_id === "FW-PROJECTS-001");
-  assert.equal(original.record.lifecycle, "blocked");
+  assert.deepEqual(output.cards.map((card) => card.record.card_id), ["FW-ANALYTICS-001", "FW-APPS-001", "FW-CAPTCHA-001", "FW-DEVICE-001", "FW-PRESENCE-001", "FW-PROJECTS-003"]);
+  const original = output.cards.find((card) => card.record.card_id === "FW-PROJECTS-003");
+  assert.equal(original.record.lifecycle, "in-progress");
   assert.equal(original.record_status, "active");
   assert.equal(original.record.extensions.public_safe, true);
 });
@@ -51,8 +51,8 @@ test("retains the accepted analytics planning criteria without approving public 
   assert.equal(createHash("sha256").update(JSON.stringify(analytics.content.acceptance_criteria)).digest("hex"), "a25d1104b1c54ce2701ece496c63ab307f13aa0cc424c5b0577db5233385fba4");
   assert.deepEqual(analytics.record.dependencies, []);
   assert.deepEqual(analytics.relationships, { parent_card_id: null, duplicate_of: null, superseded_by: null });
-  assert.match(analytics.content.discoveries[0], /unadopted owner-source proposal/);
-  assert.match(analytics.content.discoveries[0], /canonical equivalence/);
+  assert.match(analytics.content.discoveries[0], /FW-PRESENCE-001/);
+  assert.match(analytics.content.discoveries[2], /service role/);
   assert.equal(output.cards.some((card) => ["FF-ANALYTICS-001", "FF-SOC-002"].includes(card.record.card_id)), false);
 });
 
@@ -64,7 +64,7 @@ function exampleCard(id, lifecycle, publicSafe) {
     lifecycle,
     priority: "low",
     public_safe: publicSafe,
-    dependencies: ["FW-PROJECTS-001"],
+    dependencies: ["FW-PROJECTS-003"],
     blockers: lifecycle === "blocked" ? ["Synthetic prerequisite"] : [],
     updated_at: "2026-10-14T00:00:00.000Z",
   };
@@ -76,18 +76,18 @@ test("exports multiple owner cards with stable identities, priority, lifecycle, 
   expanded.work_items.push(exampleCard("FW-EXAMPLE-001", "in-progress", true));
   const output = build(expanded);
   assert.deepEqual(output.cards.map((card) => card.record.card_id), [
-    "FW-ANALYTICS-001", "FW-CAPTCHA-001", "FW-DEVICE-001", "FW-EXAMPLE-001", "FW-EXAMPLE-002", "FW-PRESENCE-001", "FW-PROJECTS-001", "FW-PROJECTS-002", "FW-PROJECTS-003",
+    "FW-ANALYTICS-001", "FW-APPS-001", "FW-CAPTCHA-001", "FW-DEVICE-001", "FW-EXAMPLE-001", "FW-EXAMPLE-002", "FW-PRESENCE-001", "FW-PROJECTS-003",
   ]);
-  assert.equal(output.extensions.source_work_item_count, 9);
-  assert.equal(output.extensions.exported_card_count, 9);
-  assert.equal(new Set(output.cards.map((card) => card.idempotency_key)).size, 9);
+  assert.equal(output.extensions.source_work_item_count, 8);
+  assert.equal(output.extensions.exported_card_count, 8);
+  assert.equal(new Set(output.cards.map((card) => card.idempotency_key)).size, 8);
   const planning = output.cards.find((card) => card.record.card_id === "FW-EXAMPLE-002");
   assert.equal(planning.record_status, "candidate");
   assert.equal(planning.record.priority, "low");
   assert.equal(planning.record.extensions.public_safe, false);
-  assert.deepEqual(planning.record.dependencies, ["FW-PROJECTS-001"]);
+  assert.deepEqual(planning.record.dependencies, ["FW-PROJECTS-003"]);
   assert.equal(planning.record.source_ref, "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json#FW-EXAMPLE-002");
-  assert.deepEqual(output.cards.find((card) => card.record.card_id === "FW-PROJECTS-001"), build().cards.find((card) => card.record.card_id === "FW-PROJECTS-001"));
+  assert.deepEqual(output.cards.find((card) => card.record.card_id === "FW-PROJECTS-003"), build().cards.find((card) => card.record.card_id === "FW-PROJECTS-003"));
 });
 
 test("sorts card IDs identically under different default locale collations", () => {
@@ -95,7 +95,7 @@ test("sorts card IDs identically under different default locale collations", () 
   expanded.work_items.push(exampleCard("FW-CZ", "planning", true));
   expanded.work_items.push(exampleCard("FW-CS", "planning", true));
   const expected = build(expanded);
-  assert.deepEqual(expected.cards.map((card) => card.record.card_id), ["FW-ANALYTICS-001", "FW-CAPTCHA-001", "FW-CS", "FW-CZ", "FW-DEVICE-001", "FW-PRESENCE-001", "FW-PROJECTS-001", "FW-PROJECTS-002", "FW-PROJECTS-003"]);
+  assert.deepEqual(expected.cards.map((card) => card.record.card_id), ["FW-ANALYTICS-001", "FW-APPS-001", "FW-CAPTCHA-001", "FW-CS", "FW-CZ", "FW-DEVICE-001", "FW-PRESENCE-001", "FW-PROJECTS-003"]);
   const english = new Intl.Collator("en");
   const hungarian = new Intl.Collator("hu");
   assert.equal(Math.sign(english.compare("FW-CS", "FW-CZ")), -1);
@@ -160,10 +160,10 @@ test("rejects duplicate, cross-owner, missing-public-decision, and malformed new
   invalidType.work_items.find((item) => item.id === "FW-EXAMPLE-001").card_type = "incident";
   assert.throws(() => build(invalidType), /card_type is unsupported/);
   const invalidDependency = structuredClone(expanded);
-  invalidDependency.work_items.find((item) => item.id === "FW-EXAMPLE-001").dependencies.push("FW-PROJECTS-001");
+  invalidDependency.work_items.find((item) => item.id === "FW-EXAMPLE-001").dependencies.push("FW-PROJECTS-003");
   assert.throws(() => build(invalidDependency), /invalid dependencies/);
   const removedOriginal = structuredClone(expanded);
-  removedOriginal.work_items = removedOriginal.work_items.slice(1);
+  removedOriginal.work_items = removedOriginal.work_items.filter((item) => item.id !== "FW-PROJECTS-003");
   assert.throws(() => build(removedOriginal), /original FawxzzyWeb board work identity is missing/);
 });
 
@@ -193,12 +193,12 @@ test("retains portable exact source references and the fixed public-safe contrac
     assert.equal(path.win32.isAbsolute(entry.path), false);
     assert.match(entry.revision, /^sha256:[0-9a-f]{64}$/);
   }
-  const card = output.cards.find((entry) => entry.record.card_id === "FW-PROJECTS-001");
+  const card = output.cards.find((entry) => entry.record.card_id === "FW-PROJECTS-003");
   assert.equal(card.record.project_id, output.project_id);
   assert.equal(card.record.board_id, output.board_id);
   assert.equal(card.record.source_ref, card.source.source_ref);
-  assert.ok(card.content.acceptance_criteria.length >= 5);
-  assert.ok(card.content.blockers.length === 1);
+  assert.ok(card.content.acceptance_criteria.length >= 4);
+  assert.equal(card.content.blockers.length, 0);
 });
 
 test("derives repository metadata and source paths from canonical product identity", () => {

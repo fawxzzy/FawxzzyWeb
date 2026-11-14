@@ -17,7 +17,7 @@ const INCLUDED_LIFECYCLES = Object.freeze(["in-progress", "planning", "blocked"]
 const SUPPORTED_LIFECYCLES = new Set([...INCLUDED_LIFECYCLES, "ready", "review", "completed"]);
 const SUPPORTED_PRIORITIES = new Set([null, "low", "medium", "high", "critical"]);
 const SUPPORTED_CARD_TYPES = new Set(["feature", "bug", "governance", "architecture", "documentation", "automation", "research", "migration", "reliability", "technical-debt"]);
-const LEGACY_PUBLIC_SAFE_CARD_ID = "FW-PROJECTS-001";
+const REQUIRED_CARD_ID = "FW-PROJECTS-003";
 const WEB_CARD_ID = /^FW-[A-Z0-9]+(?:-[A-Z0-9]+)*$/;
 const STATIC_REQUIRED_EXCLUSIONS = Object.freeze([
   "SOC-024",
@@ -81,7 +81,7 @@ function assertSource(source, repository) {
     if (cardIds.has(item.id)) throw new Error(`duplicate FawxzzyWeb work identity: ${item.id}`);
     cardIds.add(item.id);
   }
-  if (!cardIds.has(LEGACY_PUBLIC_SAFE_CARD_ID)) throw new Error("original FawxzzyWeb board work identity is missing");
+  if (!cardIds.has(REQUIRED_CARD_ID)) throw new Error("original FawxzzyWeb board work identity is missing");
   const identities = (source.excluded_records ?? []).map((record) => record.identity).sort();
   const requiredExclusions = [...STATIC_REQUIRED_EXCLUSIONS, repository.staleIssueIdentity].sort();
   if (JSON.stringify(identities) !== JSON.stringify(requiredExclusions)) throw new Error("excluded-record reconciliation changed");
@@ -105,7 +105,7 @@ function mapCard(item, repository, lifecycles) {
   if (!SUPPORTED_PRIORITIES.has(item.priority)) throw new Error(`${item.id}.priority is unsupported`);
   if (!SUPPORTED_CARD_TYPES.has(item.card_type)) throw new Error(`${item.id}.card_type is unsupported`);
   if (item.public_safe !== undefined && typeof item.public_safe !== "boolean") throw new Error(`${item.id}.public_safe must be boolean`);
-  if (item.id !== LEGACY_PUBLIC_SAFE_CARD_ID && typeof item.public_safe !== "boolean") throw new Error(`${item.id} requires an explicit public_safe decision`);
+  if (typeof item.public_safe !== "boolean") throw new Error(`${item.id} requires an explicit public_safe decision`);
   if (item.lifecycle === "blocked" && (!Array.isArray(item.blockers) || item.blockers.length === 0)) throw new Error(`${item.id} must retain its exact blocker`);
   const arrays = ["acceptance_criteria", "discoveries", "next_actions", "blockers", "dependencies", "evidence"];
   for (const field of arrays) {
