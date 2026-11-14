@@ -81,25 +81,39 @@ test("if the other sessions cannot be ended the password is still reported saved
   await expect(page.getByRole("status").filter({ hasText: "Other devices may stay signed in." })).toBeVisible();
 });
 
-test("the Mazer authorization loading state is a bare #02080f page: no text, no scroll", async ({ page }) => {
+test("the Mazer authorization loading state is Mazer's loader: #02080f, icon after 150 ms, no text, no scroll", async ({ page }) => {
   await page.goto("/oauth/authorize?auth_test=session-pending");
   const bare = page.locator(".oauth-bare");
   await expect(bare).toBeAttached();
   await expect(bare).toHaveCSS("background-color", "rgb(2, 8, 15)");
+  const stage = page.locator(".oauth-bare__stage");
+  // Same timeline as Mazer's boot splash: fade in over 200 ms after a 150 ms delay.
+  await expect(stage).toHaveCSS("animation-delay", "0.15s");
+  await expect(stage).toHaveCSS("animation-duration", "0.2s");
   const facts = await page.evaluate(() => {
     const element = document.querySelector(".oauth-bare")!;
     const box = element.getBoundingClientRect();
-    const corners = [[1, 1], [innerWidth - 2, 1], [1, innerHeight - 2], [innerWidth - 2, innerHeight - 2], [innerWidth / 2, innerHeight / 2]];
+    const corners = [[1, 1], [innerWidth - 2, 1], [1, innerHeight - 2], [innerWidth - 2, innerHeight - 2]];
+    const icon = element.querySelector("img.oauth-bare__icon") as HTMLImageElement | null;
+    const iconBox = icon?.getBoundingClientRect();
     return {
       coversViewport: box.width === innerWidth && box.height === innerHeight,
-      onlyScreenReaderText: [...element.children].every((child) => child.classList.contains("sr-only")),
-      topmost: corners.every(([x, y]) => document.elementFromPoint(x, y) === element),
+      visibleText: [...element.querySelectorAll("*")].filter((node) => !node.classList.contains("sr-only") && !node.closest("[aria-hidden='true']") && (node.textContent ?? "").trim() !== "").length,
+      iconInline: icon?.src.startsWith("data:image/webp;base64,") ?? false,
+      iconSize: icon ? icon.offsetWidth : 0,
+      centred: iconBox ? Math.abs(iconBox.left + iconBox.width / 2 - innerWidth / 2) < 1 && Math.abs(iconBox.top + iconBox.height / 2 - innerHeight / 2) < 2 : false,
+      cornersCovered: corners.every(([x, y]) => document.elementFromPoint(x, y) === element),
       scrollHeight: document.documentElement.scrollHeight,
       innerHeight,
+      innerWidth,
     };
   });
   expect(facts.coversViewport).toBe(true);
-  expect(facts.topmost).toBe(true);
-  expect(facts.onlyScreenReaderText).toBe(true);
+  expect(facts.cornersCovered).toBe(true);
+  expect(facts.visibleText).toBe(0);
+  expect(facts.iconInline).toBe(true);
+  expect(facts.centred).toBe(true);
+  // 30% of the short side, clamped to 88..150 px, like Mazer's loader.
+  expect(facts.iconSize).toBe(Math.round(Math.min(150, Math.max(88, Math.min(facts.innerWidth, facts.innerHeight) * 0.3))));
   expect(facts.scrollHeight).toBeLessThanOrEqual(facts.innerHeight + 1);
 });

@@ -58,7 +58,13 @@ The endpoint is an ordinary top-level navigation to the account host. The portal
 
 ### Mazer authorization loading state
 
-The "One moment." card on `/oauth/authorize` (account host, between host sign-in and Mazer) is replaced by a bare #02080f page: fixed, full screen including safe areas, no visible text (screen-reader text only), no scroll. Error and consent states are unchanged.
+The gray "PENDING / One moment. / Checking your sign-in..." card on `/oauth/authorize` (account host: right after a signed-out Mazer launch redirects there, and again between host sign-in and the return to Mazer) is replaced by Mazer's own loader so the person sees one continuous loading look:
+
+- Opaque `#02080f` full-screen layer from the first paint (it is in the prerendered HTML), no card, no text (screen-reader text only), no scroll, covers the safe areas.
+- Mazer app icon centred, 30% of the short side clamped to 88 to 150 px (Mazer's sizing; the 72 px suggested in the request was not used so the two loaders match), soft ring, static halo, breathing icon, reduced-motion variant: copied from Mazer's boot splash (`index.html`) and `src/render/appLoader.ts`. The icon is Mazer's own inline 256x256 WebP data URI (`src/components/account/mazer-loader-icon.ts`, about 15 KB, no request, no pop-in; `public/apps/mazer/icon.png` is 934 KB, too heavy to inline).
+- Timeline: only the stage fades in, 200 ms after a 150 ms delay (CSS). If the authorization finishes before 150 ms from first paint the page leaves at once, so a quick sign-in shows only the bare dark page. Once the icon shows, the page holds until 500 ms from first paint (150 ms delay + 350 ms minimum hold) before navigating (`src/lib/auth/mazer-loader-timing.ts`, `holdLoader`). The 300 ms fade-out is not copied: the page unloads on navigation, so there is nothing to fade; Mazer's splash then fades its own stage in after its own 150 ms delay, which can read as icon, dark, icon. If that gap is noticed, the fix is on Mazer's side (start its stage instantly when the referrer is the account host).
+- Error and consent states are unchanged. The host login page is untouched.
+- Evidence: `docs/ops/evidence-account-no-scroll-2026-11-14/oauth-loader-first-paint-bare.png` (first paint) and `oauth-loader-icon-after-150ms.png` (390x844 DPR 2 iPhone UA).
 
 ### Mazer side
 

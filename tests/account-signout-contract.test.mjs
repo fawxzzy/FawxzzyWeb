@@ -196,9 +196,31 @@ test("the sign-out capability ping answers 204 for Mazer only, with no cookies o
   assert.deepEqual(config.rewrites, [{ source: "/signout/ping", destination: "/api/account/signout-ping" }]);
 });
 
+test("the Mazer authorization loader follows Mazer's timeline: bare under 150 ms, shown holds 350 ms", () => {
+  const timing = loadPortalModule("src/lib/auth/mazer-loader-timing.ts");
+  assert.equal(timing.LOADER_SHOW_DELAY_MS, 150);
+  assert.equal(timing.LOADER_MIN_HOLD_MS, 350);
+  assert.equal(timing.LOADER_FADE_IN_MS, 200);
+  // Finished before the icon would show: leave at once (bare dark page only).
+  for (const elapsed of [0, 40, 149.9]) assert.equal(timing.loaderHoldRemainingMs(elapsed), 0);
+  // Shown at 150 ms, held until 500 ms after the first paint.
+  assert.equal(timing.loaderHoldRemainingMs(150), 350);
+  assert.equal(timing.loaderHoldRemainingMs(300), 200);
+  assert.equal(timing.loaderHoldRemainingMs(500), 0);
+  assert.equal(timing.loaderHoldRemainingMs(5000), 0);
+  assert.equal(timing.loaderHoldRemainingMs(Number.NaN), 0);
+  const css = read("src/styles/page-families/account-forms.css");
+  assert.match(css, /animation: oauth-loader-in 200ms ease 150ms both;/);
+  assert.match(css, /animation: oauth-loader-breathe 1\.2s ease-in-out infinite;/);
+  const icon = read("src/components/account/mazer-loader-icon.ts");
+  assert.match(icon, /"data:image\/webp;base64,[A-Za-z0-9+/=]+"/);
+});
+
 test("the Mazer authorization loading state has no visible text", () => {
   const source = read("src/components/account/mazer-oauth-authorization.tsx");
-  assert.ok(!source.includes("One moment."), "the pending card is replaced by the bare dark page");
+  assert.ok(!source.includes("One moment."), "the pending card is replaced by Mazer's loader");
+  assert.ok(!source.includes('title="One moment."'));
+  assert.equal((source.match(/await holdLoader\(\);/g) ?? []).length, 3, "every loader exit holds the minimum");
   assert.match(source, /className="oauth-bare"/);
   assert.match(read("src/styles/page-families/account-forms.css"), /\.oauth-bare \{[^}]*background: #02080f;/);
 });
