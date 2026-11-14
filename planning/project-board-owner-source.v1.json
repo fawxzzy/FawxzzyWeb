@@ -19,42 +19,6 @@
   },
   "work_items": [
     {
-      "id": "FW-PROJECTS-001",
-      "title": "Connect the owner project boards to the live master read model",
-      "record_kind": "project-work",
-      "card_type": "feature",
-      "lifecycle": "blocked",
-      "priority": null,
-      "summary": "The owner-only /projects page serves a committed snapshot of every card on the Fitness, Mazer, Web and Atlas Stack boards. Live synchronization from the master read model, with a refresh policy and stale-source behavior, is not connected yet.",
-      "objective": "Serve current board cards to the signed-in owner from the master read model without restoring DiscordOS as a runtime dependency.",
-      "acceptance_criteria": [
-        "The owner boards read cards from an approved live source instead of a committed snapshot.",
-        "Every displayed card keeps its stable project, card, owner, lifecycle, relationship and source-revision identity.",
-        "The endpoint stays owner-verified on the server and never returns provider identifiers or privileged credentials.",
-        "Stale-source, unavailable-source and narrow-screen states pass deterministic verification.",
-        "Source publication and production release remain separate guarded owner boundaries."
-      ],
-      "discoveries": [
-        "Fitness, Mazer, Web and Atlas Stack (including the Playbook roadmap) boards are served in full to the signed-in owner at account.fawxzzy.com/projects; nobody else sees the tab or the cards.",
-        "The board is served by an owner-verified endpoint from a committed snapshot, not from a live source."
-      ],
-      "next_actions": [
-        "Decide the approved source location and refresh policy for live board cards.",
-        "Serve the board from that source behind the owner endpoint and verify current, stale and unavailable states.",
-        "Verify one real card change end to end, then run separate guarded release and product acceptance."
-      ],
-      "blockers": [
-        "Needs an owner decision on the source location and the refresh policy; no live card synchronization readback exists."
-      ],
-      "dependencies": [],
-      "evidence": [
-        "src/server/projects/owner-projects-http.mjs",
-        "docs/project-board-adapter.md",
-        "planning/project-board-sources.v1.json"
-      ],
-      "updated_at": "2026-11-13T00:00:00.000Z"
-    },
-    {
       "id": "FW-ANALYTICS-001",
       "title": "Traffic Analytics and Live Active-User Counter",
       "record_kind": "project-work",
@@ -81,18 +45,16 @@
         "14. Return source, integration, release and product acceptance evidence separately. Do not mark the card complete from local source, a preview, an analytics dashboard screenshot, or a deployed count without the corresponding approved live readback and receiving proof."
       ],
       "discoveries": [
-        "This is an unadopted owner-source proposal. FW-ANALYTICS-001 is proposed pending current canonical equivalence checking, owner adoption, and exact card save/readback.",
+        "The live online-now display (criteria 7 to 10) shipped on its own as FW-PRESENCE-001 using an anonymous live channel; nothing here has been built for historical traffic.",
         "Fitness FF-ANALYTICS-001 and FF-SOC-002 are related distinct outcomes; their identities, dependencies, and acceptance remain with Fitness.",
-        "The existing first-party analytics contract must be reconciled before any provider or metric implementation decision. Public projection is not approved."
+        "The collected page views live in a table only the service role can read, with no visitor or session id and no read path, so totals, popular pages and referrers need new database work."
       ],
       "next_actions": [
-        "Have the Web source owner and sole Platform writer check current canonical equivalents before adopting or assigning the final stable Web card identity.",
-        "Return the reviewed source/export identity and proposed card identity for owner intake.",
-        "After exact canonical authority is established, verify real card save/readback and return integration, release, and product acceptance evidence separately."
+        "Decide whether traffic numbers are worth building, and whether they would be public or owner-only.",
+        "If yes: design a read path over the collected page views (a database function or an Edge GET) for the owner's approval; no identifiers are collected today."
       ],
       "blockers": [
-        "Current canonical equivalence, owner adoption, and exact card save/readback are not yet verified.",
-        "Metric implementation, provider setup, cost, retention, and public/private access decisions require their separate reviewed scope."
+        "Needs the owner's decision and approval of a database read path over the collected page views, plus the public or owner-only decision for traffic numbers."
       ],
       "dependencies": [],
       "evidence": [
@@ -106,7 +68,7 @@
       "title": "Add a bot check to the sign-in, sign-up and reset forms",
       "record_kind": "project-work",
       "card_type": "feature",
-      "lifecycle": "planning",
+      "lifecycle": "blocked",
       "priority": null,
       "public_safe": true,
       "summary": "Add a bot check to the account forms before public launch, using a free provider that the account backend supports natively.",
@@ -123,7 +85,9 @@
         "Add the widget to the three forms in one reviewed change, behind the provider-settings step.",
         "Verify sign-in, sign-up and reset end to end on a phone and a desktop browser."
       ],
-      "blockers": [],
+      "blockers": [
+        "Needs a captcha provider account and its site key and secret, and the account backend's captcha setting switched on. Those are credentials and a provider setting only the owner can create."
+      ],
       "dependencies": [],
       "evidence": [
         "docs/shared-account-portal-phase1.md",
@@ -161,34 +125,6 @@
       "updated_at": "2026-11-13T00:00:00.000Z"
     },
     {
-      "id": "FW-PROJECTS-002",
-      "title": "Refresh the Atlas Stack board from current work",
-      "record_kind": "project-work",
-      "card_type": "documentation",
-      "lifecycle": "planning",
-      "priority": null,
-      "public_safe": true,
-      "summary": "The Atlas Stack tab shows the current Playbook roadmap next to Atlas, Cortex, Foundation and Lifeline cards that come from July exports and need a fresh audit.",
-      "objective": "Make every Atlas Stack card reflect current evidence, or retire it with a recorded reason.",
-      "acceptance_criteria": [
-        "Each non-Playbook Atlas Stack card is audited against current repository and provider evidence.",
-        "Stale cards are re-statused or removed from the list with a recorded reason.",
-        "The board snapshot and its tests are regenerated and verified."
-      ],
-      "discoveries": [],
-      "next_actions": [
-        "Audit the open Atlas lanes (delivery health, default-branch policy, release policy, source hierarchy) against current evidence.",
-        "Update the owner registry and regenerate the owner export, then regenerate the owner snapshot."
-      ],
-      "blockers": [],
-      "dependencies": [],
-      "evidence": [
-        "planning/project-board-sources.v1.json",
-        "docs/project-board-adapter.md"
-      ],
-      "updated_at": "2026-11-13T00:00:00.000Z"
-    },
-    {
       "id": "FW-PROJECTS-003",
       "title": "Make Projects owner-only and check it live",
       "record_kind": "project-work",
@@ -205,7 +141,8 @@
         "The owner view is checked on a real device."
       ],
       "discoveries": [
-        "The owner endpoint needs the server-only owner subject setting; without it the page fails closed and shows nothing, for everyone."
+        "The owner endpoint needs the server-only owner list setting; without it the page fails closed and shows nothing, for everyone.",
+        "Pages on the main site show the Projects link only while a harmless hint cookie set by the account site is present; the account page still verifies the owner on the server."
       ],
       "next_actions": [
         "Sign in as the owner on a phone and check the tab and every board.",
@@ -224,10 +161,10 @@
       "title": "Show a live online-now count in the site header",
       "record_kind": "project-work",
       "card_type": "feature",
-      "lifecycle": "in-progress",
+      "lifecycle": "completed",
       "priority": null,
       "public_safe": true,
-      "summary": "The site header shows how many people are on the website right now, in place of the brand text: a dim dot, then a count once connected. It counts visible site tabs through an anonymous live connection that stores nothing and needs no database change. Historical traffic, referrers and per-app counts stay on FW-ANALYTICS-001.",
+      "summary": "The site header shows how many people are on the website right now, in place of the brand text: a dim dot, then a count once connected. It counts visible site tabs through an anonymous live connection that stores nothing and needs no database change. Checked live in desktop Chrome with two browsers (1, then 2, then 1) and at phone widths; not checked on a real phone. Historical traffic, referrers and per-app counts stay on FW-ANALYTICS-001.",
       "objective": "Give a truthful, privacy-safe live count that never shows a made-up number.",
       "acceptance_criteria": [
         "The header shows a dim dot when the count is unknown and a number only for a real positive count.",
@@ -241,8 +178,8 @@
         "Realtime connection quotas on the shared project apply; past them the display goes dim."
       ],
       "next_actions": [
-        "Check the header on a real phone with the live count showing.",
-        "Decide whether a per-browser count and a public traffic view belong to FW-ANALYTICS-001."
+        "Look at the header on a real phone once.",
+        "Decide whether a per-browser count and a traffic view belong to FW-ANALYTICS-001."
       ],
       "blockers": [],
       "dependencies": [],
