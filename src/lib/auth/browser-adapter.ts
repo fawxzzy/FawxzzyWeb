@@ -9,6 +9,7 @@ import {
   type SupabaseClient,
   type User,
 } from "@supabase/supabase-js";
+import { captchaOptions } from "@/lib/auth/captcha";
 import {
   accountContract,
   accountConfirmUrl,
@@ -60,7 +61,7 @@ export type PortalAuthAdapter = {
    */
   validateSession(): Promise<PortalSession | null>;
   onSessionChange(listener: (session: PortalSession | null) => void): () => void;
-  signIn(email: string, password: string): Promise<PortalSession | null>;
+  signIn(email: string, password: string, captchaToken?: string): Promise<PortalSession | null>;
   handoffToFitness(returnTarget: string, expectedUserId: string): Promise<string>;
   getOAuthAccessToken(expectedUserId: string): Promise<string>;
   signUp(
@@ -69,12 +70,14 @@ export type PortalAuthAdapter = {
     username: string,
     contextId: AccountExperienceContextId,
     returnTarget?: string,
+    captchaToken?: string,
   ): Promise<PortalSession | null>;
   signOut(scope?: PortalSignOutScope): Promise<void>;
   requestPasswordReset(
     email: string,
     contextId: AccountExperienceContextId,
     returnTarget?: string,
+    captchaToken?: string,
   ): Promise<void>;
   updateEmail(email: string): Promise<void>;
   updatePassword(password: string): Promise<void>;
@@ -396,16 +399,20 @@ export function createSupabaseAdapter(
       });
       return () => data.subscription.unsubscribe();
     },
-    async signIn(identifier, password) {
+    async signIn(identifier, password, captchaToken) {
       beginAuthMutation();
       if (identifier.includes("@")) {
-        const { data, error } = await client.auth.signInWithPassword({ email: identifier, password });
+        const { data, error } = await client.auth.signInWithPassword({
+          email: identifier,
+          password,
+          options: captchaOptions(captchaToken),
+        });
         if (error) throw error;
         return toPortalSession(data.session);
       }
 
       const response = await fetch(`${url}/functions/v1/username-password-signin`, {
-        body: JSON.stringify({ identifier, password }),
+        body: JSON.stringify({ identifier, password, ...captchaOptions(captchaToken) }),
         headers: {
           apikey: publishableKey,
           "Content-Type": "application/json",
@@ -434,7 +441,7 @@ export function createSupabaseAdapter(
       if (error) throw error;
       return toPortalSession(data.session);
     },
-    async signUp(email, password, username, contextId, returnTarget) {
+    async signUp(email, password, username, contextId, returnTarget, captchaToken) {
       beginAuthMutation();
       let confirmationState: string | undefined;
       if (contextId === "fitness") {
@@ -456,6 +463,7 @@ export function createSupabaseAdapter(
           options: {
             data: { display_name: username, username },
             emailRedirectTo: accountConfirmUrl(contextId, confirmationState, returnTarget),
+            ...captchaOptions(captchaToken),
           },
         });
       } catch (error) {
@@ -519,9 +527,10 @@ export function createSupabaseAdapter(
       beginAuthMutation();
       await signOutOfPortal(client.auth, scope);
     },
-    async requestPasswordReset(email, contextId, returnTarget) {
+    async requestPasswordReset(email, contextId, returnTarget, captchaToken) {
       const { error } = await client.auth.resetPasswordForEmail(email, {
         redirectTo: accountRecoveryUrl(contextId, returnTarget),
+        ...captchaOptions(captchaToken),
       });
       if (error) throw error;
     },

@@ -245,3 +245,9 @@ html:has(.system-page--locked) .system-page--locked {
   .oauth-bare__icon { animation: none; }
   .oauth-bare__ring { animation: none; transform: scale(1.08); opacity: 0.28; }
 }
+
+/* Turnstile runs in interaction-only mode: no space is reserved until Cloudflare needs one. */
+.account-captcha {
+  max-width: 100%;
+  overflow-x: auto;
+}
