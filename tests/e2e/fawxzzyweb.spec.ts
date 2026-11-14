@@ -281,8 +281,10 @@ test("public routes carry social metadata and grounded structured data", async (
     expect(application.mainEntityOfPage).toBe(
       `${productIdentity.canonicalOrigin}/apps`,
     );
-    expect(application.screenshot).toBe(
-      new URL(app.display.poster.src, productIdentity.canonicalOrigin).href,
+    // The preview posters are retired as outdated, so no screenshot is advertised; the icon is the image.
+    expect(application).not.toHaveProperty("screenshot");
+    expect(application.image).toBe(
+      new URL(app.display.icon.src, productIdentity.canonicalOrigin).href,
     );
     expect(application.featureList).toEqual(
       app.detail.stories.map(({ title }) => title),
