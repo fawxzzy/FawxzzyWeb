@@ -260,7 +260,13 @@ export function MazerOAuthAuthorization() {
   }
 
   if (state.kind === "loading") {
-    return <SystemState compact description="Checking your sign-in…" title="One moment." variant="pending" />;
+    // Bare dark page (no text, no scroll) between host sign-in and Mazer's own loader. The only
+    // text is for screen readers.
+    return (
+      <div aria-busy="true" className="oauth-bare" role="status">
+        <span className="sr-only">Checking your sign-in.</span>
+      </div>
+    );
   }
   if (state.kind === "invalid") {
     return <SystemState compact description="Invalid or expired. Start again in Mazer." title="This request cannot continue." variant="invalid" />;

@@ -58,12 +58,13 @@ import {
   SystemState,
   type SystemStateVariant,
 } from "@/components/system/system-state";
+import { resolveSignOutDestination, SIGNOUT_RETURN_PARAM } from "@/config/account-signout";
 import {
   AccountLegalLinks,
   AccountTextDivider,
 } from "@/components/account/account-legal-links";
 
-type PortalMode = "login" | "account" | "confirm" | "callback" | "reset";
+type PortalMode = "login" | "account" | "confirm" | "callback" | "reset" | "signout";
 
 type Notice = {
   kind: "error" | "info" | "success";
@@ -1050,11 +1051,23 @@ function ResetPanel({
       cooldown.start();
       try {
         await adapter.updatePassword(password);
-        // Ends only this throw-away recovery session. Signing the person out of the apps they are
-        // using is the account page's Sign out, not a side effect of choosing a new password.
+        // MAZER-ACCT-041: a changed password ends every other session of the account (other
+        // devices, Mazer, Fitness) while the recovery session is still alive to authorize it.
+        // The password is already saved, so a provider failure here must not read as "not saved":
+        // it is reported in its own sentence and the recovery session is still ended below.
+        let otherSessionsEnded = true;
+        try {
+          await adapter.signOut("other-sessions");
+        } catch {
+          otherSessionsEnded = false;
+        }
+        // Then end this throw-away recovery session itself (local scope, as before).
         await adapter.signOut("this-session");
         formElement.reset();
-        transient.show({ kind: "success", text: safeAuthSuccess("reset-complete") });
+        transient.show({
+          kind: "success",
+          text: safeAuthSuccess(otherSessionsEnded ? "reset-complete" : "reset-others"),
+        });
         window.setTimeout(() => {
           window.location.replace(contextualPath("/login", context, internalMazerReturn));
         }, 700);
@@ -1407,6 +1420,98 @@ function LinkHandler({
   );
 }
 
+/**
+ * GET /signout?returnTo=<url> (MAZER-ACCT-041). Ends THIS browser's account session (local scope:
+ * the portal session is revoked at the provider and its stored copy removed; the person's other
+ * devices stay signed in), clears the shared owner hint like the account page's Sign out does,
+ * then continues to the allowlisted `returnTo` or to the sign-in page. It is a page, not a data
+ * endpoint, because the session lives in this browser's storage and only this page can clear it.
+ * Because the site sends X-Frame-Options: DENY, only a top-level navigation can trigger it.
+ */
+function SignOutPanel({
+  context,
+  resolution,
+}: {
+  context: AccountExperienceContext;
+  resolution: AdapterResolution | null;
+}) {
+  const adapter = adapterFrom(resolution);
+  const started = useRef(false);
+  const [attemptState, setState] = useState<"working" | "error">("working");
+  const [attempt, setAttempt] = useState(0);
+  const state = resolution && !adapter ? "unavailable" : attemptState;
+
+  useEffect(() => {
+    if (!adapter || started.current) return;
+    started.current = true;
+    void (async () => {
+      try {
+        await adapter.signOut("this-session");
+        writeOwnerHint(false);
+        const destination = resolveSignOutDestination(
+          new URLSearchParams(window.location.search).get(SIGNOUT_RETURN_PARAM),
+          window.location.origin,
+        );
+        if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
+          // Deterministic harness: record the real destination instead of leaving the test origin.
+          document.documentElement.dataset.signOutDestination = destination;
+          return;
+        }
+        window.location.replace(destination);
+      } catch {
+        started.current = false;
+        setState("error");
+      }
+    })();
+  }, [adapter, attempt]);
+
+  const failed = state !== "working";
+  return (
+    <section
+      className="account-card surface-panel"
+      data-auth-product={context.id}
+      data-auth-state={state}
+      data-auth-surface="signout"
+    >
+      <RuntimeNote />
+      <SystemState
+        actions={
+          failed ? (
+            <>
+              {state === "error" ? (
+                <button
+                  className="catalog-button catalog-button--primary"
+                  onClick={() => {
+                    setState("working");
+                    setAttempt((count) => count + 1);
+                  }}
+                  type="button"
+                >
+                  Try again
+                </button>
+              ) : null}
+              <a className="catalog-button catalog-button--secondary" href={contextualPath("/login", context)}>
+                Log in
+              </a>
+            </>
+          ) : null
+        }
+        description={
+          state === "error"
+            ? safeAuthError("signout")
+            : state === "unavailable"
+              ? "Account service unavailable."
+              : "One moment…"
+        }
+        eyebrow="Sign out"
+        framed={false}
+        title={failed ? "Still signed in." : "Signing you out."}
+        variant={failed ? "recoverable-error" : "pending"}
+      />
+    </section>
+  );
+}
+
 export function AccountPortal({ mode }: { mode: PortalMode }) {
   const resolution = useAdapterResolution();
   const context = useAccountExperienceContext();
@@ -1418,6 +1523,8 @@ export function AccountPortal({ mode }: { mode: PortalMode }) {
       return <AccountPanel context={context} resolution={resolution} />;
     case "reset":
       return <ResetPanel context={context} resolution={resolution} />;
+    case "signout":
+      return <SignOutPanel context={context} resolution={resolution} />;
     case "confirm":
     case "callback":
       return <LinkHandler context={context} mode={mode} resolution={resolution} />;

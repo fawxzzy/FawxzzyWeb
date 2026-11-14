@@ -110,7 +110,11 @@ const sessionNotFound = () =>
   });
 
 test("portal sign-out scopes map the account page to every session and recovery to one", () => {
-  expect(PORTAL_SIGN_OUT_SCOPES).toEqual({ everywhere: "global", "this-session": "local" });
+  expect(PORTAL_SIGN_OUT_SCOPES).toEqual({
+    everywhere: "global",
+    "this-session": "local",
+    "other-sessions": "others",
+  });
 });
 
 test("signing out of the account page revokes every session for the user, not only this one", async () => {
@@ -140,6 +144,38 @@ test("the recovery session alone ends with the narrow scope", async () => {
     "POST /auth/v1/logout?scope=local",
   ]);
   expect(harness.store.has(accountContract.storageKey)).toBe(false);
+});
+
+test("a password reset ends the other sessions, then the recovery session (MAZER-ACCT-041)", async () => {
+  const harness = createHarness({
+    responder: (request) =>
+      request.path.startsWith("/auth/v1/logout") ? new Response(null, { status: 204 }) : json(404, {}),
+  });
+  await harness.client.auth.getSession();
+
+  // Step 1: the recovery session revokes every OTHER session. The SDK keeps this one and fires no
+  // sign-out event for it, which is why the second step is still needed.
+  await signOutOfPortal(harness.client.auth, "other-sessions");
+  expect(harness.store.has(accountContract.storageKey)).toBe(true);
+  expect(harness.events).not.toContain("SIGNED_OUT");
+
+  // Step 2: the throw-away recovery session itself ends locally.
+  await signOutOfPortal(harness.client.auth, "this-session");
+  const logouts = harness.requests.filter((request) => request.path.startsWith("/auth/v1/logout"));
+  expect(logouts.map((request) => `${request.method} ${request.path}`)).toEqual([
+    "POST /auth/v1/logout?scope=others",
+    "POST /auth/v1/logout?scope=local",
+  ]);
+  // Both calls are authorized by the recovery session's own access token.
+  expect(logouts.map((request) => request.token)).toEqual([harness.accessToken, harness.accessToken]);
+  expect(harness.store.has(accountContract.storageKey)).toBe(false);
+  expect(harness.events).toContain("SIGNED_OUT");
+});
+
+test("ending the other sessions that the provider cannot complete is an error the page can report", async () => {
+  const harness = createHarness({ responder: () => json(502, { msg: "bad gateway" }) });
+  await expect(signOutOfPortal(harness.client.auth, "other-sessions")).rejects.toBeTruthy();
+  expect(harness.store.has(accountContract.storageKey)).toBe(true);
 });
 
 test("a sign-out that the provider cannot complete fails loudly and keeps the session", async () => {
