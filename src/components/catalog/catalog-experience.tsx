@@ -26,12 +26,38 @@ export function CatalogExperience() {
       <div className="shell-container">
         <SiteNav current="apps" />
 
+        <header className="catalog-storehead">
+          <p className="eyebrow">Fawxzzy</p>
+          <h1 id="apps-title">Apps</h1>
+          <p>
+            Focused software for training and play. Open an app in your browser, then add it
+            to your home screen.
+          </p>
+        </header>
+
+        <section aria-labelledby="apps-title" className="catalog-launcher" id="catalog">
+          {apps.map((app) => (
+            <AppCatalogEntry
+              accent={app.accent}
+              category={app.category}
+              description={app.description}
+              iconSrc={app.display.icon.src}
+              key={app.slug}
+              name={app.name}
+              origin={app.origin.current}
+              slug={app.slug}
+              status={app.status}
+              tagline={app.tagline}
+            />
+          ))}
+        </section>
+
         <section
           aria-labelledby="install-apps-title"
           className="catalog-install surface-panel"
         >
           <div className="catalog-install__intro">
-            <h1 id="install-apps-title">How to install my apps</h1>
+            <h2 id="install-apps-title">Add them to your home screen</h2>
             <p>
               Open Fitness or Mazer first, then add it from your browser for quick
               access from your device.
@@ -52,19 +78,6 @@ export function CatalogExperience() {
               <span>Use the install icon in the address bar or browser menu.</span>
             </li>
           </ol>
-        </section>
-
-        <section aria-label="Apps" className="catalog-launcher" id="catalog">
-          {apps.map((app) => (
-            <AppCatalogEntry
-              iconSrc={app.display.icon.src}
-              key={app.slug}
-              name={app.name}
-              origin={app.origin.current}
-              posterSrc={app.display.poster.src}
-              slug={app.slug}
-            />
-          ))}
         </section>
 
         <SiteFooter />

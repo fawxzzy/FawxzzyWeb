@@ -24,6 +24,7 @@ export const legalCenter = {
             "We use this information to authenticate you, recover your account, connect supported Fawxzzy apps to the same account, prevent stale or replayed sign-in requests, and operate and secure the services.",
             "When first-party analytics is enabled, the public Fawxzzy website may send closed navigation events. The account Projects page may send one page-view event for each signed-in visit. That event contains only the event name, Web product, and Projects route; it excludes account identifiers, session details, private work, query text, and free-form text. Other account pages do not send storefront analytics.",
             "While the Fawxzzy website is open and visible in your browser, it may open an anonymous live connection to Supabase so the header can show how many people are online. The connection uses a random identifier that exists only in memory for that tab, is not linked to you or your account, is not stored, and ends when you leave or switch tabs.",
+            "While Mazer is open and visible in your browser and you are signed in, it may open an anonymous live connection to Supabase so the game menu can show how many players are online. Each tab uses a random identifier that exists only in memory, and only the total number is shown. No name, account identifier, or cookie is sent, nothing is stored, and the connection ends when the game is hidden or closed or you sign out.",
           ],
         },
         {
@@ -85,6 +86,7 @@ export const legalCenter = {
     },
     mazerPrivacy: {
       description: "How Mazer uses the shared Fawxzzy account and gameplay information.",
+      lastUpdated: { dateTime: "2026-11-13", label: "November 13, 2026" },
       eyebrow: "Mazer legal",
       id: "mazer-privacy",
       path: "/legal/mazer/privacy",
@@ -106,6 +108,7 @@ export const legalCenter = {
           heading: "How information is used",
           paragraphs: [
             "Information is used to sign you in, preserve progress, restore supported settings, improve reliability and gameplay, and protect the service. Supabase provides account and data services, and Vercel provides hosting and request delivery.",
+            "While Mazer is open and visible in your browser and you are signed in, it may open an anonymous live connection to Supabase so the game menu can show how many players are online. Each tab uses a random identifier that exists only in memory, and only the total number is shown. No name, account identifier, or cookie is sent, nothing is stored, and the connection ends when the game is hidden or closed or you sign out.",
           ],
         },
         {
@@ -117,7 +120,7 @@ export const legalCenter = {
         },
       ],
       title: "Mazer Privacy Policy",
-      version: "2026-09-13",
+      version: "2026-11-13",
     },
     mazerTerms: {
       description: "Terms for playing Mazer with a shared Fawxzzy account.",

@@ -4,6 +4,7 @@ export type AuthAction =
   | "signup"
   | "reset-request"
   | "reset-complete"
+  | "reset-others"
   | "update-email"
   | "update-password"
   | "confirm"
@@ -28,6 +29,8 @@ const SAFE_MESSAGES: Record<AuthAction, string> = {
   // Identical for every address: it never reveals whether an account or username exists.
   "reset-request": "Check your email.",
   "reset-complete": "Password not saved. Request a new link.",
+  // The password WAS changed but the provider would not end the other sessions.
+  "reset-others": "Password updated. Other devices may stay signed in.",
   "update-email": "Email not updated. Try again.",
   "update-password": "Password not updated. Try again.",
   confirm: "Link failed. Request a new link.",
@@ -91,6 +94,8 @@ export function safeAuthSuccess(action: AuthAction) {
       return "Account created.";
     case "reset-request":
       return SAFE_MESSAGES["reset-request"];
+    case "reset-others":
+      return SAFE_MESSAGES["reset-others"];
     case "reset-complete":
     case "update-password":
       return "Password updated.";

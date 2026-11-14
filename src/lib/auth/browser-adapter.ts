@@ -33,16 +33,21 @@ export type PortalSession = {
 /**
  * What a portal sign-out ends. `everywhere` is the account page's Sign out: it revokes every
  * session the account holds at the provider (the portal's, Fitness's, Mazer's, other devices),
- * so the account site and the apps always agree on who is signed in. `this-session` is only for
- * the portal's own throw-away recovery session (after a password reset), which must not sign the
- * person out of the apps they are using.
+ * so the account site and the apps always agree on who is signed in. `this-session` ends only
+ * the portal's own session in this browser (the throw-away recovery session after a password
+ * reset, and the /signout endpoint that Mazer's Sign out uses). `other-sessions` ends every
+ * session of the account EXCEPT the one making the call; the password-reset flow runs it on the
+ * recovery session first, so a changed password also signs out every other device and app. The
+ * SDK fires no sign-out event and keeps the local copy for this scope, so it is always followed
+ * by `this-session` when the caller itself is a throw-away session.
  */
-export type PortalSignOutScope = "everywhere" | "this-session";
+export type PortalSignOutScope = "everywhere" | "this-session" | "other-sessions";
 
 export const PORTAL_SIGN_OUT_SCOPES = {
   everywhere: "global",
   "this-session": "local",
-} as const satisfies Record<PortalSignOutScope, "global" | "local">;
+  "other-sessions": "others",
+} as const satisfies Record<PortalSignOutScope, "global" | "local" | "others">;
 
 export type PortalAuthAdapter = {
   kind: "supabase" | "test";
@@ -694,6 +699,13 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       fail();
       // Harness marker so the browser tests can see which reach the page asked for.
       document.documentElement.dataset.signOutScope = scope;
+      const log = document.documentElement.dataset.signOutScopes;
+      document.documentElement.dataset.signOutScopes = log ? `${log},${scope}` : scope;
+      if (scope === "other-sessions") {
+        // Mirrors the SDK: ending the other sessions neither clears nor announces this one.
+        if (scenario === "reset-others-error") throw new Error("Deterministic other-sessions error");
+        return;
+      }
       session = null;
       publish();
     },
@@ -788,6 +800,7 @@ export function resolvePortalAuthAdapter(
       "fitness-handoff-error",
       "oauth-auto",
       "oauth-hostile",
+      "reset-others-error",
     ].includes(scenario) &&
     isLocalAuthTestOrigin(location.origin)
   ) {

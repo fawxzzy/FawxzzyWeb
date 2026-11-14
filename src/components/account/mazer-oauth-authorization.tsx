@@ -7,6 +7,8 @@ import {
   classifyRuntimeOrigin,
 } from "@/config/account";
 import { resolvePortalAuthAdapter } from "@/lib/auth/browser-adapter";
+import { loaderHoldRemainingMs } from "@/lib/auth/mazer-loader-timing";
+import { MAZER_LOADER_ICON_DATA_URI } from "@/components/account/mazer-loader-icon";
 import {
   clearPendingMazerOAuthAuthorization,
   decidePendingMazerOAuthAuthorization,
@@ -50,6 +52,14 @@ function loginDestination() {
   const scenario = localScenario();
   if (scenario) url.searchParams.set("auth_test", scenario);
   return `${url.pathname}${url.search}`;
+}
+
+// Keeps the loader up for Mazer's minimum hold before the page leaves, measured from its first paint.
+// If the wait ended before the icon would have appeared, it returns at once (bare dark page only).
+async function holdLoader() {
+  const painted = performance.getEntriesByName("first-paint")[0]?.startTime ?? 0;
+  const remaining = loaderHoldRemainingMs(performance.now() - painted);
+  if (remaining > 0) await new Promise((resolve) => window.setTimeout(resolve, remaining));
 }
 
 function navigateToMazer(destination: string) {
@@ -120,6 +130,7 @@ export function MazerOAuthAuthorization() {
 
       const session = await resolution.adapter.getSession();
       if (!session) {
+        await holdLoader();
         window.location.replace(loginDestination());
         return;
       }
@@ -154,6 +165,7 @@ export function MazerOAuthAuthorization() {
           return;
         }
         await clearPendingMazerOAuthAuthorization();
+        await holdLoader();
         navigateToMazer(destination);
         return;
       }
@@ -185,6 +197,7 @@ export function MazerOAuthAuthorization() {
             if (active) setState({ kind: "invalid" });
             return;
           }
+          await holdLoader();
           navigateToMazer(destination);
         } catch {
           // No retry and no consent card: the gateway already clears the
@@ -260,7 +273,19 @@ export function MazerOAuthAuthorization() {
   }
 
   if (state.kind === "loading") {
-    return <SystemState compact description="Checking your sign-in…" title="One moment." variant="pending" />;
+    // Mazer's loader, not a card: opaque #02080f from the first paint, the Mazer icon with its soft
+    // ring fading in after 150 ms, no text, no scroll. The only text is for screen readers. The icon
+    // is an inline data URI so nothing is requested and nothing pops in.
+    return (
+      <div aria-busy="true" className="oauth-bare" role="status">
+        <span className="sr-only">Checking your sign-in.</span>
+        <div aria-hidden="true" className="oauth-bare__stage">
+          <span className="oauth-bare__ring" />
+          {/* eslint-disable-next-line @next/next/no-img-element -- inline data URI, sized up front */}
+          <img alt="" className="oauth-bare__icon" decoding="sync" height={256} src={MAZER_LOADER_ICON_DATA_URI} width={256} />
+        </div>
+      </div>
+    );
   }
   if (state.kind === "invalid") {
     return <SystemState compact description="Invalid or expired. Start again in Mazer." title="This request cannot continue." variant="invalid" />;

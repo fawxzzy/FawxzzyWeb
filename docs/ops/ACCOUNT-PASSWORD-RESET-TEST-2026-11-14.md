@@ -40,7 +40,7 @@ Method: code read of the whole flow, headless Chromium (Playwright) at 390x844 a
 | 14 | New-password rules and show/hide (fixture) | PASS | "Use at least 10 characters." and "Passwords do not match." shown together; toggle switches the field to text; `m-new-password-validation.png` |
 | 15 | Mazer return path through reset | PASS in fixture e2e | existing test "Mazer authorization preserves the same request through signup and recovery" passes; real Mazer round trip UNVERIFIED |
 | 16 | Lockout interaction | PASS by code | reset does not clear or create counters; a locked username still waits out 15 minutes or signs in with email (copy already says so) |
-| 17 | Session after reset | PASS in fixture | recovery session ended with local scope only (existing e2e `data-sign-out-scope="this-session"`), person sent to `/login` |
+| 17 | Session after reset | CHANGED in MAZER-ACCT-041 | was: recovery session ended with local scope only. Now: every OTHER session of the account is revoked first, then the recovery session ends locally (see "Reset now revokes other sessions" below) |
 
 ## What was fixed in this PR
 
@@ -52,7 +52,7 @@ Method: code read of the whole flow, headless Chromium (Playwright) at 390x844 a
 
 1. **Cross-browser reset fails by design (PKCE).** The code verifier is stored in the browser that sent the request. A link opened in a different browser or device (request on desktop, click on phone; request inside a home-screen app, mail opens Safari) cannot complete: the exchange fails and the page now says "Link failed. Request a new link." Options: keep PKCE and tell people to open the link in the same browser (zero risk, cheap), or send recovery as a `token_hash` link handled client-side (works across devices, needs an Edge Function change plus a new landing path, so it is database/provider territory and needs the owner). Recommendation: keep PKCE for now, add one line of copy later.
 2. **A rate-limited or failed request still says "Check your email."** This is the price of anti-enumeration; a person hitting the provider's per-address limit gets no email and no signal. The 5 s client cooldown is the only visible guard.
-3. **A password reset does not end the account's other sessions** (Mazer, Fitness, other devices): `updateUser` does not revoke other refresh tokens by default and the portal only signs out its own throw-away session. Whether that is wanted is a product/security decision; see needsOwner in the PR.
+3. **A password reset did not end the account's other sessions** (Mazer, Fitness, other devices): `updateUser` does not revoke other refresh tokens by default. **Decided (owner, MAZER-ACCT-041): yes, revoke them. Implemented, see the next section.**
 4. Dashboard-side items that cannot be verified from code (owner to check): the redirect allowlist includes `https://account.fawxzzy.com/reset-password*` (if it does not, Supabase falls back to the Site URL and the emailed link would land on the wrong page); the Send Email hook is enabled and points at `auth-send-email`; recovery link lifetime and email rate limits.
 
 ## Why no QA email was sent
@@ -77,3 +77,15 @@ Use one browser for the whole sequence (iPhone Safari recommended). Do not start
 ## Not verified
 
 Real phone or Safari; the actual email (delivery, rendering, link target); reused or expired real links; known-address timing; Mazer end-to-end after a real reset; Supabase dashboard settings.
+
+## Reset now revokes other sessions (MAZER-ACCT-041)
+
+Owner decision: a successful new-password update also signs out every other session of that account (other phones and browsers, Mazer, Fitness).
+
+- API, verified in the installed `@supabase/auth-js` 2.109.0 (`lib/types.d.ts`, `GoTrueClient.js`): `auth.signOut({ scope: 'global' | 'local' | 'others' })`. `others` sends `POST /auth/v1/logout?scope=others` with the caller's access token, revokes all sessions except the caller's, **does not remove the caller's local session and fires no SIGNED_OUT event**. The SDK swallows 401/403/404 answers from that call (an already-dead token reads as success).
+- Order in `ResetPanel.submit`: `updatePassword`, then `signOut("other-sessions")` (scope `others`, authorised by the recovery session), then `signOut("this-session")` (scope `local`, ends the throw-away recovery session), then the redirect to `/login`.
+- Failure rule: the password is already saved when the revoke runs, so a provider failure there never shows "Password not saved". The page still ends the recovery session and says "Password updated. Other devices may stay signed in." (the owner should then use Sign out on the account page, which is global).
+- Tests: `tests/e2e/account-session-scope.spec.ts` runs the real supabase-js client against a recording fetch stub and asserts `scope=others` then `scope=local`, both with the recovery access token, and that `others` alone keeps the local session; `tests/e2e/account-signout.spec.ts` drives the reset form with the local adapter (scopes `other-sessions,this-session`, and the failure sentence); `tests/account-signout-contract.test.mjs` pins the order and the scope mapping against the installed package types.
+- Not verified: a real reset against the provider (needs the owner's inbox steps above plus a second signed-in device: after step 4 the second device must be signed out within its next token check, Mazer and Fitness on their next provider call). Access tokens already issued stay valid until their expiry (default up to 1 hour) because JWTs are stateless; only refresh is cut off.
+
+Manual step added to the list above: **4b.** Before step 4, stay signed in on a second browser or device (or in Mazer). After step 4 reload it: it must end up signed out.

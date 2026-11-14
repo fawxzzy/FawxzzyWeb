@@ -26,6 +26,12 @@
       ]
     }
   ],
+  "rewrites": [
+    {
+      "source": "/signout/ping",
+      "destination": "/api/account/signout-ping"
+    }
+  ],
   "redirects": [
     {
       "source": "/",

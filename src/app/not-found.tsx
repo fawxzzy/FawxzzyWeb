@@ -5,7 +5,7 @@ import { NotFoundState } from "@/components/system/not-found-state";
 
 export default function NotFound() {
   return (
-    <main className="system-page app-theme-fawxzzy" id="main-content">
+    <main className="system-page system-page--locked app-theme-fawxzzy" id="main-content">
       <AmbientBrandBackground intensity="soft" particleCount={8} pulseEnabled={false} />
       <div className="shell-container system-shell">
         <SiteNav current="apps" />
