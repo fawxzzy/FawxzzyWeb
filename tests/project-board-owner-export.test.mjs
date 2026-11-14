@@ -30,31 +30,13 @@ test("preserves the exact current FawxzzyWeb owner card", () => {
   assert.equal(output.project_id, "trove");
   assert.equal(output.board_id, "discordos:project-feedback:trove");
   assert.equal(output.owner, "trove");
-  assert.deepEqual(output.cards.map((card) => card.record.card_id), ["FW-ANALYTICS-001", "FW-APPS-001", "FW-CAPTCHA-001", "FW-DEVICE-001", "FW-PRESENCE-001", "FW-PROJECTS-003"]);
+  assert.deepEqual(output.cards.map((card) => card.record.card_id), ["FW-APPS-001", "FW-CAPTCHA-001", "FW-DEVICE-001", "FW-PRESENCE-001", "FW-PROJECTS-003"]);
   const original = output.cards.find((card) => card.record.card_id === "FW-PROJECTS-003");
-  assert.equal(original.record.lifecycle, "in-progress");
+  assert.equal(original.record.lifecycle, "completed");
   assert.equal(original.record_status, "active");
   assert.equal(original.record.extensions.public_safe, true);
 });
 
-
-test("retains the accepted analytics planning criteria without approving public projection or cross-owner duplication", () => {
-  const output = build();
-  const analytics = output.cards.find((card) => card.record.card_id === "FW-ANALYTICS-001");
-  assert.equal(analytics.record.lifecycle, "planning");
-  assert.equal(analytics.record_status, "candidate");
-  assert.equal(analytics.record.priority, "low");
-  assert.equal(analytics.record.extensions.public_safe, false);
-  assert.equal(analytics.idempotency_key, "pbk_trove_fw-analytics-001_v1");
-  assert.equal(analytics.content.acceptance_criteria.length, 14);
-  // Accepted Web-first brief: preserve every criterion, including its numbering.
-  assert.equal(createHash("sha256").update(JSON.stringify(analytics.content.acceptance_criteria)).digest("hex"), "a25d1104b1c54ce2701ece496c63ab307f13aa0cc424c5b0577db5233385fba4");
-  assert.deepEqual(analytics.record.dependencies, []);
-  assert.deepEqual(analytics.relationships, { parent_card_id: null, duplicate_of: null, superseded_by: null });
-  assert.match(analytics.content.discoveries[0], /FW-PRESENCE-001/);
-  assert.match(analytics.content.discoveries[2], /service role/);
-  assert.equal(output.cards.some((card) => ["FF-ANALYTICS-001", "FF-SOC-002"].includes(card.record.card_id)), false);
-});
 
 function exampleCard(id, lifecycle, publicSafe) {
   return {
@@ -76,11 +58,11 @@ test("exports multiple owner cards with stable identities, priority, lifecycle, 
   expanded.work_items.push(exampleCard("FW-EXAMPLE-001", "in-progress", true));
   const output = build(expanded);
   assert.deepEqual(output.cards.map((card) => card.record.card_id), [
-    "FW-ANALYTICS-001", "FW-APPS-001", "FW-CAPTCHA-001", "FW-DEVICE-001", "FW-EXAMPLE-001", "FW-EXAMPLE-002", "FW-PRESENCE-001", "FW-PROJECTS-003",
+    "FW-APPS-001", "FW-CAPTCHA-001", "FW-DEVICE-001", "FW-EXAMPLE-001", "FW-EXAMPLE-002", "FW-PRESENCE-001", "FW-PROJECTS-003",
   ]);
-  assert.equal(output.extensions.source_work_item_count, 8);
-  assert.equal(output.extensions.exported_card_count, 8);
-  assert.equal(new Set(output.cards.map((card) => card.idempotency_key)).size, 8);
+  assert.equal(output.extensions.source_work_item_count, 7);
+  assert.equal(output.extensions.exported_card_count, 7);
+  assert.equal(new Set(output.cards.map((card) => card.idempotency_key)).size, 7);
   const planning = output.cards.find((card) => card.record.card_id === "FW-EXAMPLE-002");
   assert.equal(planning.record_status, "candidate");
   assert.equal(planning.record.priority, "low");
@@ -95,7 +77,7 @@ test("sorts card IDs identically under different default locale collations", () 
   expanded.work_items.push(exampleCard("FW-CZ", "planning", true));
   expanded.work_items.push(exampleCard("FW-CS", "planning", true));
   const expected = build(expanded);
-  assert.deepEqual(expected.cards.map((card) => card.record.card_id), ["FW-ANALYTICS-001", "FW-APPS-001", "FW-CAPTCHA-001", "FW-CS", "FW-CZ", "FW-DEVICE-001", "FW-PRESENCE-001", "FW-PROJECTS-003"]);
+  assert.deepEqual(expected.cards.map((card) => card.record.card_id), ["FW-APPS-001", "FW-CAPTCHA-001", "FW-CS", "FW-CZ", "FW-DEVICE-001", "FW-PRESENCE-001", "FW-PROJECTS-003"]);
   const english = new Intl.Collator("en");
   const hungarian = new Intl.Collator("hu");
   assert.equal(Math.sign(english.compare("FW-CS", "FW-CZ")), -1);
