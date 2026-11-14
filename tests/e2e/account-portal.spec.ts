@@ -2584,10 +2584,10 @@ test("the public legal center publishes all versioned canonical documents", asyn
     const document = page.locator(`[data-legal-document="${documentId}"]`);
     await expect(document).toHaveAttribute(
       "data-legal-version",
-      documentId === "platform-privacy" ? "2026-11-13" : "2026-09-13",
+      documentId === "platform-privacy" || documentId === "mazer-privacy" ? "2026-11-13" : "2026-09-13",
     );
     await expect(document.getByText("Last updated")).toContainText(
-      documentId === "platform-privacy" ? "November 13, 2026" : legalCenter.lastUpdated.label,
+      documentId === "platform-privacy" || documentId === "mazer-privacy" ? "November 13, 2026" : legalCenter.lastUpdated.label,
     );
   }
   const sitemapUrls = sitemap().map((entry) => entry.url);
