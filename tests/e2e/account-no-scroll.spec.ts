@@ -14,13 +14,21 @@ import { expect, test, type BrowserContext, type Page } from "@playwright/test";
  */
 const IOS_TOOLBAR_PX = 90;
 
+type ViewportSpec = {
+  deviceScaleFactor: number;
+  height: number;
+  mobile: boolean;
+  name: string;
+  width: number;
+};
+
 const VIEWPORTS = [
   { name: "390x844", width: 390, height: 844, deviceScaleFactor: 3, mobile: true },
   { name: "360x740", width: 360, height: 740, deviceScaleFactor: 3, mobile: true },
   { name: "412x915", width: 412, height: 915, deviceScaleFactor: 2.6, mobile: true },
   { name: "320x568", width: 320, height: 568, deviceScaleFactor: 2, mobile: true },
   { name: "1280x720", width: 1280, height: 720, deviceScaleFactor: 1, mobile: false },
-] as const;
+] satisfies ReadonlyArray<ViewportSpec>;
 
 // Every account route (login, sign up, reset request, new password, auth confirm, auth callback,
 // account home, Mazer consent, sign out) and the error page. Fixtures (`auth_test`) are only honored
@@ -41,7 +49,7 @@ const ROUTES = [
 
 async function newContext(
   browser: import("@playwright/test").Browser,
-  viewport: (typeof VIEWPORTS)[number],
+  viewport: ViewportSpec,
   simulateIosToolbar: boolean,
 ): Promise<BrowserContext> {
   const context = await browser.newContext({
