@@ -6,3 +6,4 @@ node_modules
 out
 visual-evidence
 npm-debug.log*
+.playbook

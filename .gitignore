@@ -42,6 +42,9 @@ yarn-error.log*
 # local Codex runner state
 /.codex/
 
+# Playbook runtime state (installed runtime, caches, verify artifacts); never committed
+/.playbook/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

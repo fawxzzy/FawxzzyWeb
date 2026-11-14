@@ -42,6 +42,11 @@
     "deploy:production": "node scripts/deploy-production.mjs",
     "test:operations-consumer": "node --test tests/operations-consumer.test.mjs tests/operations-reader-client.test.mjs",
     "test:operations-ingest": "node --test tests/operations-ingest.test.mjs tests/operations-host-runner.test.mjs && npm run test:operations-consumer",
+    "playbook:install": "node scripts/playbook-runtime.mjs --install-official-fallback",
+    "playbook:verify": "node scripts/playbook-runtime.mjs verify",
+    "playbook:ai-context": "node scripts/playbook-runtime.mjs ai-context",
+    "playbook:index": "node scripts/playbook-runtime.mjs index",
+    "playbook:test": "node --test tests/playbook-runtime.test.mjs",
     "verify": "npm run lint && npm run test:analytics && npm run test:auth-email && npm run test:username-signin && npm run test:account-copy && npm run test:password-reset && npm run test:account-signout && npm run test:operations-ingest && npm run test:owner-projects && npm run test:presence && npm run test:auth-key-guard && npm run test:deployment-binding && npm run test:runtime-hygiene && npm run test:style-architecture && npm run test:release-evidence && npm run test:project-board-owner-export && npm run test:project-board-preview && npm run build && npm run test:discovery-performance && npm run test:owner-board-static && npm run smoke:lifeline && npm run test:visual-regression && npm run test:e2e"
   },
   "dependencies": {

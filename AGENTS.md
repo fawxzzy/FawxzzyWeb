@@ -21,3 +21,9 @@ Rules
 
 Verification
 - Run `npm run verify` before claiming completion.
+
+Playbook
+- The `Playbook verify` check (job `playbook-verify` in `.github/workflows/ci.yml`) runs the Playbook repository-governance `verify` on every pull request. It is separate from `npm run verify`; both must pass.
+- Run it locally: `npm run playbook:install` once (downloads the pinned Playbook release asset and checks its SHA-256 into the git-ignored `.playbook/`), then `npm run playbook:verify`. For repo orientation run `npm run playbook:index` then `npm run playbook:ai-context`. The bridge's own tests are `npm run playbook:test`.
+- Nothing is installed globally and no Playbook package is added to `package.json`; `scripts/playbook-runtime.mjs` is a thin bridge that resolves and runs the pinned runtime. Never commit anything under `.playbook/`.
+- The pinned version, release URL and SHA-256 live only in `scripts/playbook-runtime.mjs` (`DEFAULT_PLAYBOOK_VERSION`, `DEFAULT_OFFICIAL_FALLBACK_SHA256`). Bump them there and nowhere else (CI reads the same defaults).
