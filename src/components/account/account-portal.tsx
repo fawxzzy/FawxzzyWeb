@@ -58,6 +58,7 @@ import {
   SystemState,
   type SystemStateVariant,
 } from "@/components/system/system-state";
+import { TurnstileField, type TurnstileFieldHandle } from "@/components/account/turnstile-field";
 import { resolveSignOutDestination, SIGNOUT_RETURN_PARAM } from "@/config/account-signout";
 import {
   AccountLegalLinks,
@@ -89,9 +90,10 @@ async function settleSignupAttempt(
   username: string,
   context: AccountExperienceContext,
   returnTarget?: string,
+  captchaToken?: string,
 ) {
   const [result] = await Promise.allSettled([
-    adapter.signUp(email, password, username, context.id, returnTarget),
+    adapter.signUp(email, password, username, context.id, returnTarget, captchaToken),
     new Promise((resolve) => window.setTimeout(resolve, SIGNUP_SETTLEMENT_MINIMUM_MS)),
   ]);
   // A rejection keeps its error so the caller can tell a taken username (public, safe to name)
@@ -413,6 +415,7 @@ function LoginPanel({
     () => null,
   );
   const cooldown = useCooldown();
+  const captchaRef = useRef<TurnstileFieldHandle>(null);
   const adapter = adapterFrom(resolution);
   const displayedIdentity = rememberedIdentity ?? storedRememberedIdentity;
   const returnTarget = hydrated
@@ -475,6 +478,7 @@ function LoginPanel({
     setUsernameTaken(false);
     cooldown.start();
     try {
+      const captchaToken = await captchaRef.current?.getToken();
       if (intent === "signup") {
         // The adapter persists and publishes a real returned session. A session means the account
         // exists and the user is signed in, so continue exactly like sign-in. No session means the
@@ -486,6 +490,7 @@ function LoginPanel({
           submittedUsername,
           context,
           internalMazerReturn,
+          captchaToken,
         );
         if (!session && isUsernameTakenError(signupError)) {
           // A username is public (it shows on the leaderboard), so this one rejection is named,
@@ -527,7 +532,7 @@ function LoginPanel({
         return;
       }
 
-      const session = await adapter.signIn(email, password);
+      const session = await adapter.signIn(email, password, captchaToken);
       if (session) {
         const identity = session.displayName || deriveIdentity(email);
         writeRememberedIdentity(identity);
@@ -561,6 +566,8 @@ function LoginPanel({
             : safeAuthError(intent),
       }, error instanceof UsernameSignInThrottledError ? THROTTLED_NOTICE_VISIBLE_MS : undefined);
     } finally {
+      // Tokens are single use: a failed attempt must get a fresh check.
+      captchaRef.current?.reset();
       setBusy(false);
     }
   }
@@ -675,6 +682,7 @@ function LoginPanel({
             <PasswordEye visible={passwordVisible} />
           </button>
         </fieldset>
+        <TurnstileField ref={captchaRef} />
         {transient.notice?.inline ? (
           // The sr-only live notice above already announces this text; keep the visible copy quiet.
           <p aria-hidden="true" className="account-form-result" data-notice-kind={transient.notice.kind}>
@@ -994,6 +1002,7 @@ function ResetPanel({
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmationVisible, setConfirmationVisible] = useState(false);
   const cooldown = useCooldown();
+  const captchaRef = useRef<TurnstileFieldHandle>(null);
   const recoveryState = useRecoverySession(hydrated, recovery, resolution);
   const recoveryReady = recovery && recoveryState === "ready";
   // A dead link (invalid, expired, or the exchange failed) must offer the way out: a fresh request.
@@ -1092,11 +1101,13 @@ function ResetPanel({
     setInvalidFields(new Set());
     cooldown.start();
     try {
-      await adapter.requestPasswordReset(email, context.id, internalMazerReturn);
+      const captchaToken = await captchaRef.current?.getToken();
+      await adapter.requestPasswordReset(email, context.id, internalMazerReturn, captchaToken);
       transient.show({ kind: "success", text: safeAuthSuccess("reset-request") });
     } catch {
       transient.show({ kind: "success", text: safeAuthSuccess("reset-request") });
     } finally {
+      captchaRef.current?.reset();
       setBusy(false);
     }
   }
@@ -1171,6 +1182,7 @@ function ResetPanel({
             <input aria-describedby={invalidFields.has("email") ? GUIDANCE_ID : undefined} aria-invalid={invalidFields.has("email") || undefined} autoComplete="email" id="account-reset-email" inputMode="email" name="email" onChange={() => setInvalidFields(new Set())} required type="email" />
           </fieldset>
         )}
+        {recovery ? null : <TurnstileField ref={captchaRef} />}
           </form>
         ) : null}
       </div>

@@ -306,6 +306,15 @@ existing account, or treat a client-side value as authoritative.
 7. Prove username and all platform-owned writes remain gated until the target schema capability is
    separately deployed and read back.
 
+## Turnstile CAPTCHA (FW-CAPTCHA-001)
+
+- Sign-in, sign-up and the password-reset request form carry a Cloudflare Turnstile widget. The public site key is in `src/config/turnstile.ts`; the secret is never in the repo.
+- Each request sends `options.captchaToken` (email sign-in, sign-up, reset) or a `captchaToken` body field (username sign-in edge function). Supabase ignores the token while CAPTCHA is disabled, so this is dark-safe.
+- The Cloudflare script loads only on the account origin, after the page settles, never on marketing pages. The widget is interaction-only and is reset after every attempt. If it cannot load, a short note shows and the request still goes out (the server rejects it once enforcement is on). A submit waits at most 4 seconds for an in-flight check.
+- The site sets no CSP today. If one is added, allow `https://challenges.cloudflare.com` in script-src, frame-src and connect-src.
+- Enable order: (1) this widget live in Web AND Fitness; (2) turn Supabase Auth CAPTCHA ON (owner pastes the Turnstile secret in the dashboard); (3) verify sign-in, sign-up and reset on the account origin. Rollback: turn CAPTCHA off in the dashboard. No code change needed.
+- Open item: the `username-password-signin` edge function must verify or forward the token itself before enforcement, or username sign-in will be rejected.
+
 ## Rollback and blocked state
 
 Source rollback is a normal revert of the portal PR. Provider rollback is not executable until a
