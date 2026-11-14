@@ -34,7 +34,7 @@ test("there is no per-card approval: every card in every listed source is on its
   const key = (card) => `${card.board}|${card.project}|${card.id}`;
   assert.deepEqual(shown.map(key).sort(), sourceCards.map(key).sort());
   assert.ok(shown.length > 300, "the owner sees the full board, not an approved subset");
-  for (const hidden of ["FW-ANALYTICS-001", "lane-security-containment", "FF-MKT-001"]) {
+  for (const hidden of ["FW-CAPTCHA-001", "lane-security-containment", "FF-MKT-001"]) {
     assert.ok(shown.some((card) => card.id === hidden), `${hidden} is visible to the owner`);
   }
 });

@@ -98,7 +98,7 @@ test("the owner sees the tab and every board; the static page itself carries no 
   }
   // The static HTML a signed-out visitor receives has neither the tab nor any card text.
   const staticHtml = await (await page.request.get("/projects")).text();
-  for (const needle of [sampleCard.title, "FW-ANALYTICS-001", "lane-security-containment", "FF-MKT-001", "Project boards", "Projects is private"]) {
+  for (const needle of [sampleCard.title, "FW-CAPTCHA-001", "lane-security-containment", "FF-MKT-001", "Project boards", "Projects is private"]) {
     expect(staticHtml).not.toContain(needle);
   }
   expect(staticHtml).not.toMatch(/<title>[^<]*Projects/u);
@@ -129,7 +129,7 @@ test("the owner sees the tab and every board; the static page itself carries no 
 
   // Nothing is hidden from the owner: cards the old public board withheld are in the snapshot.
   const everyId = boards.flatMap((board) => board.cards.map((card) => card.id));
-  for (const shown of ["FW-ANALYTICS-001", "lane-security-containment", "FF-MKT-001"]) expect(everyId).toContain(shown);
+  for (const shown of ["FW-CAPTCHA-001", "lane-security-containment", "FF-MKT-001"]) expect(everyId).toContain(shown);
 
   // A card opens its detail dialog and closes again.
   await activate(navigation.getByRole("button", { name: `Mazer, ${boards[1].cards.length} cards` }));
