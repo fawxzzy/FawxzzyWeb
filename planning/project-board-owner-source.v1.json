@@ -188,6 +188,37 @@
         "src/lib/presence/presence-contract.mjs"
       ],
       "updated_at": "2026-11-13T00:00:00.000Z"
+    },
+    {
+      "id": "FW-APPS-001",
+      "title": "Make the Apps page look like an app store",
+      "record_kind": "project-work",
+      "card_type": "feature",
+      "lifecycle": "completed",
+      "priority": null,
+      "public_safe": true,
+      "summary": "The Apps page is now a store-style list: a header, one card per app with icon, name, category, tagline, description, honest facts and a single Open button, and the install how-to below. The outdated Preview button and the empty Feedback dialog were removed, and the preview posters are no longer advertised to search engines. Checked live in desktop Chrome and at phone widths; not checked on a real phone.",
+      "objective": "Present the apps professionally using only what is true and current.",
+      "acceptance_criteria": [
+        "Each app shows its icon, name, category, tagline, description, availability and a single Open action.",
+        "No outdated previews, empty feedback dialog, ratings, counts or prices appear.",
+        "Cards sit side by side on desktop and stack on phones without horizontal overflow.",
+        "The page stays within its JavaScript budget and the visual and end-to-end checks pass."
+      ],
+      "discoveries": [
+        "Windows and Linux wrap phone-width text differently, so one Android capture has a documented wider height tolerance in the visual check."
+      ],
+      "next_actions": [
+        "Look at the page on a real phone once.",
+        "Add fresh screenshots later if wanted; none were kept because the old previews were outdated."
+      ],
+      "blockers": [],
+      "dependencies": [],
+      "evidence": [
+        "src/components/catalog/catalog-experience.tsx",
+        "tests/e2e/fawxzzyweb.spec.ts"
+      ],
+      "updated_at": "2026-11-14T00:00:00.000Z"
     }
   ],
   "excluded_records": [

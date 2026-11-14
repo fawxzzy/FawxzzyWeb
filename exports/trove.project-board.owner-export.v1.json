@@ -1,11 +1,11 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_trove_owner_d318b886eebd",
+  "export_id": "pbe_trove_owner_6fd02dc9d08b",
   "project_id": "trove",
   "board_id": "discordos:project-feedback:trove",
   "owner": "trove",
   "adapter_id": "fawxzzyweb-owner-source-v1",
-  "source_revision": "sha256:d318b886eebd8f965c393390bf034299f62aa780cb03b4d841e4926851c9a9af",
+  "source_revision": "sha256:6fd02dc9d08b53f3e79af2c8a666209a77b6ceb09e33cb8545feb7557b14f881",
   "generated_at": "2026-11-13T00:00:00.000Z",
   "sources": [
     {
@@ -13,7 +13,7 @@
       "kind": "json",
       "repository": "FawxzzyWeb",
       "path": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json",
-      "revision": "sha256:ee3d8cc3a547652ffe574c1a8a7386afee7b59632f9f92abe620da9d38aa391f",
+      "revision": "sha256:ad9b7753ddb13e41c0a37dea7479f538906e98eab5965db15391796caa975519",
       "observed_at": "2026-11-13T00:00:00.000Z"
     },
     {
@@ -98,6 +98,64 @@
         "evidence": [
           "planning/project-board-owner-source.v1.json#FW-ANALYTICS-001",
           "docs/first-party-analytics.md"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_trove_fw-apps-001_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FW-APPS-001",
+        "project_id": "trove",
+        "board_id": "discordos:project-feedback:trove",
+        "title": "Make the Apps page look like an app store",
+        "description": "The Apps page is now a store-style list: a header, one card per app with icon, name, category, tagline, description, honest facts and a single Open button, and the install how-to below. The outdated Preview button and the empty Feedback dialog were removed, and the preview posters are no longer advertised to search engines. Checked live in desktop Chrome and at phone widths; not checked on a real phone.",
+        "card_type": "feature",
+        "lifecycle": "completed",
+        "priority": null,
+        "owner": "trove",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-11-14T00:00:00.000Z",
+        "source_ref": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json#FW-APPS-001",
+        "extensions": {
+          "public_safe": true,
+          "source_baseline_commit": "af6a2076712ce7517b1e021bf4841048f6f97085"
+        }
+      },
+      "source": {
+        "source_id": "fawxzzyweb-owner-work",
+        "source_ref": "repos/FawxzzyWeb/planning/project-board-owner-source.v1.json#FW-APPS-001",
+        "source_status": "current",
+        "source_updated_at": "2026-11-14T00:00:00.000Z"
+      },
+      "content": {
+        "summary": "The Apps page is now a store-style list: a header, one card per app with icon, name, category, tagline, description, honest facts and a single Open button, and the install how-to below. The outdated Preview button and the empty Feedback dialog were removed, and the preview posters are no longer advertised to search engines. Checked live in desktop Chrome and at phone widths; not checked on a real phone.",
+        "objective": "Present the apps professionally using only what is true and current.",
+        "acceptance_criteria": [
+          "Each app shows its icon, name, category, tagline, description, availability and a single Open action.",
+          "No outdated previews, empty feedback dialog, ratings, counts or prices appear.",
+          "Cards sit side by side on desktop and stack on phones without horizontal overflow.",
+          "The page stays within its JavaScript budget and the visual and end-to-end checks pass."
+        ],
+        "discoveries": [
+          "Windows and Linux wrap phone-width text differently, so one Android capture has a documented wider height tolerance in the visual check."
+        ],
+        "next_actions": [
+          "Look at the page on a real phone once.",
+          "Add fresh screenshots later if wanted; none were kept because the old previews were outdated."
+        ],
+        "blockers": [],
+        "evidence": [
+          "src/components/catalog/catalog-experience.tsx",
+          "tests/e2e/fawxzzyweb.spec.ts"
         ]
       },
       "relationships": {
@@ -342,8 +400,8 @@
     }
   ],
   "extensions": {
-    "source_work_item_count": 5,
-    "exported_card_count": 5,
+    "source_work_item_count": 6,
+    "exported_card_count": 6,
     "excluded_record_count": 3,
     "excluded_record_identities": [
       "SOC-024",
