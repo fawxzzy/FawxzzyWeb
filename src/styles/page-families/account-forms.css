@@ -109,3 +109,77 @@
   line-height: 1.35;
   text-align: center;
 }
+
+/* One-viewport lock for the account pages and the error pages (MAZER-ACCT-041).
+   Cause of the "lots of room to scroll" report: the base reset gives body min-height: 100vh and
+   html/body scroll normally, while the account screen itself is sized with 100dvh. On iOS Safari
+   100vh is the viewport with the toolbars retracted, so it is taller than what is on screen while
+   they are showing; the document then scrolls by the toolbar height, and the page rubber-bands.
+   On these pages the document is therefore pinned to the visible viewport: body is fixed to the
+   layout viewport (it tracks the toolbars, it never relies on a vh unit), html and body do not
+   scroll, and overscroll is contained. The account screen keeps its own inner scroll regions
+   (see .account-auth-body above); the error pages scroll inside their own main region only when
+   their content genuinely exceeds the screen. */
+html:has(.account-page--utility),
+html:has(.system-page) {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+html:has(.account-page--utility) body,
+html:has(.system-page) body {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+html:has(.account-page--utility) .safe-area-main,
+html:has(.system-page) .safe-area-main {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+html:has(.account-page--utility) .app-theme-fawxzzy.account-page--utility {
+  height: 100%;
+}
+
+html:has(.system-page) .system-page {
+  height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Status cards on the locked account screens (link check, sign-out, Mazer authorization) used to
+   be stretched over the whole screen, which also stretched the action row into a giant pill. The
+   card now takes its own height and sits centered; its rows pack at the top. */
+.account-page--utility .account-card:not(.account-card--auth) {
+  align-self: center;
+  width: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.account-page--utility .account-card:not(.account-card--auth) .system-state {
+  align-content: start;
+}
+
+/* Mazer authorization while the sign-in is being checked: a bare dark page, no text, no scroll
+   (host sign-in -> dark -> Mazer loader). Covers the whole screen including the safe areas. */
+.oauth-bare {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: #02080f;
+}
