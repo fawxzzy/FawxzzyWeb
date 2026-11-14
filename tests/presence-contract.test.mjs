@@ -92,3 +92,35 @@ test('the header view is decorative-dot plus text only: no link, no live region,
     assert.match(html, /aria-hidden="true" class="site-nav__presence-dot"/u);
   }
 });
+
+// The published privacy text must state the live online count accurately for both products that run it.
+async function loadLegalCenter() {
+  const typescript = require('typescript');
+  const source = await readFile('src/config/legal.ts', 'utf8');
+  const compiled = typescript.transpileModule(source, { compilerOptions: {
+    module: typescript.ModuleKind.CommonJS, target: typescript.ScriptTarget.ES2020,
+  } }).outputText;
+  const moduleShim = { exports: {} };
+  new Function('module', 'exports', compiled)(moduleShim, moduleShim.exports);
+  return moduleShim.exports.legalCenter;
+}
+
+test('the privacy policies describe the website and Mazer live online counts, and the Mazer text matches the code', async () => {
+  const { documents } = await loadLegalCenter();
+  for (const key of ['platformPrivacy', 'mazerPrivacy']) {
+    const paragraphs = documents[key].sections.flatMap((section) => section.paragraphs);
+    const matches = paragraphs.filter((paragraph) => paragraph.startsWith('While Mazer is open and visible'));
+    assert.equal(matches.length, 1, `${key} states the Mazer live count exactly once`);
+    const text = matches[0];
+    for (const claim of ['you are signed in', 'anonymous live connection', 'random identifier', 'only in memory', 'only the total number is shown',
+      'No name, account identifier, or cookie is sent', 'nothing is stored', 'hidden or closed or you sign out']) {
+      assert.ok(text.includes(claim), `${key}: ${claim}`);
+    }
+  }
+  const platform = documents.platformPrivacy.sections.flatMap((section) => section.paragraphs);
+  assert.equal(platform.filter((paragraph) => paragraph.startsWith('While the Fawxzzy website is open and visible')).length, 1);
+  for (const key of ['platformPrivacy', 'mazerPrivacy']) {
+    assert.equal(documents[key].version, '2026-11-13');
+    assert.equal(documents[key].lastUpdated.dateTime, '2026-11-13');
+  }
+});
