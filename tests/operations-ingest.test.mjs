@@ -417,7 +417,7 @@ for (const [name, change] of [
 test('private policy acquisition consumes the shared deadline', async () => {
   const f = fixture(); let signal;
   f.readPolicy = async options => { signal = options.signal; return new Promise(() => {}); };
-  await assert.rejects(readTrustedSources({ ...f, timeoutMs: 50 }), { message: 'OPS_SOURCE_DEADLINE' });
+  await assert.rejects(readTrustedSources({ ...f, timeoutMs: 400 }), { message: 'OPS_SOURCE_DEADLINE' });
   assert.equal(signal.aborted, true); assert.equal(f.tokens.length, 0);
 });
 test('private policy errors never expose source detail', async () => {

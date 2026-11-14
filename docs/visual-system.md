@@ -43,8 +43,9 @@ styles belong to the narrowest established owner:
 
 - `src/styles/foundations/` owns tokens, reset rules, and document primitives.
 - `src/styles/components/` owns cross-family site-shell and catalog primitives.
-- `src/styles/components/app-launcher.css` owns the Apps icon grid and its
-  opt-in Preview and Feedback dialogs.
+- `src/styles/components/app-launcher.css` owns the Apps storefront: the page header,
+  the app cards (icon, name, category, tagline, facts, one Open action) and nothing
+  interactive beyond that link. Previews and the feedback dialog were retired.
 - `src/styles/page-families/utility.css` owns Login, Auth handoff, recovery, and
   Account presentation until the utility-family refinement lands.
 - `src/styles/page-families/account-forms.css` owns the account form guidance banner

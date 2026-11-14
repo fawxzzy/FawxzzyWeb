@@ -15,6 +15,10 @@ const baseUrl = `http://127.0.0.1:${port}`;
 const launchers = { chromium, webkit };
 const signatureSize = 32;
 const maximumHeightDrift = 0.03;
+// Per-capture exceptions where the same page is a different height on different platforms only
+// because their text hinting wraps phone-width paragraphs differently (measured: the Apps page at
+// 412px is about 6% taller on Windows than on Linux). The colour/layout signature check still applies.
+const heightDriftOverrides = Object.freeze({ "android-chromium:apps": 0.08 });
 const maximumMeanChannelDelta = 0.04;
 const maximumChangedCellRatio = 0.15;
 
@@ -58,7 +62,7 @@ function compareSignatures(current, expected, key) {
     throw new Error(`${key} width drifted from ${expected.width} to ${current.width}.`);
   }
   const heightDelta = Math.abs(current.height - expected.height) / expected.height;
-  if (heightDelta > maximumHeightDrift) {
+  if (heightDelta > (heightDriftOverrides[key] ?? maximumHeightDrift)) {
     throw new Error(`${key} height drifted by ${(heightDelta * 100).toFixed(2)}%.`);
   }
 
