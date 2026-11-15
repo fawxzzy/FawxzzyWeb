@@ -28,8 +28,9 @@ const releaseNov13cFitnessMerge = "d6a625c4b78786b56564b5d29497050fa96183ae";
 const releaseNov14FitnessMerge = "c48235cb31b1289faafa5b734848bf4d821ff3d1";
 const releaseNov15FitnessMerge = "3db7fe30cb397b83042950f3ef642c930a8e0b8b";
 const releaseNov15bFitnessMerge = "d335131a8602206c5c7702ac7fd3399c26c43f35";
+const releaseNov15cFitnessMerge = "9979e22faa639d4fb60d915e4a02fefded823dc3";
 const acceptedFitnessMerges = [
-  boardRefreshFitnessMerge, releaseNov13FitnessMerge, releaseNov13bFitnessMerge, releaseNov13cFitnessMerge, releaseNov14FitnessMerge, releaseNov15FitnessMerge, releaseNov15bFitnessMerge] as const;
+  releaseNov13FitnessMerge, releaseNov13bFitnessMerge, releaseNov13cFitnessMerge, releaseNov14FitnessMerge, releaseNov15FitnessMerge, releaseNov15bFitnessMerge, releaseNov15cFitnessMerge] as const;
 const legacyFitnessMerge = "f87f2dc7e0cc3cbead0eb3ea5ed7b9c592fdfa94";
 const pair = { accessToken: "synthetic-access", refreshToken: "synthetic-refresh" };
 const rotatedPair = { accessToken: "rotated-access", refreshToken: "rotated-refresh" };
@@ -37,7 +38,7 @@ const readiness = {
   authProjectRef: FITNESS_HANDOFF_MASTER_PROJECT_REF,
   contractVersion: FITNESS_HANDOFF_READINESS_CONTRACT_VERSION,
   handoffStore: "available",
-  sourceCommit: releaseNov15bFitnessMerge,
+  sourceCommit: releaseNov15cFitnessMerge,
 };
 const begin = { ok: true, handoffId: id, readiness, returnTo: "/today" };
 const end = { ok: true, returnTo: "/today", session: rotatedPair };
@@ -99,7 +100,7 @@ test("Fitness release binding accepts all transition sources and rejects every u
     expect(accepted.calls).toHaveLength(2);
   }
 
-  for (const sourceCommit of [sessionAtomicityFitnessMerge, legacyFitnessMerge, "0".repeat(40), "a".repeat(40),
+  for (const sourceCommit of [sessionAtomicityFitnessMerge, boardRefreshFitnessMerge, legacyFitnessMerge, "0".repeat(40), "a".repeat(40),
     "6ab6c782e239b50a8adf00cc65e553f679c8abda", loginAutofillFitnessMerge, "8070196cd3f5efbe2faf7fe8719971cf2ebd1e39", "dbbe305fc511633166c1a65396fdf9ef6a1c79f1", droppedFitnessMerge, droppedRetainedRollbackFitnessMerge, usernameReleaseFitnessMerge, legacyRetirementFitnessMerge, passwordPolicyFitnessMerge, legacyRetirementFitnessMerge.toUpperCase(), usernameReleaseFitnessMerge.toUpperCase(),
     ` ${usernameReleaseFitnessMerge}`, usernameReleaseFitnessMerge.slice(0, 7),
     passwordPolicyFitnessMerge.toUpperCase(), passwordPolicyFitnessMerge.slice(0, 7),
@@ -111,7 +112,8 @@ test("Fitness release binding accepts all transition sources and rejects every u
     releaseNov13cFitnessMerge.toUpperCase(), releaseNov13cFitnessMerge.slice(0, 7),
     releaseNov14FitnessMerge.toUpperCase(), releaseNov14FitnessMerge.slice(0, 7),
     releaseNov15FitnessMerge.toUpperCase(), releaseNov15FitnessMerge.slice(0, 7),
-    releaseNov15bFitnessMerge.toUpperCase(), releaseNov15bFitnessMerge.slice(0, 7)]) {
+    releaseNov15bFitnessMerge.toUpperCase(), releaseNov15bFitnessMerge.slice(0, 7),
+    releaseNov15cFitnessMerge.toUpperCase(), releaseNov15cFitnessMerge.slice(0, 7)]) {
     let reads = 0;
     const rejected = fixture([json({
       ...begin,
