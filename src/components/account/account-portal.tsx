@@ -14,7 +14,6 @@ import {
   sanitizePostAuthReturnTarget,
   sanitizeReturnTarget,
 } from "@/config/account-return";
-import { productIdentity } from "@/config/product";
 import { syncOwnerHint, writeOwnerHint } from "@/lib/projects/owner-hint-sync";
 import {
   callbackReceiptKey,
@@ -33,55 +32,48 @@ import {
   type OneShotAttemptState,
 } from "@/lib/auth/client-lifecycle";
 import {
-  isUsernameTakenError,
-  safeAuthError,
-  safeAuthSuccess,
-  UsernameSignInThrottledError,
-  USERNAME_TAKEN_MESSAGE,
-} from "@/lib/auth/errors";
-import {
   resolvePortalAuthAdapter,
   type AdapterResolution,
   type PortalAuthAdapter,
   type PortalSession,
 } from "@/lib/auth/browser-adapter";
-import { PASSWORD_MINIMUM } from "@/lib/auth/password-policy";
-import {
-  guidanceForCredentials,
-  guidanceForNewPassword,
-  guidanceForResetRequest,
-  USERNAME_VISIBILITY_NOTE,
-  type GuidanceProblem,
-} from "@/lib/auth/form-guidance";
 import { FitnessHandoffError } from "@/lib/auth/fitness-handoff";
+import { AUTH_COPY, authNotice, type AuthMessageId, type AuthNotice } from "@/lib/auth/copy-matrix";
 import {
-  SystemState,
-  type SystemStateVariant,
-} from "@/components/system/system-state";
+  fieldsFor,
+  LOGIN_NOTICE_PARAM,
+  loginNoticeFromQuery,
+  newPasswordProblem,
+  passwordSaveFailure,
+  resetRequestFailure,
+  resetRequestProblem,
+  signInFailure,
+  signInProblem,
+  signUpFailure,
+  signUpProblem,
+  type AuthField as FieldName,
+  type FormProblem,
+} from "@/lib/auth/auth-outcomes";
 import { TurnstileField, type TurnstileFieldHandle } from "@/components/account/turnstile-field";
 import { resolveSignOutDestination, SIGNOUT_RETURN_PARAM } from "@/config/account-signout";
 import {
-  AccountLegalLinks,
-  AccountTextDivider,
-} from "@/components/account/account-legal-links";
+  authAccentStyle,
+  AuthDock,
+  AuthField,
+  AuthHead,
+  AuthLegal,
+  AuthLinks,
+  AuthNoticeSlot,
+  AuthStatus,
+} from "@/components/account/auth-surface";
 
 type PortalMode = "login" | "account" | "confirm" | "callback" | "reset" | "signout";
 
-type Notice = {
-  kind: "error" | "info" | "success";
-  text: string;
-  /** Rendered beside the form it concerns instead of as the submit button label. */
-  inline?: boolean;
-  variant?: SystemStateVariant;
-};
-
 const emptySubscribe = () => () => undefined;
 const SIGNUP_SETTLEMENT_MINIMUM_MS = 500;
-const SIGNUP_FAILURE_VISIBLE_MS = 8_000;
-const THROTTLED_NOTICE_VISIBLE_MS = 8_000;
-const GUIDANCE_ID = "account-auth-guidance";
-const USERNAME_NOTE_ID = "account-username-note";
-const USERNAME_ERROR_ID = "account-username-error";
+const THROTTLED_COOLDOWN_SECONDS = 8;
+/** A confirmation or reset link can be asked for again after this many seconds. */
+const RESEND_SECONDS = 30;
 
 async function settleSignupAttempt(
   adapter: PortalAuthAdapter,
@@ -96,11 +88,10 @@ async function settleSignupAttempt(
     adapter.signUp(email, password, username, context.id, returnTarget, captchaToken),
     new Promise((resolve) => window.setTimeout(resolve, SIGNUP_SETTLEMENT_MINIMUM_MS)),
   ]);
-  // A rejection keeps its error so the caller can tell a taken username (public, safe to name)
-  // from every other failure (shown as one neutral sentence).
+  // A rejection keeps its error so the caller can map it to one copy-matrix line.
   return result.status === "fulfilled"
-    ? { session: result.value, error: null }
-    : { session: null, error: result.reason as unknown };
+    ? { failed: false as const, session: result.value, error: null }
+    : { failed: true as const, session: null, error: result.reason as unknown };
 }
 
 /**
@@ -138,7 +129,15 @@ function writeRememberedIdentity(value: string | null | undefined) {
   try {
     window.localStorage.setItem(accountContract.rememberedIdentityKey, normalized);
   } catch {
-    // Remembering a display label is optional; authentication must still proceed.
+    // Remembering who signed in is optional; authentication must still proceed.
+  }
+}
+
+function forgetRememberedIdentity() {
+  try {
+    window.localStorage.removeItem(accountContract.rememberedIdentityKey);
+  } catch {
+    // Nothing stored or storage blocked: nothing to forget.
   }
 }
 
@@ -187,33 +186,44 @@ function useCooldown(defaultSeconds = 5) {
   };
 }
 
-function useTransientNotice(duration = 5_000) {
-  const [notice, setNotice] = useState<Notice | null>(null);
-  const timeoutRef = useRef<number | null>(null);
-
-  useEffect(
-    () => () => {
-      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
-    },
-    [],
-  );
-
+/**
+ * The screen's one message and the fields it points at. A message stays until the person types or
+ * submits again; it never times out and never moves into the button.
+ */
+function useFormNotice() {
+  const [notice, setNotice] = useState<AuthNotice | null>(null);
+  const [fields, setFields] = useState<ReadonlySet<FieldName>>(() => new Set());
   return {
-    clear() {
-      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-      setNotice(null);
-    },
+    fields,
     notice,
-    show(nextNotice: Notice, visibleMs = duration) {
-      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
-      setNotice(nextNotice);
-      timeoutRef.current = window.setTimeout(() => {
-        timeoutRef.current = null;
-        setNotice(null);
-      }, visibleMs);
+    clear() {
+      setNotice(null);
+      setFields(new Set());
+    },
+    edited(field: FieldName) {
+      setNotice(null);
+      setFields((current) => {
+        if (!current.has(field)) return current;
+        const next = new Set(current);
+        next.delete(field);
+        return next;
+      });
+    },
+    problem(problem: FormProblem) {
+      setNotice(authNotice(problem.id));
+      setFields(new Set(problem.fields));
+    },
+    show(id: AuthMessageId, email?: string | null) {
+      setNotice(authNotice(id, email));
+      setFields(new Set(fieldsFor(id)));
     },
   };
+}
+
+function focusField(id: string | undefined) {
+  if (!id) return;
+  const element = document.getElementById(id);
+  if (element instanceof HTMLElement) element.focus();
 }
 
 function contextualPath(
@@ -228,6 +238,10 @@ function contextualPath(
     url.searchParams.set("returnTo", returnTarget);
   }
   return `${url.pathname}${url.search}`;
+}
+
+function isLocalTestOrigin() {
+  return classifyRuntimeOrigin(window.location.origin) === "local-test";
 }
 
 function isFitnessReturnTarget(target: string) {
@@ -249,61 +263,12 @@ async function completeAuthenticatedReturn(
   return adapter.handoffToFitness(target, session.userId);
 }
 
-function AuthLiveNotice({ notice }: { notice: Notice | null }) {
-  if (!notice) return null;
-  return (
-    <p
-      className="account-auth-live-notice"
-      data-notice-kind={notice.kind}
-      role={notice.kind === "error" ? "alert" : "status"}
-    >
-      {notice.text}
-    </p>
-  );
-}
-
-/**
- * Visible "what is needed" banner for input problems. Lines disappear as each field is
- * fixed (it only lists problems whose field is still flagged invalid). The red field
- * border alone never carries the meaning.
- */
-function GuidanceBanner({
-  problems,
-  invalidFields,
-}: {
-  problems: GuidanceProblem[];
-  invalidFields: Set<string>;
-}) {
-  const visible = problems.filter((problem) => invalidFields.has(problem.field));
-  if (visible.length === 0) return null;
-  return (
-    <div className="account-auth-guidance" data-auth-guidance id={GUIDANCE_ID} role="alert">
-      <p className="account-auth-guidance__title">
-        {visible.length === 1 ? "One thing to fix" : `${visible.length} things to fix`}
-      </p>
-      <ul>
-        {visible.map((problem) => (
-          <li data-field={problem.field} key={problem.field}>{problem.message}</li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function focusFirstProblem(form: HTMLFormElement, problems: GuidanceProblem[]) {
-  const first = problems[0];
-  if (!first) return;
-  const element = form.elements.namedItem(first.field);
-  if (element instanceof HTMLElement) element.focus();
-}
-
-function SetupState({ resolution }: { resolution: AdapterResolution | null }) {
-  if (!resolution) {
-    return <p className="account-capability-note" role="status">Preparing account service.</p>;
-  }
-  if (resolution.status === "ready") return null;
-
-  return <p className="account-capability-note" role="status">Account service unavailable.</p>;
+function useInternalMazerReturn(context: AccountExperienceContext) {
+  const hydrated = useHydrated();
+  const returnTarget = hydrated
+    ? sanitizePostAuthReturnTarget(new URLSearchParams(window.location.search).get("returnTo"), context)
+    : null;
+  return returnTarget === "/oauth/authorize" ? returnTarget : undefined;
 }
 
 function RuntimeNote() {
@@ -324,67 +289,33 @@ function RuntimeNote() {
   );
 }
 
-function noticeVariant(notice: Notice): SystemStateVariant {
-  return (
-    notice.variant ??
-    (notice.kind === "success"
-      ? "success"
-      : notice.kind === "error"
-        ? "recoverable-error"
-        : "pending")
-  );
-}
-
-function noticeTitle(variant: SystemStateVariant) {
-  switch (variant) {
-    case "success":
-      return "Done.";
-    case "invalid":
-      return "Invalid request.";
-    case "expired":
-      return "Request expired.";
-    case "unauthorized":
-      return "Not allowed.";
-    case "unavailable":
-      return "Service unavailable.";
-    case "terminal-error":
-      return "Cannot continue.";
-    case "recoverable-error":
-      return "Something went wrong.";
-    default:
-      return "Working…";
-  }
-}
-
-function StatusNotice({ notice }: { notice: Notice | null }) {
-  if (!notice) return null;
-  const variant = noticeVariant(notice);
-
-  return (
-    <SystemState
-      className={`account-notice account-notice--${notice.kind}`}
-      compact
-      description={notice.text}
-      framed={false}
-      title={noticeTitle(variant)}
-      variant={variant}
-    />
-  );
-}
-
 function adapterFrom(resolution: AdapterResolution | null): PortalAuthAdapter | null {
   return resolution?.status === "ready" ? resolution.adapter : null;
 }
 
-function PasswordEye({ visible }: { visible: boolean }) {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path d="M2 12c2.5-4 5.8-6 10-6s7.5 2 10 6c-2.5 4-5.8 6-10 6s-7.5-2-10-6Z" />
-      <circle cx="12" cy="12" r="3" />
-      {visible ? null : <path d="M4 4l16 16" />}
-    </svg>
+/** `/login?notice=<key>` from another screen (allowlist); removed from the address once read. */
+function useQueryLoginNotice(hydrated: boolean) {
+  const id = useMemo(
+    () => (hydrated ? loginNoticeFromQuery(new URLSearchParams(window.location.search).getAll(LOGIN_NOTICE_PARAM)) : null),
+    [hydrated],
   );
+  useEffect(() => {
+    if (!hydrated) return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has(LOGIN_NOTICE_PARAM)) return;
+    url.searchParams.delete(LOGIN_NOTICE_PARAM);
+    window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+  }, [hydrated]);
+  return id;
 }
+
+const LOGIN_FIELD_IDS: Record<FieldName, string> = {
+  confirmation: "account-confirm-password",
+  email: "account-email",
+  identifier: "account-email",
+  password: "account-password",
+  username: "account-username",
+};
 
 function LoginPanel({
   context,
@@ -394,48 +325,52 @@ function LoginPanel({
   resolution: AdapterResolution | null;
 }) {
   const hydrated = useHydrated();
-  // `?intent=signup` picks the form the screen opens on. Once the person flips the toggle their
-  // choice wins for the rest of the visit (it is never re-derived from the address).
+  // `?intent=signup` picks the form the screen opens on. Once the person switches, their choice wins
+  // for the rest of the visit (it is never re-derived from the address).
   const requestedIntent: AccountAuthIntent = hydrated
     ? resolveAccountAuthIntent(new URLSearchParams(window.location.search).getAll("intent"))
     : "login";
   const [chosenIntent, setChosenIntent] = useState<AccountAuthIntent | null>(null);
   const intent = chosenIntent ?? requestedIntent;
   const [username, setUsername] = useState("");
-  const [invalidFields, setInvalidFields] = useState<Set<string>>(() => new Set());
-  const [guidance, setGuidance] = useState<GuidanceProblem[]>([]);
-  const [usernameTaken, setUsernameTaken] = useState(false);
-  const transient = useTransientNotice();
+  const [email, setEmail] = useState("");
+  // Sign-up that the provider accepted but wants confirmed by email: the values stay, locked.
+  const [sent, setSent] = useState<{ email: string; username: string } | null>(null);
+  const sentPassword = useRef("");
+  // Fields are disabled while a request runs, so a rejected field takes focus once the form is live again.
+  const pendingFocus = useRef<string | undefined>(undefined);
+  const form = useFormNotice();
   const [busy, setBusy] = useState(false);
-  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [rememberedIdentity, setRememberedIdentity] = useState<string | null>(null);
-  const storedRememberedIdentity = useSyncExternalStore(
-    emptySubscribe,
-    readRememberedIdentity,
-    () => null,
-  );
+  const [forgotten, setForgotten] = useState(false);
+  const storedRememberedIdentity = useSyncExternalStore(emptySubscribe, readRememberedIdentity, () => null);
   const cooldown = useCooldown();
   const captchaRef = useRef<TurnstileFieldHandle>(null);
+  const [captchaKey, setCaptchaKey] = useState(0);
+  const [captchaBroken, setCaptchaBroken] = useState(false);
+  const queryNotice = useQueryLoginNotice(hydrated);
+  const [queryNoticeDismissed, setQueryNoticeDismissed] = useState(false);
   const adapter = adapterFrom(resolution);
-  const displayedIdentity = rememberedIdentity ?? storedRememberedIdentity;
-  const returnTarget = hydrated
-    ? sanitizePostAuthReturnTarget(
-        new URLSearchParams(window.location.search).get("returnTo"),
-        context,
-      )
+  const remembered = intent === "login" && !forgotten
+    ? rememberedIdentity ?? storedRememberedIdentity
     : null;
-  const internalMazerReturn = returnTarget === "/oauth/authorize"
-    ? returnTarget
-    : undefined;
+  const internalMazerReturn = useInternalMazerReturn(context);
+
+  const notice: AuthNotice | null =
+    (resolution && !adapter ? authNotice("signin.unavailable") : null) ??
+    form.notice ??
+    (captchaBroken ? authNotice("captcha.load") : null) ??
+    (queryNotice && !queryNoticeDismissed ? authNotice(queryNotice) : null);
 
   useEffect(() => {
-    if (!adapter || displayedIdentity) return;
+    if (!adapter || remembered || forgotten) return;
     let active = true;
     adapter
       .getSession()
       .then((session) => {
         if (!active || !session) return;
-        const identity = session.displayName || deriveIdentity(session.email ?? "");
+        const identity = session.displayName || session.email;
         if (!identity) return;
         writeRememberedIdentity(identity);
         setRememberedIdentity(identity);
@@ -444,127 +379,163 @@ function LoginPanel({
     return () => {
       active = false;
     };
-  }, [adapter, displayedIdentity]);
+  }, [adapter, forgotten, remembered]);
 
-  function switchIntent(event: React.MouseEvent<HTMLButtonElement>) {
-    event.currentTarget.blur();
-    setChosenIntent(intent === "login" ? "signup" : "login");
-    transient.clear();
-    setInvalidFields(new Set());
-    setUsernameTaken(false);
+  function clearAll() {
+    form.clear();
+    setQueryNoticeDismissed(true);
+  }
+
+  function edited(field: FieldName) {
+    form.edited(field);
+    setQueryNoticeDismissed(true);
+  }
+
+  function showProblem(problem: FormProblem) {
+    form.problem(problem);
+    setQueryNoticeDismissed(true);
+    focusField(LOGIN_FIELD_IDS[problem.fields[0]]);
+  }
+
+  function switchIntent(next: AccountAuthIntent) {
+    setChosenIntent(next);
+    setSent(null);
+    sentPassword.current = "";
+    clearAll();
     window.requestAnimationFrame(() => window.scrollTo(0, 0));
+  }
+
+  function forgetIdentity() {
+    forgetRememberedIdentity();
+    setRememberedIdentity(null);
+    setForgotten(true);
+    clearAll();
+  }
+
+  function noticeAction() {
+    switch (notice?.id) {
+      case "captcha.load":
+        setCaptchaBroken(false);
+        setCaptchaKey((key) => key + 1);
+        form.clear();
+        return;
+      case "captcha.fail":
+        captchaRef.current?.reset();
+        form.clear();
+        return;
+      case "signup.emailexists":
+        switchIntent("login");
+        return;
+    }
+  }
+
+  /** Leave for the destination, or record it on the deterministic local test origin. */
+  function continueTo(destination: string) {
+    if (isLocalTestOrigin()) {
+      document.documentElement.dataset.postAuthDestination = destination;
+      return;
+    }
+    setLeaving(true);
+    window.location.assign(destination);
+  }
+
+  async function submitSignup(values: { email: string; username: string }, password: string) {
+    if (!adapter) return;
+    const problem = signUpProblem({ ...values, password });
+    if (problem) {
+      showProblem(problem);
+      return;
+    }
+    setBusy(true);
+    clearAll();
+    cooldown.start();
+    try {
+      const captchaToken = await captchaRef.current?.getToken();
+      const attempt = await settleSignupAttempt(
+        adapter,
+        values.email,
+        password,
+        values.username,
+        context,
+        internalMazerReturn,
+        captchaToken,
+      );
+      if (attempt.failed) {
+        const id = signUpFailure(attempt.error);
+        form.show(id);
+        pendingFocus.current = LOGIN_FIELD_IDS[fieldsFor(id)[0]];
+        return;
+      }
+      if (!attempt.session) {
+        // The provider wants the email confirmed first (or the email is already in use, which it
+        // deliberately does not say). Either way the next step is the inbox.
+        sentPassword.current = password;
+        setSent(values);
+        form.show("signup.sent", values.email);
+        cooldown.start(RESEND_SECONDS);
+        return;
+      }
+      const session = attempt.session;
+      writeRememberedIdentity(session.displayName || values.username);
+      const destination = context.id === "fitness"
+        ? await adapter.handoffToFitness(
+            sanitizeContextReturnTarget(new URLSearchParams(window.location.search).get("returnTo"), context),
+            session.userId,
+          )
+        : internalMazerReturn ?? resolvePostAuthTarget(context);
+      // Record whether this account is the owner before leaving, so main-site pages can show the Projects link.
+      if (context.id === "website") await syncOwnerHint(adapter);
+      continueTo(destination);
+    } catch (error) {
+      form.show(signUpFailure(error));
+    } finally {
+      captchaRef.current?.reset();
+      setBusy(false);
+    }
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!adapter || busy || cooldown.remaining) return;
+    if (!adapter || busy || leaving || cooldown.remaining) return;
+    const data = new FormData(event.currentTarget);
+    const password = String(data.get("password") ?? "");
 
-    const formElement = event.currentTarget;
-    const form = new FormData(formElement);
-    const email = String(form.get("email") ?? "").trim();
-    const password = String(form.get("password") ?? "");
-    const submittedUsername = String(form.get("username") ?? "").trim();
-    const problems = guidanceForCredentials({ intent, email, password, username: submittedUsername });
-    if (problems.length > 0) {
-      setGuidance(problems);
-      setInvalidFields(new Set(problems.map((problem) => problem.field)));
-      focusFirstProblem(event.currentTarget, problems);
+    if (intent === "signup") {
+      await submitSignup(
+        sent ?? { email: email.trim(), username: username.trim() },
+        sent ? sentPassword.current : password,
+      );
       return;
     }
 
+    const identifier = (remembered ?? String(data.get("email") ?? "")).trim();
+    const problem = signInProblem(identifier, password);
+    if (problem) {
+      showProblem(problem);
+      return;
+    }
     setBusy(true);
-    transient.clear();
-    setInvalidFields(new Set());
-    setUsernameTaken(false);
+    clearAll();
     cooldown.start();
     try {
       const captchaToken = await captchaRef.current?.getToken();
-      if (intent === "signup") {
-        // The adapter persists and publishes a real returned session. A session means the account
-        // exists and the user is signed in, so continue exactly like sign-in. No session means the
-        // provider did not complete the request for some reason we deliberately do not reveal.
-        const { session, error: signupError } = await settleSignupAttempt(
-          adapter,
-          email,
-          password,
-          submittedUsername,
-          context,
-          internalMazerReturn,
-          captchaToken,
-        );
-        if (!session && isUsernameTakenError(signupError)) {
-          // A username is public (it shows on the leaderboard), so this one rejection is named,
-          // beside the field. Email-duplicate and every other failure keep the neutral notice.
-          setUsernameTaken(true);
-          setInvalidFields(new Set(["username"]));
-          const usernameField = formElement.elements.namedItem("username");
-          if (usernameField instanceof HTMLElement) usernameField.focus();
-          return;
-        }
-        if (!session) {
-          cooldown.start(SIGNUP_FAILURE_VISIBLE_MS / 1000);
-          transient.show(
-            { kind: "info", text: safeAuthError("signup"), inline: true },
-            SIGNUP_FAILURE_VISIBLE_MS,
-          );
-          return;
-        }
-        const identity = session.displayName || submittedUsername;
-        writeRememberedIdentity(identity);
-        setRememberedIdentity(identity);
-        const destination = context.id === "fitness"
-          ? await adapter.handoffToFitness(
-              sanitizeContextReturnTarget(
-                new URLSearchParams(window.location.search).get("returnTo"),
-                context,
-              ),
-              session.userId,
-            )
-          : internalMazerReturn ?? resolvePostAuthTarget(context);
-        // Record whether this account is the owner before leaving, so main-site pages can show the Projects link.
-        if (context.id === "website") await syncOwnerHint(adapter);
-        transient.show({ kind: "success", text: safeAuthSuccess("signup") });
-        if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
-          document.documentElement.dataset.postAuthDestination = destination;
-        } else {
-          window.location.assign(destination);
-        }
+      const session = await adapter.signIn(identifier, password, captchaToken);
+      if (!session) {
+        form.show("signin.wrong");
         return;
       }
-
-      const session = await adapter.signIn(email, password, captchaToken);
-      if (session) {
-        const identity = session.displayName || deriveIdentity(email);
-        writeRememberedIdentity(identity);
-        setRememberedIdentity(identity);
-      }
-      if (!session) transient.show({ kind: "error", text: safeAuthError("login") });
-      if (session) {
-        const postAuthTarget = resolvePostAuthTarget(context);
-        const destination = context.id === "fitness" && !postAuthTarget.startsWith("/")
-          ? await adapter.handoffToFitness(postAuthTarget, session.userId)
-          : postAuthTarget;
-        // Record whether this account is the owner before leaving, so main-site pages can show the Projects link.
-        if (context.id === "website") await syncOwnerHint(adapter);
-        transient.show({ kind: "success", text: safeAuthSuccess("login") });
-        if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
-          document.documentElement.dataset.postAuthDestination = destination;
-        } else {
-          window.location.assign(destination);
-        }
-      }
+      writeRememberedIdentity(session.displayName || identifier);
+      const postAuthTarget = resolvePostAuthTarget(context);
+      const destination = context.id === "fitness" && !postAuthTarget.startsWith("/")
+        ? await adapter.handoffToFitness(postAuthTarget, session.userId)
+        : postAuthTarget;
+      // Record whether this account is the owner before leaving, so main-site pages can show the Projects link.
+      if (context.id === "website") await syncOwnerHint(adapter);
+      continueTo(destination);
     } catch (error) {
-      if (error instanceof UsernameSignInThrottledError) {
-        cooldown.start(THROTTLED_NOTICE_VISIBLE_MS / 1000);
-      }
-      transient.show({
-        kind: "error",
-        text: error instanceof FitnessHandoffError
-          ? error.message
-          : error instanceof UsernameSignInThrottledError
-            ? safeAuthError("login-throttled")
-            : safeAuthError(intent),
-      }, error instanceof UsernameSignInThrottledError ? THROTTLED_NOTICE_VISIBLE_MS : undefined);
+      const id = signInFailure(error);
+      if (id === "signin.throttled") cooldown.start(THROTTLED_COOLDOWN_SECONDS);
+      form.show(id);
     } finally {
       // Tokens are single use: a failed attempt must get a fresh check.
       captchaRef.current?.reset();
@@ -572,162 +543,161 @@ function LoginPanel({
     }
   }
 
+  const working = busy || leaving;
+  useEffect(() => {
+    if (working || !pendingFocus.current) return;
+    focusField(pendingFocus.current);
+    pendingFocus.current = undefined;
+  }, [working]);
+  const dockLabel = intent === "login"
+    ? working ? AUTH_COPY.working.signingIn : AUTH_COPY.button.signIn
+    : working
+      ? AUTH_COPY.working.creatingAccount
+      : sent && cooldown.remaining > 0
+        ? AUTH_COPY.resendIn(cooldown.remaining)
+        : AUTH_COPY.button.createAccount;
+  const invalid = (field: FieldName) => form.fields.has(field);
+  const describedBy = (field: FieldName) => (invalid(field) ? "auth-notice" : undefined);
+
   return (
     <section
       aria-labelledby="login-panel-title"
-      className="account-card account-card--auth"
+      className="auth-surface"
+      data-auth-intent={intent}
       data-auth-product={context.id}
       data-auth-surface="credentials"
-      style={{ "--auth-accent": context.accentRgb } as React.CSSProperties}
+      style={authAccentStyle(context)}
     >
       <RuntimeNote />
-      <header className="account-auth-intro">
-        <p>{context.productName}</p>
-        <h1 aria-live="polite" id="login-panel-title">
-          {intent === "login" ? "Welcome" : "Create Account"}
-        </h1>
-        {intent === "login" && displayedIdentity ? (
-          <p className="account-auth-identity" data-testid="remembered-identity">
-            {displayedIdentity}
-          </p>
-        ) : null}
-      </header>
-      <div className="account-auth-body">
-        <SetupState resolution={resolution} />
-        <AuthLiveNotice notice={transient.notice} />
-        <GuidanceBanner invalidFields={invalidFields} problems={guidance} />
-        <form className="account-form account-form--auth" id="account-auth-form" noValidate onSubmit={submit}>
-        {intent === "signup" ? (
-          <fieldset data-invalid={invalidFields.has("username") || undefined}>
-            <legend><label htmlFor="account-username">Username</label></legend>
-            <input
-              aria-describedby={[
-                usernameTaken ? USERNAME_ERROR_ID : null,
-                USERNAME_NOTE_ID,
-                invalidFields.has("username") && !usernameTaken ? GUIDANCE_ID : null,
-              ].filter(Boolean).join(" ")}
-              aria-invalid={invalidFields.has("username") || undefined}
-              id="account-username"
+      <AuthHead
+        context={context}
+        title={intent === "signup"
+          ? AUTH_COPY.title.createAccount
+          : remembered
+            ? AUTH_COPY.title.welcomeBack
+            : AUTH_COPY.title.welcome}
+        titleId="login-panel-title"
+      />
+      <form className="auth-body" id="account-auth-form" noValidate onSubmit={submit}>
+        {intent === "login" ? (
+          <>
+            {remembered ? (
+              <AuthField
+                autoComplete="username"
+                id="account-email"
+                key="remembered"
+                label={remembered.includes("@") ? AUTH_COPY.field.email : AUTH_COPY.field.username}
+                locked
+                name="email"
+                value={remembered}
+              />
+            ) : (
+              <AuthField
+                autoComplete="username"
+                describedBy={describedBy("identifier")}
+                disabled={working}
+                id="account-email"
+                invalid={invalid("identifier")}
+                key="identifier"
+                label={AUTH_COPY.field.identifier}
+                name="email"
+                onChange={() => edited("identifier")}
+              />
+            )}
+            <AuthField
+              autoComplete="current-password"
+              describedBy={describedBy("password")}
+              disabled={working}
+              id="account-password"
+              invalid={invalid("password")}
+              label={AUTH_COPY.field.password}
+              name="password"
+              onChange={() => edited("password")}
+              secret
+            />
+          </>
+        ) : sent ? (
+          <>
+            <AuthField id="account-username" label={AUTH_COPY.field.username} locked name="username" value={sent.username} />
+            <AuthField id="account-email" label={AUTH_COPY.field.email} locked name="email" type="email" value={sent.email} />
+          </>
+        ) : (
+          <>
+            <AuthField
               autoComplete="username"
+              describedBy={describedBy("username")}
+              disabled={working}
+              id="account-username"
+              invalid={invalid("username")}
+              label={AUTH_COPY.field.username}
               maxLength={15}
-              minLength={2}
               name="username"
-              onChange={(event) => {
-                setUsername(event.target.value);
-                setUsernameTaken(false);
-                setInvalidFields((current) => {
-                  const next = new Set(current);
-                  next.delete("username");
-                  return next;
-                });
+              onChange={(value) => {
+                setUsername(value);
+                edited("username");
               }}
-              pattern="[A-Za-z0-9._-]{2,15}"
-              required
-              type="text"
               value={username}
             />
-          </fieldset>
-        ) : null}
-        {intent === "signup" ? (
-          <p className="account-field-note" id={USERNAME_NOTE_ID}>
-            {USERNAME_VISIBILITY_NOTE}
-          </p>
-        ) : null}
-        {intent === "signup" && usernameTaken ? (
-          <p className="account-field-error" data-username-taken id={USERNAME_ERROR_ID} role="alert">
-            {USERNAME_TAKEN_MESSAGE}
-          </p>
-        ) : null}
-        <fieldset data-invalid={invalidFields.has("email") || undefined}>
-          <legend><label htmlFor="account-email">{intent === "login" ? "Email or username" : "Email"}</label></legend>
-          <input
-            aria-describedby={invalidFields.has("email") ? GUIDANCE_ID : undefined}
-            aria-invalid={invalidFields.has("email") || undefined}
-            id="account-email"
-            autoComplete={intent === "login" ? "username" : "email"}
-            inputMode={intent === "login" ? "text" : "email"}
-            name="email"
-            onChange={() => setInvalidFields((current) => {
-              const next = new Set(current);
-              next.delete("email");
-              return next;
-            })}
-            required
-            type={intent === "login" ? "text" : "email"}
-          />
-        </fieldset>
-        <fieldset data-invalid={invalidFields.has("password") || undefined}>
-          <legend><label htmlFor="account-password">Password</label></legend>
-          <input
-            aria-describedby={invalidFields.has("password") ? GUIDANCE_ID : undefined}
-            aria-invalid={invalidFields.has("password") || undefined}
-            id="account-password"
-            autoComplete={intent === "login" ? "current-password" : "new-password"}
-            minLength={intent === "signup" ? PASSWORD_MINIMUM : undefined}
-            name="password"
-            onChange={() => setInvalidFields((current) => {
-              const next = new Set(current);
-              next.delete("password");
-              return next;
-            })}
-            required
-            type={passwordVisible ? "text" : "password"}
-          />
-          <button
-            aria-label={passwordVisible ? "Hide password" : "Show password"}
-            className="account-password-toggle"
-            onClick={() => setPasswordVisible((visible) => !visible)}
-            type="button"
-          >
-            <PasswordEye visible={passwordVisible} />
-          </button>
-        </fieldset>
-        <TurnstileField ref={captchaRef} />
-        {transient.notice?.inline ? (
-          // The sr-only live notice above already announces this text; keep the visible copy quiet.
-          <p aria-hidden="true" className="account-form-result" data-notice-kind={transient.notice.kind}>
-            {transient.notice.text}
-          </p>
-        ) : null}
-        </form>
-      </div>
-      <div
-        className="account-auth-secondary"
-        data-has-legal={context.legalLinks.length > 0 || undefined}
-      >
-        <div className="account-card__links">
-          <button
-            className="account-text-action"
-            onClick={switchIntent}
-            type="button"
-          >
-            {intent === "login" ? "Create Account" : "Log in"}
-          </button>
-          {intent === "login" ? (
-            <>
-              <AccountTextDivider />
-              <a href={contextualPath("/reset-password", context, internalMazerReturn)}>Reset Password</a>
-            </>
-          ) : null}
-        </div>
-        <AccountLegalLinks context={context} />
-      </div>
-      <div className="account-auth-dock">
-        <button
-          className="catalog-button catalog-button--primary"
-          disabled={!adapter || busy || cooldown.remaining > 0}
-          form="account-auth-form"
-          type="submit"
-        >
-          {busy
-            ? "Working…"
-            : transient.notice && !transient.notice.inline
-              ? transient.notice.text
-              : intent === "login"
-                ? context.signInLabel
-                : context.signUpLabel}
-        </button>
-      </div>
+            <AuthField
+              autoComplete="email"
+              describedBy={describedBy("email")}
+              disabled={working}
+              id="account-email"
+              inputMode="email"
+              invalid={invalid("email")}
+              label={AUTH_COPY.field.email}
+              name="email"
+              onChange={(value) => {
+                setEmail(value);
+                edited("email");
+              }}
+              type="email"
+              value={email}
+            />
+            <AuthField
+              autoComplete="new-password"
+              describedBy={describedBy("password")}
+              disabled={working}
+              id="account-password"
+              invalid={invalid("password")}
+              label={AUTH_COPY.field.password}
+              name="password"
+              onChange={() => edited("password")}
+              secret
+            />
+          </>
+        )}
+        <TurnstileField key={captchaKey} onUnavailable={() => setCaptchaBroken(true)} ref={captchaRef} />
+        <AuthNoticeSlot notice={notice} onAction={noticeAction} />
+      </form>
+      <AuthLinks>
+        {intent === "login"
+          ? remembered
+            ? [<button key="not-you" onClick={forgetIdentity} type="button">{AUTH_COPY.link.notYou}</button>]
+            : [
+                <button key="create" onClick={() => switchIntent("signup")} type="button">{AUTH_COPY.link.createAccount}</button>,
+                <a href={contextualPath("/reset-password", context, internalMazerReturn)} key="reset">{AUTH_COPY.link.resetPassword}</a>,
+              ]
+          : sent
+            ? [
+                <button
+                  key="wrong-email"
+                  onClick={() => {
+                    setSent(null);
+                    sentPassword.current = "";
+                    clearAll();
+                  }}
+                  type="button"
+                >
+                  {AUTH_COPY.link.wrongEmail}
+                </button>,
+              ]
+            : [<button key="sign-in" onClick={() => switchIntent("login")} type="button">{AUTH_COPY.link.signIn}</button>]}
+      </AuthLinks>
+      <AuthLegal context={context} />
+      <AuthDock busy={working} disabled={!adapter || cooldown.remaining > 0} form="account-auth-form">
+        {dockLabel}
+      </AuthDock>
     </section>
   );
 }
@@ -807,19 +777,27 @@ function AccountPanel({
 }) {
   const adapter = adapterFrom(resolution);
   const { error, loaded, session } = usePortalSession(adapter);
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const [notice, setNotice] = useState<AuthNotice | null>(null);
   const [busy, setBusy] = useState(false);
   // True from the moment this page asks to sign out until it has chosen its own destination. The
   // provider announces SIGNED_OUT before adapter.signOut() resolves, so without this the
   // "session lost" redirect below would send the person to /login ahead of the product origin.
   const signingOutRef = useRef(false);
+  // A session that ends while the page is open (expiry, a sign-out elsewhere) gets a reason on the
+  // sign-in screen; a visit without any session just goes to sign in.
+  const hadSessionRef = useRef(false);
+
+  useEffect(() => {
+    if (session) hadSessionRef.current = true;
+  }, [session]);
 
   useEffect(() => {
     if (adapter && loaded && !session && !error && !signingOutRef.current) {
-      if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
+      if (isLocalTestOrigin()) {
         document.documentElement.dataset.sessionLostRedirect = "login";
       }
-      window.location.replace(contextualPath("/login", context));
+      const path = hadSessionRef.current ? `/login?${LOGIN_NOTICE_PARAM}=session` : "/login";
+      window.location.replace(contextualPath(path, context));
     }
   }, [adapter, context, error, loaded, session]);
 
@@ -833,95 +811,86 @@ function AccountPanel({
       writeOwnerHint(false);
       const destination = new URL("/", context.destinationOrigin);
       if (context.id === "website") destination.searchParams.set("signedOut", "1");
-      if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
+      if (isLocalTestOrigin()) {
         // Deterministic harness: record the real destination instead of leaving the test origin.
         document.documentElement.dataset.signOutDestination = destination.href;
+        setBusy(false);
         return;
       }
       window.location.assign(destination.href);
     } catch {
       signingOutRef.current = false;
-      setNotice({ kind: "error", text: safeAuthError("signout") });
-    } finally {
+      setNotice(authNotice("account.signoutfail"));
       setBusy(false);
     }
   }
 
+  const unavailable = Boolean(resolution && !adapter);
+  if (!unavailable && !error && !session) {
+    // Checking, or on the way to sign in: a transient loader, never an empty form.
+    return (
+      <AuthStatus
+        context={context}
+        spin
+        state="checking"
+        surface="account-status"
+        title={AUTH_COPY.title.checkingAccount}
+      >
+        <RuntimeNote />
+      </AuthStatus>
+    );
+  }
+
+  const shownNotice = unavailable
+    ? authNotice("signin.unavailable")
+    : error
+      ? authNotice("account.loadfail")
+      : notice;
+
   return (
     <section
       aria-labelledby="account-status-title"
-      className="account-card account-card--auth account-card--account"
+      className="auth-surface"
       data-auth-product={context.id}
+      data-auth-state={session ? "ready" : unavailable ? "unavailable" : "error"}
       data-auth-surface="account-status"
-      style={{ "--auth-accent": context.accentRgb } as React.CSSProperties}
+      style={authAccentStyle(context)}
     >
       <RuntimeNote />
-      <header className="account-auth-intro">
-        <p>{context.productName}</p>
-        <h1 id="account-status-title">Account</h1>
-      </header>
-      <SetupState resolution={resolution} />
-      {error ? <StatusNotice notice={{ kind: "error", text: safeAuthError("session") }} /> : null}
-      <StatusNotice notice={notice} />
-      <div className="account-auth-body">
-        {adapter && loaded && session ? (
-          <div className="account-form account-form--auth account-account-fields">
-            <fieldset>
-              <legend><label htmlFor="account-current-username">Username</label></legend>
-              <input
-                id="account-current-username"
-                name="username"
-                readOnly
-                type="text"
-                value={session.displayName ?? deriveIdentity(session.email ?? "Account")}
-              />
-            </fieldset>
-            <fieldset>
-              <legend><label htmlFor="account-current-email">Email</label></legend>
-              <input
-                id="account-current-email"
-                name="email"
-                readOnly
-                type="email"
-                value={session.email ?? "Email unavailable"}
-              />
-            </fieldset>
-          </div>
-        ) : null}
+      <AuthHead
+        context={context}
+        lead={session ? AUTH_COPY.lead.account : undefined}
+        title={AUTH_COPY.title.account}
+        titleId="account-status-title"
+      />
+      <div className="auth-body">
+        <AuthField
+          id="account-current-username"
+          label={AUTH_COPY.field.username}
+          locked
+          name="username"
+          value={session ? session.displayName ?? deriveIdentity(session.email ?? "") : ""}
+        />
+        <AuthField
+          id="account-current-email"
+          label={AUTH_COPY.field.email}
+          locked
+          name="email"
+          type="email"
+          value={session?.email ?? ""}
+        />
+        <AuthNoticeSlot
+          notice={shownNotice}
+          onAction={shownNotice?.id === "account.loadfail" ? () => window.location.reload() : undefined}
+        />
       </div>
-      <div
-        className="account-auth-secondary"
-        data-has-legal={context.legalLinks.length > 0 || undefined}
-      >
-        <div className="account-card__links">
-          <a href={contextualPath("/reset-password", context)}>Reset Password</a>
-        </div>
-        <AccountLegalLinks context={context} />
-      </div>
-      <div className={`account-auth-dock${session ? " account-auth-dock--danger" : ""}`}>
-        {resolution && !adapter ? (
-          <button className="catalog-button catalog-button--primary" disabled type="button">
-            Unavailable
-          </button>
-        ) : session ? (
-          <button
-            className="catalog-button catalog-button--primary"
-            disabled={busy}
-            onClick={signOut}
-            type="button"
-          >
-            {busy ? "Working…" : "Sign out"}
-          </button>
-        ) : loaded ? (
-          <a className="catalog-button catalog-button--primary" href={contextualPath("/login", context)}>
-            Sign in
-          </a>
-        ) : (
-          <button className="catalog-button catalog-button--primary" disabled type="button">
-            Checking…
-          </button>
-        )}
-      </div>
+      <AuthLinks>
+        <a href={contextualPath("/reset-password", context)}>{AUTH_COPY.link.resetPassword}</a>
+      </AuthLinks>
+      <AuthLegal context={context} />
+      <AuthDock busy={busy} disabled={!session} onClick={signOut}>
+        {busy ? AUTH_COPY.working.signingOut : AUTH_COPY.button.signOut}
+      </AuthDock>
     </section>
   );
 }
@@ -983,6 +952,27 @@ function useRecoverySession(
   return state;
 }
 
+/** The signed-in email for the reset request (`undefined` while unknown, `null` when signed out). */
+function useSignedInEmail(adapter: PortalAuthAdapter | null, enabled: boolean) {
+  const [email, setEmail] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (!adapter || !enabled) return;
+    let active = true;
+    adapter
+      .getSession()
+      .then((session) => {
+        if (active) setEmail(session?.email ?? null);
+      })
+      .catch(() => {
+        if (active) setEmail(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [adapter, enabled]);
+  return email;
+}
+
 function ResetPanel({
   context,
   resolution,
@@ -995,229 +985,239 @@ function ResetPanel({
     ? new URLSearchParams(window.location.search).get("recovery") === "1"
     : false;
   const adapter = adapterFrom(resolution);
-  const transient = useTransientNotice();
-  const [invalidFields, setInvalidFields] = useState<Set<string>>(() => new Set());
-  const [guidance, setGuidance] = useState<GuidanceProblem[]>([]);
+  const form = useFormNotice();
   const [busy, setBusy] = useState(false);
-  const [passwordVisible, setPasswordVisible] = useState(false);
-  const [confirmationVisible, setConfirmationVisible] = useState(false);
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [linkNoticeDismissed, setLinkNoticeDismissed] = useState(false);
   const cooldown = useCooldown();
   const captchaRef = useRef<TurnstileFieldHandle>(null);
+  const [captchaKey, setCaptchaKey] = useState(0);
+  const [captchaBroken, setCaptchaBroken] = useState(false);
   const recoveryState = useRecoverySession(hydrated, recovery, resolution);
-  const recoveryReady = recovery && recoveryState === "ready";
-  // A dead link (invalid, expired, or the exchange failed) must offer the way out: a fresh request.
+  // A dead link (invalid, expired, or the exchange failed) lands on the request form with the reason.
   const recoveryLinkDead = recovery && (
     recoveryState === "invalid" ||
     recoveryState === "expired" ||
     recoveryState === "recoverable-error"
   );
-  const returnTarget = hydrated
-    ? sanitizePostAuthReturnTarget(
-        new URLSearchParams(window.location.search).get("returnTo"),
-        context,
-      )
-    : null;
-  const internalMazerReturn = returnTarget === "/oauth/authorize"
-    ? returnTarget
-    : undefined;
+  const newPassword = recovery && !recoveryLinkDead;
+  const recoveryReady = newPassword && recoveryState === "ready";
+  const signedInEmail = useSignedInEmail(adapter, hydrated && !newPassword);
+  const internalMazerReturn = useInternalMazerReturn(context);
 
-  const recoveryNotice: Notice | null = !recovery
+  const linkNotice: AuthMessageId | null = linkNoticeDismissed || !recovery
     ? null
-    : recoveryState === "invalid"
-      ? { kind: "error", text: "Recovery link invalid.", variant: "invalid" }
-      : recoveryState === "expired"
-        ? { kind: "error", text: "Recovery link expired.", variant: "expired" }
-        : recoveryState === "recoverable-error"
-          ? // The link could not be used (wrong browser, already used, or a network problem). Nothing
-            // was being saved yet, so "Password not saved" would misstate what happened.
-            { kind: "error", text: safeAuthError("confirm") }
-          : recoveryState === "setup-pending"
-            ? { kind: "info", text: "Account service unavailable." }
-            : recoveryState === "ready"
-              ? null
-              : { kind: "info", text: "Preparing recovery…" };
-  const actionNotice = transient.notice ?? recoveryNotice;
+    : recoveryState === "expired"
+      ? "reset.expired"
+      : recoveryState === "invalid" || recoveryState === "recoverable-error"
+        ? "reset.invalid"
+        : recoveryState === "setup-pending"
+          ? "signin.unavailable"
+          : null;
+  const notice: AuthNotice | null =
+    (resolution && !adapter ? authNotice("signin.unavailable") : null) ??
+    form.notice ??
+    (captchaBroken && !newPassword ? authNotice("captcha.load") : null) ??
+    (linkNotice ? authNotice(linkNotice) : null);
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!adapter || busy || cooldown.remaining || (recovery && !recoveryReady)) return;
-    const formElement = event.currentTarget;
-    const form = new FormData(formElement);
+  function clearAll() {
+    form.clear();
+    setLinkNoticeDismissed(true);
+  }
 
-    if (recovery) {
-      const password = String(form.get("password") ?? "");
-      const confirmation = String(form.get("confirmation") ?? "");
-      const problems = guidanceForNewPassword(password, confirmation);
-      if (problems.length > 0) {
-        setGuidance(problems);
-        setInvalidFields(new Set(problems.map((problem) => problem.field)));
-        focusFirstProblem(formElement, problems);
-        return;
-      }
-      setBusy(true);
-      transient.clear();
-      setInvalidFields(new Set());
-      cooldown.start();
-      try {
-        await adapter.updatePassword(password);
-        // MAZER-ACCT-041: a changed password ends every other session of the account (other
-        // devices, Mazer, Fitness) while the recovery session is still alive to authorize it.
-        // The password is already saved, so a provider failure here must not read as "not saved":
-        // it is reported in its own sentence and the recovery session is still ended below.
-        let otherSessionsEnded = true;
-        try {
-          await adapter.signOut("other-sessions");
-        } catch {
-          otherSessionsEnded = false;
-        }
-        // Then end this throw-away recovery session itself (local scope, as before).
-        await adapter.signOut("this-session");
-        formElement.reset();
-        transient.show({
-          kind: "success",
-          text: safeAuthSuccess(otherSessionsEnded ? "reset-complete" : "reset-others"),
-        });
-        window.setTimeout(() => {
-          window.location.replace(contextualPath("/login", context, internalMazerReturn));
-        }, 700);
-      } catch {
-        transient.show({ kind: "error", text: safeAuthError("reset-complete") });
-      } finally {
-        setBusy(false);
-      }
-      return;
+  function edited(field: FieldName) {
+    form.edited(field);
+    setLinkNoticeDismissed(true);
+    setSentTo(null);
+  }
+
+  function noticeAction() {
+    if (notice?.id === "captcha.load") {
+      setCaptchaBroken(false);
+      setCaptchaKey((key) => key + 1);
+      form.clear();
+    } else if (notice?.id === "captcha.fail") {
+      captchaRef.current?.reset();
+      form.clear();
     }
+  }
 
-    const email = String(form.get("email") ?? "").trim();
-    const emailProblems = guidanceForResetRequest(email);
-    if (emailProblems.length > 0) {
-      setGuidance(emailProblems);
-      setInvalidFields(new Set(emailProblems.map((problem) => problem.field)));
-      focusFirstProblem(formElement, emailProblems);
+  async function saveNewPassword(formElement: HTMLFormElement) {
+    if (!adapter || !recoveryReady) return;
+    const data = new FormData(formElement);
+    const password = String(data.get("password") ?? "");
+    const confirmation = String(data.get("confirmation") ?? "");
+    const problem = newPasswordProblem(password, confirmation);
+    if (problem) {
+      form.problem(problem);
+      focusField(problem.fields[0] === "confirmation" ? "account-confirm-password" : "account-new-password");
       return;
     }
     setBusy(true);
-    transient.clear();
-    setInvalidFields(new Set());
+    clearAll();
+    cooldown.start();
+    try {
+      await adapter.updatePassword(password);
+      // MAZER-ACCT-041: a changed password ends every other session of the account (other devices,
+      // Mazer, Fitness) while the recovery session is still alive to authorize it. The password is
+      // already saved, so a failure here must not read as "not saved"; the recovery session is still
+      // ended below and the person lands on sign in with the saved line.
+      try {
+        await adapter.signOut("other-sessions");
+      } catch {
+        // Reported gap: the copy matrix has no line for "saved, but other devices stay signed in".
+      }
+      // Then end this throw-away recovery session itself (local scope, as before).
+      await adapter.signOut("this-session");
+      formElement.reset();
+      const destination = contextualPath(`/login?${LOGIN_NOTICE_PARAM}=resetdone`, context, internalMazerReturn);
+      if (isLocalTestOrigin()) {
+        // Deterministic harness: record where the saved password leads instead of leaving the page.
+        document.documentElement.dataset.resetDestination = destination;
+        return;
+      }
+      window.location.replace(destination);
+    } catch (error) {
+      form.show(passwordSaveFailure(error));
+      setBusy(false);
+    }
+  }
+
+  async function requestLink() {
+    if (!adapter) return;
+    const target = signedInEmail ?? (document.getElementById("account-reset-email") as HTMLInputElement | null)?.value.trim() ?? "";
+    const problem = signedInEmail ? null : resetRequestProblem(target);
+    if (problem) {
+      form.problem(problem);
+      setLinkNoticeDismissed(true);
+      focusField("account-reset-email");
+      return;
+    }
+    setBusy(true);
+    clearAll();
     cooldown.start();
     try {
       const captchaToken = await captchaRef.current?.getToken();
-      await adapter.requestPasswordReset(email, context.id, internalMazerReturn, captchaToken);
-      transient.show({ kind: "success", text: safeAuthSuccess("reset-request") });
-    } catch {
-      transient.show({ kind: "success", text: safeAuthSuccess("reset-request") });
+      await adapter.requestPasswordReset(target, context.id, internalMazerReturn, captchaToken);
+      setSentTo(target);
+      // Signed in, the address is already on screen; signed out, the answer must not reveal whether
+      // an account uses the typed address.
+      if (signedInEmail) form.show("reset.sent", signedInEmail);
+      else form.show("reset.sentany");
+      cooldown.start(RESEND_SECONDS);
+    } catch (error) {
+      form.show(resetRequestFailure(error));
     } finally {
       captchaRef.current?.reset();
       setBusy(false);
     }
   }
 
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!adapter || busy || cooldown.remaining) return;
+    if (newPassword) await saveNewPassword(event.currentTarget);
+    else await requestLink();
+  }
+
+  const invalid = (field: FieldName) => form.fields.has(field);
+  const describedBy = (field: FieldName) => (invalid(field) ? "auth-notice" : undefined);
+  const dockLabel = newPassword
+    ? busy ? AUTH_COPY.working.saving : AUTH_COPY.button.savePassword
+    : busy
+      ? AUTH_COPY.working.sending
+      : sentTo && cooldown.remaining > 0
+        ? AUTH_COPY.resendIn(cooldown.remaining)
+        : AUTH_COPY.button.sendResetLink;
+
   return (
     <section
-      aria-label="Password recovery"
-      className="account-card account-card--auth"
+      aria-labelledby="reset-panel-title"
+      className="auth-surface"
       data-auth-product={context.id}
+      data-auth-state={recovery ? recoveryState : signedInEmail ? "signed-in" : "signed-out"}
       data-auth-surface="recovery"
-      style={{ "--auth-accent": context.accentRgb } as React.CSSProperties}
+      style={authAccentStyle(context)}
     >
       <RuntimeNote />
-      <header className="account-auth-intro">
-        <p>{context.productName}</p>
-        <h1 id="reset-panel-title">{recovery ? "New Password" : "Reset Password"}</h1>
-      </header>
-      <div className="account-auth-body">
-        <SetupState resolution={resolution} />
-        <AuthLiveNotice notice={actionNotice} />
-        <GuidanceBanner invalidFields={invalidFields} problems={guidance} />
-        {!recovery || recoveryReady ? (
-          <form className="account-form account-form--auth" id="account-reset-form" noValidate onSubmit={submit}>
-        {recovery ? (
+      <AuthHead
+        context={context}
+        lead={newPassword ? AUTH_COPY.lead.newPassword : AUTH_COPY.lead.resetRequest}
+        title={newPassword ? AUTH_COPY.title.newPassword : AUTH_COPY.title.resetPassword}
+        titleId="reset-panel-title"
+      />
+      <form className="auth-body" id="account-reset-form" noValidate onSubmit={submit}>
+        {newPassword ? (
           <>
-            <fieldset data-invalid={invalidFields.has("password") || undefined}>
-              <legend><label htmlFor="account-new-password">New password</label></legend>
-              <input
-                aria-describedby={invalidFields.has("password") ? GUIDANCE_ID : undefined}
-                aria-invalid={invalidFields.has("password") || undefined}
-                autoComplete="new-password"
-                id="account-new-password"
-                minLength={PASSWORD_MINIMUM}
-                name="password"
-                onChange={() => setInvalidFields((current) => {
-                  const next = new Set(current);
-                  next.delete("password");
-                  return next;
-                })}
-                required
-                type={passwordVisible ? "text" : "password"}
-              />
-              <button aria-label={passwordVisible ? "Hide password" : "Show password"} className="account-password-toggle" onClick={() => setPasswordVisible((visible) => !visible)} type="button">
-                <PasswordEye visible={passwordVisible} />
-              </button>
-            </fieldset>
-            <fieldset data-invalid={invalidFields.has("confirmation") || undefined}>
-              <legend><label htmlFor="account-confirm-password">Confirm password</label></legend>
-              <input
-                aria-describedby={invalidFields.has("confirmation") ? GUIDANCE_ID : undefined}
-                aria-invalid={invalidFields.has("confirmation") || undefined}
-                autoComplete="new-password"
-                id="account-confirm-password"
-                minLength={PASSWORD_MINIMUM}
-                name="confirmation"
-                onChange={() => setInvalidFields((current) => {
-                  const next = new Set(current);
-                  next.delete("confirmation");
-                  return next;
-                })}
-                required
-                type={confirmationVisible ? "text" : "password"}
-              />
-              <button aria-label={confirmationVisible ? "Hide password" : "Show password"} className="account-password-toggle" onClick={() => setConfirmationVisible((visible) => !visible)} type="button">
-                <PasswordEye visible={confirmationVisible} />
-              </button>
-            </fieldset>
+            <AuthField
+              autoComplete="new-password"
+              describedBy={describedBy("password")}
+              disabled={!recoveryReady || busy}
+              id="account-new-password"
+              invalid={invalid("password")}
+              label={AUTH_COPY.field.newPassword}
+              name="password"
+              onChange={() => edited("password")}
+              secret
+            />
+            <AuthField
+              autoComplete="new-password"
+              describedBy={describedBy("confirmation")}
+              disabled={!recoveryReady || busy}
+              id="account-confirm-password"
+              invalid={invalid("confirmation")}
+              label={AUTH_COPY.field.confirmPassword}
+              name="confirmation"
+              onChange={() => edited("confirmation")}
+              secret
+            />
           </>
+        ) : signedInEmail ? (
+          <AuthField id="account-reset-email" label={AUTH_COPY.field.email} locked name="email" type="email" value={signedInEmail} />
         ) : (
-          <fieldset data-invalid={invalidFields.has("email") || undefined}>
-            <legend><label htmlFor="account-reset-email">Email</label></legend>
-            <input aria-describedby={invalidFields.has("email") ? GUIDANCE_ID : undefined} aria-invalid={invalidFields.has("email") || undefined} autoComplete="email" id="account-reset-email" inputMode="email" name="email" onChange={() => setInvalidFields(new Set())} required type="email" />
-          </fieldset>
+          <AuthField
+            autoComplete="email"
+            describedBy={describedBy("email")}
+            disabled={signedInEmail === undefined && Boolean(adapter)}
+            id="account-reset-email"
+            inputMode="email"
+            invalid={invalid("email")}
+            label={AUTH_COPY.field.email}
+            name="email"
+            onChange={() => edited("email")}
+            type="email"
+          />
         )}
-        {recovery ? null : <TurnstileField ref={captchaRef} />}
-          </form>
-        ) : null}
-      </div>
-      <div
-        className="account-auth-secondary"
-        data-has-legal={context.legalLinks.length > 0 || undefined}
+        {newPassword ? null : (
+          <TurnstileField key={captchaKey} onUnavailable={() => setCaptchaBroken(true)} ref={captchaRef} />
+        )}
+        <AuthNoticeSlot notice={notice} onAction={noticeAction} />
+      </form>
+      {newPassword ? null : (
+        <AuthLinks>
+          {signedInEmail ? (
+            <a href={contextualPath("/account", context)}>{AUTH_COPY.link.backToAccount}</a>
+          ) : (
+            <a href={contextualPath("/login", context, internalMazerReturn)}>{AUTH_COPY.link.signIn}</a>
+          )}
+        </AuthLinks>
+      )}
+      <AuthLegal context={context} />
+      <AuthDock
+        busy={busy}
+        disabled={!adapter || cooldown.remaining > 0 || (newPassword && !recoveryReady)}
+        form="account-reset-form"
       >
-        <div className="account-card__links">
-          <a href={contextualPath("/login", context, internalMazerReturn)}>Log in</a>
-          {recoveryLinkDead ? (
-            <>
-              <AccountTextDivider />
-              <a data-recovery-new-link href={contextualPath("/reset-password", context, internalMazerReturn)}>
-                Request a new link
-              </a>
-            </>
-          ) : null}
-        </div>
-        <AccountLegalLinks context={context} />
-      </div>
-      <div className="account-auth-dock">
-        <button className="catalog-button catalog-button--primary" disabled={!adapter || busy || cooldown.remaining > 0 || (recovery && !recoveryReady)} form="account-reset-form" type="submit">
-          {busy
-            ? "Working…"
-            : actionNotice
-              ? actionNotice.text
-              : recovery
-                ? "Save new password"
-                : context.resetLabel}
-        </button>
-      </div>
+        {dockLabel}
+      </AuthDock>
     </section>
   );
 }
 
+/**
+ * Email confirmation and sign-in callback. Both are transient: the person sees one loader, then lands
+ * in the destination, or on sign in with the reason (`/login?notice=`). There is no dead-end screen.
+ */
 function LinkHandler({
   context,
   mode,
@@ -1230,22 +1230,20 @@ function LinkHandler({
   const hydrated = useHydrated();
   const adapter = adapterFrom(resolution);
   const processed = useRef<OneShotAttemptState>({ started: false });
-  const redirectTimer = useRef<number | null>(null);
-  const [notice, setNotice] = useState<Notice>({
-    kind: "info",
-    text: "One moment…",
-  });
-  const [returnTo, setReturnTo] = useState<string>(accountContract.accountPath);
 
   useEffect(() => {
     if (!hydrated) return;
-    const scheduleRedirect = (target: string) => {
-      if (redirectTimer.current !== null) return;
-      redirectTimer.current = window.setTimeout(() => {
-        redirectTimer.current = null;
-        window.location.assign(sanitizeReturnTarget(target));
-      }, 1400);
+    // On the local test origin the outcome is recorded, and only same-origin pages are opened.
+    const go = (destination: string, outcome: string) => {
+      if (isLocalTestOrigin()) {
+        document.documentElement.dataset.linkOutcome = outcome;
+        document.documentElement.dataset.linkDestination = destination;
+        if (!destination.startsWith("/")) return;
+      }
+      window.location.replace(destination);
     };
+    const toLogin = (key: "callback" | "confirmed" | "unavailable", outcome: string) =>
+      go(contextualPath(`/login?${LOGIN_NOTICE_PARAM}=${key}`, context), outcome);
     const cancelAttempt = scheduleDeferredAttempt(processed.current, () => {
       const url = new URL(window.location.href);
 
@@ -1253,182 +1251,88 @@ function LinkHandler({
         const payload = parseConfirmPayload(url);
         sanitizeAuthUrl();
         if (!payload) {
-          setNotice({
-            kind: "error",
-            text: "Link incomplete. Request a new link.",
-            variant: "invalid",
-          });
+          toLogin("callback", "invalid");
           return;
         }
-        setReturnTo(payload.returnTo);
         if (isFitnessReturnTarget(payload.returnTo)) {
           let storedState: string | null = null;
           try {
             storedState = window.localStorage.getItem(accountContract.confirmationStateKey);
           } catch { /* Unavailable browser storage cannot prove the initiating browser. */ }
           if (!confirmationStateMatches(payload.state, storedState)) {
-            setNotice({
-              kind: "error",
-              text: "Opened in a different browser. Start again.",
-              variant: "unauthorized",
-            });
+            toLogin("callback", "unauthorized");
             return;
           }
           try {
             window.localStorage.removeItem(accountContract.confirmationStateKey);
           } catch {
-            setNotice({
-              kind: "error",
-              text: "Browser storage unavailable. Start again.",
-              variant: "unauthorized",
-            });
+            toLogin("callback", "unauthorized");
             return;
           }
         }
         if (!adapter) {
-          setNotice({
-            kind: "info",
-            text: "Not available on this site.",
-            variant: "unavailable",
-          });
+          toLogin("unavailable", "unavailable");
           return;
         }
         adapter
           .confirm(payload.tokenHash, payload.type)
           .then(async (session) => {
-            const destination = await completeAuthenticatedReturn(
-              adapter,
-              payload.returnTo,
-              session,
-            );
-            setReturnTo(destination);
-            setNotice({ kind: "success", text: "Confirmed." });
+            if (!session && !isFitnessReturnTarget(payload.returnTo)) {
+              toLogin("confirmed", "confirmed");
+              return;
+            }
+            const destination = await completeAuthenticatedReturn(adapter, payload.returnTo, session);
+            go(destination, "success");
           })
-          .catch((error) => setNotice({
-            kind: "error",
-            text: error instanceof FitnessHandoffError ? error.message : safeAuthError("confirm"),
-          }));
+          .catch(() => toLogin("callback", "error"));
         return;
       }
 
       const payload = parseCallbackPayload(url);
       sanitizeAuthUrl();
       if (!payload) {
-        setNotice({
-          kind: "error",
-          text: "Sign-in link incomplete.",
-          variant: "invalid",
-        });
+        toLogin("callback", "invalid");
         return;
       }
-      setReturnTo(payload.returnTo);
       const receipt = callbackReceiptKey(payload.code);
       if (window.sessionStorage.getItem(receipt) === "complete") {
-        setNotice({ kind: "success", text: "Already signed in." });
-        scheduleRedirect(payload.returnTo);
+        go(sanitizeReturnTarget(payload.returnTo), "complete");
         return;
       }
       const storedState = window.sessionStorage.getItem(accountContract.callbackStateKey);
       if (!callbackStateMatches(payload.state, storedState)) {
-        setNotice({
-          kind: "error",
-          text: "Opened in a different browser. Start again.",
-          variant: "unauthorized",
-        });
+        toLogin("callback", "unauthorized");
         return;
       }
       if (!adapter) {
-        setNotice({
-          kind: "info",
-          text: "Not available on this site.",
-          variant: "unavailable",
-        });
+        toLogin("unavailable", "unavailable");
         return;
       }
       adapter
         .exchangeCode(payload.code)
         .then(async (session) => {
-          const destination = await completeAuthenticatedReturn(
-            adapter,
-            payload.returnTo,
-            session,
-          );
+          const destination = await completeAuthenticatedReturn(adapter, payload.returnTo, session);
           window.sessionStorage.setItem(receipt, "complete");
           window.sessionStorage.removeItem(accountContract.callbackStateKey);
-          setReturnTo(destination);
-          setNotice({ kind: "success", text: "Signed in." });
-          scheduleRedirect(destination);
+          go(destination, "success");
         })
-        .catch((error) => setNotice({
-          kind: "error",
-          text: error instanceof FitnessHandoffError ? error.message : safeAuthError("callback"),
-        }));
+        .catch(() => toLogin("callback", "error"));
     });
 
-    return () => {
-      cancelAttempt();
-      if (redirectTimer.current !== null) {
-        window.clearTimeout(redirectTimer.current);
-        redirectTimer.current = null;
-      }
-    };
-  }, [adapter, context.id, hydrated, mode]);
-
-  const variant = noticeVariant(notice);
-  const title =
-    variant === "pending"
-      ? "Checking your link."
-      : variant === "success"
-        ? "You are all set."
-        : variant === "invalid"
-          ? "This link is invalid."
-          : variant === "unauthorized"
-            ? "This link does not match."
-            : variant === "unavailable"
-              ? "Account service unavailable."
-              : variant === "expired"
-                ? "This link has expired."
-                : "Something went wrong.";
-  const actions =
-    variant === "success" ? (
-      <a className="catalog-button catalog-button--primary" href={sanitizeReturnTarget(returnTo)}>
-        Continue safely
-      </a>
-    ) : variant === "pending" ? null : variant === "unavailable" ? (
-      <a
-        className="catalog-button catalog-button--primary"
-        href={contextualPath("/account", context)}
-      >
-        View account status
-      </a>
-    ) : (
-      <a
-        className="catalog-button catalog-button--primary"
-        href={contextualPath("/login", context)}
-      >
-        Start again
-      </a>
-    );
+    return cancelAttempt;
+  }, [adapter, context, hydrated, mode]);
 
   return (
-    <section
-      className="account-card surface-panel"
-      data-auth-product={context.id}
-      data-auth-state={variant}
+    <AuthStatus
+      context={context}
+      lead={mode === "callback" ? AUTH_COPY.lead.usingAccount : undefined}
+      spin
+      state="pending"
+      surface={mode}
+      title={mode === "callback" ? AUTH_COPY.title.signingIn : AUTH_COPY.title.confirming}
     >
       <RuntimeNote />
-      <SystemState
-        actions={actions}
-        description={notice.text}
-        details={
-          <p>Details are used once, then sent only to approved {productIdentity.publicName} pages.</p>
-        }
-        eyebrow={mode === "confirm" ? "Account confirmation" : "Secure sign-in"}
-        framed={false}
-        title={title}
-        variant={variant}
-      />
-    </section>
+    </AuthStatus>
   );
 }
 
@@ -1464,7 +1368,7 @@ function SignOutPanel({
           new URLSearchParams(window.location.search).get(SIGNOUT_RETURN_PARAM),
           window.location.origin,
         );
-        if (classifyRuntimeOrigin(window.location.origin) === "local-test") {
+        if (isLocalTestOrigin()) {
           // Deterministic harness: record the real destination instead of leaving the test origin.
           document.documentElement.dataset.signOutDestination = destination;
           return;
@@ -1477,49 +1381,41 @@ function SignOutPanel({
     })();
   }, [adapter, attempt]);
 
-  const failed = state !== "working";
+  if (state === "working") {
+    return (
+      <AuthStatus context={context} spin state="working" surface="signout" title={AUTH_COPY.title.signingOut}>
+        <RuntimeNote />
+      </AuthStatus>
+    );
+  }
+
   return (
     <section
-      className="account-card surface-panel"
+      aria-labelledby="signout-title"
+      className="auth-surface"
       data-auth-product={context.id}
       data-auth-state={state}
       data-auth-surface="signout"
+      style={authAccentStyle(context)}
     >
       <RuntimeNote />
-      <SystemState
-        actions={
-          failed ? (
-            <>
-              {state === "error" ? (
-                <button
-                  className="catalog-button catalog-button--primary"
-                  onClick={() => {
-                    setState("working");
-                    setAttempt((count) => count + 1);
-                  }}
-                  type="button"
-                >
-                  Try again
-                </button>
-              ) : null}
-              <a className="catalog-button catalog-button--secondary" href={contextualPath("/login", context)}>
-                Log in
-              </a>
-            </>
-          ) : null
-        }
-        description={
-          state === "error"
-            ? safeAuthError("signout")
-            : state === "unavailable"
-              ? "Account service unavailable."
-              : "One moment…"
-        }
-        eyebrow="Sign out"
-        framed={false}
-        title={failed ? "Still signed in." : "Signing you out."}
-        variant={failed ? "recoverable-error" : "pending"}
-      />
+      <AuthHead context={context} title={AUTH_COPY.title.signOut} titleId="signout-title" />
+      <div className="auth-body">
+        <AuthNoticeSlot notice={authNotice(state === "error" ? "account.signoutfail" : "signin.unavailable")} />
+      </div>
+      <AuthLinks>
+        <a href={contextualPath("/login", context)}>{AUTH_COPY.link.signIn}</a>
+      </AuthLinks>
+      <AuthLegal context={context} />
+      <AuthDock
+        disabled={state !== "error"}
+        onClick={() => {
+          setState("working");
+          setAttempt((count) => count + 1);
+        }}
+      >
+        {AUTH_COPY.button.tryAgain}
+      </AuthDock>
     </section>
   );
 }

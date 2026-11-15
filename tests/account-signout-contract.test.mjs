@@ -171,12 +171,16 @@ test("the scope mapping matches the installed supabase-js sign-out API", () => {
   assert.match(client, /if \(scope !== 'others'\)/);
 });
 
-test("the partial-failure sentence exists and stays inside the copy cap", () => {
-  const errors = loadPortalModule("src/lib/auth/errors.ts");
-  const text = errors.safeAuthSuccess("reset-others");
-  assert.match(text, /^Password updated\./);
-  assert.ok(text.length <= 70);
-  assert.notEqual(text, errors.safeAuthSuccess("reset-complete"));
+test("a failed other-sessions sign-out after a saved password still lands on the saved line", () => {
+  // Auth Surface v2: the copy matrix has no separate "saved, other devices still signed in" line
+  // (reported gap). The password is saved, so the person must never read "not saved"; the recovery
+  // session still ends and sign in shows signin.resetdone.
+  const source = read("src/components/account/account-portal.tsx");
+  const save = source.slice(source.indexOf("async function saveNewPassword"), source.indexOf("async function requestLink"));
+  assert.match(save, /await adapter\.updatePassword\(password\);[\s\S]*try \{\s*await adapter\.signOut\("other-sessions"\);\s*\} catch \{/);
+  assert.match(save, /await adapter\.signOut\("this-session"\);[\s\S]*\/login\?\$\{LOGIN_NOTICE_PARAM\}=resetdone/);
+  const outcomes = loadPortalModule("src/lib/auth/auth-outcomes.ts");
+  assert.equal(outcomes.loginNoticeFromQuery(["resetdone"]), "signin.resetdone");
 });
 
 test("the sign-out capability ping answers 204 for Mazer only, with no cookies or credentials", () => {

@@ -685,6 +685,8 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
     async signUp(email, _password, username) {
       beginAuthMutation();
       failSignup();
+      // The provider created the account but wants the email confirmed first: no session yet.
+      if (scenario === "signup-confirm") return null;
       session = { displayName: username, email, userId: "preview-user" };
       publish();
       return session;
@@ -800,6 +802,7 @@ export function resolvePortalAuthAdapter(
       "signup-unknown",
       "signup-username-taken",
       "signup-database-error",
+      "signup-confirm",
       "session-expires",
       "session-revoked-elsewhere",
       "session-revoked-on-return",

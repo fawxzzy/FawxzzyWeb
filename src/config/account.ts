@@ -29,9 +29,6 @@ export type AccountExperienceContext = {
     label: string;
   }>;
   productName: string;
-  resetLabel: string;
-  signInLabel: string;
-  signUpLabel: string;
 };
 
 export const accountContract = {
@@ -93,17 +90,14 @@ export const accountExperienceContexts: Record<
     legalLinks: [
       {
         href: new URL("/privacy", productIdentity.canonicalOrigin).href,
-        label: "Privacy Policy",
+        label: "Privacy",
       },
       {
         href: new URL("/terms", productIdentity.canonicalOrigin).href,
-        label: "Terms of Service",
+        label: "Terms",
       },
     ],
     productName: authThemes.website.kicker,
-    resetLabel: "Send recovery link",
-    signInLabel: "Sign in",
-    signUpLabel: "Create account",
   },
   fitness: {
     accentRgb: authThemes.fitness.accentRgb,
@@ -113,17 +107,14 @@ export const accountExperienceContexts: Record<
     legalLinks: [
       {
         href: new URL("/privacy", fitnessOrigin.current).href,
-        label: "Privacy Policy",
+        label: "Privacy",
       },
       {
         href: new URL("/terms", fitnessOrigin.current).href,
-        label: "Terms of Service",
+        label: "Terms",
       },
     ],
     productName: authThemes.fitness.kicker,
-    resetLabel: "Send recovery link",
-    signInLabel: "Sign in",
-    signUpLabel: "Create account",
   },
   mazer: {
     accentRgb: authThemes.mazer.accentRgb,
@@ -133,17 +124,14 @@ export const accountExperienceContexts: Record<
     legalLinks: [
       {
         href: new URL("/legal/mazer/privacy", productIdentity.canonicalOrigin).href,
-        label: "Privacy Policy",
+        label: "Privacy",
       },
       {
         href: new URL("/legal/mazer/terms", productIdentity.canonicalOrigin).href,
-        label: "Terms of Service",
+        label: "Terms",
       },
     ],
     productName: authThemes.mazer.kicker,
-    resetLabel: "Send recovery link",
-    signInLabel: "Sign in",
-    signUpLabel: "Create account",
   },
 };
 

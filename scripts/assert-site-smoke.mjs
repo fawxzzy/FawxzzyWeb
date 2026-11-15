@@ -145,12 +145,13 @@ export async function assertSiteSmoke(baseUrl) {
     throw new Error("Trove compatibility identity was not rendered.");
   }
 
+  // Auth Surface v2: each route's first static paint is its titled screen (copy matrix titles).
   const accountRoutes = [
     ["/login", ">Welcome<"],
-    ["/account", ">Account<"],
-    ["/auth/confirm", "Account confirmation"],
-    ["/auth/callback", "Secure sign-in"],
-    ["/reset-password", "Password recovery"],
+    ["/account", ">Checking your account…<"],
+    ["/auth/confirm", ">Confirming your email…<"],
+    ["/auth/callback", ">Signing you in…<"],
+    ["/reset-password", ">Reset password<"],
   ];
   for (const [path, expectedText] of accountRoutes) {
     const html = await assertRoute(baseUrl, path, expectedText);

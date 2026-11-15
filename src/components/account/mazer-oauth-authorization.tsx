@@ -24,8 +24,15 @@ import {
   storePendingMazerOAuthAuthorization,
   type MazerOAuthAuthorizationDetails,
 } from "@/lib/auth/mazer-oauth";
-import { AccountLegalLinks } from "@/components/account/account-legal-links";
-import { SystemState } from "@/components/system/system-state";
+import { AUTH_COPY } from "@/lib/auth/copy-matrix";
+import {
+  authAccentStyle,
+  AuthDock,
+  AuthHead,
+  AuthLegal,
+  AuthLinks,
+  AuthStatus,
+} from "@/components/account/auth-surface";
 
 type AuthorizationState =
   | { kind: "loading" }
@@ -287,39 +294,48 @@ export function MazerOAuthAuthorization() {
       </div>
     );
   }
-  if (state.kind === "invalid") {
-    return <SystemState compact description="Invalid or expired. Start again in Mazer." title="This request cannot continue." variant="invalid" />;
-  }
-  if (state.kind === "unavailable") {
-    return <SystemState compact description="Start again in Mazer." title="Mazer sign-in is unavailable." variant="unavailable" />;
+  const mazer = accountExperienceContexts.mazer;
+  if (state.kind === "invalid" || state.kind === "unavailable") {
+    // One way out for every stopped request: start again from Mazer.
+    return (
+      <AuthStatus
+        context={mazer}
+        dock={<AuthDock href={accountContract.productOrigins.mazer}>{AUTH_COPY.button.open("Mazer")}</AuthDock>}
+        lead={AUTH_COPY.lead.startAgainIn("Mazer")}
+        state={state.kind}
+        surface="oauth"
+        title={AUTH_COPY.title.signInLinkExpired}
+      />
+    );
   }
 
+  // Retained consent card (only reachable for a non-first-party request or the local-test
+  // `oauth_consent` flag). Its title and lead are outside the copy matrix on purpose: consent is
+  // owned by a later lane.
   return (
     <section
       aria-labelledby="mazer-oauth-title"
-      className="account-card account-card--auth"
+      className="auth-surface"
       data-auth-product="mazer"
       data-auth-surface="oauth-consent"
-      style={{ "--auth-accent": "53 238 224" } as React.CSSProperties}
+      style={authAccentStyle(mazer)}
     >
-      <header className="account-auth-intro">
-        <p>Mazer</p>
-        <h1 id="mazer-oauth-title">Continue to Mazer?</h1>
-        <span>Mazer will use your Fawxzzy email to open the same account.</span>
-      </header>
-      <div className="account-auth-secondary" data-has-legal="true">
-        <div className="account-card__links">
-          <button className="account-inline-link" disabled={busy} onClick={() => void decide("deny")} type="button">
-            Cancel
-          </button>
-        </div>
-        <AccountLegalLinks context={accountExperienceContexts.mazer} />
-      </div>
-      <div className="account-auth-dock">
-        <button className="catalog-button catalog-button--primary" disabled={busy} onClick={() => void decide("approve")} type="button">
-          {busy ? "Working…" : "Continue to Mazer"}
+      <AuthHead
+        context={mazer}
+        lead="Mazer will use your Fawxzzy email to open the same account."
+        title="Continue to Mazer?"
+        titleId="mazer-oauth-title"
+      />
+      <div className="auth-body" />
+      <AuthLinks>
+        <button disabled={busy} onClick={() => void decide("deny")} type="button">
+          {AUTH_COPY.link.cancel}
         </button>
-      </div>
+      </AuthLinks>
+      <AuthLegal context={mazer} />
+      <AuthDock busy={busy} onClick={() => void decide("approve")}>
+        {busy ? AUTH_COPY.working.opening("Mazer") : "Continue to Mazer"}
+      </AuthDock>
     </section>
   );
 }

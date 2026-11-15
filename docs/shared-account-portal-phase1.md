@@ -40,13 +40,13 @@ backslashes, fragments, every other query key, nested query/fragment data, and t
 targets fail closed to `/account` or the selected product root.
 
 Sign-in screen intent: `https://account.fawxzzy.com/login?app=<product>&intent=signup` opens the
-"Create Account" form first (any product, or none). It is the one portal sign-up surface a product
+"Create account" form first (any product, or none). It is the one portal sign-up surface a product
 links to; Fitness's `/signup` will link here once its F-2 change ships (it does not yet). Exactly
 one `intent` key with the exact value `signup` selects sign-up; every other value (absent, `login`, another case, repeated, unknown)
 opens sign-in. It is presentation only: it adds no return target, no Auth behaviour and no
 handoff change, so `app` and `returnTo` keep their closed contracts above and a successful sign-up
 continues exactly like sign-in (Fitness handoff, Mazer authorize return, or the website target).
-The on-screen "Log in" / "Create Account" link still switches forms and is not overridden by the
+The on-screen "Sign in" / "Create account" link still switches forms and is not overridden by the
 address.
 
 Live Supabase adapter creation is limited to the exact canonical account origin and the bounded
@@ -120,33 +120,38 @@ redirects must be admitted individually in a future packet; do not add a broad p
   accepted. Login accepts existing shorter passwords for migration compatibility.
 - Signup preserves local form-validation feedback, then branches only on whether the provider
   returned a real session. A returned session means the account exists and the user is signed in:
-  the portal shows "Account created." and continues exactly like sign-in (Fitness handoff,
-  Mazer authorize return, or the sanitized website/Projects target). With no session, every
-  provider rejection (already registered, weak password, rate limit, network, unknown) maps to the
-  same fixed, non-success info notice: "Could not create account. Try again." It claims no
-  completion, never reveals whether an address is registered, and no raw provider diagnostic is
-  surfaced or logged. The "Log in" action stays
-  visible beside it. One exception (MAZER-ACCT-029): a username is public (it shows on the Mazer
-  leaderboard), so when the rejection text contains `ACCOUNT_USERNAME_TAKEN` (the database
-  duplicate-username guard, or a before-user-created hook answering 409) the portal instead shows
-  "Username taken. Try another." directly under the username field, with
-  `aria-invalid` and `aria-describedby` on the input and focus returned to it, and no generic
-  notice. A generic "Database error saving new user" is never read as a taken username and keeps
-  the neutral notice. Provider note: the database trigger's own text may be hidden by the provider
-  behind that generic message, so the named message is guaranteed only where the hook (or another
-  path that forwards the code) is registered. Provider settings can still make the two outcomes observable by timing or by
-  whether the user ends up signed in; that residual signal is accepted. A real returned session
-  remains origin-scoped and provider-owned. Reset responses likewise do not disclose whether an
-  address exists: the reset request always ends with the one fixed line "Check your email."
-  Portal status text stays short by contract: every message is at most 70 characters, enforced by
-  `npm run test:account-copy` (wording rules: "Try again." when the same screen can retry,
-  "Request a new link." when a link is dead, "Start again." when a one-time handoff must restart
-  from sign-in, no hedging clauses).
+  the portal continues exactly like sign-in (Fitness handoff, Mazer authorize return, or the
+  sanitized website/Projects target). With no session the provider wants the email confirmed: the
+  username and email stay on screen as locked fields and the notice says "Check z•••@domain for a
+  link to confirm your account." (the masked address is the one on that screen), with a 30 s
+  resend countdown in the dock and a "Wrong email?" link. Provider settings hide an
+  already-registered address behind the same answer; that residual signal is accepted.
+  Each provider rejection the provider names gets its own copy-matrix line (username taken,
+  email already has an account with an inline "Sign in", weak password, invalid email, rate
+  limit, no connection, security check). A taken username (MAZER-ACCT-029, the database
+  duplicate-username guard or a before-user-created hook answering 409 with
+  `ACCOUNT_USERNAME_TAKEN`) outlines the username field. A generic "Database error saving new
+  user" or any unknown failure has no named cause in the provider answer, so it shows the generic
+  "Check your connection and try again." (known gap: the backend returns one code for every
+  database failure). No raw provider diagnostic is surfaced or logged.
+- Reset requests never disclose whether an address exists. Signed in, the request uses the
+  account email (a locked field) and the notice names the masked address. Signed out, the answer
+  is "If that account exists, we sent a reset link to its email." whatever happened at the
+  provider; only sending failures (rate limit, send failure, no connection) get their own line.
+  Known gap: the approved design asks for a username field when signed out, which needs a
+  server-side username-to-email reset path (an Edge Function); until then the signed-out request
+  takes an email.
+- Portal copy lives only in the copy matrix (`src/lib/auth/copy-matrix.ts`). Every line is at
+  most 70 characters and `npm run test:account-copy` fails on any other visible text in the auth
+  screen components (see `docs/auth-surface-family.md`).
 - Callback state must match browser session storage. Authorization codes are exchanged once and
   receive an idempotency receipt; sensitive query material is removed from the visible URL.
-- A successful callback briefly exposes a readable success state, then navigates to its sanitized
-  allowlisted destination. The visible fallback link remains available; failed, missing, and
-  setup-pending callbacks never auto-navigate.
+- Callback and confirmation show one loader, then navigate straight to the sanitized allowlisted
+  destination. A failed, missing, unauthorized or setup-pending link replaces the page with sign
+  in plus the reason (`/login?notice=callback|confirmed|unavailable`); there is no dead-end
+  screen. On local test origins the outcome and destination are recorded on
+  `document.documentElement.dataset` (`linkOutcome`, `linkDestination`) and only same-origin
+  paths are opened.
 - Confirmation and callback processing is deferred through a one-shot lifecycle boundary. A
   canceled pre-processing setup remains retryable for React's development setup/cleanup probe,
   while a launched provider operation cannot be duplicated by a later effect setup.

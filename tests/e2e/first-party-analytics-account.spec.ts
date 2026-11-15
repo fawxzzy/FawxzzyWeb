@@ -73,7 +73,7 @@ test("a signed-in account that is not the owner emits no Projects event", async 
   test.skip(!hasCollector, "requires the isolated dummy collector build");
   const fixture = await accountFixture(context, false);
   await page.goto(projectPath(true));
-  await expect(page.getByRole("heading", { name: "This page is not here." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
   expect(fixture.events).toEqual([]);
 });
 

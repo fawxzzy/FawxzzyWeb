@@ -528,9 +528,10 @@ test("portal handoff failure stays on login without external traffic", async ({ 
   await page.goto("/login?app=fitness&auth_test=fitness-handoff-error");
   await page.getByLabel("Email or username").fill("fixture.user");
   await page.getByLabel("Password", { exact: true }).fill("fixture-password");
-  await page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" }).click();
-  await expect(page.locator('.account-auth-live-notice[role="alert"]')).toHaveText(FITNESS_HANDOFF_UNAVAILABLE);
-  await expect(page.getByRole("button", { name: FITNESS_HANDOFF_UNAVAILABLE, exact: true })).toBeVisible();
+  await page.locator(".auth-dock__button").click();
+  // Auth Surface v2: the reason shows once, in the notice slot; the dock keeps saying "Sign in".
+  await expect(page.locator('[data-notice-id="signin.callback"][role="alert"]')).toBeVisible();
+  await expect(page.locator(".auth-dock__button")).toHaveText("Sign in");
   await expect(page).toHaveURL(/\/login\?/);
   await expect(page.locator("html")).not.toHaveAttribute("data-post-auth-destination");
   expect(outgoing).toEqual([]);

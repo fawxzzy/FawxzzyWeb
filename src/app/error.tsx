@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
 import { AmbientBrandBackground } from "@/components/ambient/ambient-brand-background";
+import { AuthDock, AuthStatus } from "@/components/account/auth-status";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
-import { SystemState } from "@/components/system/system-state";
-import { productIdentity } from "@/config/product";
+import { accountExperienceContexts } from "@/config/account";
+import { PAGE_CRASH_NOTICE, STATUS_COPY } from "@/lib/auth/status-copy";
 
 type RouteErrorProps = {
   error: Error & { digest?: string };
@@ -23,34 +23,13 @@ export default function RouteError({ error, unstable_retry }: RouteErrorProps) {
       <AmbientBrandBackground intensity="soft" particleCount={8} pulseEnabled={false} />
       <div className="shell-container system-shell">
         <SiteNav current="apps" />
-        <SystemState
-          actions={
-            <>
-              <button
-                className="catalog-button catalog-button--primary"
-                onClick={() => unstable_retry()}
-                type="button"
-              >
-                Try again
-              </button>
-              <Link
-                className="catalog-button catalog-button--secondary"
-                href={productIdentity.appsPath}
-              >
-                Open Apps
-              </Link>
-            </>
-          }
-          description="The current page could not finish rendering. Retry once, or open Apps if the problem continues."
-          details={
-            <p>
-              Reference: <code>{error.digest ?? "not available"}</code>
-            </p>
-          }
-          eyebrow="Recoverable page error"
-          headingLevel={1}
-          title="This page hit a temporary problem."
-          variant="recoverable-error"
+        <AuthStatus
+          context={accountExperienceContexts.website}
+          dock={<AuthDock onClick={() => unstable_retry()}>{STATUS_COPY.tryAgain}</AuthDock>}
+          notice={PAGE_CRASH_NOTICE}
+          state="crash"
+          surface="crash"
+          title={STATUS_COPY.couldNotLoad}
         />
         <SiteFooter />
       </div>

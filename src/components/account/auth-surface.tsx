@@ -1,0 +1,146 @@
+"use client";
+
+import { Fragment, useState, type ReactNode } from "react";
+import type { AccountExperienceContext } from "@/config/account";
+import { AUTH_COPY } from "@/lib/auth/copy-matrix";
+
+/**
+ * Auth Surface v2 building blocks (approved mocks 2026-11-15). Every account screen uses the same
+ * anatomy: app icon, kicker, title, optional lead, a body with fields and ONE reserved notice slot,
+ * links, legal, dock. Styles: src/styles/page-families/auth-surface.css. The stateless pieces live in
+ * auth-status.tsx so the 404 and crash screens do not carry this module.
+ */
+export {
+  authAccentStyle,
+  AuthAppIcon,
+  AuthDock,
+  AuthHead,
+  AuthNoticeSlot,
+  AuthStatus,
+} from "@/components/account/auth-status";
+
+function LockIcon() {
+  return (
+    <svg aria-hidden="true" className="auth-field__icon" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
+      <rect height="9.5" rx="2.5" width="14" x="5" y="10.5" />
+      <path d="M8.5 10.5V8a3.5 3.5 0 017 0v2.5" />
+    </svg>
+  );
+}
+
+function EyeIcon({ visible }: { visible: boolean }) {
+  return (
+    <svg aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
+      <circle cx="12" cy="12" r="3" />
+      {visible ? null : <path d="M4 4l16 16" />}
+    </svg>
+  );
+}
+
+type AuthFieldProps = {
+  autoComplete?: string;
+  describedBy?: string;
+  disabled?: boolean;
+  id: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+  invalid?: boolean;
+  label: string;
+  /** Shown, not typed: a remembered identity, the signed-in email or a value already sent. */
+  locked?: boolean;
+  maxLength?: number;
+  name: string;
+  onChange?: (value: string) => void;
+  /** Password fields get a show/hide toggle. */
+  secret?: boolean;
+  type?: "email" | "text" | "password";
+  value?: string;
+};
+
+export function AuthField({
+  autoComplete,
+  describedBy,
+  disabled,
+  id,
+  inputMode,
+  invalid,
+  label,
+  locked,
+  maxLength,
+  name,
+  onChange,
+  secret,
+  type = "text",
+  value,
+}: AuthFieldProps) {
+  const [visible, setVisible] = useState(false);
+  const inputType = secret ? (visible ? "text" : "password") : type;
+  return (
+    <div
+      className="auth-field"
+      data-auth-field={name}
+      data-invalid={invalid || undefined}
+      data-locked={locked || undefined}
+    >
+      <label htmlFor={id}>{label}</label>
+      <input
+        aria-describedby={describedBy}
+        aria-invalid={invalid || undefined}
+        autoCapitalize="none"
+        autoComplete={autoComplete}
+        autoCorrect="off"
+        disabled={disabled}
+        id={id}
+        inputMode={inputMode}
+        maxLength={maxLength}
+        name={name}
+        onChange={onChange ? (event) => onChange(event.target.value) : undefined}
+        readOnly={locked}
+        spellCheck={false}
+        type={inputType}
+        {...(value === undefined ? {} : { value })}
+      />
+      {locked ? <LockIcon /> : null}
+      {secret && !locked ? (
+        <button
+          aria-label={visible ? AUTH_COPY.aria.hidePassword : AUTH_COPY.aria.showPassword}
+          className="auth-field__toggle"
+          onClick={() => setVisible((current) => !current)}
+          type="button"
+        >
+          <EyeIcon visible={visible} />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/** Text links under the body, separated by short accent bars. */
+export function AuthLinks({ children }: { children: ReactNode[] | ReactNode }) {
+  const items = (Array.isArray(children) ? children : [children]).filter(Boolean);
+  if (items.length === 0) return null;
+  return (
+    <div className="auth-links">
+      {items.map((item, index) => (
+        <Fragment key={index}>
+          {index > 0 ? <span aria-hidden="true" className="auth-bar" /> : null}
+          {item}
+        </Fragment>
+      ))}
+    </div>
+  );
+}
+
+export function AuthLegal({ context }: { context: AccountExperienceContext }) {
+  if (context.legalLinks.length === 0) return null;
+  return (
+    <div aria-label={`${context.productName} legal`} className="auth-legal">
+      {context.legalLinks.map((link, index) => (
+        <Fragment key={link.href}>
+          {index > 0 ? <span aria-hidden="true" className="auth-bar" /> : null}
+          <a href={link.href}>{link.label}</a>
+        </Fragment>
+      ))}
+    </div>
+  );
+}
