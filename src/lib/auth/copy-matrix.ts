@@ -62,6 +62,9 @@ export const AUTH_MESSAGES = {
   "reset.savefail": ["error", "Could not save your password. Try again."],
   "account.loadfail": ["error", "Could not load your account. Try again.", "Retry"],
   "account.signoutfail": ["error", "Could not sign out. Try again."],
+  // Sign out everywhere (account page): the in-page confirm, and the line on the sign-in screen after.
+  "account.everywhereconfirm": ["info", "Sign out on every device and app?", "Sign out everywhere"],
+  "signin.everywhere": ["success", "You are signed out on every device."],
   "page.crash": ["error", STATUS_COPY.crash],
   "page.offline": ["error", "You are offline. We will reconnect when you are back."],
   "mazer.cancelled": ["error", "Sign-in did not finish. Tap Sign in to try again."],
@@ -130,6 +133,7 @@ export const AUTH_COPY = {
     terms: "Terms",
     wrongEmail: "Wrong email?",
     cancel: "Cancel",
+    signOutEverywhere: "Sign out everywhere",
   },
   title: {
     welcome: "Welcome",

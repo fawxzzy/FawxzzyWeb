@@ -150,6 +150,8 @@ export const LOGIN_NOTICE_PARAM = "notice";
 const LOGIN_NOTICES = {
   callback: "signin.callback",
   confirmed: "signin.confirmed",
+  // Sign out everywhere on the account page.
+  everywhere: "signin.everywhere",
   resetdone: "signin.resetdone",
   session: "signin.session",
   unavailable: "signin.unavailable",

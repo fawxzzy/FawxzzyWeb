@@ -649,6 +649,7 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       "oauth-hostile",
       "change-rate",
       "change-unavailable",
+      "signout-everywhere-fail",
     ].includes(scenario)
       ? { displayName: "fawxzzy", email: "preview.user@example.test", userId: "preview-user" }
       : null;
@@ -788,6 +789,10 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
         if (scenario === "reset-others-error") throw new Error("Deterministic other-sessions error");
         return;
       }
+      // The provider could not end the sessions (network, 5xx): nothing changes here.
+      if (scenario === "signout-everywhere-fail" && scope === "everywhere") {
+        throw new Error("Deterministic sign-out-everywhere error");
+      }
       session = null;
       publish();
     },
@@ -925,6 +930,7 @@ export function resolvePortalAuthAdapter(
       "reset-others-error",
       "change-rate",
       "change-unavailable",
+      "signout-everywhere-fail",
       "confirm-pending",
     ].includes(scenario) &&
     isLocalAuthTestOrigin(location.origin)

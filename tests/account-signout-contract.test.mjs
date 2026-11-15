@@ -183,6 +183,54 @@ test("a failed other-sessions sign-out after a saved password still lands on the
   assert.equal(outcomes.loginNoticeFromQuery(["resetdone"]), "signin.resetdone");
 });
 
+test("sign out everywhere: global scope, owner hint, then the portal sign-in with the done line", () => {
+  const portal = read("src/components/account/account-portal.tsx");
+  const start = portal.indexOf("async function signOutEverywhere");
+  assert.ok(start > 0, "signOutEverywhere missing");
+  const body = portal.slice(start, portal.indexOf("function askSignOutEverywhere"));
+  const order = [
+    'await adapter.signOut("everywhere")',
+    "writeOwnerHint(false)",
+    "contextualPath(`/login?${LOGIN_NOTICE_PARAM}=everywhere`, context)",
+    "window.location.replace(destination)",
+    'setNotice(authNotice("change.unavailable"))',
+  ].map((needle) => {
+    const index = body.indexOf(needle);
+    assert.ok(index > 0, `${needle} missing from signOutEverywhere`);
+    return index;
+  });
+  assert.deepEqual(order, [...order].sort((a, b) => a - b), "sign out everywhere steps are out of order");
+  // Step 1 only asks: the link never signs out by itself.
+  const ask = portal.slice(portal.indexOf("function askSignOutEverywhere"), portal.indexOf("const unavailable"));
+  assert.ok(!ask.includes("adapter.signOut"), "the first tap must not sign out");
+  // In-page confirm only: no browser dialogs anywhere on the portal.
+  assert.ok(!/(?<![.\w])(?:window\.)?(?:confirm|alert|prompt)\(/.test(portal), "no browser confirm/alert/prompt dialogs");
+  assert.ok(!/window\.(?:confirm|alert|prompt)\b/.test(portal), "no browser confirm/alert/prompt dialogs");
+  const outcomes = loadPortalModule("src/lib/auth/auth-outcomes.ts");
+  assert.equal(outcomes.loginNoticeFromQuery(["everywhere"]), "signin.everywhere");
+});
+
+test("sign out everywhere copy lives in the matrix, sentence case and plain", () => {
+  const matrix = loadPortalModule("src/lib/auth/copy-matrix.ts");
+  assert.equal(matrix.AUTH_COPY.link.signOutEverywhere, "Sign out everywhere");
+  assert.deepEqual(matrix.authNotice("account.everywhereconfirm"), {
+    id: "account.everywhereconfirm",
+    tone: "info",
+    text: "Sign out on every device and app?",
+    action: "Sign out everywhere",
+  });
+  assert.deepEqual(matrix.authNotice("signin.everywhere"), {
+    id: "signin.everywhere",
+    tone: "success",
+    text: "You are signed out on every device.",
+  });
+  // The failure is the shared unavailable line, word for word.
+  assert.equal(matrix.authNotice("change.unavailable").text, "Changes are unavailable right now. Try again later.");
+  for (const text of ["Sign out on every device and app?", "You are signed out on every device."]) {
+    assert.doesNotMatch(text, /session|token|scope|global|revoke/i, "no jargon");
+  }
+});
+
 test("the sign-out capability ping answers 204 for Mazer only, with no cookies or credentials", () => {
   const ping = loadPortalModule("api/account/signout-ping.ts");
   for (const method of ["GET", "HEAD", "OPTIONS"]) {
