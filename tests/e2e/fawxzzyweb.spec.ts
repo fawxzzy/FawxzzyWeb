@@ -613,9 +613,13 @@ test("route and root error boundaries use explicit shared recovery states", asyn
   );
 
   // Auth Surface v2: both boundaries are the "Could not load" status screen with one Try again dock.
+  // They ship on every route, so they take the small status-copy leaf, never the whole matrix.
   for (const source of [routeError, globalError]) {
     expect(source).toContain('surface="crash"');
-    expect(source).toContain('authNotice("page.crash")');
+    expect(source).toContain("notice={PAGE_CRASH_NOTICE}");
+    expect(source).toContain('from "@/lib/auth/status-copy"');
+    expect(source).toContain('from "@/components/account/auth-status"');
+    expect(source).not.toContain("@/lib/auth/copy-matrix");
     expect(source).not.toMatch(/Something went wrong/i);
   }
   expect(routeError).toContain("unstable_retry()");
