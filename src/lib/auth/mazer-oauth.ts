@@ -315,6 +315,22 @@ export function shouldAutoApproveMazerOAuth(
   );
 }
 
+/**
+ * Where a stopped authorization sends the player: Mazer's own sign-in, which lives at Mazer's exact
+ * registered redirect origin (a constant here, never a value from the request or the provider), with
+ * one key from a closed set so Mazer can say why. `expired`: the request was invalid, expired or
+ * belonged to another session; `unavailable`: the account service failed. Mazer ignores an unknown
+ * `notice` (it is not an OAuth callback key), so an older Mazer simply shows its sign-in.
+ */
+export const MAZER_SIGN_IN_NOTICE_PARAM = "notice";
+export type MazerSignInNotice = "expired" | "unavailable";
+
+export function mazerSignInNoticeUrl(notice: MazerSignInNotice) {
+  const url = new URL(MAZER_OAUTH_REDIRECT_URI);
+  url.searchParams.set(MAZER_SIGN_IN_NOTICE_PARAM, notice === "unavailable" ? "unavailable" : "expired");
+  return url.href;
+}
+
 function parseBoundedMazerRedirect(value: unknown) {
   if (typeof value !== "string" || new TextEncoder().encode(value).byteLength > REDIRECT_MAX_BYTES) {
     return null;

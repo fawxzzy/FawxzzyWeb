@@ -2611,7 +2611,7 @@ test("first-party Mazer authorization auto-approves without a consent card", asy
   )).toBe(false);
 });
 
-test("first-party Mazer auto-approve failure shows the existing error state once, with no card or retry loop", async ({ page }) => {
+test("first-party Mazer auto-approve failure goes back to Mazer's sign-in once, with no card or retry loop", async ({ page }) => {
   let decisions = 0;
   await page.route("**/api/account/mazer-oauth-pending", async (route) => {
     if (route.request().method() === "PUT") {
@@ -2624,15 +2624,13 @@ test("first-party Mazer auto-approve failure shows the existing error state once
   await page.goto(
     "/oauth/authorize?authorization_id=authorization-id-1234567890&auth_test=session",
   );
-  const failed = page.locator('[data-auth-surface="oauth"][data-auth-state="unavailable"]');
-  // A service failure is not an expired link: matrix title + the one "unavailable" line.
-  await expect(failed.getByRole("heading")).toHaveText(AUTH_COPY.title.couldNotLoad);
-  await expect(failed.locator('[data-notice-id="signin.unavailable"]')).toHaveText(authNotice("signin.unavailable").text);
-  await expect(failed).not.toContainText(AUTH_COPY.title.signInLinkExpired);
-  await expect(failed.getByRole("link", { name: AUTH_COPY.button.open("Mazer") })).toBeVisible();
+  // A service failure is not an expired link: Mazer's sign-in gets the `unavailable` notice.
+  await expect.poll(() => page.locator("html").getAttribute("data-oauth-redirect")).toBe(
+    "https://mazer.fawxzzy.com/?notice=unavailable",
+  );
+  await expect(page.locator('[data-auth-surface="oauth"]')).toHaveCount(0);
   await expect(page.locator('[data-auth-surface="oauth-consent"]')).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Continue to Mazer" })).toHaveCount(0);
-  await expect(page.locator("html")).not.toHaveAttribute("data-oauth-redirect", /.+/);
   await page.waitForTimeout(1_000);
   expect(decisions).toBe(1);
 });
@@ -2641,7 +2639,9 @@ test("first-party Mazer auto-approve rejects a hostile provider redirect without
   await page.goto(
     "/oauth/authorize?authorization_id=authorization-id-1234567890&auth_test=oauth-hostile",
   );
-  await expect(page.locator('[data-auth-surface="oauth"][data-auth-state="invalid"]')).toContainText(AUTH_COPY.title.signInLinkExpired);
+  // An unsafe redirect is the one case that keeps the portal fallback screen.
+  await expect(page.locator('[data-auth-surface="oauth"][data-auth-state="unsafe"]')).toContainText(AUTH_COPY.title.signInLinkExpired);
+  await expect(page.locator('[data-auth-surface="oauth"] .auth-dock__button')).toHaveAttribute("href", accountContract.productOrigins.mazer);
   await expect(page.locator('[data-auth-surface="oauth-consent"]')).toHaveCount(0);
   await expect(page.locator("html")).not.toHaveAttribute("data-oauth-redirect", /.+/);
 });
@@ -2724,14 +2724,17 @@ test("Mazer authorization rejects duplicate requests and hostile provider redire
   await page.goto(
     "/oauth/authorize?authorization_id=authorization-id-1234567890&authorization_id=authorization-id-0987654321&auth_test=session",
   );
-  await expect(page.locator('[data-auth-surface="oauth"][data-auth-state="invalid"]')).toContainText(AUTH_COPY.title.signInLinkExpired);
+  // A malformed request goes back to Mazer's sign-in (a constant destination) with the reason.
+  await expect.poll(() => page.locator("html").getAttribute("data-oauth-redirect")).toBe(
+    "https://mazer.fawxzzy.com/?notice=expired",
+  );
 
   await page.goto(
     "/oauth/authorize?authorization_id=authorization-id-1234567890&auth_test=oauth-hostile&oauth_consent=1",
   );
   await expect(page.getByRole("button", { name: "Continue to Mazer" })).toBeVisible();
   await page.getByRole("button", { name: "Continue to Mazer" }).click();
-  await expect(page.locator('[data-auth-surface="oauth"][data-auth-state="invalid"]')).toContainText(AUTH_COPY.title.signInLinkExpired);
+  await expect(page.locator('[data-auth-surface="oauth"][data-auth-state="unsafe"]')).toContainText(AUTH_COPY.title.signInLinkExpired);
   await expect(page.locator("html")).not.toHaveAttribute("data-oauth-redirect", /.+/);
 });
 
@@ -2745,8 +2748,10 @@ test("retained Mazer consent card fails closed after a same-tab auth-generation 
     { key: accountContract.authGenerationKey, value: "b".repeat(64) },
   );
   await page.getByRole("button", { name: "Continue to Mazer" }).click();
-  await expect(page.locator('[data-auth-surface="oauth"][data-auth-state="invalid"]')).toContainText(AUTH_COPY.title.signInLinkExpired);
-  await expect(page.locator("html")).not.toHaveAttribute("data-oauth-redirect", /.+/);
+  // Nothing is approved; the player starts again from Mazer's sign-in.
+  await expect.poll(() => page.locator("html").getAttribute("data-oauth-redirect")).toBe(
+    "https://mazer.fawxzzy.com/?notice=expired",
+  );
 });
 
 test("retained Mazer consent card fails closed after a cross-tab auth-generation change", async ({ context, page }) => {
@@ -2762,8 +2767,9 @@ test("retained Mazer consent card fails closed after a cross-tab auth-generation
   );
   await sibling.close();
   await page.getByRole("button", { name: "Continue to Mazer" }).click();
-  await expect(page.locator('[data-auth-surface="oauth"][data-auth-state="invalid"]')).toContainText(AUTH_COPY.title.signInLinkExpired);
-  await expect(page.locator("html")).not.toHaveAttribute("data-oauth-redirect", /.+/);
+  await expect.poll(() => page.locator("html").getAttribute("data-oauth-redirect")).toBe(
+    "https://mazer.fawxzzy.com/?notice=expired",
+  );
 });
 
 test("Mazer authorization accepts only a previously approved exact app redirect", async ({ page }) => {

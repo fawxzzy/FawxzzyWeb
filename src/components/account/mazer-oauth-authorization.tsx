@@ -16,6 +16,7 @@ import {
   isValidAuthGeneration,
   isValidMazerAuthorizationId,
   MAZER_OAUTH_AUTHORIZATION_PATH,
+  mazerSignInNoticeUrl,
   readPendingMazerOAuthAuthorization,
   rebindPendingMazerOAuthAuthorization,
   sanitizeMazerOAuthApprovalRedirect,
@@ -23,8 +24,9 @@ import {
   shouldAutoApproveMazerOAuth,
   storePendingMazerOAuthAuthorization,
   type MazerOAuthAuthorizationDetails,
+  type MazerSignInNotice,
 } from "@/lib/auth/mazer-oauth";
-import { AUTH_COPY, authNotice } from "@/lib/auth/copy-matrix";
+import { AUTH_COPY } from "@/lib/auth/copy-matrix";
 import {
   authAccentStyle,
   AuthDock,
@@ -41,8 +43,9 @@ type AuthorizationState =
       authGeneration: string;
       details: MazerOAuthAuthorizationDetails;
     }
-  | { kind: "invalid" }
-  | { kind: "unavailable" };
+  // The request or the provider pointed somewhere other than Mazer's exact registered client and
+  // redirect: nothing is followed and the portal shows its own fallback screen.
+  | { kind: "unsafe" };
 
 const emptySubscribe = () => () => undefined;
 
@@ -77,6 +80,15 @@ function navigateToMazer(destination: string) {
   }
 }
 
+// A stopped request (invalid, expired, another session, or the account service failing) goes back
+// to Mazer's own sign-in with the reason, never to a portal dead end. The destination is the
+// constant registered Mazer origin plus one closed notice key: nothing from the request is followed.
+async function returnToMazerSignIn(notice: MazerSignInNotice) {
+  await clearPendingMazerOAuthAuthorization().catch(() => undefined);
+  await holdLoader();
+  navigateToMazer(mazerSignInNoticeUrl(notice));
+}
+
 export function MazerOAuthAuthorization() {
   const started = useRef(false);
   const [busy, setBusy] = useState(false);
@@ -92,9 +104,21 @@ export function MazerOAuthAuthorization() {
     started.current = true;
     let active = true;
 
+    // Fail-closed exits. `expired` / `unavailable` go back to Mazer's sign-in with that notice;
+    // `unsafe` (a client, redirect or provider answer that is not Mazer's exact registration)
+    // stays on the portal fallback screen and follows nothing.
+    const stop = async (reason: MazerSignInNotice | "unsafe") => {
+      if (reason === "unsafe") {
+        await clearPendingMazerOAuthAuthorization().catch(() => undefined);
+        if (active) setState({ kind: "unsafe" });
+        return;
+      }
+      await returnToMazerSignIn(reason);
+    };
+
     async function start() {
       if (resolution?.status !== "ready") {
-        if (active) setState({ kind: "unavailable" });
+        await stop("unavailable");
         return;
       }
 
@@ -107,7 +131,7 @@ export function MazerOAuthAuthorization() {
           !isValidMazerAuthorizationId(incomingAuthorizationId) ||
           !isValidAuthGeneration(authGeneration)
         ) {
-          if (active) setState({ kind: "invalid" });
+          await stop("expired");
           return;
         }
         const stored = await storePendingMazerOAuthAuthorization(
@@ -115,7 +139,7 @@ export function MazerOAuthAuthorization() {
           authGeneration,
         );
         if (!stored) {
-          if (active) setState({ kind: "unavailable" });
+          await stop("unavailable");
           return;
         }
         query.delete("authorization_id");
@@ -130,11 +154,12 @@ export function MazerOAuthAuthorization() {
 
       const authGeneration = resolution.adapter.getAuthGeneration();
       if (!isValidAuthGeneration(authGeneration)) {
-        await clearPendingMazerOAuthAuthorization();
-        if (active) setState({ kind: "unavailable" });
+        await stop("unavailable");
         return;
       }
 
+      // Device-level auto sign-in: a portal session that already exists (from any app on this
+      // device) skips sign-in, and the first-party check below approves without a card.
       const session = await resolution.adapter.getSession();
       if (!session) {
         await holdLoader();
@@ -146,7 +171,7 @@ export function MazerOAuthAuthorization() {
       // provider handle once, without ever returning it to page JavaScript.
       const rebound = await rebindPendingMazerOAuthAuthorization(authGeneration);
       if (!rebound) {
-        if (active) setState({ kind: "invalid" });
+        await stop("expired");
         return;
       }
 
@@ -155,20 +180,19 @@ export function MazerOAuthAuthorization() {
         resolution.adapter.getAuthGeneration() !== authGeneration ||
         (await resolution.adapter.getSession())?.userId !== session.userId
       ) {
-        await clearPendingMazerOAuthAuthorization();
-        if (active) setState({ kind: "invalid" });
+        await stop("expired");
         return;
       }
 
       const result = await readPendingMazerOAuthAuthorization(accessToken, authGeneration);
       if (!result) {
-        if (active) setState({ kind: "invalid" });
+        await stop("expired");
         return;
       }
       if (result.kind === "redirect") {
         const destination = sanitizeMazerOAuthApprovalRedirect(result.redirectUrl);
         if (!destination) {
-          if (active) setState({ kind: "invalid" });
+          await stop("unsafe");
           return;
         }
         await clearPendingMazerOAuthAuthorization();
@@ -176,11 +200,15 @@ export function MazerOAuthAuthorization() {
         navigateToMazer(destination);
         return;
       }
-      if (
-        result.details.userId !== session.userId ||
-        !isExpectedMazerOAuthAuthorization(result.details, window.location.origin)
-      ) {
-        if (active) setState({ kind: "invalid" });
+      if (result.details.userId !== session.userId) {
+        // Started under another account on this device: start again from Mazer.
+        await stop("expired");
+        return;
+      }
+      if (!isExpectedMazerOAuthAuthorization(result.details, window.location.origin)) {
+        // Not Mazer's exact client, redirect URI and scope: no consent card, no approval, and no
+        // redirect to anything the request named. There is no third-party consent path.
+        await stop("unsafe");
         return;
       }
       // First-party Mazer (exact client id + exact redirect URI allowlist) is
@@ -192,26 +220,26 @@ export function MazerOAuthAuthorization() {
         !forceConsent &&
         shouldAutoApproveMazerOAuth(result.details, window.location.origin, session.userId)
       ) {
+        let rawRedirect: string;
         try {
-          const rawRedirect = await decidePendingMazerOAuthAuthorization(
+          rawRedirect = await decidePendingMazerOAuthAuthorization(
             "approve",
             accessToken,
             authGeneration,
           );
-          const destination = sanitizeMazerOAuthApprovalRedirect(rawRedirect);
-          if (!destination) {
-            await clearPendingMazerOAuthAuthorization().catch(() => undefined);
-            if (active) setState({ kind: "invalid" });
-            return;
-          }
-          await holdLoader();
-          navigateToMazer(destination);
         } catch {
-          // No retry and no consent card: the gateway already clears the
-          // carrier after a failed decision; show the existing error state.
-          await clearPendingMazerOAuthAuthorization().catch(() => undefined);
-          if (active) setState({ kind: "unavailable" });
+          // No retry and no consent card: the gateway already clears the carrier after a failed
+          // decision; the player goes back to Mazer's sign-in once.
+          await stop("unavailable");
+          return;
         }
+        const destination = sanitizeMazerOAuthApprovalRedirect(rawRedirect);
+        if (!destination) {
+          await stop("unsafe");
+          return;
+        }
+        await holdLoader();
+        navigateToMazer(destination);
         return;
       }
       if (active) {
@@ -223,9 +251,7 @@ export function MazerOAuthAuthorization() {
       }
     }
 
-    void start().catch(() => {
-      if (active) setState({ kind: "unavailable" });
-    });
+    void start().catch(() => stop("unavailable"));
     return () => {
       active = false;
     };
@@ -234,10 +260,15 @@ export function MazerOAuthAuthorization() {
   async function decide(decision: "approve" | "deny") {
     if (state.kind !== "consent" || resolution?.status !== "ready" || busy) return;
     setBusy(true);
+    // Same exits as the automatic path: back to Mazer's sign-in with a reason, or the fallback
+    // screen when the provider answer is not Mazer's exact redirect.
+    const backToMazer = async (notice: MazerSignInNotice) => {
+      setState({ kind: "loading" });
+      await returnToMazerSignIn(notice);
+    };
     try {
       if (resolution.adapter.getAuthGeneration() !== state.authGeneration) {
-        await clearPendingMazerOAuthAuthorization();
-        setState({ kind: "invalid" });
+        await backToMazer("expired");
         return;
       }
       const session = await resolution.adapter.getSession();
@@ -246,34 +277,39 @@ export function MazerOAuthAuthorization() {
         session.userId !== state.details.userId ||
         resolution.adapter.getAuthGeneration() !== state.authGeneration
       ) {
-        await clearPendingMazerOAuthAuthorization();
-        setState({ kind: "invalid" });
+        await backToMazer("expired");
         return;
       }
 
       const accessToken = await resolution.adapter.getOAuthAccessToken(session.userId);
       if (resolution.adapter.getAuthGeneration() !== state.authGeneration) {
-        await clearPendingMazerOAuthAuthorization();
-        setState({ kind: "invalid" });
+        await backToMazer("expired");
         return;
       }
       // The server uses this exact captured token for the provider decision.
       // A later SDK/session mutation cannot substitute a newer session.
-      const rawRedirect = await decidePendingMazerOAuthAuthorization(
-        decision,
-        accessToken,
-        state.authGeneration,
-      );
+      let rawRedirect: string;
+      try {
+        rawRedirect = await decidePendingMazerOAuthAuthorization(
+          decision,
+          accessToken,
+          state.authGeneration,
+        );
+      } catch {
+        await backToMazer("unavailable");
+        return;
+      }
       const destination = decision === "approve"
         ? sanitizeMazerOAuthApprovalRedirect(rawRedirect)
         : sanitizeMazerOAuthDenialRedirect(rawRedirect);
       if (!destination) {
-        setState({ kind: "invalid" });
+        await clearPendingMazerOAuthAuthorization().catch(() => undefined);
+        setState({ kind: "unsafe" });
         return;
       }
       navigateToMazer(destination);
     } catch {
-      setState({ kind: "unavailable" });
+      await backToMazer("unavailable");
     } finally {
       setBusy(false);
     }
@@ -295,34 +331,24 @@ export function MazerOAuthAuthorization() {
     );
   }
   const mazer = accountExperienceContexts.mazer;
-  if (state.kind === "invalid" || state.kind === "unavailable") {
-    // One way out for every stopped request: start again from Mazer. A dead request says the link
-    // expired; a service failure says sign-in is unavailable (copy matrix), never "link expired".
-    const dock = <AuthDock href={accountContract.productOrigins.mazer}>{AUTH_COPY.button.open("Mazer")}</AuthDock>;
-    return state.kind === "invalid" ? (
+  if (state.kind === "unsafe") {
+    // The only portal fallback: the request or the provider named a destination that is not
+    // Mazer's exact registration, so nothing is followed. The dock is the constant Mazer origin.
+    return (
       <AuthStatus
         context={mazer}
-        dock={dock}
+        dock={<AuthDock href={accountContract.productOrigins.mazer}>{AUTH_COPY.button.open("Mazer")}</AuthDock>}
         lead={AUTH_COPY.lead.startAgainIn("Mazer")}
-        state="invalid"
+        state="unsafe"
         surface="oauth"
         title={AUTH_COPY.title.signInLinkExpired}
-      />
-    ) : (
-      <AuthStatus
-        context={mazer}
-        dock={dock}
-        notice={authNotice("signin.unavailable")}
-        state="unavailable"
-        surface="oauth"
-        title={AUTH_COPY.title.couldNotLoad}
       />
     );
   }
 
-  // Retained consent card (only reachable for a non-first-party request or the local-test
-  // `oauth_consent` flag). Its title and lead are outside the copy matrix on purpose: consent is
-  // owned by a later lane.
+  // Retained consent card, reachable only through the local-test `oauth_consent` flag: in production
+  // a request that passes the Mazer identity check is auto-approved and anything else is `unsafe`.
+  // Its title and lead are outside the copy matrix on purpose: consent is owned by a later lane.
   return (
     <section
       aria-labelledby="mazer-oauth-title"
