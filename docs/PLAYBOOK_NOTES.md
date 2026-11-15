@@ -1,5 +1,13 @@
 This file is a project-local inbox for repo-specific Playbook notes that may later be promoted upstream.
 
+## 2026-11-15 - Account portal: password-manager autofill and Sign out everywhere
+
+- Type: Account portal feature (client)
+- WHAT changed: The sign-in identifier gets `inputmode=email`; new passwords (sign-up, new password) carry `minlength` and Safari `passwordrules` from `PASSWORD_MINIMUM` through the new `AuthField` `newPasswordMinimum` prop; the new-password step renders a hidden read-only `autocomplete=username` input with the account email; the signed-in reset email is `autocomplete=username`. The account page gains a "Sign out everywhere" link: the first tap asks in the one notice box (`account.everywhereconfirm`), the action calls `adapter.signOut("everywhere")`, clears the owner hint and lands on `/login?notice=everywhere` (`signin.everywhere`); a failure shows `change.unavailable`. The test adapter adds `auth_test=signout-everywhere-fail`.
+- WHY it changed: Password managers on iOS, Android and 1Password could not tell which saved login a new password belonged to or what length to generate, and people had no explicit, confirmed way to end every session after losing a device.
+- Rule: Autofill attributes are pinned per screen in `tests/e2e/account-autofill.spec.ts`; a new account input updates that spec. A new username stays `autocomplete=off` so managers do not offer the old name.
+- Scope: Source and local regression only; no deployment, provider, credential or database effect. The dock "Sign out" stays global (FF-ACCOUNT-004 W-2).
+
 ## 2026-11-15 - Account page: change username and change email (design point 12)
 
 - Type: Account portal feature (client) + proposed SQL (not applied) + edge-function source

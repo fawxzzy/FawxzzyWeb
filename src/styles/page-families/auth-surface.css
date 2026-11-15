@@ -355,6 +355,21 @@
   cursor: pointer;
 }
 
+/* A link whose label swaps (Sign out everywhere / Cancel): both labels in one cell, the unused one
+   invisible, so the link keeps the width of the longer label and the row never reflows. */
+.auth-links__swap {
+  display: inline-grid;
+}
+
+.auth-links__swap > span {
+  grid-area: 1 / 1;
+  text-align: center;
+}
+
+.auth-links__swap > span + span {
+  visibility: hidden;
+}
+
 .auth-bar {
   display: inline-block;
   flex: none;

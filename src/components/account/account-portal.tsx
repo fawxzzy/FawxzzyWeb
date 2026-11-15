@@ -39,6 +39,7 @@ import {
   type PortalSession,
 } from "@/lib/auth/browser-adapter";
 import { FitnessHandoffError } from "@/lib/auth/fitness-handoff";
+import { PASSWORD_MINIMUM } from "@/lib/auth/password-policy";
 import { AUTH_COPY, authNotice, type AuthMessageId, type AuthNotice } from "@/lib/auth/copy-matrix";
 import {
   fieldsFor,
@@ -626,6 +627,7 @@ function LoginPanel({
                 describedBy={describedBy("identifier")}
                 disabled={working}
                 id="account-email"
+                inputMode="email"
                 invalid={invalid("identifier")}
                 key="identifier"
                 label={AUTH_COPY.field.identifier}
@@ -691,6 +693,7 @@ function LoginPanel({
               invalid={invalid("password")}
               label={AUTH_COPY.field.password}
               name="password"
+              newPasswordMinimum={PASSWORD_MINIMUM}
               onChange={() => edited("password")}
               secret
             />
@@ -811,6 +814,8 @@ function AccountPanel({
   const [busy, setBusy] = useState(false);
   // Change username / change email (design point 12): which row is being changed, if any.
   const [changing, setChanging] = useState<ChangeField | null>(null);
+  // Sign out everywhere: true while the notice box asks to confirm (step 1 of 2).
+  const [confirmingEverywhere, setConfirmingEverywhere] = useState(false);
   // `/account?notice=` from an opened email-change link (allowlist).
   const queryNotice = useQueryLoginNotice(hydrated, accountNoticeFromQuery);
   const [queryNoticeDismissed, setQueryNoticeDismissed] = useState(false);
@@ -841,6 +846,7 @@ function AccountPanel({
     signingOutRef.current = true;
     setBusy(true);
     setNotice(null);
+    setConfirmingEverywhere(false);
     try {
       await adapter.signOut();
       writeOwnerHint(false);
@@ -859,6 +865,50 @@ function AccountPanel({
       setBusy(false);
     }
   }
+
+  /**
+   * Sign out everywhere, step 2 (step 1 is the "Sign out everywhere" link, which only asks in the
+   * notice box). Global scope at the provider: every session of the account, on every device and in
+   * every app, loses its refresh token. Lands on this host's sign-in with the done line. A failure
+   * keeps the person here, signed in, with the unavailable line.
+   */
+  async function signOutEverywhere() {
+    if (!adapter || signingOutRef.current) return;
+    signingOutRef.current = true;
+    setBusy(true);
+    try {
+      await adapter.signOut("everywhere");
+      writeOwnerHint(false);
+      const destination = contextualPath(`/login?${LOGIN_NOTICE_PARAM}=everywhere`, context);
+      if (isLocalTestOrigin()) {
+        // Deterministic harness: record the destination, then land on it signed out in the same harness.
+        document.documentElement.dataset.signOutDestination = destination;
+        const landing = new URL(destination, window.location.origin);
+        landing.searchParams.set("auth_test", "success");
+        window.location.replace(`${landing.pathname}${landing.search}`);
+        return;
+      }
+      window.location.replace(destination);
+    } catch {
+      signingOutRef.current = false;
+      setConfirmingEverywhere(false);
+      setNotice(authNotice("change.unavailable"));
+      setBusy(false);
+    }
+  }
+
+  function askSignOutEverywhere() {
+    setQueryNoticeDismissed(true);
+    setNotice(null);
+    setConfirmingEverywhere(true);
+  }
+
+  // Step 1 moved focus to the confirm action; Cancel puts it back on the link it came from.
+  useEffect(() => {
+    if (confirmingEverywhere) {
+      document.querySelector<HTMLButtonElement>(".auth-notice__action")?.focus({ preventScroll: true });
+    }
+  }, [confirmingEverywhere]);
 
   const unavailable = Boolean(resolution && !adapter);
   if (!unavailable && !error && !session) {
@@ -880,12 +930,15 @@ function AccountPanel({
     ? authNotice("signin.unavailable")
     : error
       ? authNotice("account.loadfail")
-      : notice ?? (queryNotice && !queryNoticeDismissed ? authNotice(queryNotice, session?.email) : null);
+      : confirmingEverywhere && session
+        ? authNotice("account.everywhereconfirm")
+        : notice ?? (queryNotice && !queryNoticeDismissed ? authNotice(queryNotice, session?.email) : null);
   const currentUsername = session ? session.displayName ?? deriveIdentity(session.email ?? "") : "";
 
   function startChange(field: ChangeField) {
     setNotice(null);
     setQueryNoticeDismissed(true);
+    setConfirmingEverywhere(false);
     setChanging(field);
   }
 
@@ -954,11 +1007,30 @@ function AccountPanel({
         />
         <AuthNoticeSlot
           notice={shownNotice}
-          onAction={shownNotice?.id === "account.loadfail" ? () => window.location.reload() : undefined}
+          onAction={shownNotice?.id === "account.loadfail"
+            ? () => window.location.reload()
+            : shownNotice?.id === "account.everywhereconfirm"
+              ? signOutEverywhere
+              : undefined}
         />
       </div>
       <AuthLinks>
         <a href={contextualPath("/reset-password", context)}>{AUTH_COPY.link.resetPassword}</a>
+        {session && adapter ? (
+          <button
+            data-sign-out-everywhere={confirmingEverywhere ? "confirming" : "ready"}
+            disabled={busy}
+            key="everywhere"
+            onClick={confirmingEverywhere ? () => setConfirmingEverywhere(false) : askSignOutEverywhere}
+            type="button"
+          >
+            {/* Both labels share one cell, the other one hidden, so the row never reflows when they swap. */}
+            <span className="auth-links__swap">
+              <span>{confirmingEverywhere ? AUTH_COPY.link.cancel : AUTH_COPY.link.signOutEverywhere}</span>
+              <span aria-hidden="true">{confirmingEverywhere ? AUTH_COPY.link.signOutEverywhere : AUTH_COPY.link.cancel}</span>
+            </span>
+          </button>
+        ) : null}
       </AuthLinks>
       <AuthLegal context={context} />
       <AuthDock busy={busy} disabled={!session} onClick={signOut}>
@@ -1333,6 +1405,8 @@ function ResetPanel({
   const newPassword = recovery && !recoveryLinkDead;
   const recoveryReady = newPassword && recoveryState === "ready";
   const signedInEmail = useSignedInEmail(adapter, hydrated && !newPassword);
+  // The recovery session's own address, once the link is accepted (hidden username for autofill).
+  const recoveryEmail = useSignedInEmail(adapter, recoveryReady);
   const internalMazerReturn = useInternalMazerReturn(context);
 
   const linkNotice: AuthMessageId | null = linkNoticeDismissed || !recovery
@@ -1485,6 +1559,18 @@ function ResetPanel({
       <form className="auth-body" id="account-reset-form" noValidate onSubmit={submit}>
         {newPassword ? (
           <>
+            {recoveryEmail ? (
+              // Not shown: tells password managers which saved account the new password belongs to.
+              <input
+                autoComplete="username"
+                hidden
+                id="account-recovery-username"
+                name="username"
+                readOnly
+                type="email"
+                value={recoveryEmail}
+              />
+            ) : null}
             <AuthField
               autoComplete="new-password"
               describedBy={describedBy("password")}
@@ -1493,6 +1579,7 @@ function ResetPanel({
               invalid={invalid("password")}
               label={AUTH_COPY.field.newPassword}
               name="password"
+              newPasswordMinimum={PASSWORD_MINIMUM}
               onChange={() => edited("password")}
               secret
             />
@@ -1504,12 +1591,21 @@ function ResetPanel({
               invalid={invalid("confirmation")}
               label={AUTH_COPY.field.confirmPassword}
               name="confirmation"
+              newPasswordMinimum={PASSWORD_MINIMUM}
               onChange={() => edited("confirmation")}
               secret
             />
           </>
         ) : signedInEmail ? (
-          <AuthField id="account-reset-email" label={AUTH_COPY.field.email} locked name="email" type="email" value={signedInEmail} />
+          <AuthField
+            autoComplete="username"
+            id="account-reset-email"
+            label={AUTH_COPY.field.email}
+            locked
+            name="email"
+            type="email"
+            value={signedInEmail}
+          />
         ) : (
           <AuthField
             autoComplete="email"

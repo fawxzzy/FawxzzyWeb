@@ -61,6 +61,12 @@ type AuthFieldProps = {
   locked?: boolean;
   maxLength?: number;
   name: string;
+  /**
+   * A password being created (sign-up, new password): the policy minimum as `minlength` and Safari's
+   * `passwordrules`, so password managers generate one the portal accepts. The form is `noValidate`,
+   * so the browser never blocks on it; the portal's own checks still decide.
+   */
+  newPasswordMinimum?: number;
   onChange?: (value: string) => void;
   /** Password fields get a show/hide toggle. */
   secret?: boolean;
@@ -80,6 +86,7 @@ export function AuthField({
   locked,
   maxLength,
   name,
+  newPasswordMinimum,
   onChange,
   secret,
   type = "text",
@@ -87,6 +94,8 @@ export function AuthField({
 }: AuthFieldProps) {
   const [visible, setVisible] = useState(false);
   const inputType = secret ? (visible ? "text" : "password") : type;
+  // Not in React's attribute types; a lowercase attribute is passed to the DOM as written.
+  const passwordRules = newPasswordMinimum ? { passwordrules: `minlength: ${newPasswordMinimum};` } : {};
   return (
     <div
       className="auth-field"
@@ -105,12 +114,14 @@ export function AuthField({
         id={id}
         inputMode={inputMode}
         maxLength={maxLength}
+        minLength={newPasswordMinimum}
         name={name}
         onChange={onChange ? (event) => onChange(event.target.value) : undefined}
         readOnly={locked}
         spellCheck={false}
         type={inputType}
         {...(value === undefined ? {} : { value })}
+        {...passwordRules}
       />
       {locked && action ? (
         <button

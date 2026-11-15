@@ -95,6 +95,29 @@ redirects must be admitted individually in a future packet; do not add a broad p
   refresh failure (a 429, a gateway 4xx) before the logout call can be sent; that case is reported
   as an error and the person signs in again before retrying, because the provider session may still
   be alive.
+- Sign out everywhere (2026-11-15). The account page also has a "Sign out everywhere" link next to
+  "Reset password". The first tap only asks, inside the one notice box ("Sign out on every device and
+  app?" with a "Sign out everywhere" action; the link turns into "Cancel"); no browser dialog. The
+  action calls the same `scope: "global"` sign-out, clears the owner hint and lands on the portal
+  sign-in with "You are signed out on every device." (`/login?notice=everywhere`). A failure keeps
+  the person signed in and shows "Changes are unavailable right now. Try again later." The dock
+  "Sign out" is unchanged (still global), so today both reach the same sessions; the link differs in
+  the confirm step and the landing. Reach per app, from source (not verified live): Fitness checks
+  the user with the provider on each protected server render, so it notices on the next page load;
+  Mazer reads only its cached session and has no `getUser()` revalidation, so it looks signed in until
+  its access token expires and the refresh fails (provider default about an hour), and its database
+  calls with the old token keep working until then. The host `/signout` endpoint stays `scope:
+  "local"`. The remembered sign-in name stays on the device by design ("Not you?" clears it).
+- Password-manager autofill (2026-11-15). Every account input sets `autocapitalize="none"`,
+  `autocorrect="off"` and `spellcheck="false"`. Sign-in: `username` (email keyboard) and
+  `current-password`, also when the name is remembered and locked. Sign-up: `username`, `email`,
+  `new-password`. New password: two `new-password` fields plus a hidden, read-only `username` input
+  holding the account email so managers update the right saved login. New passwords carry
+  `minlength` and Safari `passwordrules` from the password policy (the forms are `noValidate`, so the
+  portal's own checks still decide). Change steps: locked current name as `username`,
+  `current-password`, then `email` for a new email and `off` for a new username (so the old saved
+  name is not offered). No form asks for a typed code, so nothing uses `one-time-code`. Pinned by
+  `tests/e2e/account-autofill.spec.ts`.
 - Stale cached sessions. The portal's browser storage can hold a session another app has already
   revoked (Fitness "sign out" is global). The account page therefore asks the provider whether the
   session is still alive right after loading and again when the person returns to the page (tab
