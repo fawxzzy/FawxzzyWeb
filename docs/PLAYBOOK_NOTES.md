@@ -1,5 +1,13 @@
 This file is a project-local inbox for repo-specific Playbook notes that may later be promoted upstream.
 
+## 2026-11-15 - Account page: change username and change email (design point 12)
+
+- Type: Account portal feature (client) + proposed SQL (not applied) + edge-function source
+- WHAT changed: The signed-in account rows carry a pencil button (`AuthField` `action`). Change asks for the password first (a throwaway in-memory client signs in and must return the same user id), then the new value. Username calls `account_api.account_change_username` and applies at once; email calls `updateUser({ email }, { emailRedirectTo })` and the link lands on `/auth/confirm` with `type=email_change`, which returns to `/account?notice=emaildone|emailhalf|emaillink`. Rules and failure mapping live in `src/lib/auth/account-change.ts`; new lines are copy-matrix rows. `auth-send-email/plan.mjs` sends `email_changed_notification` to the hook's `old_email`. The SQL (`supabase/proposed/20261115190000_account_change_username_v1.sql`, rollback, pglite scratch test) is a proposal only.
+- WHY it changed: Users had no way to fix a username or move to a new email without support; the username path must keep the live claim guard, sign-up messages and a rate limit, which needs a definer function, not a raw metadata update.
+- Rule: Every `account_api` function in a migration or proposal must `revoke ... from public` (static test in `tests/account-change.test.mjs`), because granting USAGE on `account_api` to `authenticated` would otherwise expose PUBLIC-executable functions, and per-schema default privileges cannot remove PUBLIC's default.
+- Scope: Source and local regression only. Until the owner applies the SQL, Change username shows "Changes are unavailable right now."; the edge-function change needs an owner deploy; no database, provider setting, credential or deployment effect from this PR.
+
 ## 2026-11-15 - Fitness handoff allowlist for Fitness PR258-266
 
 - Type: Release gate data
