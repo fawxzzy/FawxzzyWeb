@@ -254,8 +254,11 @@ test("parity: base canvas, text, muted and font tokens match the portal CSS the 
   assert.ok(block[1].includes(`, ${authThemeBase.canvasHex};`), "canvas color is the gradient base");
   assert.ok(block[1].includes(`font-family: ${authThemeBase.fontFamily};`), "font family");
   assert.match(tokens, new RegExp(`--muted:\\s*${authThemeBase.mutedRgb};`));
-  // The kicker is uppercased and tracked by the same rule on the screen.
-  assert.match(utility, /\.account-auth-intro > p \{[^}]*color: rgb\(var\(--auth-color\)\);[^}]*text-transform: uppercase;/s);
+  // The kicker is uppercased and tracked by the same rule on the screen (Auth Surface v2).
+  const surface = await readFile(new URL("../src/styles/page-families/auth-surface.css", import.meta.url), "utf8");
+  assert.match(surface, /\.auth-kicker \{[^}]*color: rgb\(var\(--ac\)\);[^}]*text-transform: uppercase;/s);
+  // The v1 auth card rules are gone; nothing may reintroduce them.
+  assert.doesNotMatch(utility, /\.account-auth-/);
 });
 
 // --------------------------------------------------------------- all actions

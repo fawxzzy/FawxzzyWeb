@@ -122,20 +122,54 @@ test("the emailed redirect lands on the account host and only carries an allowed
 test("anti-enumeration: a signed-out request answers with one fixed sentence, failures name only the sending", () => {
   // Signed out, the success line is the same whether or not an account uses the address.
   assert.equal(matrix.authNotice("reset.sentany").text, "If that account exists, we sent a reset link to its email.");
-  // The provider does not fail for an unknown address; every failure line is about sending, not the account.
+  // The provider rate-limits per address, so a 429 only ever happens for an address with an account.
+  // Signed out, it must read exactly like a sent link (changed deliberately 2026-11-15: it used to
+  // show "Too many reset requests", which told a stranger the account exists).
+  const rateLimits = [{ status: 429 }, { code: "over_email_send_rate_limit" }];
+  for (const error of rateLimits) {
+    assert.equal(outcomes.resetRequestFailure(error, false), "reset.sentany", JSON.stringify(error));
+    assert.equal(outcomes.resetRequestFailure(error, true), "reset.rate", JSON.stringify(error));
+  }
+  // Every other failure line is about sending, not the account.
   const failures = [
-    { status: 429 },
-    { code: "over_email_send_rate_limit" },
-    { status: 500 },
-    { code: "unexpected_failure" },
-    {},
-  ].map((error) => outcomes.resetRequestFailure(error));
+    ...rateLimits.map((error) => outcomes.resetRequestFailure(error, true)),
+    ...[{ status: 500 }, { code: "unexpected_failure" }, {}].flatMap((error) => [
+      outcomes.resetRequestFailure(error, false),
+      outcomes.resetRequestFailure(error, true),
+    ]),
+  ];
   assert.deepEqual([...new Set(failures)].sort(), ["reset.rate", "reset.sendfail"]);
   for (const id of failures) {
     assert.ok(!/exist|found|unknown|registered|no account/i.test(matrix.authNotice(id).text), id);
   }
   // Signed in, the masked address shown is the one already on the screen.
   assert.equal(matrix.authNotice("reset.sent", "zac@icloud.com").text, "Reset link sent to z•••@icloud.com. It expires in 1 hour.");
+});
+
+test("confirm/callback destinations pass the allowlist again right before the browser moves", () => {
+  const fitness = account.accountContract.productOrigins.fitness;
+  // Allowed: sanitized return targets and the exact Fitness landing a completed handoff returns.
+  for (const allowed of ["/account", "/oauth/authorize", "/projects", `${fitness}/`, `${fitness}/entry`, `${fitness}/today`]) {
+    assert.equal(callback.sanitizeLinkDestination(allowed), allowed, allowed);
+  }
+  assert.equal(callback.sanitizeLinkDestination("https://mazer.fawxzzy.com/"), "https://mazer.fawxzzy.com/");
+  // Anything else falls back to the account page.
+  for (const hostile of [
+    "https://evil.example/",
+    "//evil.example/",
+    "/\\evil.example",
+    "javascript:alert(1)",
+    `${fitness}/entry?next=https://evil.example/`,
+    `${fitness}/entry#token`,
+    `${fitness.replace("https://", "https://user:pass@")}/entry`,
+    `${fitness.replace("https://", "http://")}/entry`,
+    "/login?notice=callback",
+    "",
+    null,
+    undefined,
+  ]) {
+    assert.equal(callback.sanitizeLinkDestination(hostile), "/account", String(hostile));
+  }
 });
 
 test("request form guidance names what is needed and never reads like an account lookup", () => {

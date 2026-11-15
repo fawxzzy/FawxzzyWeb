@@ -23,6 +23,7 @@ import {
   parseConfirmPayload,
   parseRecoveryPayload,
   sanitizeAuthUrl,
+  sanitizeLinkDestination,
   sanitizeRecoveryUrl,
 } from "@/lib/auth/callback-contract";
 import {
@@ -565,6 +566,11 @@ function LoginPanel({
       setBusy(false);
     }
   }
+
+  // "Not you?" swaps the locked field for an empty one: put the cursor there so typing starts at once.
+  useEffect(() => {
+    if (forgotten) focusField(LOGIN_FIELD_IDS.identifier);
+  }, [forgotten]);
 
   const working = busy || leaving;
   useEffect(() => {
@@ -1430,7 +1436,13 @@ function ResetPanel({
       else form.show("reset.sentany");
       cooldown.start(RESEND_SECONDS);
     } catch (error) {
-      form.show(resetRequestFailure(error));
+      const id = resetRequestFailure(error, Boolean(signedInEmail));
+      form.show(id);
+      if (id === "reset.sentany") {
+        // Indistinguishable from a sent link, including the resend countdown.
+        setSentTo(target);
+        cooldown.start(RESEND_SECONDS);
+      }
     } finally {
       captchaRef.current?.reset();
       setBusy(false);
@@ -1558,7 +1570,7 @@ function LinkHandler({
   useEffect(() => {
     if (!hydrated) return;
     // On the local test origin the outcome is recorded, and only same-origin pages are opened.
-    const go = (destination: string, outcome: string) => {
+    const leave = (destination: string, outcome: string) => {
       if (isLocalTestOrigin()) {
         document.documentElement.dataset.linkOutcome = outcome;
         document.documentElement.dataset.linkDestination = destination;
@@ -1566,8 +1578,12 @@ function LinkHandler({
       }
       window.location.replace(destination);
     };
+    // Every link-derived destination passes the return-target allowlist once more right before
+    // the browser moves (defence in depth; the payload parsers already sanitized `returnTo`).
+    const go = (destination: string, outcome: string) => leave(sanitizeLinkDestination(destination), outcome);
+    // The sign-in screen with an allowlisted notice key: built from constants, never from the link.
     const toLogin = (key: "callback" | "confirmed" | "unavailable", outcome: string) =>
-      go(contextualPath(`/login?${LOGIN_NOTICE_PARAM}=${key}`, context), outcome);
+      leave(contextualPath(`/login?${LOGIN_NOTICE_PARAM}=${key}`, context), outcome);
     const cancelAttempt = scheduleDeferredAttempt(processed.current, () => {
       const url = new URL(window.location.href);
 
@@ -1639,7 +1655,7 @@ function LinkHandler({
       }
       const receipt = callbackReceiptKey(payload.code);
       if (window.sessionStorage.getItem(receipt) === "complete") {
-        go(sanitizeReturnTarget(payload.returnTo), "complete");
+        go(payload.returnTo, "complete");
         return;
       }
       const storedState = window.sessionStorage.getItem(accountContract.callbackStateKey);

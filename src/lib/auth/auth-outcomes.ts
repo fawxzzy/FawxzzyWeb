@@ -121,10 +121,18 @@ export function signUpFailure(error: unknown): AuthMessageId {
   return "page.crash";
 }
 
-export function resetRequestFailure(error: unknown): AuthMessageId {
+/**
+ * Reset request failures. Signed out, a provider rate limit answers with the same line as a sent
+ * link: the provider throttles per address, so "too many requests" would only ever appear for an
+ * address that has an account (an existence oracle). Signed in, the address is already on screen,
+ * so the real reason is shown.
+ */
+export function resetRequestFailure(error: unknown, signedIn: boolean): AuthMessageId {
   if (isOfflineError(error)) return "signin.offline";
   if (isCaptchaError(error)) return "captcha.fail";
-  if (status(error) === 429 || code(error) === "over_email_send_rate_limit") return "reset.rate";
+  if (status(error) === 429 || code(error) === "over_email_send_rate_limit") {
+    return signedIn ? "reset.rate" : "reset.sentany";
+  }
   return "reset.sendfail";
 }
 

@@ -1,0 +1,9 @@
+## 2026-11-15 - Auth Surface v2 follow-ups: defence in depth, wording, dead CSS, smoke exit code
+
+- Type: Rule + Failure Mode
+- WHAT changed: confirm/callback destinations pass the return allowlist again right before `window.location.replace` (`sanitizeLinkDestination` in `src/lib/auth/callback-contract.ts`; the exact Fitness landing URL is the only extra shape); "Not you?" focuses the cleared identifier field; the Mazer OAuth service-failure screen says "Could not load" with the `signin.unavailable` notice instead of reusing "Sign-in link expired"; the 404 shows the brand label under the icon; a provider 429 on a signed-out reset request shows the same `reset.sentany` line as a successful send; the dead v1 `.account-auth-*` and generic form-feedback rules left `utility.css` / `account-forms.css`; `scripts/smoke-lifeline.mjs` now exits 1 when it fails on Windows.
+- WHY it changed: review follow-ups from Auth Surface v2 PR-A (#177).
+- Rule: a signed-out auth answer must read the same for a known and an unknown address. The provider throttles per address, so "too many requests" is an existence oracle when signed out; only the signed-in reset (own address) may say `reset.rate`.
+- Failure Mode: on Windows `child.kill()` ends the child at once, so it reports `exitCode === null` with a `signalCode`. A stop routine that tested `exitCode` alone waited for a second "exit" event that never fired; the event loop drained and Node exited 0, so a failed smoke read as a pass. Check `exitCode !== null || signalCode !== null`, bound every wait, and settle the exit code explicitly.
+- Evidence: node tests (`test:password-reset`, `test:auth-email`, `test:account-copy`, `test:account-signout`, `test:style-architecture`), e2e on chromium and mobile-webkit, `npm run verify`; smoke run with no build exits 1 ("Timed out waiting for http://127.0.0.1:3210/") where it exited 0 before.
+- Status: in review.

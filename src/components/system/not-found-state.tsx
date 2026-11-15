@@ -9,6 +9,7 @@ export function NotFoundState() {
     <AuthStatus
       context={accountExperienceContexts.website}
       dock={<AuthDock href={new URL(accountContract.accountPath, accountContract.canonicalOrigin).href}>{STATUS_COPY.goToAccount}</AuthDock>}
+      kickerBelowIcon
       lead={STATUS_COPY.pageNotFoundLead}
       state="not-found"
       surface="not-found"
