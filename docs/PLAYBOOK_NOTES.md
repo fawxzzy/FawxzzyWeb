@@ -1,5 +1,13 @@
 This file is a project-local inbox for repo-specific Playbook notes that may later be promoted upstream.
 
+## 2026-11-15 - Fitness handoff allowlist for Fitness PR256-257
+
+- Type: Release gate data
+- WHAT changed: `FITNESS_HANDOFF_ACTIVATION` in `src/lib/auth/fitness-handoff.ts` now lists Fitness main `3db7fe30cb397b83042950f3ef642c930a8e0b8b` (PR256-257) as the newest source, keeps live `c48235cb31b1289faafa5b734848bf4d821ff3d1` as the rollback and drops the oldest `06db3f234ee0b90c00b32507351fe1d902661bdf`; the handoff doc and e2e spec match.
+- WHY it changed: The portal checks `readiness.sourceCommit` before retrieving credentials, so the next Fitness release is blocked unless the portal already accepts its exact commit.
+- Rule: Add the new final Fitness main sha before the Fitness production cutover, keep the live sha as rollback, drop the oldest of the seven.
+- Scope: Source and local regression only; no deployment, alias, provider, credential or database effect.
+
 ## 2026-11-14 - Keep the Web board cards current with merged website work
 
 - Type: Board source projection + Governance
