@@ -11,8 +11,6 @@ export const FITNESS_HANDOFF_MASTER_PROJECT_REF = "bxtcuhkotumitoqtrcej";
 
 export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
   fitnessConsumerMerges: [
-    // Reviewed Fitness main after PR206-209 (session-start atomicity, board registry, sign-in fixes, CI pin).
-    "2a47cd4b6b1bfb70d6d2b5b913e9f917acc4716e",
     // Reviewed Fitness main after PR206-210 (production before the PR211-232 release).
     "76f04dfcd66c6ebbdbbb6a65a8d516accdd6b2e3",
     // Reviewed Fitness main after PR211-232 (engine, card system, account/sign-out, dev-route guard, Next 14.2.35; live until the PR233-235 release).
@@ -23,8 +21,10 @@ export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
     "d6a625c4b78786b56564b5d29497050fa96183ae",
     // Reviewed Fitness main after PR241 (app loader rebuild; live; the rollback after the PR256-257 release).
     "c48235cb31b1289faafa5b734848bf4d821ff3d1",
-    // Reviewed Fitness main after PR256-257 (current source; c48235cb above is the live rollback).
+    // Reviewed Fitness main after PR256-257 (live until the PR258-266 release; the rollback after it).
     "3db7fe30cb397b83042950f3ef642c930a8e0b8b",
+    // Reviewed Fitness main after PR258-266 (sign-out session revocation, Auth Surface v2 PR-A, copy and floors; current source).
+    "d335131a8602206c5c7702ac7fd3399c26c43f35",
   ],
   state: "active",
 } as const satisfies FitnessHandoffActivation);
