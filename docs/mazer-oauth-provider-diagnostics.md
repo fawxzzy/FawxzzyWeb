@@ -1,7 +1,8 @@
 # Mazer OAuth provider diagnostics
 
 The pending-authorization gateway returns an empty `502` when its provider
-dependency fails. The browser retains its generic unavailable message. Do not
+dependency fails. The browser sends the player back to Mazer's sign-in with the
+generic `notice=unavailable` (never `notice=expired`). Do not
 diagnose this as an expired request: a missing or expired local carrier returns
 `404`, and a missing bearer or mismatched auth generation returns `401`.
 
