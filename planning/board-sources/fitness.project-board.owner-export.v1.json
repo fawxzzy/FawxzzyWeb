@@ -1,20 +1,20 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_fitness_owner_registry_6d40a3c2d02a",
+  "export_id": "pbe_fitness_owner_registry_b0efa6b7266f",
   "project_id": "fitness",
   "board_id": "fitness:project-feedback:fitness-active",
   "owner": "fitness",
   "adapter_id": "fitness-owner-registry-v1",
-  "source_revision": "sha256:6d40a3c2d02a93aa92eed6746b0cfec7f9690095d290ba679a61453744a59531",
-  "generated_at": "2026-11-14T12:00:00.000Z",
+  "source_revision": "sha256:b0efa6b7266ffe37367f8fe50f4b8f29f2f95c792ffb1960ca99836650eb39ae",
+  "generated_at": "2026-11-15T03:46:40.000Z",
   "sources": [
     {
       "source_id": "fitness-owner-work-registry",
       "kind": "json",
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json",
-      "revision": "sha256:55e96ab17722e2f5be63ce79584cae21bd871f219743ed137427d9f55eed93e0",
-      "observed_at": "2026-11-14T12:00:00.000Z"
+      "revision": "sha256:1fe19bc33924ea94ab3820842244bcc8e5b697678a59b79604cb1ba133577331",
+      "observed_at": "2026-11-15T03:46:40.000Z"
     },
     {
       "source_id": "fitness-feedback-monetization-roadmap",
@@ -22,7 +22,7 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs",
       "revision": "sha256:78aa8b8300f0c21258144da0a5bdd6fdc4c9ff1337e265b2552094ebf3505ba6",
-      "observed_at": "2026-11-14T12:00:00.000Z"
+      "observed_at": "2026-11-15T03:46:40.000Z"
     },
     {
       "source_id": "fitness-session-timer-roadmap",
@@ -30,15 +30,15 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs",
       "revision": "sha256:58b1235add45e05d51712f433e2e67d4536b878f4edfad6ab6908d9402c55bcc",
-      "observed_at": "2026-11-14T12:00:00.000Z"
+      "observed_at": "2026-11-15T03:46:40.000Z"
     },
     {
       "source_id": "fitness-owner-export-adapter",
       "kind": "generated",
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs",
-      "revision": "sha256:04871b894a16467e00fcac29baab13a53fd91cddc3460d5d6e12bd68d1b65e9e",
-      "observed_at": "2026-11-14T12:00:00.000Z"
+      "revision": "sha256:e8485f9091fb27f574b2999d1ca4ad9acf94c3f28b0d5f462836bf43ba3ec562",
+      "observed_at": "2026-11-15T03:46:40.000Z"
     }
   ],
   "cards": [
@@ -262,7 +262,7 @@
     {
       "idempotency_key": "pbk_fitness_ff-analytics-002_v1",
       "record_kind": "project-work",
-      "record_status": "candidate",
+      "record_status": "active",
       "record": {
         "contract_version": "atlas.card-record.v2",
         "card_id": "FF-ANALYTICS-002",
@@ -271,7 +271,7 @@
         "title": "Plan Premium Cycle Analytics Experience",
         "description": "Plan premium cycle analytics around useful, trustworthy training insight before introducing any gated History UI. Do not render locked placeholder metrics or preview-only boxes without real analytics behind them.",
         "card_type": "feature",
-        "lifecycle": "planning",
+        "lifecycle": "review",
         "priority": "medium",
         "owner": "fitness",
         "dependencies": [
@@ -279,10 +279,10 @@
           "FF-MON-003"
         ],
         "board_version": 1,
-        "updated_at": "2026-07-15T00:49:00.000Z",
+        "updated_at": "2026-11-15T03:15:46.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-ANALYTICS-002",
         "extensions": {
-          "owner_status": "planning",
+          "owner_status": "review",
           "public_safe": true
         }
       },
@@ -290,7 +290,7 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-ANALYTICS-002",
         "source_status": "current",
-        "source_updated_at": "2026-07-15T00:49:00.000Z"
+        "source_updated_at": "2026-11-15T03:15:46.000Z"
       },
       "content": {
         "summary": "Plan premium cycle analytics around useful, trustworthy training insight before introducing any gated History UI. Do not render locked placeholder metrics or preview-only boxes without real analytics behind them.",
@@ -544,26 +544,26 @@
     {
       "idempotency_key": "pbk_fitness_ff-design-002_v1",
       "record_kind": "project-work",
-      "record_status": "candidate",
+      "record_status": "active",
       "record": {
         "contract_version": "atlas.card-record.v2",
         "card_id": "FF-DESIGN-002",
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Finish the remaining screens on the shared card style",
-        "description": "Move the last screens onto the shared card style once the main screens are settled: the routine editor and routine creation, the exercise picker, the progression editor and the stretch panel. Also raise the remaining 9 to 10px text and the controls under 32px on those screens.",
+        "description": "Move the last screens onto the shared card style once the main screens are settled: the routine editor and routine creation, the exercise picker, the progression editor and the stretch panel. Also raise the remaining 9 to 10px text and the controls under 32px on those screens. Board update 2026-11-15: Partial, merged not deployed: routine chooser, editor and add-day screens on the shared card style; 'day' wording across that flow incl. server messages. Exercise picker, progression editor and stretch panel not done; one 'workout plan' string left in the day rest dock. Headless only, no phone check. PR #246 merged (4989c729). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
         "card_type": "feature",
-        "lifecycle": "planning",
+        "lifecycle": "review",
         "priority": "low",
         "owner": "fitness",
         "dependencies": [
           "FF-DESIGN-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-13T21:38:00.000Z",
+        "updated_at": "2026-11-15T02:30:18.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-DESIGN-002",
         "extensions": {
-          "owner_status": "planning",
+          "owner_status": "review",
           "public_safe": true,
           "visibility": "public"
         }
@@ -572,11 +572,11 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-DESIGN-002",
         "source_status": "current",
-        "source_updated_at": "2026-11-13T21:38:00.000Z"
+        "source_updated_at": "2026-11-15T02:30:18.000Z"
       },
       "content": {
-        "summary": "Move the last screens onto the shared card style once the main screens are settled: the routine editor and routine creation, the exercise picker, the progression editor and the stretch panel. Also raise the remaining 9 to 10px text and the controls under 32px on those screens.",
-        "objective": "Move the last screens onto the shared card style once the main screens are settled: the routine editor and routine creation, the exercise picker, the progression editor and the stretch panel. Also raise the remaining 9 to 10px text and the controls under 32px on those screens.",
+        "summary": "Move the last screens onto the shared card style once the main screens are settled: the routine editor and routine creation, the exercise picker, the progression editor and the stretch panel. Also raise the remaining 9 to 10px text and the controls under 32px on those screens. Board update 2026-11-15: Partial, merged not deployed: routine chooser, editor and add-day screens on the shared card style; 'day' wording across that flow incl. server messages. Exercise picker, progression editor and stretch panel not done; one 'workout plan' string left in the day rest dock. Headless only, no phone check. PR #246 merged (4989c729). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
+        "objective": "Move the last screens onto the shared card style once the main screens are settled: the routine editor and routine creation, the exercise picker, the progression editor and the stretch panel. Also raise the remaining 9 to 10px text and the controls under 32px on those screens. Board update 2026-11-15: Partial, merged not deployed: routine chooser, editor and add-day screens on the shared card style; 'day' wording across that flow incl. server messages. Exercise picker, progression editor and stretch panel not done; one 'workout plan' string left in the day rest dock. Headless only, no phone check. PR #246 merged (4989c729). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
         "acceptance_criteria": [
           "The routine editor, routine creation, exercise picker, progression editor and stretch panel use the shared cards.",
           "No text on these screens is below the app minimum size, and no control is under 32px.",
@@ -605,17 +605,17 @@
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Smoother loading screen shared with Mazer",
-        "description": "The app now opens on one shared loading screen that waits 150 ms before showing, stays up for at least 350 ms and fades in and out, with the same timing as Mazer. Live. Checked only in headless Chromium with phone emulation, including a slow network (solid cover at the first frame, hidden by about 840 ms, taps work). Not checked on a real phone: iOS home-screen launch and Reduce Motion.",
+        "description": "The app now opens on one shared loading screen that waits 150 ms before showing, stays up for at least 350 ms and fades in and out, with the same timing as Mazer. Live. Checked only in headless Chromium with phone emulation, including a slow network (solid cover at the first frame, hidden by about 840 ms, taps work). Not checked on a real phone: iOS home-screen launch and Reduce Motion. Board update 2026-11-15: Shared loading screen is live (150 ms delay, 350 ms hold, fades, same as Mazer); headless phone emulation only, iOS home-screen launch and Reduce Motion not checked on a real phone. PR #241 merged (c48235cb). Deployed: production build c48235cb. Checked only in headless Chromium, not on a real phone.",
         "card_type": "feature",
-        "lifecycle": "review",
+        "lifecycle": "completed",
         "priority": "low",
         "owner": "fitness",
         "dependencies": [],
         "board_version": 1,
-        "updated_at": "2026-11-14T12:00:00.000Z",
+        "updated_at": "2026-11-15T01:51:05.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-DESIGN-003",
         "extensions": {
-          "owner_status": "review",
+          "owner_status": "fixed",
           "public_safe": true,
           "visibility": "public"
         }
@@ -624,11 +624,11 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-DESIGN-003",
         "source_status": "current",
-        "source_updated_at": "2026-11-14T12:00:00.000Z"
+        "source_updated_at": "2026-11-15T01:51:05.000Z"
       },
       "content": {
-        "summary": "The app now opens on one shared loading screen that waits 150 ms before showing, stays up for at least 350 ms and fades in and out, with the same timing as Mazer. Live. Checked only in headless Chromium with phone emulation, including a slow network (solid cover at the first frame, hidden by about 840 ms, taps work). Not checked on a real phone: iOS home-screen launch and Reduce Motion.",
-        "objective": "The app now opens on one shared loading screen that waits 150 ms before showing, stays up for at least 350 ms and fades in and out, with the same timing as Mazer. Live. Checked only in headless Chromium with phone emulation, including a slow network (solid cover at the first frame, hidden by about 840 ms, taps work). Not checked on a real phone: iOS home-screen launch and Reduce Motion.",
+        "summary": "The app now opens on one shared loading screen that waits 150 ms before showing, stays up for at least 350 ms and fades in and out, with the same timing as Mazer. Live. Checked only in headless Chromium with phone emulation, including a slow network (solid cover at the first frame, hidden by about 840 ms, taps work). Not checked on a real phone: iOS home-screen launch and Reduce Motion. Board update 2026-11-15: Shared loading screen is live (150 ms delay, 350 ms hold, fades, same as Mazer); headless phone emulation only, iOS home-screen launch and Reduce Motion not checked on a real phone. PR #241 merged (c48235cb). Deployed: production build c48235cb. Checked only in headless Chromium, not on a real phone.",
+        "objective": "The app now opens on one shared loading screen that waits 150 ms before showing, stays up for at least 350 ms and fades in and out, with the same timing as Mazer. Live. Checked only in headless Chromium with phone emulation, including a slow network (solid cover at the first frame, hidden by about 840 ms, taps work). Not checked on a real phone: iOS home-screen launch and Reduce Motion. Board update 2026-11-15: Shared loading screen is live (150 ms delay, 350 ms hold, fades, same as Mazer); headless phone emulation only, iOS home-screen launch and Reduce Motion not checked on a real phone. PR #241 merged (c48235cb). Deployed: production build c48235cb. Checked only in headless Chromium, not on a real phone.",
         "acceptance_criteria": [
           "Fast loads open without a flash of the loading screen.",
           "The loading screen never sticks and taps work once it is gone.",
@@ -651,26 +651,26 @@
     {
       "idempotency_key": "pbk_fitness_ff-design-004_v1",
       "record_kind": "project-work",
-      "record_status": "candidate",
+      "record_status": "active",
       "record": {
         "contract_version": "atlas.card-record.v2",
         "card_id": "FF-DESIGN-004",
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Small leftovers after the card redesign",
-        "description": "Small items found after the card redesign: the Today offline info control has the wrong id, the History page has no top-level heading, and Finish shows minutes as 75 min instead of 1h 15m. Also still to do: 44px logger steppers and heatmap labels of at least 11px.",
+        "description": "Small items found after the card redesign: the Today offline info control has the wrong id, the History page has no top-level heading, and Finish shows minutes as 75 min instead of 1h 15m. Also still to do: 44px logger steppers and heatmap labels of at least 11px. Board update 2026-11-15: Leftovers merged, not deployed: History h1, Today offline info id fix, 44px logger steppers and History filter/search, 11px heatmap labels, Settings Account card is a real link, 3 unused components removed. SurfaceMetricGrid scroll not audited; headless only, no phone check. PR #245 merged (650254e8). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Toast bridge allow-lists codes on login and reset (crafted URL text no longer shown); Today info id and finish duration format already fixed in #245/#249; merged, not deployed; headless-only, not device-checked PR #251 merged (5de4243b). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
         "card_type": "feature",
-        "lifecycle": "planning",
+        "lifecycle": "review",
         "priority": "low",
         "owner": "fitness",
         "dependencies": [
           "FF-DESIGN-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-14T12:00:00.000Z",
+        "updated_at": "2026-11-15T03:46:40.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-DESIGN-004",
         "extensions": {
-          "owner_status": "planning",
+          "owner_status": "review",
           "public_safe": true,
           "visibility": "public"
         }
@@ -679,11 +679,11 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-DESIGN-004",
         "source_status": "current",
-        "source_updated_at": "2026-11-14T12:00:00.000Z"
+        "source_updated_at": "2026-11-15T03:46:40.000Z"
       },
       "content": {
-        "summary": "Small items found after the card redesign: the Today offline info control has the wrong id, the History page has no top-level heading, and Finish shows minutes as 75 min instead of 1h 15m. Also still to do: 44px logger steppers and heatmap labels of at least 11px.",
-        "objective": "Small items found after the card redesign: the Today offline info control has the wrong id, the History page has no top-level heading, and Finish shows minutes as 75 min instead of 1h 15m. Also still to do: 44px logger steppers and heatmap labels of at least 11px.",
+        "summary": "Small items found after the card redesign: the Today offline info control has the wrong id, the History page has no top-level heading, and Finish shows minutes as 75 min instead of 1h 15m. Also still to do: 44px logger steppers and heatmap labels of at least 11px. Board update 2026-11-15: Leftovers merged, not deployed: History h1, Today offline info id fix, 44px logger steppers and History filter/search, 11px heatmap labels, Settings Account card is a real link, 3 unused components removed. SurfaceMetricGrid scroll not audited; headless only, no phone check. PR #245 merged (650254e8). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Toast bridge allow-lists codes on login and reset (crafted URL text no longer shown); Today info id and finish duration format already fixed in #245/#249; merged, not deployed; headless-only, not device-checked PR #251 merged (5de4243b). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
+        "objective": "Small items found after the card redesign: the Today offline info control has the wrong id, the History page has no top-level heading, and Finish shows minutes as 75 min instead of 1h 15m. Also still to do: 44px logger steppers and heatmap labels of at least 11px. Board update 2026-11-15: Leftovers merged, not deployed: History h1, Today offline info id fix, 44px logger steppers and History filter/search, 11px heatmap labels, Settings Account card is a real link, 3 unused components removed. SurfaceMetricGrid scroll not audited; headless only, no phone check. PR #245 merged (650254e8). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Toast bridge allow-lists codes on login and reset (crafted URL text no longer shown); Today info id and finish duration format already fixed in #245/#249; merged, not deployed; headless-only, not device-checked PR #251 merged (5de4243b). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
         "acceptance_criteria": [
           "The Today offline info control has a correct, unique id.",
           "The History page has one top-level heading.",
@@ -723,10 +723,10 @@
           "FF-CORE-002"
         ],
         "board_version": 1,
-        "updated_at": "2026-07-13T04:31:19.434Z",
+        "updated_at": "2026-11-15T02:10:19.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-ENGINE-001",
         "extensions": {
-          "owner_status": "fawxzzy_review",
+          "owner_status": "review",
           "public_safe": true
         }
       },
@@ -734,7 +734,7 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-ENGINE-001",
         "source_status": "current",
-        "source_updated_at": "2026-07-13T04:31:19.434Z"
+        "source_updated_at": "2026-11-15T02:10:19.000Z"
       },
       "content": {
         "summary": "Create a simple guided program generator so users can get a routine without designing one manually.",
@@ -1060,7 +1060,7 @@
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Move to a supported framework version",
-        "description": "The web framework the app is built on (Next 14) is past end of support. The latest patch release (14.2.35) is live, but remaining fixes only ship in newer major versions, so a framework upgrade to Next 15.5 or 16 together with React 19 is planned.",
+        "description": "The web framework the app is built on (Next 14) is past end of support. The latest patch release (14.2.35) is live, but remaining fixes only ship in newer major versions, so a framework upgrade to Next 15.5 or 16 together with React 19 is planned. Board update 2026-11-15: Migration-readiness audit note added (docs only); Excel export library swap skipped pending owner decision; Next/React migration not started PR #250 merged (676be263). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
         "card_type": "feature",
         "lifecycle": "planning",
         "priority": "medium",
@@ -1069,7 +1069,7 @@
           "FF-QA-004"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-13T17:40:00.000Z",
+        "updated_at": "2026-11-15T03:12:33.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-PLATFORM-001",
         "extensions": {
           "owner_status": "planning",
@@ -1081,11 +1081,11 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-PLATFORM-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-13T17:40:00.000Z"
+        "source_updated_at": "2026-11-15T03:12:33.000Z"
       },
       "content": {
-        "summary": "The web framework the app is built on (Next 14) is past end of support. The latest patch release (14.2.35) is live, but remaining fixes only ship in newer major versions, so a framework upgrade to Next 15.5 or 16 together with React 19 is planned.",
-        "objective": "The web framework the app is built on (Next 14) is past end of support. The latest patch release (14.2.35) is live, but remaining fixes only ship in newer major versions, so a framework upgrade to Next 15.5 or 16 together with React 19 is planned.",
+        "summary": "The web framework the app is built on (Next 14) is past end of support. The latest patch release (14.2.35) is live, but remaining fixes only ship in newer major versions, so a framework upgrade to Next 15.5 or 16 together with React 19 is planned. Board update 2026-11-15: Migration-readiness audit note added (docs only); Excel export library swap skipped pending owner decision; Next/React migration not started PR #250 merged (676be263). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
+        "objective": "The web framework the app is built on (Next 14) is past end of support. The latest patch release (14.2.35) is live, but remaining fixes only ship in newer major versions, so a framework upgrade to Next 15.5 or 16 together with React 19 is planned. Board update 2026-11-15: Migration-readiness audit note added (docs only); Excel export library swap skipped pending owner decision; Next/React migration not started PR #250 merged (676be263). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
         "acceptance_criteria": [
           "The app runs on a supported framework version.",
           "The framework upgrade is tested before release and rolled out without breaking sign-in or workouts.",
@@ -1267,24 +1267,24 @@
     {
       "idempotency_key": "pbk_fitness_ff-qa-004_v1",
       "record_kind": "project-work",
-      "record_status": "candidate",
+      "record_status": "active",
       "record": {
         "contract_version": "atlas.card-record.v2",
         "card_id": "FF-QA-004",
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Cover the app with real interaction tests",
-        "description": "Add a library for testing what people see and tap, sort out 13 stale tests that are currently left out of the all-tests job, and wire the QA scripts so they run together.",
+        "description": "Add a library for testing what people see and tap, sort out 13 stale tests that are currently left out of the all-tests job, and wire the QA scripts so they run together. Board update 2026-11-15: Session start/resume endpoints now answer 401 JSON and the client sends people to sign-in; session-expired and login messages use a fixed allow-list. Merged, not deployed; headless/source only, no live expired-session run. Interaction-test library and the 13 stale excluded tests are still open. PR #247 merged (37702680). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: DOM interaction test setup (jsdom + RTL) with 5 card-primitive tests; 8 stale tests triaged back into test:all; test/CI-only, no runtime surface; headless-only, not device-checked PR #249 merged (c6396fc0). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
         "card_type": "feature",
-        "lifecycle": "planning",
+        "lifecycle": "review",
         "priority": "medium",
         "owner": "fitness",
         "dependencies": [],
         "board_version": 1,
-        "updated_at": "2026-11-13T17:40:00.000Z",
+        "updated_at": "2026-11-15T02:49:34.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-QA-004",
         "extensions": {
-          "owner_status": "planning",
+          "owner_status": "review",
           "public_safe": true,
           "visibility": "public"
         }
@@ -1293,11 +1293,11 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-QA-004",
         "source_status": "current",
-        "source_updated_at": "2026-11-13T17:40:00.000Z"
+        "source_updated_at": "2026-11-15T02:49:34.000Z"
       },
       "content": {
-        "summary": "Add a library for testing what people see and tap, sort out 13 stale tests that are currently left out of the all-tests job, and wire the QA scripts so they run together.",
-        "objective": "Add a library for testing what people see and tap, sort out 13 stale tests that are currently left out of the all-tests job, and wire the QA scripts so they run together.",
+        "summary": "Add a library for testing what people see and tap, sort out 13 stale tests that are currently left out of the all-tests job, and wire the QA scripts so they run together. Board update 2026-11-15: Session start/resume endpoints now answer 401 JSON and the client sends people to sign-in; session-expired and login messages use a fixed allow-list. Merged, not deployed; headless/source only, no live expired-session run. Interaction-test library and the 13 stale excluded tests are still open. PR #247 merged (37702680). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: DOM interaction test setup (jsdom + RTL) with 5 card-primitive tests; 8 stale tests triaged back into test:all; test/CI-only, no runtime surface; headless-only, not device-checked PR #249 merged (c6396fc0). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
+        "objective": "Add a library for testing what people see and tap, sort out 13 stale tests that are currently left out of the all-tests job, and wire the QA scripts so they run together. Board update 2026-11-15: Session start/resume endpoints now answer 401 JSON and the client sends people to sign-in; session-expired and login messages use a fixed allow-list. Merged, not deployed; headless/source only, no live expired-session run. Interaction-test library and the 13 stale excluded tests are still open. PR #247 merged (37702680). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: DOM interaction test setup (jsdom + RTL) with 5 card-primitive tests; 8 stale tests triaged back into test:all; test/CI-only, no runtime surface; headless-only, not device-checked PR #249 merged (c6396fc0). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
         "acceptance_criteria": [
           "A screen-level test library is added and used for key flows.",
           "The 13 stale tests are fixed or retired and included in the all-tests job.",
@@ -1336,10 +1336,10 @@
           "FF-RET-004"
         ],
         "board_version": 1,
-        "updated_at": "2026-07-13T04:31:19.434Z",
+        "updated_at": "2026-11-15T03:37:55.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-RECAP-001",
         "extensions": {
-          "owner_status": "fawxzzy_review",
+          "owner_status": "review",
           "public_safe": true
         }
       },
@@ -1347,7 +1347,7 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-RECAP-001",
         "source_status": "current",
-        "source_updated_at": "2026-07-13T04:31:19.434Z"
+        "source_updated_at": "2026-11-15T03:37:55.000Z"
       },
       "content": {
         "summary": "Generate one deterministic workout recap artifact from completed session truth so users can review, share, or export a clean summary without building a social feed. The artifact should highlight workout summary, PR moments, and consistency signals when grounded in real data.",
@@ -1489,17 +1489,17 @@
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Keep set logging working offline",
-        "description": "Logging a set with the connection off now retries and syncs once the connection returns (quick-log retry and sync, #219 and #226), and each set keeps the time it was tapped rather than the time it was replayed (#234). Live. A click-through passed in headless Chromium. Not yet verified: a replay after reconnecting on a real phone.",
+        "description": "Logging a set with the connection off now retries and syncs once the connection returns (quick-log retry and sync, #219 and #226), and each set keeps the time it was tapped rather than the time it was replayed (#234). Live. A click-through passed in headless Chromium. Not yet verified: a replay after reconnecting on a real phone. Board update 2026-11-15: Offline set logging retries and syncs, and each set keeps its tap time; live; headless click-through only, reconnect replay not checked on a real phone. PR #219 merged (036e9b49), PR #234 merged (07c5b04c). Deployed: production build c48235cb. Checked only in headless Chromium, not on a real phone.",
         "card_type": "feature",
-        "lifecycle": "review",
+        "lifecycle": "completed",
         "priority": "medium",
         "owner": "fitness",
         "dependencies": [],
         "board_version": 1,
-        "updated_at": "2026-11-13T19:02:00.000Z",
+        "updated_at": "2026-11-15T01:51:08.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-RELIABILITY-003",
         "extensions": {
-          "owner_status": "review",
+          "owner_status": "fixed",
           "public_safe": true,
           "visibility": "public"
         }
@@ -1508,11 +1508,11 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-RELIABILITY-003",
         "source_status": "current",
-        "source_updated_at": "2026-11-13T19:02:00.000Z"
+        "source_updated_at": "2026-11-15T01:51:08.000Z"
       },
       "content": {
-        "summary": "Logging a set with the connection off now retries and syncs once the connection returns (quick-log retry and sync, #219 and #226), and each set keeps the time it was tapped rather than the time it was replayed (#234). Live. A click-through passed in headless Chromium. Not yet verified: a replay after reconnecting on a real phone.",
-        "objective": "Logging a set with the connection off now retries and syncs once the connection returns (quick-log retry and sync, #219 and #226), and each set keeps the time it was tapped rather than the time it was replayed (#234). Live. A click-through passed in headless Chromium. Not yet verified: a replay after reconnecting on a real phone.",
+        "summary": "Logging a set with the connection off now retries and syncs once the connection returns (quick-log retry and sync, #219 and #226), and each set keeps the time it was tapped rather than the time it was replayed (#234). Live. A click-through passed in headless Chromium. Not yet verified: a replay after reconnecting on a real phone. Board update 2026-11-15: Offline set logging retries and syncs, and each set keeps its tap time; live; headless click-through only, reconnect replay not checked on a real phone. PR #219 merged (036e9b49), PR #234 merged (07c5b04c). Deployed: production build c48235cb. Checked only in headless Chromium, not on a real phone.",
+        "objective": "Logging a set with the connection off now retries and syncs once the connection returns (quick-log retry and sync, #219 and #226), and each set keeps the time it was tapped rather than the time it was replayed (#234). Live. A click-through passed in headless Chromium. Not yet verified: a replay after reconnecting on a real phone. Board update 2026-11-15: Offline set logging retries and syncs, and each set keeps its tap time; live; headless click-through only, reconnect replay not checked on a real phone. PR #219 merged (036e9b49), PR #234 merged (07c5b04c). Deployed: production build c48235cb. Checked only in headless Chromium, not on a real phone.",
         "acceptance_criteria": [
           "Sets logged with the connection off are kept and retried.",
           "After reconnecting, each set appears once.",
@@ -1658,17 +1658,17 @@
         "title": "Add Consistency Heatmap",
         "description": "Add GitHub-style workout consistency visualization.",
         "card_type": "feature",
-        "lifecycle": "review",
+        "lifecycle": "completed",
         "priority": "high",
         "owner": "fitness",
         "dependencies": [
           "FF-RET-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-13T17:40:00.000Z",
+        "updated_at": "2026-11-15T01:51:12.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-RET-003",
         "extensions": {
-          "owner_status": "review",
+          "owner_status": "fixed",
           "public_safe": true
         }
       },
@@ -1676,7 +1676,7 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-RET-003",
         "source_status": "current",
-        "source_updated_at": "2026-11-13T17:40:00.000Z"
+        "source_updated_at": "2026-11-15T01:51:12.000Z"
       },
       "content": {
         "summary": "Add GitHub-style workout consistency visualization.",
@@ -2257,24 +2257,24 @@
     {
       "idempotency_key": "pbk_fitness_ff-today-004_v1",
       "record_kind": "project-work",
-      "record_status": "candidate",
+      "record_status": "active",
       "record": {
         "contract_version": "atlas.card-record.v2",
         "card_id": "FF-TODAY-004",
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Show when an exercise has no target",
-        "description": "Today rows no longer show 'Goal missing' for an exercise without a target. Add a quiet 'No target set' cue so the gap stays visible without nagging. The day editor still shows the missing target.",
+        "description": "Today rows no longer show 'Goal missing' for an exercise without a target. Add a quiet 'No target set' cue so the gap stays visible without nagging. The day editor still shows the missing target. Board update 2026-11-15: Today rows without a target show a quiet 'No target set' cue; the day editor still shows 'Goal missing'. Merged, not deployed; headless/source only, no phone check. PR #245 merged (650254e8). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
         "card_type": "feature",
-        "lifecycle": "planning",
+        "lifecycle": "review",
         "priority": "low",
         "owner": "fitness",
         "dependencies": [],
         "board_version": 1,
-        "updated_at": "2026-11-13T19:02:00.000Z",
+        "updated_at": "2026-11-15T02:24:00.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-TODAY-004",
         "extensions": {
-          "owner_status": "planning",
+          "owner_status": "review",
           "public_safe": true,
           "visibility": "public"
         }
@@ -2283,11 +2283,11 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-TODAY-004",
         "source_status": "current",
-        "source_updated_at": "2026-11-13T19:02:00.000Z"
+        "source_updated_at": "2026-11-15T02:24:00.000Z"
       },
       "content": {
-        "summary": "Today rows no longer show 'Goal missing' for an exercise without a target. Add a quiet 'No target set' cue so the gap stays visible without nagging. The day editor still shows the missing target.",
-        "objective": "Today rows no longer show 'Goal missing' for an exercise without a target. Add a quiet 'No target set' cue so the gap stays visible without nagging. The day editor still shows the missing target.",
+        "summary": "Today rows no longer show 'Goal missing' for an exercise without a target. Add a quiet 'No target set' cue so the gap stays visible without nagging. The day editor still shows the missing target. Board update 2026-11-15: Today rows without a target show a quiet 'No target set' cue; the day editor still shows 'Goal missing'. Merged, not deployed; headless/source only, no phone check. PR #245 merged (650254e8). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
+        "objective": "Today rows no longer show 'Goal missing' for an exercise without a target. Add a quiet 'No target set' cue so the gap stays visible without nagging. The day editor still shows the missing target. Board update 2026-11-15: Today rows without a target show a quiet 'No target set' cue; the day editor still shows 'Goal missing'. Merged, not deployed; headless/source only, no phone check. PR #245 merged (650254e8). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
         "acceptance_criteria": [
           "An exercise without a target shows a quiet 'No target set' cue on Today.",
           "Today rows do not show 'Goal missing'.",
@@ -2310,7 +2310,7 @@
   "extensions": {
     "source_work_item_count": 56,
     "exported_card_count": 41,
-    "exported_completed_card_count": 16,
+    "exported_completed_card_count": 19,
     "excluded_completed_card_count": 15,
     "selected_owner_snapshot_record_count": 55,
     "excluded_unstable_or_nonfitness_record_count": 18,
