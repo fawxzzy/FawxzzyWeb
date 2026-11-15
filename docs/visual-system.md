@@ -46,11 +46,14 @@ styles belong to the narrowest established owner:
 - `src/styles/components/app-launcher.css` owns the Apps storefront: the page header,
   the app cards (icon, name, category, tagline, facts, one Open action) and nothing
   interactive beyond that link. Previews and the feedback dialog were retired.
-- `src/styles/page-families/utility.css` owns Login, Auth handoff, recovery, and
-  Account presentation until the utility-family refinement lands.
-- `src/styles/page-families/account-forms.css` owns the account form guidance banner
-  (the visible "what is needed" message for missing or invalid inputs). It was split out
-  because `utility.css` is at its line-count cap; it loads right after it.
+- `src/styles/page-families/utility.css` owns the account page shell (layout, nav,
+  footer) and the legal pages. The Auth Surface v1 card rules (`.account-auth-*`) were
+  removed; every account screen now uses `auth-surface.css`.
+- `src/styles/page-families/account-forms.css` owns the account page one-viewport lock and
+  the Mazer authorization loader (`.oauth-bare`). It was split out because `utility.css` is
+  at its line-count cap; it loads right after it.
+- `src/styles/page-families/auth-surface.css` owns Auth Surface v2: every sign-in, account,
+  recovery, status, 404 and crash screen.
 - `src/styles/page-families/product-detail.css` retains historical Fitness and Mazer
   detail styling for provenance and ordered-cascade compatibility; it does not authorize active detail routes.
 - `src/styles/page-families/studio-public.css` owns the catalog studio
