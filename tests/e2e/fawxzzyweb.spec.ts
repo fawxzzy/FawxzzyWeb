@@ -590,6 +590,14 @@ test("missing routes use the shared recoverable system surface", async ({ page }
     await expect(page.locator('[data-auth-surface="not-found"]')).toBeVisible();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Page not found");
     await expect(page.locator('[data-auth-surface="not-found"] .auth-lead')).toHaveText("That page does not exist.");
+    // The brand label sits under the icon and above the title, like the form screens' head.
+    const order = await page.locator('[data-auth-surface="not-found"]').evaluate((surface) => {
+      const top = (selector: string) => surface.querySelector(selector)?.getBoundingClientRect().top ?? Number.NaN;
+      return { icon: top(".auth-app-icon"), kicker: top(".auth-kicker"), title: top(".auth-title") };
+    });
+    await expect(page.locator('[data-auth-surface="not-found"] .auth-kicker')).toHaveText("Fawxzzy");
+    expect(order.kicker).toBeGreaterThan(order.icon);
+    expect(order.title).toBeGreaterThan(order.kicker);
     await expect(page.getByRole("link", { name: "Go to account" })).toHaveAttribute(
       "href",
       "https://account.fawxzzy.com/account",

@@ -159,6 +159,7 @@ export function AuthStatus({
   children,
   context,
   dock,
+  kickerBelowIcon = false,
   lead,
   notice,
   onNoticeAction,
@@ -171,6 +172,8 @@ export function AuthStatus({
   children?: ReactNode;
   context: AuthStatusContext;
   dock?: ReactNode;
+  /** The product name under the icon, as on the form screens (the 404), instead of at the top. */
+  kickerBelowIcon?: boolean;
   lead?: string;
   notice?: AuthNotice | null;
   onNoticeAction?: () => void;
@@ -190,7 +193,7 @@ export function AuthStatus({
       style={authAccentStyle(context)}
     >
       {children}
-      <p className="auth-kicker">{context.productName}</p>
+      {kickerBelowIcon ? null : <p className="auth-kicker">{context.productName}</p>}
       <div className="auth-status" role={spin ? "status" : undefined}>
         <div className={spin ? "auth-mark auth-mark--spin" : "auth-mark"}>
           {spin ? (
@@ -201,6 +204,7 @@ export function AuthStatus({
           ) : null}
           <AuthAppIcon app={app ?? context.id} />
         </div>
+        {kickerBelowIcon ? <p className="auth-kicker">{context.productName}</p> : null}
         <h1 className="auth-title" id={`${surface}-status-title`}>{title}</h1>
         {lead ? <p className="auth-lead">{lead}</p> : null}
         {notice !== undefined ? <AuthNoticeSlot notice={notice} onAction={onNoticeAction} /> : null}

@@ -24,7 +24,7 @@ import {
   storePendingMazerOAuthAuthorization,
   type MazerOAuthAuthorizationDetails,
 } from "@/lib/auth/mazer-oauth";
-import { AUTH_COPY } from "@/lib/auth/copy-matrix";
+import { AUTH_COPY, authNotice } from "@/lib/auth/copy-matrix";
 import {
   authAccentStyle,
   AuthDock,
@@ -296,15 +296,26 @@ export function MazerOAuthAuthorization() {
   }
   const mazer = accountExperienceContexts.mazer;
   if (state.kind === "invalid" || state.kind === "unavailable") {
-    // One way out for every stopped request: start again from Mazer.
-    return (
+    // One way out for every stopped request: start again from Mazer. A dead request says the link
+    // expired; a service failure says sign-in is unavailable (copy matrix), never "link expired".
+    const dock = <AuthDock href={accountContract.productOrigins.mazer}>{AUTH_COPY.button.open("Mazer")}</AuthDock>;
+    return state.kind === "invalid" ? (
       <AuthStatus
         context={mazer}
-        dock={<AuthDock href={accountContract.productOrigins.mazer}>{AUTH_COPY.button.open("Mazer")}</AuthDock>}
+        dock={dock}
         lead={AUTH_COPY.lead.startAgainIn("Mazer")}
-        state={state.kind}
+        state="invalid"
         surface="oauth"
         title={AUTH_COPY.title.signInLinkExpired}
+      />
+    ) : (
+      <AuthStatus
+        context={mazer}
+        dock={dock}
+        notice={authNotice("signin.unavailable")}
+        state="unavailable"
+        surface="oauth"
+        title={AUTH_COPY.title.couldNotLoad}
       />
     );
   }
