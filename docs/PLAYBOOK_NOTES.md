@@ -23,3 +23,11 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHY it changed: ATLAS closed its board; every card is now in the Archived section (26 with completion records, 10 archived without a completion claim). The Fitness secret-containment and security umbrella cards are archived as deferred with reopen triggers, not completed.
 - Rule: The Atlas Stack board has no event pipeline; re-pin copies the ATLAS owner exports and rebuilds the snapshot with `npm run data:project-board-owner-snapshot`, never by hand.
 - Scope: Source and local regression only. The Projects page changes only after the next production build; no deployment, provider, credential or database effect.
+
+## 2026-11-15 - Fitness board re-pin after Fitness PR #256
+
+- Type: Board data only
+- WHAT changed: `planning/board-sources/fitness.project-board.owner-export.v1.json` is re-pinned to the Fitness owner export on Fitness `main` (includes PR #256, b4e2d0a5 and later), and the generated owner snapshot `src/server/projects/owner-board.generated.mjs` is rebuilt from it.
+- WHY it changed: the Web Projects snapshot lagged the Fitness owner board after #256 merged.
+- Rule: Fitness re-pin copies the owner export and rebuilds the snapshot with `npm run data:project-board-owner-snapshot`, never by hand.
+- Scope: Source and local regression only. The Projects page changes only after the next production build; no deployment, provider, credential or database effect.
