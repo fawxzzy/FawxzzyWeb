@@ -24,13 +24,15 @@ async function phone(browser: Browser, viewport: (typeof VIEWPORTS)[number]) {
   return { context, page: await context.newPage() };
 }
 
-/** Everything that would move if the screen jumped: page scroll, body scroll and the dock. */
+/** Everything that would move if the screen jumped: page scroll, body scroll, the links row and the dock. */
 async function layout(page: Page) {
   return page.evaluate(() => ({
     bodyScroll: document.querySelector(".auth-body")?.scrollTop ?? -1,
     dockTop: Math.round(document.querySelector(".auth-dock")?.getBoundingClientRect().top ?? -1),
     linksTop: Math.round(document.querySelector(".auth-links")?.getBoundingClientRect().top ?? -1),
+    linksHeight: Math.round(document.querySelector(".auth-links")?.getBoundingClientRect().height ?? -1),
     overflowX: document.documentElement.scrollWidth > window.innerWidth,
+    resetLeft: Math.round(document.querySelector(".auth-links a")?.getBoundingClientRect().left ?? -1),
     scrollY: window.scrollY,
     slotHeight: Math.round(document.querySelector("[data-auth-slot]")?.getBoundingClientRect().height ?? -1),
   }));
@@ -49,7 +51,7 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByRole("heading", { name: AUTH_COPY.title.account })).toBeVisible();
 
     // One row: Reset password | Sign out everywhere, on a single line, 44 px tall targets.
-    await expect(link(page)).toHaveText(AUTH_COPY.link.signOutEverywhere);
+    await expect(link(page)).toHaveAccessibleName(AUTH_COPY.link.signOutEverywhere);
     const reset = await page.locator(".auth-links a").boundingBox();
     const everywhere = await link(page).boundingBox();
     expect(Math.abs(reset!.y - everywhere!.y)).toBeLessThan(2);
@@ -65,7 +67,7 @@ for (const viewport of VIEWPORTS) {
     await expect(notice(page)).toContainText(AUTH_MESSAGES["account.everywhereconfirm"][1]);
     const confirm = notice(page).getByRole("button", { name: AUTH_COPY.link.signOutEverywhere });
     await expect(confirm).toBeFocused();
-    await expect(link(page)).toHaveText(AUTH_COPY.link.cancel);
+    await expect(link(page)).toHaveAccessibleName(AUTH_COPY.link.cancel);
     await expect(page.locator("html")).not.toHaveAttribute("data-sign-out-scope", /.+/);
     expect(await layout(page)).toEqual(before);
     const box = await confirm.boundingBox();
@@ -74,7 +76,7 @@ for (const viewport of VIEWPORTS) {
     // Cancel puts everything back.
     await link(page).click();
     await expect(notice(page)).toHaveCount(0);
-    await expect(link(page)).toHaveText(AUTH_COPY.link.signOutEverywhere);
+    await expect(link(page)).toHaveAccessibleName(AUTH_COPY.link.signOutEverywhere);
     expect(await layout(page)).toEqual(before);
 
     // Step 2: global scope, owner hint cleared, then the portal sign-in with the done line.
@@ -112,7 +114,7 @@ test("a failed sign out everywhere keeps the person signed in with the unavailab
   await expect(page).toHaveURL(/\/account\?/);
   await expect(page.getByRole("heading", { name: AUTH_COPY.title.account })).toBeVisible();
   await expect(page.getByLabel(AUTH_COPY.field.email, { exact: true })).toHaveValue("preview.user@example.test");
-  await expect(link(page)).toHaveText(AUTH_COPY.link.signOutEverywhere);
+  await expect(link(page)).toHaveAccessibleName(AUTH_COPY.link.signOutEverywhere);
   await expect(link(page)).toBeEnabled();
   await expect(page.locator(".auth-dock__button")).toHaveText(AUTH_COPY.button.signOut);
 });
@@ -126,7 +128,7 @@ test("starting a change drops a pending confirm", async ({ page }) => {
   await page.getByRole("button", { name: AUTH_COPY.link.cancel }).click();
   await expect(page.getByRole("heading", { name: AUTH_COPY.title.account })).toBeVisible();
   await expect(notice(page)).toHaveCount(0);
-  await expect(link(page)).toHaveText(AUTH_COPY.link.signOutEverywhere);
+  await expect(link(page)).toHaveAccessibleName(AUTH_COPY.link.signOutEverywhere);
 });
 
 test("no account screen without a session offers sign out everywhere", async ({ page }) => {

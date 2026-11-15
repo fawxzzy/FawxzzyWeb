@@ -1024,7 +1024,11 @@ function AccountPanel({
             onClick={confirmingEverywhere ? () => setConfirmingEverywhere(false) : askSignOutEverywhere}
             type="button"
           >
-            {confirmingEverywhere ? AUTH_COPY.link.cancel : AUTH_COPY.link.signOutEverywhere}
+            {/* Both labels share one cell, the other one hidden, so the row never reflows when they swap. */}
+            <span className="auth-links__swap">
+              <span>{confirmingEverywhere ? AUTH_COPY.link.cancel : AUTH_COPY.link.signOutEverywhere}</span>
+              <span aria-hidden="true">{confirmingEverywhere ? AUTH_COPY.link.signOutEverywhere : AUTH_COPY.link.cancel}</span>
+            </span>
           </button>
         ) : null}
       </AuthLinks>
