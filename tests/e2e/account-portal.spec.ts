@@ -1271,6 +1271,8 @@ test("auth entry uses one stable frame and remembers the returning username as a
   await page.getByRole("button", { name: "Not you?" }).click();
   await expect(page.getByRole("heading", { name: "Welcome" })).toBeVisible();
   await expect(page.getByLabel("Email or username")).toHaveValue("");
+  // The cleared field takes focus so the next person can type at once.
+  await expect(page.getByLabel("Email or username")).toBeFocused();
   await expect(page.locator(".auth-field[data-locked]")).toHaveCount(0);
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page.getByRole("heading", { name: "Create account" })).toBeVisible();
@@ -2623,8 +2625,11 @@ test("first-party Mazer auto-approve failure shows the existing error state once
     "/oauth/authorize?authorization_id=authorization-id-1234567890&auth_test=session",
   );
   const failed = page.locator('[data-auth-surface="oauth"][data-auth-state="unavailable"]');
-  await expect(failed).toContainText(AUTH_COPY.title.signInLinkExpired);
-  await expect(failed).toContainText(AUTH_COPY.lead.startAgainIn("Mazer"));
+  // A service failure is not an expired link: matrix title + the one "unavailable" line.
+  await expect(failed.getByRole("heading")).toHaveText(AUTH_COPY.title.couldNotLoad);
+  await expect(failed.locator('[data-notice-id="signin.unavailable"]')).toHaveText(authNotice("signin.unavailable").text);
+  await expect(failed).not.toContainText(AUTH_COPY.title.signInLinkExpired);
+  await expect(failed.getByRole("link", { name: AUTH_COPY.button.open("Mazer") })).toBeVisible();
   await expect(page.locator('[data-auth-surface="oauth-consent"]')).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Continue to Mazer" })).toHaveCount(0);
   await expect(page.locator("html")).not.toHaveAttribute("data-oauth-redirect", /.+/);

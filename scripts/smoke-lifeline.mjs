@@ -40,24 +40,34 @@ async function waitFor(url) {
   throw new Error(`Timed out waiting for ${url}`);
 }
 
+// A child killed by a signal has `exitCode === null` and a `signalCode` instead. On Windows every
+// kill ends the process at once that way, so testing `exitCode` alone left this script waiting for a
+// second "exit" event that never fired; the event loop drained and Node exited 0, hiding failures.
+function hasExited(server) {
+  return server.exitCode !== null || server.signalCode !== null;
+}
+
+function waitForExit(server, ms) {
+  if (hasExited(server)) return Promise.resolve();
+  return Promise.race([
+    new Promise((resolve) => {
+      server.once("exit", resolve);
+    }),
+    delay(ms),
+  ]);
+}
+
 async function stopServer(server) {
-  if (server.exitCode !== null) {
+  if (hasExited(server)) {
     return;
   }
 
   server.kill("SIGINT");
-  await Promise.race([
-    new Promise((resolve) => {
-      server.once("exit", resolve);
-    }),
-    delay(5_000),
-  ]);
+  await waitForExit(server, 5_000);
 
-  if (server.exitCode === null) {
+  if (!hasExited(server)) {
     server.kill("SIGKILL");
-    await new Promise((resolve) => {
-      server.once("exit", resolve);
-    });
+    await waitForExit(server, 5_000);
   }
 }
 
@@ -89,7 +99,20 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : String(error));
-  process.exitCode = 1;
+// Settle the exit code explicitly: a promise left pending with nothing else alive must never read
+// as a pass.
+main().then(
+  () => {
+    process.exit(process.exitCode ?? 0);
+  },
+  (error) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  },
+);
+process.on("beforeExit", () => {
+  if (process.exitCode === undefined) {
+    console.error("smoke-lifeline: event loop drained before the smoke settled.");
+    process.exitCode = 1;
+  }
 });

@@ -456,6 +456,15 @@
   font-size: 34px;
 }
 
+/* The 404 puts the product name under the icon, like the form screens' head. */
+.auth-status > .auth-kicker {
+  margin-top: 18px;
+}
+
+.auth-status > .auth-kicker + .auth-title {
+  margin-top: 12px;
+}
+
 .auth-status .auth-slot {
   width: 100%;
   margin-top: 22px;
