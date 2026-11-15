@@ -1602,8 +1602,9 @@ function LinkHandler({
             toLogin("unavailable", "unavailable");
             return;
           }
+          // Built from constants and an allowlisted notice key, never from the link (like toLogin).
           const toAccount = (outcome: "session" | "no-session" | "error") =>
-            go(
+            leave(
               contextualPath(`/account?${ACCOUNT_NOTICE_PARAM}=${emailChangeLandingKey(outcome)}`, context),
               `email-change-${outcome}`,
             );

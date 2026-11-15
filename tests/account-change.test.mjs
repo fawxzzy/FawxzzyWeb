@@ -143,6 +143,9 @@ test("portal: the confirm route sends email_change to /account before any produc
   assert.ok(branch > 0, "email_change branch exists");
   assert.ok(fitness > branch, "email_change is handled before the Fitness return check");
   assert.match(source.slice(branch, branch + 1200), /emailChangeLandingKey/);
+  // The landing is built from constants, so it leaves directly: go() re-runs the return-target
+  // allowlist, which drops the notice query (and the canonical origin for app=fitness|mazer).
+  assert.match(source.slice(branch, branch + 1200), /toAccount = \([^)]*\) =>\s*leave\(/);
 });
 
 test("proposed SQL: owner-gated shape (preflight, rate limits, guard lock order, narrow grants, rollback)", () => {
