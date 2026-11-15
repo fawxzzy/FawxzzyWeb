@@ -1273,6 +1273,8 @@ test("auth entry uses one stable frame and remembers the returning username as a
 });
 
 test("auth fields use the canonical v2 text and spacing contract", async ({ page }) => {
+  // Full sizes apply above 760px of height; shorter screens get the compact set.
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/login?auth_test=success");
 
   for (const id of ["account-email", "account-password"]) {
