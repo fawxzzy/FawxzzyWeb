@@ -122,14 +122,14 @@ test("the remembered sign-in name follows a username change only when it was tha
   assert.equal(change.nextRememberedIdentity("oldname", null, "NewName"), null);
 });
 
-test("the email-change redirect is the confirm route, themed, with no product return or state", () => {
+test("the email-change redirect is the allow-listed confirm URL (fixed product-home returnTo, no state)", () => {
   assert.equal(accountEmailChangeUrl("website"), "https://account.fawxzzy.com/auth/confirm");
   for (const id of ["fitness", "mazer"]) {
     const url = new URL(accountEmailChangeUrl(id));
     assert.equal(url.searchParams.get("app"), id);
-    assert.equal(url.searchParams.has("returnTo"), false);
+    assert.equal(url.searchParams.get("returnTo"), `https://${id}.fawxzzy.com/`, "the fixed allow-listed home, never a deep link");
     assert.equal(url.searchParams.has("state"), false);
-    assert.notEqual(url.href, accountConfirmUrl(id, "s"), "differs from the sign-up confirm URL");
+    assert.equal(url.href, accountConfirmUrl(id), "the exact allow-listed confirm URL");
     url.searchParams.set("token_hash", "abc");
     url.searchParams.set("type", "email_change");
     assert.equal(parseConfirmPayload(url)?.type, "email_change", "the confirm route accepts the link");

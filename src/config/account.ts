@@ -204,14 +204,14 @@ export function accountConfirmUrl(
 }
 
 /**
- * Where the email-change link returns: the confirm route, themed by `app`, never a product return
- * target. The confirm route always lands an email change on the account page (no Fitness handoff and
- * no confirmation state: the one-time token in the link is the proof).
+ * Where the email-change link returns. Supabase matches the Redirect URLs allow list exactly
+ * (query string included), so this MUST be one of the allow-listed confirm URLs: the same fixed
+ * form as the sign-up confirm URL (with the fixed product-home `returnTo` for fitness/mazer, no
+ * `state`). The confirm route never follows that `returnTo` for an email_change token: it always
+ * lands on the account page with its notice, in the `app` skin.
  */
 export function accountEmailChangeUrl(contextId: AccountExperienceContextId) {
-  const url = new URL(accountContract.confirmPath, accountContract.canonicalOrigin);
-  if (contextId !== "website") url.searchParams.set("app", contextId);
-  return url.href;
+  return accountConfirmUrl(contextId);
 }
 
 export type RuntimeOriginKind =
