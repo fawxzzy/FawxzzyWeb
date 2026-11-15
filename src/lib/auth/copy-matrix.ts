@@ -8,6 +8,11 @@
  * from the email shown on that same screen (see `maskEmail`).
  */
 
+import { STATUS_COPY } from "@/lib/auth/status-copy";
+
+// The 404 and crash words live in status-copy.ts (shipped on every route); they are part of this matrix.
+export { PAGE_CRASH_NOTICE, STATUS_COPY } from "@/lib/auth/status-copy";
+
 export type NoticeTone = "error" | "info" | "success";
 
 type MessageEntry = readonly [NoticeTone, string] | readonly [NoticeTone, string, string];
@@ -51,7 +56,7 @@ export const AUTH_MESSAGES = {
   "reset.savefail": ["error", "Could not save your password. Try again."],
   "account.loadfail": ["error", "Could not load your account. Try again.", "Retry"],
   "account.signoutfail": ["error", "Could not sign out. Try again."],
-  "page.crash": ["error", "Check your connection and try again."],
+  "page.crash": ["error", STATUS_COPY.crash],
   "page.offline": ["error", "You are offline. We will reconnect when you are back."],
   "mazer.cancelled": ["error", "Sign-in did not finish. Tap Sign in to try again."],
   "mazer.timeout": ["error", "Sign-in took too long. Tap Sign in to try again."],
@@ -91,8 +96,8 @@ export const AUTH_COPY = {
     sendResetLink: "Send reset link",
     savePassword: "Save password",
     signOut: "Sign out",
-    tryAgain: "Try again",
-    goToAccount: "Go to account",
+    tryAgain: STATUS_COPY.tryAgain,
+    goToAccount: STATUS_COPY.goToAccount,
     open: (app: AuthAppName) => `Open ${app}`,
   },
   working: {
@@ -128,8 +133,8 @@ export const AUTH_COPY = {
     signingOut: "Signing you out…",
     checkingAccount: "Checking your account…",
     signInLinkExpired: "Sign-in link expired",
-    pageNotFound: "Page not found",
-    couldNotLoad: "Could not load",
+    pageNotFound: STATUS_COPY.pageNotFound,
+    couldNotLoad: STATUS_COPY.couldNotLoad,
     offline: "You are offline",
     signOut: "Sign out",
   },
@@ -138,7 +143,7 @@ export const AUTH_COPY = {
     newPassword: "Choose a password of at least 10 characters.",
     account: "Your account works in Fitness and Mazer.",
     usingAccount: "Using your Fawxzzy account.",
-    pageNotFound: "That page does not exist.",
+    pageNotFound: STATUS_COPY.pageNotFoundLead,
     startAgainIn: (app: AuthAppName) => `Go back to ${app} and tap Sign in to start again.`,
   },
   field: {

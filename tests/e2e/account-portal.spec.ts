@@ -201,7 +201,11 @@ test("auth surfaces derive public branding from product identity", () => {
   }
   // Auth Surface v2: the portal screens take their product name from the presentation registry
   // and their words from the copy matrix, so they never hard-code the brand either.
-  for (const sourcePath of ["src/components/account/account-portal.tsx", "src/components/account/auth-surface.tsx"]) {
+  for (const sourcePath of [
+    "src/components/account/account-portal.tsx",
+    "src/components/account/auth-surface.tsx",
+    "src/components/account/auth-status.tsx",
+  ]) {
     expect(readFileSync(path.resolve(process.cwd(), sourcePath), "utf8")).not.toMatch(/["'`]Fawxzzy(?: account| apps)?[."'`<]/);
   }
 });

@@ -95,6 +95,7 @@ test("portal components hold no string literal or JSX text over the length cap",
     "src/components/account/account-portal.tsx",
     "src/components/account/mazer-oauth-authorization.tsx",
     "src/components/account/auth-surface.tsx",
+    "src/components/account/auth-status.tsx",
     "src/config/account.ts",
   ]) {
     assert.deepEqual(

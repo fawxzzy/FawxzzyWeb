@@ -19,6 +19,7 @@ const matrix = loadPortalModule("src/lib/auth/copy-matrix.ts");
 export const AUTH_SCREEN_FILES = [
   "src/components/account/account-portal.tsx",
   "src/components/account/auth-surface.tsx",
+  "src/components/account/auth-status.tsx",
   "src/components/account/mazer-oauth-authorization.tsx",
   "src/components/account/turnstile-field.tsx",
   "src/components/system/not-found-state.tsx",

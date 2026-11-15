@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { AuthDock, AuthStatus } from "@/components/account/auth-surface";
+import { AuthDock, AuthStatus } from "@/components/account/auth-status";
 import { accountExperienceContexts } from "@/config/account";
-import { AUTH_COPY, authNotice } from "@/lib/auth/copy-matrix";
+import { PAGE_CRASH_NOTICE, STATUS_COPY } from "@/lib/auth/status-copy";
 import "./globals.css";
 
 type GlobalErrorProps = {
@@ -19,16 +19,16 @@ export default function GlobalError({ error, unstable_retry }: GlobalErrorProps)
   return (
     <html lang="en">
       <body>
-        <title>{`${AUTH_COPY.title.couldNotLoad} | Fawxzzy`}</title>
+        <title>{`${STATUS_COPY.couldNotLoad} | Fawxzzy`}</title>
         <main className="system-page system-page--global system-page--locked app-theme-fawxzzy" id="main-content">
           <div className="shell-container system-shell system-shell--global">
             <AuthStatus
               context={accountExperienceContexts.website}
-              dock={<AuthDock onClick={() => unstable_retry()}>{AUTH_COPY.button.tryAgain}</AuthDock>}
-              notice={authNotice("page.crash")}
+              dock={<AuthDock onClick={() => unstable_retry()}>{STATUS_COPY.tryAgain}</AuthDock>}
+              notice={PAGE_CRASH_NOTICE}
               state="crash"
               surface="crash"
-              title={AUTH_COPY.title.couldNotLoad}
+              title={STATUS_COPY.couldNotLoad}
             />
           </div>
         </main>

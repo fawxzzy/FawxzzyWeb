@@ -14,7 +14,7 @@ The three products use one rigid authentication anatomy. Product theme may chang
 
 ## Required anatomy (Auth Surface v2, owner-approved 2026-11-15)
 
-Every account screen (sign in, create account, reset request, new password, account, sign out, callback, confirm, OAuth fallback, 404 and crash) uses the same anatomy, in this order. Components: `src/components/account/auth-surface.tsx`; styles: `src/styles/page-families/auth-surface.css`.
+Every account screen (sign in, create account, reset request, new password, account, sign out, callback, confirm, OAuth fallback, 404 and crash) uses the same anatomy, in this order. Components: `src/components/account/auth-surface.tsx` (the stateless icon, head, notice slot, dock and status screen live in `auth-status.tsx`, so the 404 and crash screens on every route carry neither the client module nor the full copy matrix; they take their words from `STATUS_COPY` in `src/lib/auth/status-copy.ts`, part of the copy matrix); styles: `src/styles/page-families/auth-surface.css`.
 
 1. The product's app icon, from the branding files already in `public/` (never a drawn shape).
 2. The product name as a small kicker, then the title. No username or other identity under any title.

@@ -2,11 +2,11 @@
 
 import { useEffect } from "react";
 import { AmbientBrandBackground } from "@/components/ambient/ambient-brand-background";
-import { AuthDock, AuthStatus } from "@/components/account/auth-surface";
+import { AuthDock, AuthStatus } from "@/components/account/auth-status";
 import { SiteFooter } from "@/components/site/site-footer";
 import { SiteNav } from "@/components/site/site-nav";
 import { accountExperienceContexts } from "@/config/account";
-import { AUTH_COPY, authNotice } from "@/lib/auth/copy-matrix";
+import { PAGE_CRASH_NOTICE, STATUS_COPY } from "@/lib/auth/status-copy";
 
 type RouteErrorProps = {
   error: Error & { digest?: string };
@@ -25,11 +25,11 @@ export default function RouteError({ error, unstable_retry }: RouteErrorProps) {
         <SiteNav current="apps" />
         <AuthStatus
           context={accountExperienceContexts.website}
-          dock={<AuthDock onClick={() => unstable_retry()}>{AUTH_COPY.button.tryAgain}</AuthDock>}
-          notice={authNotice("page.crash")}
+          dock={<AuthDock onClick={() => unstable_retry()}>{STATUS_COPY.tryAgain}</AuthDock>}
+          notice={PAGE_CRASH_NOTICE}
           state="crash"
           surface="crash"
-          title={AUTH_COPY.title.couldNotLoad}
+          title={STATUS_COPY.couldNotLoad}
         />
         <SiteFooter />
       </div>
