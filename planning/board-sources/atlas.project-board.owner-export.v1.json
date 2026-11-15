@@ -1,11 +1,11 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_atlas_a4923021069e",
+  "export_id": "pbe_atlas_3c512bee851c",
   "project_id": "atlas",
   "board_id": "discordos:project-feedback:atlas",
   "owner": "stack-root",
   "adapter_id": "atlas-full-system-registry-v1",
-  "source_revision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+  "source_revision": "sha256:3c512bee851c1d196681ad29c65d8d6cc63b0a57f96cfc67c4293a18847f1624",
   "generated_at": "2026-07-17T06:07:21Z",
   "sources": [
     {
@@ -13,7 +13,7 @@
       "kind": "json",
       "repository": "atlas-root",
       "path": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json",
-      "revision": "sha256:4f27f5e8174ca4401e2ef564d25ed353868d043aed8e2b8d793f1ef3718e361e",
+      "revision": "sha256:1ab9c6024dd24b249e496e3d43054f24b36dc44f668be23378983f1179b6c917",
       "observed_at": "2026-07-17T06:07:21Z"
     },
     {
@@ -46,7 +46,7 @@
         "title": "Archive and package retention",
         "description": "Classify the Fitness snapshot, package-root DOCX, repos/Hard Pill To Swallow.zip, and repos/Realm Blade.zip, including their path mismatch with stack media paths that omit .zip, without reading sensitive contents.",
         "card_type": "technical-debt",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "stack-root",
         "dependencies": [
@@ -68,7 +68,14 @@
             "basis": "Fitness snapshot, package-root DOCX, and two .zip media/path-mismatch surfaces"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed per decision 2026-11-14: Zac chose register all 4 items as KEEP with size+sha256+path in archive registry; nothing moved/deleted; close completed with registry PR",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-11-14",
+            "artifact": "ATLAS PR #232 (1513caf0): 4 KEEP entries in ATLAS-ARCHIVE-REGISTRY with live hashes"
+          }
         }
       },
       "source": {
@@ -85,7 +92,9 @@
           "Both zip/media path mismatches are reconciled"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-11-14: ATLAS PR #232 (1513caf0): 4 KEEP entries in ATLAS-ARCHIVE-REGISTRY with live hashes",
+          "Archived 2026-11-14: completed per decision 2026-11-14: Zac chose register all 4 items as KEEP with size+sha256+path in archive registry; nothing moved/deleted; close completed with registry PR"
         ],
         "next_actions": [],
         "blockers": [],
@@ -111,7 +120,7 @@
         "title": "Bootstrap Manifest and Recovery Pointer",
         "description": "Define, implement, and prove a signed/versioned minimal Atlas recovery pointer into the distributed source hierarchy without storing all memory or granting execution authority.",
         "card_type": "governance",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "stack-root",
         "dependencies": [
@@ -134,7 +143,11 @@
             "basis": "UNKNOWN until schema, threat model, signing, recovery, rollback, and negative-conformance units are admitted."
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "archived",
+          "board_reason": "deferred: reopen when Creation OS ratified, policy-tracing scoped, and DOD20 custody revisited by Zac",
+          "board_decided_on": "2026-11-14",
+          "completion_record": null
         }
       },
       "source": {
@@ -153,7 +166,8 @@
           "Restore and rollback produce correlated receipts and grant no execution authority."
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Archived 2026-11-14: deferred: reopen when Creation OS ratified, policy-tracing scoped, and DOD20 custody revisited by Zac"
         ],
         "next_actions": [],
         "blockers": [],
@@ -182,7 +196,7 @@
         "title": "Atlas contracts mesh",
         "description": "Define and implement Contracts v2 mesh without overstating @atlas/contracts v0.1.0 or five implemented v1 families.",
         "card_type": "governance",
-        "lifecycle": "completed",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "stack-root",
         "dependencies": [],
@@ -202,7 +216,14 @@
             "basis": "ComponentManifest, CardRecord, JobEnvelope, ContextPacket, WorkerLease, EvidenceBundle, ExecutionReceipt, BoardEvent, MarkerEvidence, KnowledgeCandidate, and ApprovalRecord"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "completed"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed; archived with its completion record kept",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-07-15",
+            "artifact": "registry status complete at 100% (11 of 11 schema_families), last audited 2026-07-15T17:25:00Z"
+          }
         }
       },
       "source": {
@@ -222,7 +243,9 @@
           "v1 remains accurately documented"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-07-15: registry status complete at 100% (11 of 11 schema_families), last audited 2026-07-15T17:25:00Z",
+          "Archived 2026-11-14: completed; archived with its completion record kept"
         ],
         "next_actions": [],
         "blockers": [],
@@ -280,7 +303,7 @@
         "title": "Atlas Control ledger",
         "description": "Design a backend-neutral thin ledger for card/job/thread/turn identity, leases, idempotency, expected board version, receipt evidence, and human acceptance.",
         "card_type": "architecture",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "stack-root",
         "dependencies": [
@@ -302,7 +325,11 @@
             "basis": "the eight frozen ledger concepts"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "archived",
+          "board_reason": "deferred: reopen on trigger (second executing agent/backend appears, or lost-work incident from divergent ledgers); design doc only via architecture review",
+          "board_decided_on": "2026-11-14",
+          "completion_record": null
         }
       },
       "source": {
@@ -320,7 +347,8 @@
           "SQLite is not treated as implemented before proof"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Archived 2026-11-14: deferred: reopen on trigger (second executing agent/backend appears, or lost-work incident from divergent ledgers); design doc only via architecture review"
         ],
         "next_actions": [],
         "blockers": [],
@@ -348,7 +376,7 @@
         "title": "CI and delivery health",
         "description": "Recover Fitness and Playbook CI and correlate Actions with delivery without treating absence or READY as health.",
         "card_type": "governance",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "repository-owners",
         "dependencies": [
@@ -372,7 +400,14 @@
             "basis": "Fitness loader, Fitness Playbook artifacts, Playbook Demo synchronization"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed per decision 2026-11-14: Zac chose dated CI health table (fresh gh run list sweep of 5 repos); deploy correlation folded into monitoring-correlation card; close completed with table",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-11-14",
+            "artifact": "CI/monitoring correlation report 2026-11-14; main green on all 5 repos"
+          }
         }
       },
       "source": {
@@ -390,7 +425,9 @@
           "Deployment correlation is current"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-11-14: CI/monitoring correlation report 2026-11-14; main green on all 5 repos",
+          "Archived 2026-11-14: completed per decision 2026-11-14: Zac chose dated CI health table (fresh gh run list sweep of 5 repos); deploy correlation folded into monitoring-correlation card; close completed with table"
         ],
         "next_actions": [],
         "blockers": [],
@@ -417,7 +454,7 @@
         "title": "Codex execution contracts",
         "description": "Harden task identity, requested/effective runtime receipt, repository runtime-configuration conformance, handoff, reverse receipt, steering, queueing, and acceptance contracts.",
         "card_type": "governance",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "_stack",
         "dependencies": [
@@ -439,7 +476,11 @@
             "basis": "identity, runtime receipt, runtime configuration conformance, handoff, reverse receipt, steer, queue, acceptance"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "archived",
+          "board_reason": "superseded: Codex retired 2026-11-05, Claude-only operating model",
+          "board_decided_on": "2026-11-14",
+          "completion_record": null
         }
       },
       "source": {
@@ -458,7 +499,8 @@
           "Requested and effective runtime are never guessed"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Archived 2026-11-14: superseded: Codex retired 2026-11-05, Claude-only operating model"
         ],
         "next_actions": [],
         "blockers": [],
@@ -487,7 +529,7 @@
         "title": "Component generated-state hygiene",
         "description": "Classify Fitness logs/bytecode, Nat1 test outputs, root bytecode, _stack runtime/log/archive surfaces, and the new-manifest working-memory catalog projection drift.",
         "card_type": "technical-debt",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "repository-owners",
         "dependencies": [],
@@ -507,7 +549,14 @@
             "basis": "four named component residue classes plus working-memory catalog projection"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed per decision 2026-11-14: Zac approved export-first (verified archive on the off-machine export volume) then cleaning DiscordOS *-direct-master-* copies; classify _stack/foundation/trove dirt; mazer/web dirt left to owner sessions; then stack.lock refresh from fresh worktree; close completed with lock refresh PR",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-11-14",
+            "artifact": "DiscordOS dirty 4529->23 after export; ATLAS PR #234 (6817a31b) fixed trove path and regenerated stack.lock.yaml; _stack/foundation dirty state left to owners"
+          }
         }
       },
       "source": {
@@ -523,7 +572,9 @@
           "Five classes have ignore/retain/remove/regenerate policy and receipts"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-11-14: DiscordOS dirty 4529->23 after export; ATLAS PR #234 (6817a31b) fixed trove path and regenerated stack.lock.yaml; _stack/foundation dirty state left to owners",
+          "Archived 2026-11-14: completed per decision 2026-11-14: Zac approved export-first (verified archive on the off-machine export volume) then cleaning DiscordOS *-direct-master-* copies; classify _stack/foundation/trove dirt; mazer/web dirt left to owner sessions; then stack.lock refresh from fresh worktree; close completed with lock refresh PR"
         ],
         "next_actions": [],
         "blockers": [],
@@ -550,7 +601,7 @@
         "title": "Creation OS Product Definition and First Wedge",
         "description": "Ratify one product definition, the voice-capable software/app/tool builder wedge, supported artifact and repository classes, and explicit phase-one non-goals.",
         "card_type": "governance",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "stack-root",
         "dependencies": [],
@@ -570,7 +621,14 @@
             "basis": "UNKNOWN until the operator ratifies the product definition, first wedge, supported classes, and non-goals."
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed per decision 2026-11-14: Zac chose ratify-with-1-page-delta; ratification = his answer 2026-11-14; close as completed only with merged PR artifact",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-11-14",
+            "artifact": "ATLAS PR #231 (1961f8ef): Creation OS scope ratified by Zac 2026-11-14, scope only, no authority granted"
+          }
         }
       },
       "source": {
@@ -589,7 +647,9 @@
           "The decision has a versioned source, review receipt, and change policy."
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-11-14: ATLAS PR #231 (1961f8ef): Creation OS scope ratified by Zac 2026-11-14, scope only, no authority granted",
+          "Archived 2026-11-14: completed per decision 2026-11-14: Zac chose ratify-with-1-page-delta; ratification = his answer 2026-11-14; close as completed only with merged PR artifact"
         ],
         "next_actions": [],
         "blockers": [],
@@ -618,7 +678,7 @@
         "title": "Default branch governance",
         "description": "Decide protection/ruleset posture for ten cloud repositories.",
         "card_type": "governance",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "repository-owners",
         "dependencies": [],
@@ -638,7 +698,14 @@
             "basis": "ten governed cloud repos"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed per decision 2026-11-14: Zac approved applying rulesets to 5 repos (block delete+force-push, PR required 0 approvals, admin bypass, required checks only after PR-run verified, delete_branch_on_merge); close completed only with readback per repo",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-11-14",
+            "artifact": "main-governance rulesets active on 5 repos (ids 27286516-20), readbacks in local report atlas-github-settings-20261114"
+          }
         }
       },
       "source": {
@@ -654,7 +721,9 @@
           "Each repo has accepted policy and endpoint proof"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-11-14: main-governance rulesets active on 5 repos (ids 27286516-20), readbacks in local report atlas-github-settings-20261114",
+          "Archived 2026-11-14: completed per decision 2026-11-14: Zac approved applying rulesets to 5 repos (block delete+force-push, PR required 0 approvals, admin bypass, required checks only after PR-run verified, delete_branch_on_merge); close completed only with readback per repo"
         ],
         "next_actions": [],
         "blockers": [],
@@ -680,7 +749,7 @@
         "title": "Delivery event plane",
         "description": "Extend seven generic atlas.event.v1 lifecycles with governed GitHub, Vercel, Supabase, and Discord delivery families.",
         "card_type": "governance",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "_stack",
         "dependencies": [
@@ -704,7 +773,11 @@
             "basis": "GitHub, Vercel, Supabase, Discord"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "archived",
+          "board_reason": "deferred: reopen after monitoring-correlation done; rescope to 3 families (drop Discord) and drop discordos-single-writer dep",
+          "board_decided_on": "2026-11-14",
+          "completion_record": null
         }
       },
       "source": {
@@ -723,7 +796,8 @@
         ],
         "discoveries": [
           "Priority is unresolved in the owner source and remains explicitly null.",
-          "This record is a non-executable marker parent; child outcomes remain separate."
+          "This record is a non-executable marker parent; child outcomes remain separate.",
+          "Archived 2026-11-14: deferred: reopen after monitoring-correlation done; rescope to 3 families (drop Discord) and drop discordos-single-writer dep"
         ],
         "next_actions": [],
         "blockers": [],
@@ -751,7 +825,7 @@
         "title": "Dependabot visibility",
         "description": "Resolve 403/disabled appearance while keeping alert counts unknown.",
         "card_type": "governance",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "github-governance",
         "dependencies": [],
@@ -771,7 +845,14 @@
             "basis": "Dependabot alerts for ten repos"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed per decision 2026-11-14: Zac approved enabling Dependabot alerts (alerts only) on 5 repos; record counts in registry; close completed with counts as artifact",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-11-14",
+            "artifact": "Dependabot alerts enabled and counts recorded 2026-11-14 (report atlas-github-settings-20261114); alert triage owned by each project session"
+          }
         }
       },
       "source": {
@@ -787,7 +868,9 @@
           "Each endpoint returns authorized count or explicit durable unavailable state"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-11-14: Dependabot alerts enabled and counts recorded 2026-11-14 (report atlas-github-settings-20261114); alert triage owned by each project session",
+          "Archived 2026-11-14: completed per decision 2026-11-14: Zac approved enabling Dependabot alerts (alerts only) on 5 repos; record counts in registry; close completed with counts as artifact"
         ],
         "next_actions": [],
         "blockers": [],
@@ -813,7 +896,7 @@
         "title": "DiscordOS cross-project board integrity and lifecycle repair",
         "description": "Detect and repair lifecycle, reaction, completion movement, body, journal, encoding, duplicate, formatting, and readback drift across every governed DiscordOS project board rather than applying project-local fixes only.",
         "card_type": "governance",
-        "lifecycle": "completed",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "DiscordOS",
         "dependencies": [],
@@ -833,7 +916,14 @@
             "basis": "inventory and stable IDs; lifecycle and Ready admission; incomplete reactions; completed reactions; shipped completion movement; body and metadata sync; work journals; encoding and formatting; cross-project adoption; single-writer idempotent readback and drift scan"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "completed"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed; archived with its completion record kept",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-07-15",
+            "artifact": "registry status complete at 100% (10 of 10 proof_units), last audited 2026-07-15T11:19:51Z"
+          }
         }
       },
       "source": {
@@ -854,7 +944,9 @@
           "A recurring fail-closed drift scan reports zero mismatches and zero duplicate stable IDs"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-07-15: registry status complete at 100% (10 of 10 proof_units), last audited 2026-07-15T11:19:51Z",
+          "Archived 2026-11-14: completed; archived with its completion record kept"
         ],
         "next_actions": [],
         "blockers": [],
@@ -898,7 +990,7 @@
         "title": "DiscordOS single writer",
         "description": "Eliminate direct writer overlap and prove stable identity, title normalization, starter reaction readback, idempotency, and partial-failure semantics.",
         "card_type": "migration",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "DiscordOS",
         "dependencies": [
@@ -921,7 +1013,11 @@
             "basis": "single writer plus five board contract behaviors"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "archived",
+          "board_reason": "superseded: DiscordOS removed (DOD10), repo archived",
+          "board_decided_on": "2026-11-14",
+          "completion_record": null
         }
       },
       "source": {
@@ -939,7 +1035,8 @@
           "Partial mutation remains incomplete"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Archived 2026-11-14: superseded: DiscordOS removed (DOD10), repo archived"
         ],
         "next_actions": [],
         "blockers": [],
@@ -967,7 +1064,7 @@
         "title": "Fitness Critical secret containment",
         "description": "Contain, rotate, and verify published alert #1 without exposing its value.",
         "card_type": "reliability",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "operator-security",
         "dependencies": [],
@@ -987,7 +1084,11 @@
             "basis": "containment, rotation, verification"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "archived",
+          "board_reason": "archived: rotation in progress, owner Zac + Fitness. New secret key created 2026-11-14; old secret key and legacy service_role JWT key not yet revoked; secret-scanning alert #1 still open. Trigger to reopen/complete: Vercel envs swapped, old keys revoked, alert dismissed.",
+          "board_decided_on": "2026-11-14",
+          "completion_record": null
         }
       },
       "source": {
@@ -1003,7 +1104,8 @@
           "Three proofs are accepted; history and closure remain separate decisions"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Archived 2026-11-14: archived: rotation in progress, owner Zac + Fitness. New secret key created 2026-11-14; old secret key and legacy service_role JWT key not yet revoked; secret-scanning alert #1 still open. Trigger to reopen/complete: Vercel envs swapped, old keys revoked, alert dismissed."
         ],
         "next_actions": [],
         "blockers": [],
@@ -1029,7 +1131,7 @@
         "title": "GitHub control-plane integration",
         "description": "Integrate deterministic read-only-first inventory, parity, Actions, open work, release, protection, ruleset, security, cleanup, event, and projection evidence.",
         "card_type": "architecture",
-        "lifecycle": "completed",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "stack-root",
         "dependencies": [
@@ -1052,7 +1154,14 @@
             "basis": "inventory, parity, Actions, open work, release/security, cleanup, stack events, DiscordOS projection"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "completed"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed; archived with its completion record kept",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-07-14",
+            "artifact": "registry status complete at 100% (8 of 8 proof_units), last audited 2026-07-14T20:24:00Z"
+          }
         }
       },
       "source": {
@@ -1071,7 +1180,9 @@
         ],
         "discoveries": [
           "Priority is unresolved in the owner source and remains explicitly null.",
-          "This record is a non-executable marker parent; child outcomes remain separate."
+          "This record is a non-executable marker parent; child outcomes remain separate.",
+          "Completed 2026-07-14: registry status complete at 100% (8 of 8 proof_units), last audited 2026-07-14T20:24:00Z",
+          "Archived 2026-11-14: completed; archived with its completion record kept"
         ],
         "next_actions": [],
         "blockers": [],
@@ -1101,7 +1212,7 @@
         "title": "Historical task intelligence",
         "description": "Turn task history, handoffs, receipts, and accepted outcomes into queryable provenance without treating transcripts as canonical memory.",
         "card_type": "governance",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "stack-root",
         "dependencies": [
@@ -1123,7 +1234,11 @@
             "basis": "tasks, handoffs, receipts, accepted outcomes"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "archived",
+          "board_reason": "deferred: reopen when a ledger design is accepted AND one concrete question handoffs/receipts cannot answer",
+          "board_decided_on": "2026-11-14",
+          "completion_record": null
         }
       },
       "source": {
@@ -1141,7 +1256,8 @@
           "Query and promotion boundaries are proven"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Archived 2026-11-14: deferred: reopen when a ledger design is accepted AND one concrete question handoffs/receipts cannot answer"
         ],
         "next_actions": [],
         "blockers": [],
@@ -1169,7 +1285,7 @@
         "title": "Local branch retention classification",
         "description": "Read-only inventory of all observed local branches across the twelve audited local root/component repositories; classify owner, retention/collision class, and evidence before any disposition.",
         "card_type": "research",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "repository-owners",
         "dependencies": [],
@@ -1189,7 +1305,14 @@
             "basis": "218 observed local branches across the twelve audited local root/component repositories"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed per decision 2026-11-14: Zac chose read-only per-repo classified branch report + off-machine export of unique unpushed work; no deletion; close completed with report",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-11-14",
+            "artifact": "branch retention report 2026-11-14 (local report, not committed); unpushed-work bundles for 5 repos exported to the off-machine export volume (branch-retention-20261114)"
+          }
         }
       },
       "source": {
@@ -1206,7 +1329,9 @@
           "No cleanup authority is inferred"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-11-14: branch retention report 2026-11-14 (local report, not committed); unpushed-work bundles for 5 repos exported to the off-machine export volume (branch-retention-20261114)",
+          "Archived 2026-11-14: completed per decision 2026-11-14: Zac chose read-only per-repo classified branch report + off-machine export of unique unpushed work; no deletion; close completed with report"
         ],
         "next_actions": [],
         "blockers": [],
@@ -1232,7 +1357,7 @@
         "title": "Marker integrity",
         "description": "Keep marker names, denominators, scope, dates, receipts, and manifests coherent without rewriting history.",
         "card_type": "governance",
-        "lifecycle": "completed",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "stack-root",
         "dependencies": [
@@ -1255,7 +1380,14 @@
             "basis": "frozen to the accepted 2026-07-12 opening audit: 11 opening unique open families + 39 opening historical locked families + one opening percentage-null GitHub initiative family"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "completed"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed; archived with its completion record kept",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-07-15",
+            "artifact": "registry status complete at 100% (51 of 51 marker_families), last audited 2026-07-15T12:51:09Z"
+          }
         }
       },
       "source": {
@@ -1274,7 +1406,9 @@
         ],
         "discoveries": [
           "Priority is unresolved in the owner source and remains explicitly null.",
-          "This record is a non-executable marker parent; child outcomes remain separate."
+          "This record is a non-executable marker parent; child outcomes remain separate.",
+          "Completed 2026-07-15: registry status complete at 100% (51 of 51 marker_families), last audited 2026-07-15T12:51:09Z",
+          "Archived 2026-11-14: completed; archived with its completion record kept"
         ],
         "next_actions": [],
         "blockers": [],
@@ -1303,7 +1437,7 @@
         "title": "Operator Surface Adoption",
         "description": "Prove four distinct operator roles without duplicate authority: Foundation portfolio, Playbook operations, Atlas Book doctrine, and _stack action routing.",
         "card_type": "migration",
-        "lifecycle": "completed",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "stack-root-and-owner-repositories",
         "dependencies": [
@@ -1326,7 +1460,14 @@
             "basis": "Foundation portfolio; Playbook operations; Atlas Book doctrine; _stack action routing"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "completed"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed; archived with its completion record kept",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-07-17",
+            "artifact": "registry status complete at 100% (4 of 4 operator_roles), last audited 2026-07-17T01:54:51Z"
+          }
         }
       },
       "source": {
@@ -1346,7 +1487,9 @@
           "All four roles have accepted current adoption proof without authority duplication"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-07-17: registry status complete at 100% (4 of 4 operator_roles), last audited 2026-07-17T01:54:51Z",
+          "Archived 2026-11-14: completed; archived with its completion record kept"
         ],
         "next_actions": [],
         "blockers": [],
@@ -1378,7 +1521,7 @@
         "title": "Owner metric scope alignment",
         "description": "Make owner percentages explicit by scope, date, denominator, and evidence.",
         "card_type": "governance",
-        "lifecycle": "completed",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "repository-owners",
         "dependencies": [
@@ -1400,7 +1543,14 @@
             "basis": "Mazer board-count conflict and 100/96 scope mismatch"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "completed"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed; archived with its completion record kept",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-07-15",
+            "artifact": "registry status complete at 100% (2 of 2 families), last audited 2026-07-15T11:53:18Z"
+          }
         }
       },
       "source": {
@@ -1416,7 +1566,9 @@
           "Both families have scope-correct canonical rows and retained history"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-07-15: registry status complete at 100% (2 of 2 families), last audited 2026-07-15T11:53:18Z",
+          "Archived 2026-11-14: completed; archived with its completion record kept"
         ],
         "next_actions": [],
         "blockers": [],
@@ -1444,7 +1596,7 @@
         "title": "Persistent workspaces and browser leases",
         "description": "Define persistent workspace and browser lease identity, renewal, expiry, recovery, and collision behavior.",
         "card_type": "architecture",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "_stack",
         "dependencies": [
@@ -1466,7 +1618,11 @@
             "basis": "identity, renewal, expiry, recovery, collision"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "archived",
+          "board_reason": "folded into lane-workspace-branch-worktree-hygiene; replaced by fresh-worktree rule + isolated Playwright profiles",
+          "board_decided_on": "2026-11-14",
+          "completion_record": null
         }
       },
       "source": {
@@ -1484,7 +1640,8 @@
           "Recovery preserves owner state"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Archived 2026-11-14: folded into lane-workspace-branch-worktree-hygiene; replaced by fresh-worktree rule + isolated Playwright profiles"
         ],
         "next_actions": [],
         "blockers": [],
@@ -1512,7 +1669,7 @@
         "title": "Playbook universal adoption",
         "description": "Prove explicit Playbook doctrine and verification adoption across every declared component and command adapter, including correction of stale Mazer adoption evidence at repos/fawxzzy-mazer. The Atlas root adoption unit is now evidence-backed by source-linked Playbook registry consumption and a read-only conformance receipt, but that does not imply wider component adoption.",
         "card_type": "migration",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "playbook",
         "dependencies": [
@@ -1535,7 +1692,14 @@
             "basis": "Atlas, _stack, DiscordOS, Lifeline, Playbook, Mazer, Fitness, Foundation, Trove, Stream, Nat1, Playbook Demo"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed per decision 2026-11-14: Zac chose config PRs (ATLAS, FawxzzyWeb where missing) + per-repo verify table; run playbook verify first; pre-existing main failures reported not hidden; close completed with merged PRs + table",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-11-14",
+            "artifact": "Playbook verify passes on origin/main for Fitness, Mazer, Web, ATLAS, Playbook (local report atlas-playbook-adoption-20261114); no config PR needed"
+          }
         }
       },
       "source": {
@@ -1555,7 +1719,9 @@
           "Atlas root adoption remains source-linked and evidence-backed while remaining owner-component proofs stay explicit"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-11-14: Playbook verify passes on origin/main for Fitness, Mazer, Web, ATLAS, Playbook (local report atlas-playbook-adoption-20261114); no config PR needed",
+          "Archived 2026-11-14: completed per decision 2026-11-14: Zac chose config PRs (ATLAS, FawxzzyWeb where missing) + per-repo verify table; run playbook verify first; pre-existing main failures reported not hidden; close completed with merged PRs + table"
         ],
         "next_actions": [],
         "blockers": [],
@@ -1586,7 +1752,7 @@
         "title": "Project command surfaces",
         "description": "Make ATLAS MAIN, standing Mazer, standing Fitness, FAWXZZY MESSAGES, and embedded DiscordOS routing explicit and testable.",
         "card_type": "governance",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "stack-root",
         "dependencies": [
@@ -1608,7 +1774,11 @@
             "basis": "ATLAS MAIN, Mazer, Fitness, FAWXZZY MESSAGES, embedded DiscordOS"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "archived",
+          "board_reason": "superseded: replaced by Claude skills + per-project sessions; DiscordOS removed",
+          "board_decided_on": "2026-11-14",
+          "completion_record": null
         }
       },
       "source": {
@@ -1627,7 +1797,8 @@
           "Completed bounded tasks are archived without archiving standing surfaces"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Archived 2026-11-14: superseded: replaced by Claude skills + per-project sessions; DiscordOS removed"
         ],
         "next_actions": [],
         "blockers": [],
@@ -1655,7 +1826,7 @@
         "title": "Release policy and evidence",
         "description": "Define release readiness and evidence for ten repos; zero visible releases is not readiness.",
         "card_type": "governance",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "repository-owners",
         "dependencies": [
@@ -1677,7 +1848,14 @@
             "basis": "ten governed cloud repos"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed per decision 2026-11-14: Zac chose 3 policy classes (deploy-surface, library-publish, no-release) + 10-repo table PR; reconcile release_eligible flags; close completed with merged PR",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-11-14",
+            "artifact": "ATLAS PR #233 (0dfcce82): release policy classes + 10-repo table; owner acceptance per row PENDING; fawxzzy-platform and socials-os were undecided there and are classed no-release in the board-close PR"
+          }
         }
       },
       "source": {
@@ -1693,7 +1871,9 @@
           "Each repo has accepted release policy and evidence state"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-11-14: ATLAS PR #233 (0dfcce82): release policy classes + 10-repo table; owner acceptance per row PENDING; fawxzzy-platform and socials-os were undecided there and are classed no-release in the board-close PR",
+          "Archived 2026-11-14: completed per decision 2026-11-14: Zac chose 3 policy classes (deploy-surface, library-publish, no-release) + 10-repo table PR; reconcile release_eligible flags; close completed with merged PR"
         ],
         "next_actions": [],
         "blockers": [],
@@ -1719,7 +1899,7 @@
         "title": "Remote branch cleanup review",
         "description": "Review 80 merged remote cleanup candidates without deletion by inference.",
         "card_type": "technical-debt",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "github-governance",
         "dependencies": [
@@ -1741,7 +1921,14 @@
             "basis": "published registry candidate inventory"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed per decision 2026-11-14: Zac approved deleting the merged >30d remote branches (346 per 2026-11-14 count, regenerate at run time) ONLY after per-repo git bundle verified by sha256 on the off-machine export volume; unmerged and open-PR branches never touched; skip any branch that is a PR head of an open PR or protected; close completed with manifest + bundle hashes + post-delete count",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-11-14",
+            "artifact": "499 merged remote branches deleted after 13 verified all-refs bundles; manifest in the off-machine export volume (branch-retention-20261114/manifest.csv); DiscordOS 51 branches left (repo archived)"
+          }
         }
       },
       "source": {
@@ -1757,7 +1944,9 @@
           "Every candidate has fresh exclusion-aware disposition"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-11-14: 499 merged remote branches deleted after 13 verified all-refs bundles; manifest in the off-machine export volume (branch-retention-20261114/manifest.csv); DiscordOS 51 branches left (repo archived)",
+          "Archived 2026-11-14: completed per decision 2026-11-14: Zac approved deleting the merged >30d remote branches (346 per 2026-11-14 count, regenerate at run time) ONLY after per-repo git bundle verified by sha256 on the off-machine export volume; unmerged and open-PR branches never touched; skip any branch that is a PR head of an open PR or protected; close completed with manifest + bundle hashes + post-delete count"
         ],
         "next_actions": [],
         "blockers": [],
@@ -1783,7 +1972,7 @@
         "title": "Root truth convergence",
         "description": "Reconcile declared, generated, locked, validation, and current checkout truth without erasing timestamped provenance.",
         "card_type": "governance",
-        "lifecycle": "completed",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "stack-root",
         "dependencies": [
@@ -1805,7 +1994,14 @@
             "basis": "the four exact current stack-lock validation errors"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "completed"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed; archived with its completion record kept",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-07-13",
+            "artifact": "registry status complete at 100% (4 of 4 assertions), last audited 2026-07-13T00:17:56Z"
+          }
         }
       },
       "source": {
@@ -1824,7 +2020,9 @@
         ],
         "discoveries": [
           "Priority is unresolved in the owner source and remains explicitly null.",
-          "This record is a non-executable marker parent; child outcomes remain separate."
+          "This record is a non-executable marker parent; child outcomes remain separate.",
+          "Completed 2026-07-13: registry status complete at 100% (4 of 4 assertions), last audited 2026-07-13T00:17:56Z",
+          "Archived 2026-11-14: completed; archived with its completion record kept"
         ],
         "next_actions": [],
         "blockers": [],
@@ -1854,7 +2052,7 @@
         "title": "Runtime Activation Readiness",
         "description": "Prove the accepted local runtime placement through exactly eight binary gates without inferring running uptime from stopped/restorable state or starting unadmitted persistent processes.",
         "card_type": "architecture",
-        "lifecycle": "completed",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "stack-root-and-owner-repositories",
         "dependencies": [],
@@ -1874,7 +2072,14 @@
             "basis": "placement contract; Playbook build; Observer foreground health; Lifeline build/doctor; Lifeline state placement; Lifeline supervision/restart; bounded logon-restore proof; _stack single-worker proof"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "completed"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed; archived with its completion record kept",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-07-17",
+            "artifact": "registry status complete at 100% (8 of 8 binary_gates), last audited 2026-07-17T01:54:51Z"
+          }
         }
       },
       "source": {
@@ -1894,7 +2099,9 @@
           "Actual new-logon restoration and sustained unattended uptime remain separate UNKNOWN observations"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-07-17: registry status complete at 100% (8 of 8 binary_gates), last audited 2026-07-17T01:54:51Z",
+          "Archived 2026-11-14: completed; archived with its completion record kept"
         ],
         "next_actions": [],
         "blockers": [],
@@ -1926,7 +2133,7 @@
         "title": "Runtime Correlation Reliability",
         "description": "Prove identity, state, and receipt correlation across exactly five deterministic bounded-worker scenarios: successful, failed, duplicate, interrupted/restarted, and stale-receipt rejection.",
         "card_type": "architecture",
-        "lifecycle": "completed",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "stack-root-and-owner-repositories",
         "dependencies": [
@@ -1948,7 +2155,14 @@
             "basis": "successful task; failed task; duplicate task; interrupted/restarted task; stale receipt rejection"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "completed"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed; archived with its completion record kept",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-07-17",
+            "artifact": "registry status complete at 100% (5 of 5 runtime_scenarios), last audited 2026-07-17T01:54:51Z"
+          }
         }
       },
       "source": {
@@ -1967,7 +2181,9 @@
           "DiscordOS hosted interaction-first reliability remains a separate activation-sequence review and is not inferred from this marker"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-07-17: registry status complete at 100% (5 of 5 runtime_scenarios), last audited 2026-07-17T01:54:51Z",
+          "Archived 2026-11-14: completed; archived with its completion record kept"
         ],
         "next_actions": [],
         "blockers": [],
@@ -1997,7 +2213,7 @@
         "title": "Security containment",
         "description": "Non-additive umbrella for four separately measured child-lane closeouts: Critical Fitness secret containment, Supabase advisor remediation, sensitive runtime residue containment, and Fitness dependency security.",
         "card_type": "reliability",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "operator-security",
         "dependencies": [
@@ -2022,7 +2238,11 @@
             "basis": "Critical Fitness secret containment, Supabase advisor remediation, sensitive runtime residue containment, and Fitness dependency security; child denominators remain separate"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "archived",
+          "board_reason": "archived: roll-up not closed; open child = Fitness secret alert #1 (see lane-fitness-critical-secret-containment); leaked-password protection accepted as plan-gated. Trigger: alert #1 dismissed and legacy keys disabled",
+          "board_decided_on": "2026-11-14",
+          "completion_record": null
         }
       },
       "source": {
@@ -2041,7 +2261,8 @@
         ],
         "discoveries": [
           "Priority is unresolved in the owner source and remains explicitly null.",
-          "This record is a non-executable marker parent; child outcomes remain separate."
+          "This record is a non-executable marker parent; child outcomes remain separate.",
+          "Archived 2026-11-14: archived: roll-up not closed; open child = Fitness secret alert #1 (see lane-fitness-critical-secret-containment); leaked-password protection accepted as plan-gated. Trigger: alert #1 dismissed and legacy keys disabled"
         ],
         "next_actions": [],
         "blockers": [],
@@ -2068,7 +2289,7 @@
         "title": "Sensitive runtime residue containment",
         "description": "Classify name-only token, cookie, snapshot metadata, and unclassified DOCX evidence without reading values.",
         "card_type": "reliability",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "operator-security",
         "dependencies": [],
@@ -2088,7 +2309,14 @@
             "basis": "four name-only evidence surfaces"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed per decision 2026-11-14: Zac chose gitignore untracked ops/atlas paths + classification report (exists: atlas-containment-retention-20261114.md) + off-machine export of 138 user-path files first; tracked 296 untouched; close completed with merged PR + report",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-11-14",
+            "artifact": "ATLAS PR #230 (f62d1eec): /ops/atlas/** ignored with tracked re-includes; 138 user-path files exported to the off-machine export volume (folder ops-atlas-residue-20261114) with a sha256 manifest"
+          }
         }
       },
       "source": {
@@ -2104,7 +2332,9 @@
           "Four surfaces have authorized containment/retention and no value exposure"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-11-14: ATLAS PR #230 (f62d1eec): /ops/atlas/** ignored with tracked re-includes; 138 user-path files exported to the off-machine export volume (folder ops-atlas-residue-20261114) with a sha256 manifest",
+          "Archived 2026-11-14: completed per decision 2026-11-14: Zac chose gitignore untracked ops/atlas paths + classification report (exists: atlas-containment-retention-20261114.md) + off-machine export of 138 user-path files first; tracked 296 untouched; close completed with merged PR + report"
         ],
         "next_actions": [],
         "blockers": [],
@@ -2130,7 +2360,7 @@
         "title": "Source hierarchy documentation normalization",
         "description": "Normalize current-sounding docs to the accepted eight-level source hierarchy.",
         "card_type": "documentation",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "stack-root",
         "dependencies": [],
@@ -2150,7 +2380,14 @@
             "basis": "Null until this backlog establishes the deterministic document inventory for denominator/scope admission"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed; archived with its completion record kept",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-11-14",
+            "artifact": "ATLAS PR #229 squash c24db6d329240bc22daaef1bbb4d1d23a44b18c4 merged 2026-11-14"
+          }
         }
       },
       "source": {
@@ -2166,7 +2403,9 @@
           "Deterministic document inventory establishes denominator/scope admission and every admitted document is classified"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-11-14: ATLAS PR #229 squash c24db6d329240bc22daaef1bbb4d1d23a44b18c4 merged 2026-11-14",
+          "Archived 2026-11-14: completed; archived with its completion record kept"
         ],
         "next_actions": [],
         "blockers": [],
@@ -2192,7 +2431,7 @@
         "title": "Stack inventory, lock, and head reconciliation",
         "description": "Resolve four exact lock/head validation errors through canonical generation.",
         "card_type": "governance",
-        "lifecycle": "completed",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "stack-root",
         "dependencies": [],
@@ -2212,7 +2451,14 @@
             "basis": "current validation receipt"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "completed"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed; archived with its completion record kept",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-07-13",
+            "artifact": "registry status complete at 100% (4 of 4 errors), last audited 2026-07-13T00:17:56Z"
+          }
         }
       },
       "source": {
@@ -2228,7 +2474,9 @@
           "Four errors clear in a fresh receipt"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-07-13: registry status complete at 100% (4 of 4 errors), last audited 2026-07-13T00:17:56Z",
+          "Archived 2026-11-14: completed; archived with its completion record kept"
         ],
         "next_actions": [],
         "blockers": [],
@@ -2256,7 +2504,7 @@
         "title": "Stream remote decision",
         "description": "Choose publish, retain local-only, or archive for Stream.",
         "card_type": "architecture",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "stack-root",
         "dependencies": [],
@@ -2276,7 +2524,14 @@
             "basis": "one local-only repo"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed per decision 2026-11-14: Zac chose publish private fawxzzy/stream; names-only secret check first, no CI/release wiring, release_eligible stays false; close completed with remote readback + registry record",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-11-14",
+            "artifact": "fawxzzy/stream published private, head 43769ba8 (local report atlas-github-settings-20261114); stack.yaml remote entry recorded in the board-close PR"
+          }
         }
       },
       "source": {
@@ -2292,7 +2547,9 @@
           "Explicit decision and implementation receipt exist"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-11-14: fawxzzy/stream published private, head 43769ba8 (local report atlas-github-settings-20261114); stack.yaml remote entry recorded in the board-close PR",
+          "Archived 2026-11-14: completed per decision 2026-11-14: Zac chose publish private fawxzzy/stream; names-only secret check first, no CI/release wiring, release_eligible stays false; close completed with remote readback + registry record"
         ],
         "next_actions": [],
         "blockers": [],
@@ -2318,7 +2575,7 @@
         "title": "Supabase security advisor remediation",
         "description": "Disposition Fitness/Mazer leaked-password warnings and twelve DiscordOS advisor findings.",
         "card_type": "reliability",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "project-owners",
         "dependencies": [
@@ -2340,7 +2597,14 @@
             "basis": "two project warnings plus twelve DiscordOS findings"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed per decision 2026-11-14: dispositions recorded for the 16 advisor warnings; leaked-password protection is plan-gated (Free plan) and accepted, not enabled",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-11-14",
+            "artifact": "advisor dispositions report 2026-11-14 (local report, not committed); leaked-password protection is OFF and is plan-gated (Supabase Free plan, verified in dashboard 2026-11-14); accepted: revisit when the org moves to Pro"
+          }
         }
       },
       "source": {
@@ -2356,7 +2620,9 @@
           "All 14 have authorized remediation or accepted risk and fresh advisor proof"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-11-14: advisor dispositions report 2026-11-14 (local report, not committed); leaked-password protection is OFF and is plan-gated (Supabase Free plan, verified in dashboard 2026-11-14); accepted: revisit when the org moves to Pro",
+          "Archived 2026-11-14: completed per decision 2026-11-14: dispositions recorded for the 16 advisor warnings; leaked-password protection is plan-gated (Free plan) and accepted, not enabled"
         ],
         "next_actions": [],
         "blockers": [],
@@ -2380,14 +2646,12 @@
         "project_id": "atlas",
         "board_id": "discordos:project-feedback:atlas",
         "title": "Vercel and Supabase monitoring correlation",
-        "description": "Correlate five Vercel projects and three Supabase projects with GitHub source/run evidence and endpoint-specific unknowns.",
+        "description": "Correlate three Vercel projects and one Supabase project (four external projects) with GitHub source/run evidence and endpoint-specific unknowns.",
         "card_type": "governance",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "stack-root",
-        "dependencies": [
-          "lane-supabase-security-advisor-remediation"
-        ],
+        "dependencies": [],
         "board_version": 1,
         "updated_at": "2026-07-17T06:07:21Z",
         "source_ref": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json#lane-vercel-supabase-monitoring-correlation",
@@ -2400,11 +2664,18 @@
           "completed_units": null,
           "denominator": {
             "kind": "projects",
-            "value": 8,
-            "basis": "five Vercel plus three Supabase projects"
+            "value": 4,
+            "basis": "three Vercel plus one Supabase project (re-baselined 2026-11-14 from five plus three)"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed per decision 2026-11-14: Zac chose re-baseline denominator 5+3 -> 3+1=4, drop advisor dep, one read-only correlation table; READY=deployed not healthy; close completed with table + registry text fix",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-11-14",
+            "artifact": "monitoring correlation report 2026-11-14 (denominator 4 projects)"
+          }
         }
       },
       "source": {
@@ -2414,15 +2685,17 @@
         "source_updated_at": "2026-07-17T06:07:21Z"
       },
       "content": {
-        "summary": "Correlate five Vercel projects and three Supabase projects with GitHub source/run evidence and endpoint-specific unknowns.",
-        "objective": "Correlate five Vercel projects and three Supabase projects with GitHub source/run evidence and endpoint-specific unknowns.",
+        "summary": "Correlate three Vercel projects and one Supabase project (four external projects) with GitHub source/run evidence and endpoint-specific unknowns.",
+        "objective": "Correlate three Vercel projects and one Supabase project (four external projects) with GitHub source/run evidence and endpoint-specific unknowns.",
         "acceptance_criteria": [
-          "Eight projects have freshness-stamped correlation",
+          "Four projects have freshness-stamped correlation",
           "READY/ACTIVE_HEALTHY are not promoted to release health",
           "Unknown branch and backup states remain explicit"
         ],
         "discoveries": [
-          "Priority is unresolved in the owner source and remains explicitly null."
+          "Priority is unresolved in the owner source and remains explicitly null.",
+          "Completed 2026-11-14: monitoring correlation report 2026-11-14 (denominator 4 projects)",
+          "Archived 2026-11-14: completed per decision 2026-11-14: Zac chose re-baseline denominator 5+3 -> 3+1=4, drop advisor dep, one read-only correlation table; READY=deployed not healthy; close completed with table + registry text fix"
         ],
         "next_actions": [],
         "blockers": [],
@@ -2449,7 +2722,7 @@
         "title": "Workspace, branch, and worktree hygiene",
         "description": "Classify 62 retention-UNKNOWN candidates, 18 dirty/44 clean split, and two missing registrations without cleanup by inference.",
         "card_type": "technical-debt",
-        "lifecycle": "planning",
+        "lifecycle": "archived",
         "priority": null,
         "owner": "repository-owners",
         "dependencies": [
@@ -2472,7 +2745,14 @@
             "basis": "62 retention-UNKNOWN candidates plus Nat1 and Playbook Demo detached registrations"
           },
           "projection_role": "stack-coordination",
-          "seed_disposition": "current"
+          "seed_disposition": "archived",
+          "board_disposition": "completed-archived",
+          "board_reason": "completed per decision 2026-11-14: Zac approved retiring 48 merged+clean and 34 merged+dirty worktrees export-first (verified patch on the off-machine export volume before removal) via atlas-worktree-retire; 70 HOLD and 9 unpushed untouched; add one-worktree/port/browser-profile convention; close completed with export manifest + post-run count",
+          "board_decided_on": "2026-11-14",
+          "completion_record": {
+            "completed_on": "2026-11-14",
+            "artifact": "40 worktrees retired export-first 2026-11-14 (125->90 linked); manifest in the off-machine export volume (worktree-retire-20261114/manifest.csv); 70 HOLD and 9 unpushed untouched by design"
+          }
         }
       },
       "source": {
@@ -2491,7 +2771,9 @@
         ],
         "discoveries": [
           "Priority is unresolved in the owner source and remains explicitly null.",
-          "This record is a non-executable marker parent; child outcomes remain separate."
+          "This record is a non-executable marker parent; child outcomes remain separate.",
+          "Completed 2026-11-14: 40 worktrees retired export-first 2026-11-14 (125->90 linked); manifest in the off-machine export volume (worktree-retire-20261114/manifest.csv); 70 HOLD and 9 unpushed untouched by design",
+          "Archived 2026-11-14: completed per decision 2026-11-14: Zac approved retiring 48 merged+clean and 34 merged+dirty worktrees export-first (verified patch on the off-machine export volume before removal) via atlas-worktree-retire; 70 HOLD and 9 unpushed untouched; add one-worktree/port/browser-profile convention; close completed with export manifest + post-run count"
         ],
         "next_actions": [],
         "blockers": [],

@@ -1,11 +1,11 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_cortex_a4923021069e",
+  "export_id": "pbe_cortex_3c512bee851c",
   "project_id": "cortex",
   "board_id": "discordos:project-feedback:cortex",
   "owner": "stack-root",
   "adapter_id": "atlas-full-system-registry-v1",
-  "source_revision": "sha256:a4923021069e5d20248d1ae295e73f2fc9a5fa056f10fdcb6ffe41f57ccf9e10",
+  "source_revision": "sha256:3c512bee851c1d196681ad29c65d8d6cc63b0a57f96cfc67c4293a18847f1624",
   "generated_at": "2026-07-17T06:07:21Z",
   "sources": [
     {
@@ -13,7 +13,7 @@
       "kind": "json",
       "repository": "atlas-root",
       "path": "docs/registry/ATLAS-FULL-SYSTEM-REEVALUATION-LANES.json",
-      "revision": "sha256:4f27f5e8174ca4401e2ef564d25ed353868d043aed8e2b8d793f1ef3718e361e",
+      "revision": "sha256:1ab9c6024dd24b249e496e3d43054f24b36dc44f668be23378983f1179b6c917",
       "observed_at": "2026-07-17T06:07:21Z"
     },
     {
