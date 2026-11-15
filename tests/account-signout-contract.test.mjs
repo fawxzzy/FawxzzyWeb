@@ -224,7 +224,9 @@ test("the Mazer authorization loading state has no visible text", () => {
   const source = read("src/components/account/mazer-oauth-authorization.tsx");
   assert.ok(!source.includes("One moment."), "the pending card is replaced by Mazer's loader");
   assert.ok(!source.includes('title="One moment."'));
-  assert.equal((source.match(/await holdLoader\(\);/g) ?? []).length, 3, "every loader exit holds the minimum");
+  // Sign-in redirect, already-approved redirect, auto-approve redirect, and the return to Mazer's
+  // sign-in with a notice (returnToMazerSignIn).
+  assert.equal((source.match(/await holdLoader\(\);/g) ?? []).length, 4, "every loader exit holds the minimum");
   assert.match(source, /className="oauth-bare"/);
   assert.match(read("src/styles/page-families/account-forms.css"), /\.oauth-bare \{[^}]*background: #02080f;/);
 });

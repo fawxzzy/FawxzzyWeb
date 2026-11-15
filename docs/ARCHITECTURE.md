@@ -27,7 +27,7 @@ Short map of the repository. Details live in the linked docs; this file only poi
 
 ## Auth surface
 
-- The account host owns sign-in, sign-up, password reset, the email confirm and PKCE callback routes, and the `/oauth/authorize` consent surface for the Mazer client. Shared auth helpers are in `src/lib/auth`; bot-check logic is `src/lib/auth/captcha.ts`.
+- The account host owns sign-in, sign-up, password reset, the email confirm and PKCE callback routes, and `/oauth/authorize`, which approves the first-party Mazer client without a consent card (threat model: `docs/mazer-oauth-threat-model.md`). Shared auth helpers are in `src/lib/auth`; bot-check logic is `src/lib/auth/captcha.ts`.
 - Contracts: `docs/auth-surface-family.md`, `docs/shared-account-portal-phase1.md`, `docs/runbooks/auth-email-hook.md`.
 
 ## Projects board (owner-only)
