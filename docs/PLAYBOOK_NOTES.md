@@ -1,5 +1,13 @@
 This file is a project-local inbox for repo-specific Playbook notes that may later be promoted upstream.
 
+## 2026-11-15 - Fitness handoff allowlist for Fitness PR258-270
+
+- Type: Release gate data
+- WHAT changed: `FITNESS_HANDOFF_ACTIVATION` now lists Fitness main `9979e22faa639d4fb60d915e4a02fefded823dc3` (PR258-270) as the newest source, keeps `3db7fe30cb397b83042950f3ef642c930a8e0b8b` (PR256-257, live) as the rollback and `d335131a8602206c5c7702ac7fd3399c26c43f35` (reviewed, never shipped), and drops the oldest `76f04dfcd66c6ebbdbbb6a65a8d516accdd6b2e3`.
+- WHY it changed: Fitness main moved past `d335131a` (status screens #268, Lane C #270) before the release shipped; the portal checks `readiness.sourceCommit`, so the final release sha must be listed.
+- Rule: Pin the allowlist to the final Fitness main sha at release time; re-check main moved before the portal deploy.
+- Scope: Source and local regression only; no deployment, alias, provider, credential or database effect.
+
 ## 2026-11-15 - Fitness handoff allowlist for Fitness PR258-266
 
 - Type: Release gate data
