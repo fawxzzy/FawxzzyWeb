@@ -12,11 +12,14 @@
 //   4. the file under test, run verbatim, then its rollback, then a re-apply.
 //
 // Usage (pglite pinned at 0.5.13, installed with `npm ci --ignore-scripts` in its own folder):
-//   PGLITE_SANDBOX=<folder with node_modules/@electric-sql/pglite> node supabase/proposed/account_change_username_v1.scratch-test.cjs
-const { createRequire } = require("node:module");
-const crypto = require("node:crypto");
-const fs = require("node:fs");
-const path = require("node:path");
+//   PGLITE_SANDBOX=<folder with node_modules/@electric-sql/pglite> node supabase/proposed/account_change_username_v1.scratch-test.mjs
+import { createRequire } from "node:module";
+import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const sandbox = process.env.PGLITE_SANDBOX;
 if (!sandbox) {

@@ -128,7 +128,7 @@ redirects must be admitted individually in a future packet; do not add a broad p
     name that was the old username follows it. Mazer profile names are not changed.
     The SQL is owner-gated and lives in `supabase/proposed/` (not `migrations/`, so nothing applies
     it on merge) with its rollback and a pglite scratch test
-    (`account_change_username_v1.scratch-test.cjs`). Until it is applied the call fails with
+    (`account_change_username_v1.scratch-test.mjs`). Until it is applied the call fails with
     PGRST202/42501 and the screen says "Changes are unavailable right now. Try again later."
   - Email: `updateUser({ email })` with `emailRedirectTo` = the confirm route themed by `app`, with
     no product return (`accountEmailChangeUrl`). The provider sends the link to the NEW address; the
