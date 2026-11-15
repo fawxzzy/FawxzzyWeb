@@ -39,3 +39,11 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHY it changed: the Web Projects snapshot lagged the Fitness owner board after #256 merged.
 - Rule: Fitness re-pin copies the owner export and rebuilds the snapshot with `npm run data:project-board-owner-snapshot`, never by hand.
 - Scope: Source and local regression only. The Projects page changes only after the next production build; no deployment, provider, credential or database effect.
+
+## 2026-11-15 - Mazer board re-pin after Mazer PR #596
+
+- Type: Board data only
+- WHAT changed: `planning/board-sources/mazer.project-board.owner-export.v1.json` is re-pinned to the Mazer owner export on Mazer `main` (merge `1e42c375`, PR #596; 272 cards, sha256 `6826ec16d277`), and the generated owner snapshot `src/server/projects/owner-board.generated.mjs` is rebuilt from it.
+- WHY it changed: the Web Projects snapshot lagged the Mazer owner board after the board fold merged.
+- Rule: Mazer re-pin copies the owner export and rebuilds the snapshot with `npm run data:project-board-owner-snapshot`, never by hand.
+- Scope: Source and local regression only. The Projects page changes only after the next production build; no deployment, provider, credential or database effect.
