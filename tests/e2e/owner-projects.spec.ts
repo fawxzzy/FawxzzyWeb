@@ -177,7 +177,7 @@ test("signing in as the owner records the hint before leaving, and signing out c
   expect(await hint(page)).toBe("1");
 
   await page.goto("/account?auth_test=session");
-  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect.poll(() => page.locator("html").getAttribute("data-sign-out-destination")).toBeTruthy();
   expect(await hint(page)).toBeUndefined();
 });

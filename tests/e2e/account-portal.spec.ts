@@ -1946,7 +1946,7 @@ test("account status copies the compact Mazer hierarchy without unfinished servi
   expect(dockBox).not.toBeNull();
   expect(linksBox!.y + linksBox!.height).toBeLessThanOrEqual(dockBox!.y + 1);
 
-  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
   // The page picks its own destination (the website) and the session-lost redirect stays out of it.
   await expect(page.locator("html")).toHaveAttribute(
     "data-sign-out-destination",
@@ -1961,7 +1961,7 @@ test("account status copies the compact Mazer hierarchy without unfinished servi
 // redirect to /login must not run ahead of the product origin the page sends the person to.
 test("account sign-out from Mazer heads for Mazer, never the login page", async ({ page }) => {
   await page.goto("/account?auth_test=session&app=mazer");
-  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute(
     "data-sign-out-destination",
     `${accountContract.productOrigins.mazer}/`,
@@ -1974,7 +1974,7 @@ test("account sign-out from Mazer heads for Mazer, never the login page", async 
 test("the account page signs out everywhere, the recovery session only itself", async ({ browserName, page }) => {
   test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
   await page.goto("/account?auth_test=session");
-  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("data-sign-out-scope", "everywhere");
 
   // Choosing a new password ends the throw-away recovery session, not the person's apps.
@@ -2046,7 +2046,7 @@ test("the account page revalidates on focus, return and page restore, at most on
 test("a session another app ends while this tab is away is found when the person returns", async ({ page }) => {
   await page.clock.install();
   await page.goto("/account?auth_test=session-revoked-on-return");
-  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeVisible();
   await expect.poll(() => sessionValidations(page)).toBe("1");
   await expect(page).toHaveURL(/\/account\?auth_test=session-revoked-on-return$/);
   await page.clock.fastForward(30_000);
@@ -2057,7 +2057,7 @@ test("a session another app ends while this tab is away is found when the person
 test("a failed session check never signs the person out", async ({ page }) => {
   await page.clock.install();
   await page.goto("/account?auth_test=session-validation-unavailable");
-  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeVisible();
   await expect.poll(() => sessionValidations(page)).toBe("1");
   await page.clock.fastForward(30_000);
   await fireReturnEvent(page, "visible");
@@ -2070,7 +2070,7 @@ test("a failed session check never signs the person out", async ({ page }) => {
       channel.port2.postMessage(0);
     }),
   );
-  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeVisible();
   await expect(page).toHaveURL(/\/account\?auth_test=session-validation-unavailable$/);
   await expect(page.locator("html")).not.toHaveAttribute("data-session-lost-redirect", /.+/);
 });
@@ -2082,7 +2082,7 @@ test("the provider's fresh account details are applied even when the SDK announc
 
 test("a session lost without this page signing out still redirects to login", async ({ page }) => {
   await page.goto("/account?auth_test=session-expires&app=mazer");
-  await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeVisible();
   await expect(page).toHaveURL(/\/login\?app=mazer$/);
 });
 
