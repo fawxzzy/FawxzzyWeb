@@ -1,0 +1,12 @@
+{
+  "verify": {
+    "rules": {
+      "requireNotesOnChanges": [
+        {
+          "whenChanged": ["src/**", "app/**", "server/**", "supabase/**"],
+          "mustTouch": ["docs/PLAYBOOK_NOTES.md", "docs/playbook-notes/**"]
+        }
+      ]
+    }
+  }
+}
