@@ -45,9 +45,13 @@ function whenPageSettled(callback: () => void) {
 /**
  * Cloudflare Turnstile widget for the account forms. Renders in "interaction-only" mode: invisible
  * unless Cloudflare needs the person to act. The script loads only on the account origin, after
- * the page has settled. If it cannot load, the form still works and a short note is shown.
+ * the page has settled. If it cannot load, the form still works and `onUnavailable` lets the screen
+ * show its one notice (`captcha.load`, with Retry that remounts this field).
  */
-export const TurnstileField = forwardRef<TurnstileFieldHandle>(function TurnstileField(_props, ref) {
+export const TurnstileField = forwardRef<TurnstileFieldHandle, { onUnavailable?: () => void }>(function TurnstileField(
+  { onUnavailable },
+  ref,
+) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | undefined>(undefined);
   const tokenRef = useRef<string | undefined>(undefined);
@@ -55,6 +59,10 @@ export const TurnstileField = forwardRef<TurnstileFieldHandle>(function Turnstil
   // True only while there is something to wait for: the script is loading or a widget exists.
   const pendingRef = useRef(false);
   const [unavailable, setUnavailable] = useState(false);
+  const onUnavailableRef = useRef(onUnavailable);
+  useEffect(() => {
+    onUnavailableRef.current = onUnavailable;
+  }, [onUnavailable]);
 
   useImperativeHandle(ref, () => ({
     getToken: () => waitForCaptchaToken(
@@ -81,6 +89,7 @@ export const TurnstileField = forwardRef<TurnstileFieldHandle>(function Turnstil
       pendingRef.current = false;
       unavailableRef.current = true;
       setUnavailable(true);
+      onUnavailableRef.current?.();
     };
     let disposed = false;
     let timeout: number | undefined;
@@ -155,11 +164,6 @@ export const TurnstileField = forwardRef<TurnstileFieldHandle>(function Turnstil
   return (
     <div className="account-captcha" data-captcha-state={unavailable ? "unavailable" : "ready"}>
       <div data-testid="turnstile-container" ref={containerRef} />
-      {unavailable ? (
-        <p className="account-field-note" data-testid="turnstile-unavailable" role="status">
-          Security check could not load. You can still try.
-        </p>
-      ) : null}
     </div>
   );
 });

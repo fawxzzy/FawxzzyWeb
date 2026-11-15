@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
-import { SystemState } from "@/components/system/system-state";
+import { AuthDock, AuthStatus } from "@/components/account/auth-surface";
+import { accountExperienceContexts } from "@/config/account";
+import { AUTH_COPY, authNotice } from "@/lib/auth/copy-matrix";
 import "./globals.css";
 
 type GlobalErrorProps = {
@@ -18,37 +19,16 @@ export default function GlobalError({ error, unstable_retry }: GlobalErrorProps)
   return (
     <html lang="en">
       <body>
-        <title>Something went wrong | Fawxzzy</title>
-        <a className="skip-link" href="#main-content">
-          Skip to content
-        </a>
+        <title>{`${AUTH_COPY.title.couldNotLoad} | Fawxzzy`}</title>
         <main className="system-page system-page--global system-page--locked app-theme-fawxzzy" id="main-content">
           <div className="shell-container system-shell system-shell--global">
-            <SystemState
-              actions={
-                <>
-                  <button
-                    className="catalog-button catalog-button--primary"
-                    onClick={() => unstable_retry()}
-                    type="button"
-                  >
-                    Retry Fawxzzy
-                  </button>
-                  <Link className="catalog-button catalog-button--secondary" href="/apps">
-                    Open Apps
-                  </Link>
-                </>
-              }
-              description="The application shell could not recover this page safely. Retry once, then open Apps if needed."
-              details={
-                <p>
-                  Reference: <code>{error.digest ?? "not available"}</code>
-                </p>
-              }
-              eyebrow="Application unavailable"
-              headingLevel={1}
-              title="Fawxzzy needs a fresh start."
-              variant="terminal-error"
+            <AuthStatus
+              context={accountExperienceContexts.website}
+              dock={<AuthDock onClick={() => unstable_retry()}>{AUTH_COPY.button.tryAgain}</AuthDock>}
+              notice={authNotice("page.crash")}
+              state="crash"
+              surface="crash"
+              title={AUTH_COPY.title.couldNotLoad}
             />
           </div>
         </main>
