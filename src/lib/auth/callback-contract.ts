@@ -3,6 +3,7 @@ import {
   containsUrlTokenMaterial,
   sanitizeReturnTarget,
 } from "@/config/account-return";
+import { fitnessReturnPath } from "@/lib/auth/fitness-handoff";
 
 const CONFIRM_TYPES = new Set([
   "email",
@@ -89,6 +90,27 @@ export function callbackReceiptKey(code: string) {
 
 export function callbackStateMatches(received: string, stored: string | null) {
   return Boolean(received && stored && received === stored);
+}
+
+/**
+ * The last check before a confirm or callback link moves the browser (defence in depth: every
+ * destination is already built from a sanitized `returnTo`). Allowed: a `sanitizeReturnTarget`
+ * result, or the exact Fitness landing a completed handoff returns (`<fitness origin>` plus `/`,
+ * `/entry` or `/today`, nothing else). Anything else becomes the account page.
+ */
+export function sanitizeLinkDestination(destination: string | null | undefined) {
+  if (destination) {
+    try {
+      const url = new URL(destination);
+      const fitnessOrigin = new URL(accountContract.productOrigins.fitness).origin;
+      if (url.origin === fitnessOrigin && destination === `${fitnessOrigin}${fitnessReturnPath(destination)}`) {
+        return destination;
+      }
+    } catch {
+      // Not an absolute URL: only the return-target rules below apply.
+    }
+  }
+  return sanitizeReturnTarget(destination);
 }
 
 export function sanitizeAuthUrl() {
