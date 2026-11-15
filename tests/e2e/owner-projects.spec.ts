@@ -74,7 +74,7 @@ test("signed in as another account: no tab, a neutral message, and no cards", as
 
   await page.goto("/projects?auth_test=session");
   // Indistinguishable from a page that does not exist.
-  await expect(page.getByRole("heading", { name: "This page is not here." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Projects" })).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "Project boards" })).toHaveCount(0);
   expect(server.calls).toContain("GET board");
@@ -84,7 +84,7 @@ test("signed in as another account: no tab, a neutral message, and no cards", as
 test("a server outage shows the same neutral state, never cards or the tab", async ({ page }) => {
   await serverFixture(page, "unavailable");
   await page.goto("/projects?auth_test=session");
-  await expect(page.getByRole("heading", { name: "This page is not here." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
   await expect(projectsLink(page)).toHaveCount(0);
 });
 
@@ -172,7 +172,7 @@ test("signing in as the owner records the hint before leaving, and signing out c
   await page.goto("/login?auth_test=success");
   await page.getByLabel("Email or username").fill("owner@example.test");
   await page.getByLabel("Password", { exact: true }).fill("long-enough-password");
-  await page.locator(".account-auth-dock").getByRole("button", { name: "Sign in" }).click();
+  await page.locator(".auth-dock__button", { hasText: "Sign in" }).click();
   await expect.poll(() => page.locator("html").getAttribute("data-post-auth-destination")).toBeTruthy();
   expect(await hint(page)).toBe("1");
 

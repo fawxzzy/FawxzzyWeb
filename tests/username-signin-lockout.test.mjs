@@ -185,17 +185,26 @@ test("v3 migration is additive, keeps v2, and mirrors the v2 limits, grants and 
 
 test("lockout copy is distinct, names the way out, and reveals nothing about accounts", () => {
   const errors = loadPortalModule("src/lib/auth/errors.ts");
-  const copy = errors.safeAuthError("login-throttled");
-  assert.equal(copy, "Too many tries. Wait 15 minutes or use your email.");
-  assert.notEqual(copy, errors.safeAuthError("login"));
+  const outcomes = loadPortalModule("src/lib/auth/auth-outcomes.ts");
+  const matrix = loadPortalModule("src/lib/auth/copy-matrix.ts");
+  const id = outcomes.signInFailure(new errors.UsernameSignInThrottledError());
+  assert.equal(id, "signin.throttled");
+  const copy = matrix.authNotice(id).text;
+  assert.equal(copy, "Too many attempts. Wait a few minutes, or sign in with your email.");
+  assert.notEqual(copy, matrix.authNotice("signin.wrong").text);
   assert.doesNotMatch(copy, /exists|registered|no account|not found/i);
   assert.equal(errors.USERNAME_THROTTLED_CODE, "username_throttled");
   assert.equal(new errors.UsernameSignInThrottledError().name, "UsernameSignInThrottledError");
-  // The generic login copy stays short and neutral.
-  assert.equal(errors.safeAuthError("login"), "Wrong details. Try again.");
+  // A wrong password stays neutral about whether the email or the username exists.
+  assert.equal(outcomes.signInFailure({ status: 400, code: "invalid_credentials" }), "signin.wrong");
+  assert.equal(matrix.authNotice("signin.wrong").text, "Wrong email, username or password. Try again.");
 });
 
-test("sign-up username disclosure copy is the owner-approved line", () => {
-  const guidance = loadPortalModule("src/lib/auth/form-guidance.ts");
-  assert.equal(guidance.USERNAME_VISIBILITY_NOTE, "This username shows on the Mazer leaderboard.");
+test("sign-up carries no Mazer-leaderboard note (Auth Surface v2 removed it)", () => {
+  const matrix = loadPortalModule("src/lib/auth/copy-matrix.ts");
+  const all = JSON.stringify([matrix.AUTH_MESSAGES, matrix.AUTH_COPY]);
+  assert.doesNotMatch(all, /leaderboard/i);
+  for (const file of ["src/components/account/account-portal.tsx", "src/lib/auth/form-guidance.ts"]) {
+    assert.doesNotMatch(readFileSync(new URL(`../${file}`, import.meta.url), "utf8"), /leaderboard/i, file);
+  }
 });

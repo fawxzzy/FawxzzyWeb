@@ -68,10 +68,20 @@ async function newContext(
   return context;
 }
 
+// Callback and confirm links without a code replace themselves with sign in plus a notice
+// (Auth Surface v2), so settle waits out that one navigation before measuring.
 async function settle(page: Page) {
-  await page.waitForLoadState("load");
-  await page.evaluate(() => document.fonts.ready);
-  await page.waitForTimeout(150);
+  for (let attempt = 0; ; attempt += 1) {
+    await page.waitForLoadState("load");
+    try {
+      await page.evaluate(() => document.fonts.ready);
+      await page.waitForTimeout(150);
+      await page.evaluate(() => document.readyState);
+      return;
+    } catch (error) {
+      if (attempt >= 3 || !String(error).includes("Execution context was destroyed")) throw error;
+    }
+  }
 }
 
 async function measure(page: Page) {
@@ -88,6 +98,11 @@ async function measure(page: Page) {
       scrollHeight: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight),
       scrollWidth: document.documentElement.scrollWidth,
       scrolledTo,
+      // A form body that overflows at rest hides part of a field; it may only scroll when a keyboard is up.
+      formBodyOverflow: (() => {
+        const body = document.querySelector<HTMLElement>(".auth-body");
+        return body ? body.scrollHeight - body.clientHeight : 0;
+      })(),
     };
   });
 }
@@ -111,6 +126,7 @@ for (const viewport of VIEWPORTS) {
           expect(m.scrolledTo, `${label}: the page can be scrolled`).toBe(0);
           expect(m.htmlOverflowY, `${label}: html must not scroll`).toBe("hidden");
           expect(m.bodyOverflowY, `${label}: body must not scroll`).toBe("hidden");
+          expect(m.formBodyOverflow, `${label}: the form is clipped`).toBeLessThanOrEqual(1);
           if (!simulateIosToolbar) {
             await testInfo.attach(`${route.name}-${viewport.name}`, {
               body: await page.screenshot(),
@@ -126,31 +142,93 @@ for (const viewport of VIEWPORTS) {
   }
 }
 
-test("a sign-up form with a problem list scrolls inside its card at 360x640, never the page", async ({ browser }, testInfo) => {
-  test.slow();
-  const context = await newContext(browser, { deviceScaleFactor: 3, height: 640, mobile: true, name: "360x640", width: 360 }, true);
-  try {
-    const page = await context.newPage();
-    await page.goto("/login?intent=signup&auth_test=success");
-    await settle(page);
-    await page.locator('.account-auth-dock button[type="submit"]').click();
-    await expect(page.locator(".account-auth-guidance")).toBeVisible();
-    const m = await measure(page);
-    expect(m.scrollHeight).toBeLessThanOrEqual(m.innerHeight + 1);
-    expect(m.scrolledTo).toBe(0);
-    // The action stays on screen, and the fields area is the thing that scrolls.
-    const dock = await page.locator(".account-auth-dock").boundingBox();
-    expect(dock && dock.y + dock.height).toBeLessThanOrEqual(m.innerHeight + 1);
-    const region = await page.locator(".account-auth-body").evaluate((element) => ({
-      client: element.clientHeight,
-      overflowY: getComputedStyle(element).overflowY,
-    }));
-    expect(["auto", "scroll"]).toContain(region.overflowY);
-    await testInfo.attach("signup-with-problems-360x640", { body: await page.screenshot(), contentType: "image/png" });
-  } finally {
-    await context.close();
-  }
-});
+// Auth Surface v2: ONE notice box in a fixed, reserved slot. Showing the longest notices must not
+// move a field, the links or the dock, must not clip the notice, and must not scroll the page.
+const NOTICE_CASES = [
+  {
+    name: "sign in, throttled (longest sign-in line)",
+    path: "/login?auth_test=login-throttled",
+    fill: async (page: Page) => {
+      await page.locator("#account-email").fill("someone");
+      await page.locator("#account-password").fill("long-enough-password");
+    },
+    notice: "signin.throttled",
+  },
+  {
+    name: "create account, invalid username",
+    path: "/login?intent=signup&auth_test=success",
+    fill: async (page: Page) => {
+      await page.locator("#account-username").fill("a b");
+    },
+    notice: "signup.userinvalid",
+  },
+  {
+    name: "reset request, invalid email",
+    path: "/reset-password?auth_test=success",
+    fill: async (page: Page) => {
+      await page.locator("#account-reset-email").fill("nope");
+    },
+    notice: "signup.emailinvalid",
+  },
+] as const;
+
+async function layout(page: Page) {
+  return page.evaluate(() => {
+    const box = (selector: string) => {
+      const element = document.querySelector(selector);
+      if (!element) return null;
+      const rect = element.getBoundingClientRect();
+      return { bottom: Math.round(rect.bottom), height: Math.round(rect.height), top: Math.round(rect.top) };
+    };
+    return {
+      dock: box(".auth-dock__button"),
+      fields: [...document.querySelectorAll(".auth-field")].map((field) => {
+        const rect = field.getBoundingClientRect();
+        return Math.round(rect.top);
+      }),
+      links: box(".auth-links"),
+      slot: box("[data-auth-slot]"),
+      title: box(".auth-title"),
+    };
+  });
+}
+
+for (const noticeCase of NOTICE_CASES) {
+  test(`320x568: ${noticeCase.name} shows in the reserved slot without moving anything`, async ({ browser }, testInfo) => {
+    const context = await newContext(browser, { deviceScaleFactor: 2, height: 568, mobile: true, name: "320x568", width: 320 }, true);
+    try {
+      const page = await context.newPage();
+      await page.goto(noticeCase.path);
+      await settle(page);
+      await expect(page.locator("[data-auth-slot]")).toBeVisible();
+      await noticeCase.fill(page);
+      const before = await layout(page);
+      await page.locator(".auth-dock__button").click();
+      const notice = page.locator(`[data-notice-id="${noticeCase.notice}"]`);
+      await expect(notice).toBeVisible();
+      const after = await layout(page);
+      expect(after, "a notice must not move the title, fields, links or dock").toEqual(before);
+      // Never clipped: the whole box sits inside its slot and inside the viewport, with no hidden overflow.
+      const fit = await notice.evaluate((element) => {
+        const slot = element.closest("[data-auth-slot]")!.getBoundingClientRect();
+        const rect = element.getBoundingClientRect();
+        const text = element.querySelector(".auth-notice__text")!;
+        return {
+          insideSlot: rect.top >= slot.top - 0.5 && rect.bottom <= slot.bottom + 0.5,
+          insideViewport: rect.bottom <= window.innerHeight && rect.right <= window.innerWidth && rect.left >= 0,
+          textFits: text.scrollHeight <= text.clientHeight + 1,
+        };
+      });
+      expect(fit).toEqual({ insideSlot: true, insideViewport: true, textFits: true });
+      const m = await measure(page);
+      expect(m.scrollHeight).toBeLessThanOrEqual(m.innerHeight + 1);
+      expect(m.scrolledTo).toBe(0);
+      await testInfo.attach(`${noticeCase.notice}-320x568`, { body: await page.screenshot(), contentType: "image/png" });
+    } finally {
+      await context.close();
+    }
+  });
+}
 
 test("the error page scrolls inside itself, not the document, when its content does not fit", async ({ browser }) => {
   const context = await newContext(browser, { deviceScaleFactor: 2, height: 400, mobile: true, name: "320x400", width: 320 }, true);

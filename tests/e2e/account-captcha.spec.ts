@@ -50,17 +50,23 @@ for (const route of ["/login", "/login?intent=signup", "/reset-password"]) {
     await stubTurnstile(page, "ok");
     await page.goto(`${route}${route.includes("?") ? "&" : "?"}auth_test=success`);
     await expect(page.locator("[data-stub-widget]")).toHaveCount(1);
-    await expect(page.getByTestId("turnstile-unavailable")).toHaveCount(0);
+    await expect(page.locator('[data-notice-id="captcha.load"]')).toHaveCount(0);
   });
 }
 
-test("a broken widget shows a plain note and the form still submits", async ({ page }) => {
+test("a broken widget shows the one notice with Retry, and the form still submits", async ({ page }) => {
   await stubTurnstile(page, "broken");
   await page.goto("/reset-password?auth_test=success");
-  await expect(page.getByTestId("turnstile-unavailable")).toHaveText(/could not load/i);
+  const notice = page.locator('[data-notice-id="captcha.load"]');
+  await expect(notice).toHaveText(/Security check could not load\. Check your connection\.\s*Retry/);
+  // Retry mounts a fresh widget.
+  const renders = () => page.evaluate(() => (window as unknown as { __turnstile: { renders: number } }).__turnstile.renders);
+  const before = await renders();
+  await notice.getByRole("button", { name: "Retry" }).click();
+  await expect.poll(renders).toBeGreaterThan(before);
   await page.getByLabel("Email").fill("person@example.test");
   await page.locator("#account-reset-form").evaluate((f) => (f as HTMLFormElement).requestSubmit());
-  await expect(page.getByText("Check your email.").first()).toBeVisible();
+  await expect(page.locator('[data-notice-id="reset.sentany"]')).toBeVisible();
 });
 
 test("the widget is reset after a failed sign-in", async ({ page }) => {

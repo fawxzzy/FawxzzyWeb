@@ -12,8 +12,8 @@ import { loadPortalModule } from "./helpers/load-portal-ts.mjs";
 const callback = loadPortalModule("src/lib/auth/callback-contract.ts");
 const returns = loadPortalModule("src/config/account-return.ts");
 const account = loadPortalModule("src/config/account.ts");
-const errors = loadPortalModule("src/lib/auth/errors.ts");
-const guidance = loadPortalModule("src/lib/auth/form-guidance.ts");
+const matrix = loadPortalModule("src/lib/auth/copy-matrix.ts");
+const outcomes = loadPortalModule("src/lib/auth/auth-outcomes.ts");
 const policy = loadPortalModule("src/lib/auth/password-policy.ts");
 
 const ORIGIN = "https://account.fawxzzy.com";
@@ -119,40 +119,48 @@ test("the emailed redirect lands on the account host and only carries an allowed
   }
 });
 
-test("anti-enumeration: a request answers with one fixed sentence whatever happened", () => {
-  assert.equal(errors.safeAuthSuccess("reset-request"), "Check your email.");
-  assert.equal(errors.safeAuthError("reset-request"), errors.safeAuthSuccess("reset-request"));
-  assert.ok(!/exist|found|unknown|registered|no account|not an? /i.test(errors.safeAuthError("reset-request")));
+test("anti-enumeration: a signed-out request answers with one fixed sentence, failures name only the sending", () => {
+  // Signed out, the success line is the same whether or not an account uses the address.
+  assert.equal(matrix.authNotice("reset.sentany").text, "If that account exists, we sent a reset link to its email.");
+  // The provider does not fail for an unknown address; every failure line is about sending, not the account.
+  const failures = [
+    { status: 429 },
+    { code: "over_email_send_rate_limit" },
+    { status: 500 },
+    { code: "unexpected_failure" },
+    {},
+  ].map((error) => outcomes.resetRequestFailure(error));
+  assert.deepEqual([...new Set(failures)].sort(), ["reset.rate", "reset.sendfail"]);
+  for (const id of failures) {
+    assert.ok(!/exist|found|unknown|registered|no account/i.test(matrix.authNotice(id).text), id);
+  }
+  // Signed in, the masked address shown is the one already on the screen.
+  assert.equal(matrix.authNotice("reset.sent", "zac@icloud.com").text, "Reset link sent to z•••@icloud.com. It expires in 1 hour.");
 });
 
 test("request form guidance names what is needed and never reads like an account lookup", () => {
-  assert.deepEqual(guidance.guidanceForResetRequest("").map((p) => p.message), ["Enter your email address."]);
-  for (const bad of ["abc", "a@b", "a b@example.com", "@example.com", "a@@example.com"]) {
-    assert.deepEqual(
-      guidance.guidanceForResetRequest(bad).map((p) => p.message),
-      ["Enter a full email, like name@example.com."],
-      bad,
-    );
+  for (const bad of ["", "abc", "a@b", "a b@example.com", "@example.com", "a@@example.com"]) {
+    assert.deepEqual(outcomes.resetRequestProblem(bad), { id: "signup.emailinvalid", fields: ["email"] }, bad);
   }
-  assert.deepEqual(guidance.guidanceForResetRequest("name@example.com"), []);
+  assert.equal(matrix.authNotice("signup.emailinvalid").text, "Enter a valid email address.");
+  assert.equal(outcomes.resetRequestProblem("name@example.com"), null);
 });
 
-test("new-password rules: minimum length, confirmation required, confirmation must match", () => {
-  const messages = (password, confirmation) =>
-    guidance.guidanceForNewPassword(password, confirmation).map((p) => `${p.field}:${p.message}`);
+test("new-password rules: minimum length first, then the confirmation must match", () => {
+  const problem = (password, confirmation) => outcomes.newPasswordProblem(password, confirmation)?.id ?? null;
   assert.equal(policy.PASSWORD_MINIMUM, 10);
-  assert.deepEqual(messages("", ""), [
-    "password:Enter a new password, at least 10 characters.",
-    "confirmation:Confirm your new password.",
-  ]);
-  assert.deepEqual(messages("short", "short"), ["password:Use at least 10 characters."]);
-  assert.deepEqual(messages("long-enough-1", ""), ["confirmation:Confirm your new password."]);
-  assert.deepEqual(messages("long-enough-1", "long-enough-2"), ["confirmation:Passwords do not match."]);
-  assert.deepEqual(messages("exactly-10!", "exactly-10!"), []);
-  assert.deepEqual(messages("0123456789", "0123456789"), []);
+  assert.equal(problem("", ""), "signup.pwshort");
+  assert.equal(problem("short", "short"), "signup.pwshort");
+  assert.equal(problem("long-enough-1", ""), "reset.mismatch");
+  assert.equal(problem("long-enough-1", "long-enough-2"), "reset.mismatch");
+  assert.deepEqual(outcomes.newPasswordProblem("long-enough-1", "x").fields, ["confirmation"]);
+  assert.equal(problem("exactly-10!", "exactly-10!"), null);
+  assert.equal(problem("0123456789", "0123456789"), null);
 });
 
 test("a dead link sends the person to a fresh request, not to a dead end", () => {
-  assert.equal(errors.safeAuthError("reset-complete"), "Password not saved. Request a new link.");
-  assert.equal(errors.safeAuthError("confirm"), "Link failed. Request a new link.");
+  assert.equal(matrix.authNotice("reset.expired").text, "That reset link expired. Send a new one.");
+  assert.equal(matrix.authNotice("reset.invalid").text, "That reset link is not valid. Send a new one.");
+  assert.equal(outcomes.passwordSaveFailure({ code: "same_password" }), "reset.same");
+  assert.equal(outcomes.passwordSaveFailure({ status: 500 }), "reset.savefail");
 });
