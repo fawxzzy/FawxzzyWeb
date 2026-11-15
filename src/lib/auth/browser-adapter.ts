@@ -13,12 +13,18 @@ import { captchaOptions } from "@/lib/auth/captcha";
 import {
   accountContract,
   accountConfirmUrl,
+  accountEmailChangeUrl,
   accountRecoveryUrl,
   type AccountExperienceContextId,
   isLiveAccountAdapterOrigin,
   isLocalAuthTestOrigin,
 } from "@/config/account";
 import { USERNAME_THROTTLED_CODE, UsernameSignInThrottledError } from "@/lib/auth/errors";
+import {
+  isUsernameChangeStatus,
+  ReauthMismatchError,
+  type UsernameChangeStatus,
+} from "@/lib/auth/account-change";
 import { isBrowserSafeSupabasePublicKey } from "@/lib/auth/supabase-public-key.mjs";
 import {
   completeFitnessHandoff, fitnessReturnPath, FitnessHandoffError,
@@ -79,7 +85,16 @@ export type PortalAuthAdapter = {
     returnTarget?: string,
     captchaToken?: string,
   ): Promise<void>;
-  updateEmail(email: string): Promise<void>;
+  /**
+   * Step 1 of a signed-in change: the current password of the signed-in account, checked on a
+   * throw-away client so the page's own session is never replaced. Throws when the password is wrong
+   * or the provider returns a different account.
+   */
+  reauthenticate(password: string, captchaToken?: string): Promise<void>;
+  /** Saves a new username at once (database function; rate limited there). */
+  changeUsername(username: string): Promise<{ status: UsernameChangeStatus; session: PortalSession | null }>;
+  /** Sends the change link to the NEW address; the change applies only when that link is opened. */
+  requestEmailChange(email: string, contextId: AccountExperienceContextId): Promise<void>;
   updatePassword(password: string): Promise<void>;
   confirm(tokenHash: string, type: EmailOtpType): Promise<PortalSession | null>;
   exchangeCode(code: string): Promise<PortalSession | null>;
@@ -534,9 +549,63 @@ export function createSupabaseAdapter(
       });
       if (error) throw error;
     },
-    async updateEmail(email) {
+    async reauthenticate(password, captchaToken) {
+      const { data: current, error: sessionError } = await client.auth.getSession();
+      if (sessionError) throw sessionError;
+      const email = current.session?.user.email;
+      const userId = current.session?.user.id;
+      if (!email || !userId) throw new ReauthMismatchError();
+      // A throw-away client with its own in-memory storage: the check never replaces, refreshes or
+      // signs out the page's session. The session it creates is ended right away.
+      const memory = new Map<string, string>();
+      const checker = createClient(url, publishableKey, {
+        auth: {
+          autoRefreshToken: false,
+          detectSessionInUrl: false,
+          persistSession: false,
+          storage: {
+            getItem: (key) => memory.get(key) ?? null,
+            removeItem: (key) => void memory.delete(key),
+            setItem: (key, value) => void memory.set(key, value),
+          },
+          storageKey: `${accountContract.storageKey}.reauth`,
+        },
+      });
+      const { data, error } = await checker.auth.signInWithPassword({
+        email,
+        password,
+        options: captchaOptions(captchaToken),
+      });
+      if (error) throw error;
+      const sameUser = data.user?.id === userId;
+      await checker.auth.signOut({ scope: "local" }).catch(() => undefined);
+      if (!sameUser) throw new ReauthMismatchError();
+    },
+    async changeUsername(username) {
+      const { data, error, status } = await client
+        .schema("account_api")
+        .rpc("account_change_username", { p_username: username });
+      if (error) {
+        throw Object.assign(new Error("Username change failed."), {
+          code: error.code,
+          message: error.message,
+          status,
+        });
+      }
+      if (!isUsernameChangeStatus(data)) {
+        throw Object.assign(new Error("Username change returned an unknown answer."), { status });
+      }
+      if (data !== "changed") return { status: data, session: null };
+      // The new name is in the account record; refresh so this page (and its token) carries it.
       beginAuthMutation();
-      const { error } = await client.auth.updateUser({ email });
+      const refreshed = await client.auth.refreshSession().catch(() => null);
+      return { status: data, session: toPortalSession(refreshed?.data.session ?? null) };
+    },
+    async requestEmailChange(email, contextId) {
+      const { error } = await client.auth.updateUser(
+        { email },
+        { emailRedirectTo: accountEmailChangeUrl(contextId) },
+      );
       if (error) throw error;
     },
     async updatePassword(password) {
@@ -578,6 +647,8 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       "session-refreshed-on-check",
       "oauth-auto",
       "oauth-hostile",
+      "change-rate",
+      "change-unavailable",
     ].includes(scenario)
       ? { displayName: "fawxzzy", email: "preview.user@example.test", userId: "preview-user" }
       : null;
@@ -723,11 +794,48 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
     async requestPasswordReset() {
       fail();
     },
-    async updateEmail(email) {
-      beginAuthMutation();
+    // Change username / email fixtures. Deterministic by input: the password "wrong-password" is
+    // rejected and "too-many" is rate limited, the name "taken-name" and the address
+    // "taken@example.test" belong to someone else.
+    // `change-rate` answers "too many", `change-unavailable` behaves like the database function is
+    // not applied yet. Harness markers record what the page sent.
+    async reauthenticate(password) {
       fail();
-      session = session ? { ...session, email } : null;
+      if (!session) throw new ReauthMismatchError();
+      if (password === "too-many") throw Object.assign(new Error("Too many requests"), { status: 429 });
+      if (password === "wrong-password") {
+        throw Object.assign(new Error("Invalid login credentials"), { code: "invalid_credentials", status: 400 });
+      }
+      document.documentElement.dataset.reauthenticated = "true";
+    },
+    async changeUsername(username) {
+      fail();
+      if (scenario === "change-unavailable") {
+        throw Object.assign(new Error("Could not find the function"), { code: "PGRST202", status: 404 });
+      }
+      document.documentElement.dataset.changedUsername = username;
+      if (scenario === "change-rate") return { status: "rate", session: null };
+      if (username.toLowerCase() === "taken-name") return { status: "taken", session: null };
+      if (!session) throw new ReauthMismatchError();
+      if (username === session.displayName) return { status: "same", session: null };
+      session = { ...session, displayName: username };
       publish();
+      return { status: "changed", session };
+    },
+    async requestEmailChange(email, contextId) {
+      fail();
+      if (scenario === "change-unavailable") {
+        throw Object.assign(new Error("Service unavailable"), { status: 503 });
+      }
+      if (scenario === "change-rate") {
+        throw Object.assign(new Error("Email rate limit exceeded"), { code: "over_email_send_rate_limit", status: 429 });
+      }
+      if (email.toLowerCase() === "taken@example.test") {
+        throw Object.assign(new Error("Email exists"), { code: "email_exists", status: 422 });
+      }
+      // The provider sends the link; the account keeps its old address until the link is opened.
+      document.documentElement.dataset.emailChangeRequested = email;
+      document.documentElement.dataset.emailChangeRedirect = accountEmailChangeUrl(contextId);
     },
     async updatePassword() {
       beginAuthMutation();
@@ -736,6 +844,8 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
     async confirm() {
       beginAuthMutation();
       fail();
+      // Secure email change, first of two links: accepted, but no session yet.
+      if (scenario === "confirm-pending") return null;
       session = {
         displayName: "confirmed.user",
         email: "confirmed.user@example.test",
@@ -813,6 +923,9 @@ export function resolvePortalAuthAdapter(
       "oauth-auto",
       "oauth-hostile",
       "reset-others-error",
+      "change-rate",
+      "change-unavailable",
+      "confirm-pending",
     ].includes(scenario) &&
     isLocalAuthTestOrigin(location.origin)
   ) {
