@@ -7,6 +7,13 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHY it changed: Users had no way to fix a username or move to a new email without support; the username path must keep the live claim guard, sign-up messages and a rate limit, which needs a definer function, not a raw metadata update.
 - Rule: Every `account_api` function in a migration or proposal must `revoke ... from public` (static test in `tests/account-change.test.mjs`), because granting USAGE on `account_api` to `authenticated` would otherwise expose PUBLIC-executable functions, and per-schema default privileges cannot remove PUBLIC's default.
 - Scope: Source and local regression only. Until the owner applies the SQL, Change username shows "Changes are unavailable right now."; the edge-function change needs an owner deploy; no database, provider setting, credential or deployment effect from this PR.
+## 2026-11-15 - Fitness handoff allowlist for Fitness PR258-270
+
+- Type: Release gate data
+- WHAT changed: `FITNESS_HANDOFF_ACTIVATION` now lists Fitness main `9979e22faa639d4fb60d915e4a02fefded823dc3` (PR258-270) as the newest source, keeps `3db7fe30cb397b83042950f3ef642c930a8e0b8b` (PR256-257, live) as the rollback and `d335131a8602206c5c7702ac7fd3399c26c43f35` (reviewed, never shipped), and drops the oldest `76f04dfcd66c6ebbdbbb6a65a8d516accdd6b2e3`.
+- WHY it changed: Fitness main moved past `d335131a` (status screens #268, Lane C #270) before the release shipped; the portal checks `readiness.sourceCommit`, so the final release sha must be listed.
+- Rule: Pin the allowlist to the final Fitness main sha at release time; re-check main moved before the portal deploy.
+- Scope: Source and local regression only; no deployment, alias, provider, credential or database effect.
 
 ## 2026-11-15 - Fitness handoff allowlist for Fitness PR258-266
 
