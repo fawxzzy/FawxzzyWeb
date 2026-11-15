@@ -38,7 +38,18 @@ function EyeIcon({ visible }: { visible: boolean }) {
   );
 }
 
+function PencilIcon() {
+  return (
+    <svg aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
+      <path d="M4.5 19.5l1-4.2L15.8 5a2.1 2.1 0 013 3L8.6 18.3z" />
+      <path d="M13.8 7l3 3" />
+    </svg>
+  );
+}
+
 type AuthFieldProps = {
+  /** A locked row that can be changed: an icon button in place of the lock (account page). */
+  action?: { label: string; onClick: () => void; disabled?: boolean };
   autoComplete?: string;
   describedBy?: string;
   disabled?: boolean;
@@ -58,6 +69,7 @@ type AuthFieldProps = {
 };
 
 export function AuthField({
+  action,
   autoComplete,
   describedBy,
   disabled,
@@ -100,7 +112,20 @@ export function AuthField({
         type={inputType}
         {...(value === undefined ? {} : { value })}
       />
-      {locked ? <LockIcon /> : null}
+      {locked && action ? (
+        <button
+          aria-label={action.label}
+          className="auth-field__toggle"
+          data-auth-field-action={name}
+          disabled={action.disabled}
+          onClick={action.onClick}
+          type="button"
+        >
+          <PencilIcon />
+        </button>
+      ) : locked ? (
+        <LockIcon />
+      ) : null}
       {secret && !locked ? (
         <button
           aria-label={visible ? AUTH_COPY.aria.hidePassword : AUTH_COPY.aria.showPassword}

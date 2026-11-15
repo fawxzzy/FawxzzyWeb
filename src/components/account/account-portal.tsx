@@ -54,6 +54,22 @@ import {
   type AuthField as FieldName,
   type FormProblem,
 } from "@/lib/auth/auth-outcomes";
+import {
+  ACCOUNT_NOTICE_PARAM,
+  accountNoticeFromQuery,
+  changeFieldsFor,
+  emailChangeFailure,
+  emailChangeLandingKey,
+  emailChangeProblem,
+  nextRememberedIdentity,
+  reauthFailure,
+  reauthProblem,
+  usernameChangeFailure,
+  usernameChangeNotice,
+  usernameChangeProblem,
+  type ChangeField,
+  type ChangeProblem,
+} from "@/lib/auth/account-change";
 import { TurnstileField, type TurnstileFieldHandle } from "@/components/account/turnstile-field";
 import { resolveSignOutDestination, SIGNOUT_RETURN_PARAM } from "@/config/account-signout";
 import {
@@ -293,11 +309,18 @@ function adapterFrom(resolution: AdapterResolution | null): PortalAuthAdapter | 
   return resolution?.status === "ready" ? resolution.adapter : null;
 }
 
-/** `/login?notice=<key>` from another screen (allowlist); removed from the address once read. */
-function useQueryLoginNotice(hydrated: boolean) {
+/**
+ * `/login?notice=<key>` (or `/account?notice=<key>`) from another screen (allowlist); removed from the
+ * address once read.
+ */
+function useQueryLoginNotice(
+  hydrated: boolean,
+  parse: (values: string[]) => AuthMessageId | null = loginNoticeFromQuery,
+) {
   const id = useMemo(
-    () => (hydrated ? loginNoticeFromQuery(new URLSearchParams(window.location.search).getAll(LOGIN_NOTICE_PARAM)) : null),
-    [hydrated],
+    () => (hydrated ? parse(new URLSearchParams(window.location.search).getAll(LOGIN_NOTICE_PARAM)) : null),
+    // The parser is a module-level allowlist, so it never changes between renders.
+    [hydrated, parse],
   );
   useEffect(() => {
     if (!hydrated) return;
@@ -776,9 +799,15 @@ function AccountPanel({
   resolution: AdapterResolution | null;
 }) {
   const adapter = adapterFrom(resolution);
-  const { error, loaded, session } = usePortalSession(adapter);
+  const hydrated = useHydrated();
+  const { error, loaded, session, setSession } = usePortalSession(adapter);
   const [notice, setNotice] = useState<AuthNotice | null>(null);
   const [busy, setBusy] = useState(false);
+  // Change username / change email (design point 12): which row is being changed, if any.
+  const [changing, setChanging] = useState<ChangeField | null>(null);
+  // `/account?notice=` from an opened email-change link (allowlist).
+  const queryNotice = useQueryLoginNotice(hydrated, accountNoticeFromQuery);
+  const [queryNoticeDismissed, setQueryNoticeDismissed] = useState(false);
   // True from the moment this page asks to sign out until it has chosen its own destination. The
   // provider announces SIGNED_OUT before adapter.signOut() resolves, so without this the
   // "session lost" redirect below would send the person to /login ahead of the product origin.
@@ -845,7 +874,43 @@ function AccountPanel({
     ? authNotice("signin.unavailable")
     : error
       ? authNotice("account.loadfail")
-      : notice;
+      : notice ?? (queryNotice && !queryNoticeDismissed ? authNotice(queryNotice, session?.email) : null);
+  const currentUsername = session ? session.displayName ?? deriveIdentity(session.email ?? "") : "";
+
+  function startChange(field: ChangeField) {
+    setNotice(null);
+    setQueryNoticeDismissed(true);
+    setChanging(field);
+  }
+
+  if (adapter && session && changing) {
+    return (
+      <AccountChangePanel
+        adapter={adapter}
+        context={context}
+        currentUsername={currentUsername}
+        field={changing}
+        onCancel={() => setChanging(null)}
+        onUsernameChanged={(next, refreshed) => {
+          const remembered = nextRememberedIdentity(readRememberedIdentity(), currentUsername, next);
+          if (remembered) writeRememberedIdentity(remembered);
+          setSession(refreshed ?? { ...session, displayName: next });
+          setNotice(authNotice("change.userdone"));
+          setChanging(null);
+        }}
+        session={session}
+      />
+    );
+  }
+
+  const changeAction = (field: ChangeField) =>
+    session && adapter
+      ? {
+          disabled: busy,
+          label: field === "username" ? AUTH_COPY.aria.changeUsername : AUTH_COPY.aria.changeEmail,
+          onClick: () => startChange(field),
+        }
+      : undefined;
 
   return (
     <section
@@ -865,13 +930,15 @@ function AccountPanel({
       />
       <div className="auth-body">
         <AuthField
+          action={changeAction("username")}
           id="account-current-username"
           label={AUTH_COPY.field.username}
           locked
           name="username"
-          value={session ? session.displayName ?? deriveIdentity(session.email ?? "") : ""}
+          value={currentUsername}
         />
         <AuthField
+          action={changeAction("email")}
           id="account-current-email"
           label={AUTH_COPY.field.email}
           locked
@@ -890,6 +957,263 @@ function AccountPanel({
       <AuthLegal context={context} />
       <AuthDock busy={busy} disabled={!session} onClick={signOut}>
         {busy ? AUTH_COPY.working.signingOut : AUTH_COPY.button.signOut}
+      </AuthDock>
+    </section>
+  );
+}
+
+const CHANGE_FIELD_IDS: Record<"password" | ChangeField, string> = {
+  email: "account-change-email",
+  password: "account-change-password",
+  username: "account-change-username",
+};
+
+/**
+ * Change username / change email (design point 12). Step 1 re-enters the current password (checked
+ * against the signed-in account, with the same security check as sign-in). Step 2 takes the new
+ * value: a username is saved at once; an email gets a link at the NEW address and changes only when
+ * that link is opened (`sent` keeps the address locked with a resend countdown, like sign-up).
+ */
+function AccountChangePanel({
+  adapter,
+  context,
+  currentUsername,
+  field,
+  onCancel,
+  onUsernameChanged,
+  session,
+}: {
+  adapter: PortalAuthAdapter;
+  context: AccountExperienceContext;
+  currentUsername: string;
+  field: ChangeField;
+  onCancel: () => void;
+  onUsernameChanged: (next: string, session: PortalSession | null) => void;
+  session: PortalSession;
+}) {
+  const [step, setStep] = useState<"password" | "value" | "sent">("password");
+  const [value, setValue] = useState("");
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const form = useFormNotice();
+  const cooldown = useCooldown();
+  const captchaRef = useRef<TurnstileFieldHandle>(null);
+  const [captchaKey, setCaptchaKey] = useState(0);
+  const [captchaBroken, setCaptchaBroken] = useState(false);
+  const pendingFocus = useRef<string | undefined>(undefined);
+  const current = field === "username" ? currentUsername : session.email ?? "";
+
+  const notice: AuthNotice | null =
+    form.notice ?? (step === "password" && captchaBroken ? authNotice("captcha.load") : null);
+
+  /** One matrix line, with the box it points at outlined and focused once the form is live again. */
+  function show(id: AuthMessageId) {
+    const problem: ChangeProblem = { id, fields: changeFieldsFor(id) };
+    form.problem(problem);
+    pendingFocus.current = problem.fields[0] ? CHANGE_FIELD_IDS[problem.fields[0]] : undefined;
+  }
+
+  /** Same, for a local check: the form never went busy, so focus now. */
+  function showNow(id: AuthMessageId) {
+    show(id);
+    focusField(pendingFocus.current);
+    pendingFocus.current = undefined;
+  }
+
+  function noticeAction() {
+    if (notice?.id === "captcha.load") {
+      setCaptchaBroken(false);
+      setCaptchaKey((key) => key + 1);
+      form.clear();
+    } else if (notice?.id === "captcha.fail") {
+      captchaRef.current?.reset();
+      form.clear();
+    }
+  }
+
+  async function confirmPassword(password: string) {
+    const problem = reauthProblem(password);
+    if (problem) {
+      showNow(problem.id);
+      return;
+    }
+    setBusy(true);
+    form.clear();
+    try {
+      const captchaToken = await captchaRef.current?.getToken();
+      await adapter.reauthenticate(password, captchaToken);
+      setStep("value");
+      pendingFocus.current = CHANGE_FIELD_IDS[field];
+    } catch (error) {
+      show(reauthFailure(error));
+    } finally {
+      captchaRef.current?.reset();
+      setBusy(false);
+    }
+  }
+
+  async function saveUsername() {
+    const next = value.trim();
+    const problem = usernameChangeProblem(next, currentUsername);
+    if (problem) {
+      showNow(problem.id);
+      return;
+    }
+    setBusy(true);
+    form.clear();
+    try {
+      const result = await adapter.changeUsername(next);
+      if (result.status === "changed") {
+        onUsernameChanged(next, result.session);
+        return;
+      }
+      show(usernameChangeNotice(result.status));
+    } catch (error) {
+      show(usernameChangeFailure(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function sendEmailLink(next: string) {
+    const problem = emailChangeProblem(next, session.email);
+    if (problem) {
+      showNow(problem.id);
+      return;
+    }
+    setBusy(true);
+    form.clear();
+    try {
+      await adapter.requestEmailChange(next, context.id);
+      setSentTo(next);
+      setStep("sent");
+      form.show("change.emailsent", next);
+      cooldown.start(RESEND_SECONDS);
+    } catch (error) {
+      show(emailChangeFailure(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy || cooldown.remaining) return;
+    if (step === "password") {
+      await confirmPassword(String(new FormData(event.currentTarget).get("password") ?? ""));
+    } else if (field === "username") {
+      await saveUsername();
+    } else {
+      await sendEmailLink(step === "sent" && sentTo ? sentTo : value.trim());
+    }
+  }
+
+  useEffect(() => {
+    if (busy || !pendingFocus.current) return;
+    focusField(pendingFocus.current);
+    pendingFocus.current = undefined;
+  }, [busy, step]);
+
+  const invalid = (name: "password" | ChangeField) => form.fields.has(name);
+  const describedBy = (name: "password" | ChangeField) => (invalid(name) ? "auth-notice" : undefined);
+  const dockLabel = step === "password"
+    ? busy ? AUTH_COPY.working.checking : AUTH_COPY.button.continue
+    : field === "username"
+      ? busy ? AUTH_COPY.working.saving : AUTH_COPY.button.saveUsername
+      : busy
+        ? AUTH_COPY.working.sending
+        : step === "sent" && cooldown.remaining > 0
+          ? AUTH_COPY.resendIn(cooldown.remaining)
+          : AUTH_COPY.button.sendLink;
+  const currentLabel = field === "username" ? AUTH_COPY.field.username : AUTH_COPY.field.email;
+
+  return (
+    <section
+      aria-labelledby="account-change-title"
+      className="auth-surface"
+      data-auth-product={context.id}
+      data-auth-surface="account-change"
+      data-change-field={field}
+      data-change-step={step}
+      style={authAccentStyle(context)}
+    >
+      <RuntimeNote />
+      <AuthHead
+        context={context}
+        lead={step === "password"
+          ? AUTH_COPY.lead.changeConfirm
+          : field === "username"
+            ? AUTH_COPY.lead.changeUsername
+            : AUTH_COPY.lead.changeEmail}
+        title={field === "username" ? AUTH_COPY.title.changeUsername : AUTH_COPY.title.changeEmail}
+        titleId="account-change-title"
+      />
+      <form className="auth-body" id="account-change-form" noValidate onSubmit={submit}>
+        {step === "sent" ? (
+          <AuthField
+            id={CHANGE_FIELD_IDS.email}
+            label={AUTH_COPY.field.newEmail}
+            locked
+            name="email"
+            type="email"
+            value={sentTo ?? ""}
+          />
+        ) : (
+          <AuthField
+            autoComplete="username"
+            id="account-change-current"
+            key="current"
+            label={currentLabel}
+            locked
+            name={field === "username" ? "current-username" : "current-email"}
+            type={field === "email" ? "email" : "text"}
+            value={current}
+          />
+        )}
+        {step === "password" ? (
+          <>
+            <AuthField
+              autoComplete="current-password"
+              describedBy={describedBy("password")}
+              disabled={busy}
+              id={CHANGE_FIELD_IDS.password}
+              invalid={invalid("password")}
+              label={AUTH_COPY.field.password}
+              name="password"
+              onChange={() => form.edited("password")}
+              secret
+            />
+            <TurnstileField key={captchaKey} onUnavailable={() => setCaptchaBroken(true)} ref={captchaRef} />
+          </>
+        ) : step === "value" ? (
+          <AuthField
+            autoComplete={field === "username" ? "off" : "email"}
+            describedBy={describedBy(field)}
+            disabled={busy}
+            id={CHANGE_FIELD_IDS[field]}
+            inputMode={field === "email" ? "email" : undefined}
+            invalid={invalid(field)}
+            label={field === "username" ? AUTH_COPY.field.newUsername : AUTH_COPY.field.newEmail}
+            maxLength={field === "username" ? 15 : undefined}
+            name={field}
+            onChange={(next) => {
+              setValue(next);
+              form.edited(field);
+            }}
+            type={field === "email" ? "email" : "text"}
+            value={value}
+          />
+        ) : null}
+        <AuthNoticeSlot notice={notice} onAction={noticeAction} />
+      </form>
+      <AuthLinks>
+        <button onClick={onCancel} type="button">
+          {step === "sent" ? AUTH_COPY.link.backToAccount : AUTH_COPY.link.cancel}
+        </button>
+      </AuthLinks>
+      <AuthLegal context={context} />
+      <AuthDock busy={busy} disabled={cooldown.remaining > 0} form="account-change-form">
+        {dockLabel}
       </AuthDock>
     </section>
   );
@@ -1252,6 +1576,25 @@ function LinkHandler({
         sanitizeAuthUrl();
         if (!payload) {
           toLogin("callback", "invalid");
+          return;
+        }
+        if (payload.type === "email_change") {
+          // An email change always lands on the account page with its outcome: done (the provider
+          // returned a session), one more link to open (secure email change), or a dead link. The
+          // one-time token is the proof; there is no product handoff and no confirmation state.
+          if (!adapter) {
+            toLogin("unavailable", "unavailable");
+            return;
+          }
+          const toAccount = (outcome: "session" | "no-session" | "error") =>
+            go(
+              contextualPath(`/account?${ACCOUNT_NOTICE_PARAM}=${emailChangeLandingKey(outcome)}`, context),
+              `email-change-${outcome}`,
+            );
+          adapter
+            .confirm(payload.tokenHash, payload.type)
+            .then((session) => toAccount(session ? "session" : "no-session"))
+            .catch(() => toAccount("error"));
           return;
         }
         if (isFitnessReturnTarget(payload.returnTo)) {

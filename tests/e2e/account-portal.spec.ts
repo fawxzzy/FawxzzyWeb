@@ -1920,10 +1920,10 @@ test("account status copies the compact Mazer hierarchy without unfinished servi
 }) => {
   await page.goto("/account?auth_test=session");
   await expect(page.getByRole("heading", { name: "Account" })).toBeVisible();
-  await expect(page.getByLabel("Username")).toHaveValue("fawxzzy");
-  await expect(page.getByLabel("Username")).toHaveAttribute("readonly", "");
-  await expect(page.getByLabel("Email")).toHaveValue("preview.user@example.test");
-  await expect(page.getByLabel("Email")).toHaveAttribute("readonly", "");
+  await expect(page.getByLabel("Username", { exact: true })).toHaveValue("fawxzzy");
+  await expect(page.getByLabel("Username", { exact: true })).toHaveAttribute("readonly", "");
+  await expect(page.getByLabel("Email", { exact: true })).toHaveValue("preview.user@example.test");
+  await expect(page.getByLabel("Email", { exact: true })).toHaveAttribute("readonly", "");
   await expect(page.locator("body")).not.toContainText("Canonical global username");
   await expect(page.locator("body")).not.toContainText("Immutable global user number");
   await expect(page.locator("body")).not.toContainText("Connections are coming soon");
@@ -2075,7 +2075,7 @@ test("a failed session check never signs the person out", async ({ page }) => {
 
 test("the provider's fresh account details are applied even when the SDK announces a session event during the check", async ({ page }) => {
   await page.goto("/account?auth_test=session-refreshed-on-check");
-  await expect(page.getByLabel("Email")).toHaveValue("renamed.user@example.test");
+  await expect(page.getByLabel("Email", { exact: true })).toHaveValue("renamed.user@example.test");
 });
 
 test("a session lost without this page signing out still redirects to login", async ({ page }) => {
