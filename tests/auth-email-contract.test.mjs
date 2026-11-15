@@ -340,6 +340,47 @@ test("email_change: secure change sends two emails with the reversed token field
   );
 });
 
+test("email_change: the portal's change link lands on the confirm route, themed, with no product return", () => {
+  for (const contextId of ["website", "fitness", "mazer"]) {
+    const redirect = portalAccount.accountEmailChangeUrl(contextId);
+    const [message] = planMessages(
+      hookPayload({
+        user: { new_email: "new-address@example.test" },
+        email_data: { email_action_type: "email_change", redirect_to: redirect, token_hash: "HASH_NEW", token_hash_new: "" },
+      }),
+      { supabaseUrl: SUPABASE_URL },
+    );
+    const link = new URL(message.text.match(/https:\/\/\S+/)[0]);
+    assert.equal(`${link.origin}${link.pathname}`, ACCOUNT_CONFIRM_URL, contextId);
+    assert.equal(link.searchParams.get("type"), "email_change");
+    assert.equal(link.searchParams.get("token_hash"), "HASH_NEW");
+    assert.equal(link.searchParams.has("returnTo"), false, "an email change never carries a product return");
+    assert.equal(link.searchParams.get("app"), contextId === "website" ? null : contextId);
+    const payload = parseConfirmPayload(link);
+    assert.equal(payload?.type, "email_change");
+  }
+});
+
+test("email_changed_notification goes to the old address named by the hook; otherwise to the account address", () => {
+  const notify = (emailData, user = {}) =>
+    planMessages(
+      hookPayload({ user: { email: "new-address@example.test", ...user }, email_data: { email_action_type: "email_changed_notification", ...emailData } }),
+      { supabaseUrl: SUPABASE_URL },
+    );
+  const [toOld] = notify({ old_email: "old-address@example.test" });
+  assert.equal(toOld.to, "old-address@example.test");
+  assert.match(toOld.subject, /email address was changed/);
+  assert.equal(notify({})[0].to, "new-address@example.test", "no old_email: falls back to the account address");
+  assert.equal(notify({ old_email: "not an address" })[0].to, "new-address@example.test", "a malformed old_email is never used");
+  assert.equal(notify({ old_email: "" })[0].to, "new-address@example.test");
+  // Other notifications ignore old_email entirely.
+  const [password] = planMessages(
+    hookPayload({ email_data: { email_action_type: "password_changed_notification", old_email: "old-address@example.test" } }),
+    { supabaseUrl: SUPABASE_URL },
+  );
+  assert.equal(password.to, "person@example.test");
+});
+
 test("notification and fallback emails never include an action link", () => {
   for (const type of [
     "password_changed_notification",

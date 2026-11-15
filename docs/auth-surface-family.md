@@ -34,7 +34,7 @@ The utility document never scrolls on ordinary supported mobile viewports, down 
 
 The Fitness presentation derives its public Privacy Policy and Terms of Service from the catalog's current Fitness origin; the account host renders those live destinations without copying the legal documents, switching early to a planned origin, or changing product ownership.
 
-The authenticated account surface shows the product marker, `Account` title, the lead "Your account works in Fitness and Mazer.", locked username and email fields, one `Reset password` link, and a full-width `Sign out` dock action. It does not repeat the public app catalog, connection placeholders, or unfinished service-registration copy.
+The authenticated account surface shows the product marker, `Account` title, the lead "Your account works in Fitness and Mazer.", locked username and email fields, one `Reset password` link, and a full-width `Sign out` dock action. The locked username and email rows carry a pencil button (in place of the lock) that opens Change username / Change email on the same anatomy: step 1 is a locked current value plus the password (dock `Continue`), step 2 the new value (dock `Save username` or `Send link`); an email link already sent stays locked with the resend countdown in the dock, like sign-up. `Cancel` (or `Back to account`) returns to the account screen. It does not repeat the public app catalog, connection placeholders, or unfinished service-registration copy.
 
 The forced first-run auth surface does not include a home/back action, subtitle, guest-play action, or separate display-name field. Username is the public display name.
 

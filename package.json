@@ -35,6 +35,7 @@
     "test:auth-email": "node --test tests/auth-email-contract.test.mjs",
     "test:username-signin": "node --test tests/username-signin-lockout.test.mjs tests/username-signin-lockout-v4.test.mjs",
     "test:account-copy": "node --test tests/account-copy-length.test.mjs tests/account-copy-matrix.test.mjs",
+    "test:account-change": "node --test tests/account-change.test.mjs",
     "test:password-reset": "node --test tests/account-password-reset-contract.test.mjs",
     "test:account-signout": "node --test tests/account-signout-contract.test.mjs",
     "email:preview": "node scripts/email-preview.mjs",
@@ -47,7 +48,7 @@
     "playbook:ai-context": "node scripts/playbook-runtime.mjs ai-context",
     "playbook:index": "node scripts/playbook-runtime.mjs index",
     "playbook:test": "node --test tests/playbook-runtime.test.mjs",
-    "verify": "npm run lint && npm run test:analytics && npm run test:auth-email && npm run test:username-signin && npm run test:account-copy && npm run test:password-reset && npm run test:account-signout && npm run test:operations-ingest && npm run test:owner-projects && npm run test:presence && npm run test:auth-key-guard && npm run test:deployment-binding && npm run test:runtime-hygiene && npm run test:style-architecture && npm run test:release-evidence && npm run test:project-board-owner-export && npm run test:project-board-preview && npm run build && npm run test:discovery-performance && npm run test:owner-board-static && npm run smoke:lifeline && npm run test:visual-regression && npm run test:e2e"
+    "verify": "npm run lint && npm run test:analytics && npm run test:auth-email && npm run test:username-signin && npm run test:account-copy && npm run test:account-change && npm run test:password-reset && npm run test:account-signout && npm run test:operations-ingest && npm run test:owner-projects && npm run test:presence && npm run test:auth-key-guard && npm run test:deployment-binding && npm run test:runtime-hygiene && npm run test:style-architecture && npm run test:release-evidence && npm run test:project-board-owner-export && npm run test:project-board-preview && npm run build && npm run test:discovery-performance && npm run test:owner-board-static && npm run smoke:lifeline && npm run test:visual-regression && npm run test:e2e"
   },
   "dependencies": {
     "@supabase/realtime-js": "2.109.0",

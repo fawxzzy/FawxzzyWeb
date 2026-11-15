@@ -203,6 +203,17 @@ export function accountConfirmUrl(
   return url.href;
 }
 
+/**
+ * Where the email-change link returns: the confirm route, themed by `app`, never a product return
+ * target. The confirm route always lands an email change on the account page (no Fitness handoff and
+ * no confirmation state: the one-time token in the link is the proof).
+ */
+export function accountEmailChangeUrl(contextId: AccountExperienceContextId) {
+  const url = new URL(accountContract.confirmPath, accountContract.canonicalOrigin);
+  if (contextId !== "website") url.searchParams.set("app", contextId);
+  return url.href;
+}
+
 export type RuntimeOriginKind =
   | "account"
   | "hub"

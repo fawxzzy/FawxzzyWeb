@@ -261,10 +261,17 @@ export function planMessages(payload, { supabaseUrl }) {
 
   const notification = NOTIFICATIONS[type];
   if (notification) {
+    // "Email changed" goes to the OLD address: by the time it is sent, user.email is already the new
+    // one. The hook payload names the previous address in email_data.old_email; without a valid one
+    // the notice falls back to the account's current address.
+    const oldEmail = data.old_email;
+    const to = type === "email_changed_notification" && isNonEmptyString(oldEmail) && EMAIL_ADDRESS.test(oldEmail)
+      ? oldEmail
+      : user.email;
     return [
       message({
         theme,
-        to: user.email,
+        to,
         copy: {
           subject: notification.subject(theme.kicker),
           preheader: notification.body,

@@ -115,6 +115,30 @@ redirects must be admitted individually in a future packet; do not add a broad p
 - Signed-in email and password changes reauthenticate the same origin-scoped user with the current
   password immediately before the update. Secure email change remains a provider setting to keep
   enabled during the later binding packet.
+- Change username / change email (design point 12). The locked Username and Email rows on
+  `/account` carry a pencil button. Step 1 re-enters the current password: a throwaway,
+  non-persisting client signs in with the account email, the same security check as sign-in, and
+  must return the same user id (a different account reads as a wrong password); the live session
+  is never touched. Step 2 takes the new value, checked locally with the sign-up rules first.
+  - Username: saved at once through `account_api.account_change_username` (rate limited in the
+    database: 10 attempts per 15 minutes, 3 changes per 24 hours; same 2-15 character rule and the
+    sign-up "That username is taken. Try another." line). The live `account_guard_username_claim` trigger stays
+    the authority; `sync_username_signin_index` moves username sign-in to the new name in the same
+    transaction. The session is refreshed so the page shows the new name, and a remembered sign-in
+    name that was the old username follows it. Mazer profile names are not changed.
+    The SQL is owner-gated and lives in `supabase/proposed/` (not `migrations/`, so nothing applies
+    it on merge) with its rollback and a pglite scratch test
+    (`account_change_username_v1.scratch-test.mjs`). Until it is applied the call fails with
+    PGRST202/42501 and the screen says "Changes are unavailable right now. Try again later."
+  - Email: `updateUser({ email })` with `emailRedirectTo` = the confirm route themed by `app`, with
+    no product return (`accountEmailChangeUrl`). The provider sends the link to the NEW address; the
+    old address keeps working until it is opened. An `email_change` confirm link always lands on
+    `/account?notice=emaildone` (provider returned a session: done), `notice=emailhalf` (secure
+    email change: the link at the other address must be opened too) or `notice=emaillink`
+    (expired or used); it never goes through a product handoff. "We also told your old address"
+    relies on the provider's "Email changed" notification being enabled and on the Send Email hook
+    sending `email_changed_notification` to `email_data.old_email` (falls back to the account
+    address when the payload has no valid `old_email`).
 - Signup, reset, and change-password require at least 10 characters. The application has no
   restrictive maximum and never trims or truncates passwords; 128+ character values remain
   accepted. Login accepts existing shorter passwords for migration compatibility.
