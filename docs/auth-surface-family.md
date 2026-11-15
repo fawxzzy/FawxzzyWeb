@@ -12,29 +12,29 @@ The three products use one rigid authentication anatomy. Product theme may chang
 - Context selection is presentation-only. It never selects an Auth provider, callback, session, credential boundary, or arbitrary return URL.
 - Capability truth wins over visual consistency. A product must never show an enabled action when its account adapter or service registration is unavailable.
 
-## Required anatomy
+## Required anatomy (Auth Surface v2, owner-approved 2026-11-15)
 
-Every sign-in and create-account surface provides these elements in this order:
+Every account screen (sign in, create account, reset request, new password, account, sign out, callback, confirm, OAuth fallback, 404 and crash) uses the same anatomy, in this order. Components: `src/components/account/auth-surface.tsx`; styles: `src/styles/page-families/auth-surface.css`.
 
-1. Product identity.
-2. `Welcome` or `Create Account`, with the remembered username directly below `Welcome` when available.
-3. Labeled identifier and password controls with password-manager semantics and the shared password-visibility icon.
-4. A compact sign-in/create-account/recovery action row.
-5. One full-width bottom-dock submit action with visible disabled and pending states.
+1. The product's app icon, from the branding files already in `public/` (never a drawn shape).
+2. The product name as a small kicker, then the title. No username or other identity under any title.
+3. An optional centred lead sentence (only where the mock has one; a screen showing a notice drops its lead).
+4. Labelled fields with sentence-case labels. A value the person does not type (a remembered identity, the signed-in email, a value already sent) is a locked field with a lock icon. Password fields get the shared show/hide toggle.
+5. ONE notice box in a fixed, reserved slot directly under the fields. The slot always takes its height, so a message appearing or clearing never moves anything and is never clipped; it can carry one inline action (Retry, Sign in).
+6. A compact text-link row with short accent bars between links, then the legal row (`Privacy` | `Terms`) where the context has one.
+7. One full-width dock button that only ever says what it does or what it is doing (spinner plus a working label). It never carries an error.
 
-Required-field validation uses the same red field outline in every context without adding a floating error paragraph. Provider, recovery, and completion outcomes are announced accessibly and temporarily replace the bottom-dock label for five seconds before the normal action label returns.
+Status screens (callback, confirm, sign out, account check, OAuth fallback, 404, crash) show the app icon inside a ring (spinning while it moves on by itself), a title, an optional lead or notice, and a dock only when the person has to act. They have no links or legal row. A failed or expired link never dead-ends: the person lands on the sign-in or reset request screen with the reason in the notice slot (`/login?notice=<key>`, allowlisted in `src/lib/auth/auth-outcomes.ts`).
 
-Every editable credential field preserves native mobile caret placement, long-press selection, and text-callout behavior. The field values remain centered, and the complete field set remains one screen-centered group; visual centering must never be implemented by suppressing native text selection or touch editing.
+Words: every line a person can read comes from the copy matrix `src/lib/auth/copy-matrix.ts`. `npm run test:account-copy` fails on any other visible text in the auth screen components and on any retired line ("Something went wrong", "Working…", "Wrong details", ...). Field errors outline the field in red and point it at the notice with `aria-describedby`; there is no floating error paragraph.
 
-The product marker, screen title, and remembered username form one top-anchored intro group. The complete field set is independently centered against the viewport, and the primary action remains independently bottom-anchored. Field count must not pull the intro down or move the bottom action. The product-owned password reveal is the only visible reveal control; browser-native duplicate reveal and clear controls are suppressed without changing password-manager or autofill semantics.
+Every editable credential field preserves native mobile caret placement, long-press selection, and text-callout behavior. The product-owned password reveal is the only visible reveal control; browser-native duplicate reveal and clear controls are suppressed without changing password-manager or autofill semantics.
 
-The utility document never scrolls during ordinary supported mobile viewports. When keyboard pressure, extreme text size, or a genuinely short viewport requires overflow, only the bounded form/content region may scroll; the intro, secondary rail, and primary dock remain stable. Normal-width mobile headings use title case and remain on one line without overlapping the form.
-
-The secondary-action rail is geometry-owned rather than flow-owned: it reserves two 44px touch-safe rows, with its lower edge fixed 16px above the 56px bottom dock. When legal links exist, screen actions occupy the upper row and legal links occupy the lower row. When legal links do not exist, screen actions occupy that same lower-row position rather than jumping upward. Every divider is the same shared 8px-by-14px component with a 2px stroke, pinned to the exact horizontal screen centerline and vertically centered against its neighboring text.
+The utility document never scrolls on ordinary supported mobile viewports, down to 320x568 (a compact size set applies at heights of 760px and below, and a tighter one at 600px and below; when a keyboard leaves less room, only the form body scrolls, downward, so every field stays reachable). Interactive targets stay touch-safe and keyboard focus stays visible.
 
 The Fitness presentation derives its public Privacy Policy and Terms of Service from the catalog's current Fitness origin; the account host renders those live destinations without copying the legal documents, switching early to a planned origin, or changing product ownership.
 
-The authenticated account surface follows the current Mazer account hierarchy: product marker, `Account` title, username and email identity fields, one compact recovery action in the shared secondary rail, and a full-width red `Sign out` dock action. It does not repeat the public app catalog, connection placeholders, or unfinished service-registration copy.
+The authenticated account surface shows the product marker, `Account` title, the lead "Your account works in Fitness and Mazer.", locked username and email fields, one `Reset password` link, and a full-width `Sign out` dock action. It does not repeat the public app catalog, connection placeholders, or unfinished service-registration copy.
 
 The forced first-run auth surface does not include a home/back action, subtitle, guest-play action, or separate display-name field. Username is the public display name.
 
@@ -63,7 +63,7 @@ The family requires 44px minimum interactive targets, visible keyboard focus, no
 - Background: Mazer's own static auth background; gameplay, simulation, announcements, and ambient motion are halted while auth is visible.
 - Preserve one overlay and recoverable input behavior without guest-play access.
 - The account host owns the `/oauth/authorize` OAuth 2.1 consent surface. It accepts one bounded provider authorization identifier, immediately removes it from the address bar, and retains it for at most 15 minutes in a Secure, HttpOnly, SameSite=Lax, host-only cookie. Page script and local storage never receive the retained identifier.
-- `/oauth/authorize` accepts only the registered Mazer client, exact `https://mazer.fawxzzy.com/` redirect URI, and `email` scope; any other client or redirect fails closed as an invalid request. The Supabase OAuth server requires an explicit `approveAuthorization` call, so the first-party Mazer client (exact client-id and exact redirect-URI allowlist in `shouldAutoApproveMazerOAuth`, plus a matching session user) is approved by the account host without showing a consent card: the player signs in, sees Mazer's own loader (opaque #02080f, the Mazer icon with its ring after 150 ms, no text, no scroll) while the sign-in is checked, and is redirected to the exact Mazer origin. If the automatic approval fails, the existing error state is shown (never a consent card, no automatic retry). The retained consent card ("Continue to Mazer?" with Cancel) is reachable only for a request that passes the Mazer identity check but is not on the auto-approve allowlist, and in local tests via `oauth_consent=1`. Every decision revalidates the current account session and accepts only a bounded code-or-error redirect back to that exact origin.
+- `/oauth/authorize` accepts only the registered Mazer client, exact `https://mazer.fawxzzy.com/` redirect URI, and `email` scope; any other client or redirect fails closed as an invalid request. The Supabase OAuth server requires an explicit `approveAuthorization` call, so the first-party Mazer client (exact client-id and exact redirect-URI allowlist in `shouldAutoApproveMazerOAuth`, plus a matching session user) is approved by the account host without showing a consent card: the player signs in, sees Mazer's own loader (opaque #02080f, the Mazer icon with its ring after 150 ms, no text, no scroll) while the sign-in is checked, and is redirected to the exact Mazer origin. If the automatic approval fails, or the request is invalid or expired, the status screen "Sign-in link expired" asks the player to go back to Mazer and start again, with an `Open Mazer` dock (never a consent card, no automatic retry). The retained consent card ("Continue to Mazer?" with Cancel) is reachable only for a request that passes the Mazer identity check but is not on the auto-approve allowlist, and in local tests via `oauth_consent=1`. Every decision revalidates the current account session and accepts only a bounded code-or-error redirect back to that exact origin.
 - Do not change the auth/menu surface while another exact writer owns it. Reconcile that work first, then implement from a fresh exact parent.
 
 ## Mazer pattern intake
@@ -82,7 +82,7 @@ The family requires 44px minimum interactive targets, visible keyboard focus, no
 ## Sequencing and ownership
 
 1. Fitness remains the locked structural reference.
-2. FawxzzyWeb proves the declarative template, presentation registry, field feedback, transient action messaging, reset flow, and optional legal row first.
+2. FawxzzyWeb proves the declarative template, presentation registry, field feedback, the reserved notice slot, reset flow, and optional legal row first.
 3. Fitness and Mazer remain unchanged while the Website host proves every registered presentation. Consumer navigation, broker exchange, and app-owned session adoption remain separately gated.
 4. Each owner repository then adapts its rendering primitive to the same contract; it does not copy a second state machine.
 5. Each product requires focused tests, responsive screenshots, exact-head review, and a separately authorized release.
