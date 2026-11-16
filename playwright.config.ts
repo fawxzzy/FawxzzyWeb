@@ -11,7 +11,10 @@ export default defineConfig({
   fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),
   retries: 0,
-  workers: 1,
+  // Specs are file-isolated (per-test context + auth_test fakes, no shared server state), so CI runs files on
+  // PLAYWRIGHT_WORKERS (default 3) workers against the one server. Tests inside a file stay in order
+  // (fullyParallel false). Local runs stay at 1 unless PLAYWRIGHT_WORKERS is set.
+  workers: Number(process.env.PLAYWRIGHT_WORKERS ?? (process.env.CI ? 3 : 1)),
   reporter: "list",
   use: {
     baseURL: testOrigin,
