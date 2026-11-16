@@ -188,9 +188,9 @@ redirects must be admitted individually in a future packet; do not add a broad p
   account email (a locked field) and the notice names the masked address. Signed out, the answer
   is "If that account exists, we sent a reset link to its email." whatever happened at the
   provider; only sending failures (rate limit, send failure, no connection) get their own line.
-  Known gap: the approved design asks for a username field when signed out, which needs a
-  server-side username-to-email reset path (an Edge Function); until then the signed-out request
-  takes an email.
+  The approved design asks for a username field when signed out; that path is built behind
+  `RESET_BY_USERNAME_LIVE` (see "Reset password by username" below) and the live signed-out
+  request keeps taking an email until the owner applies its SQL and deploys its Edge Function.
 - Portal copy lives only in the copy matrix (`src/lib/auth/copy-matrix.ts`). Every line is at
   most 70 characters and `npm run test:account-copy` fails on any other visible text in the auth
   screen components (see `docs/auth-surface-family.md`).
@@ -360,6 +360,42 @@ existing account, or treat a client-side value as authoritative.
    is missing.
 7. Prove username and all platform-owned writes remain gated until the target schema capability is
    separately deployed and read back.
+
+## Reset password by username (design direction #9)
+
+- Signed out, the reset request takes a USERNAME only, never a typed email. Every accepted request
+  answers "If that username has an account, we sent a reset link to its email." whether the
+  username exists, is unconfirmed, banned, deleted or unknown. No address, masked or not, is shown.
+  Signed in, the locked account email stays as before.
+- Server side: Edge Function `supabase/functions/username-password-reset` (pure logic in
+  `handler.mjs`, Deno wiring in `index.ts`, `verify_jwt = false` in `supabase/config.toml`) calls
+  `account_api.account_resolve_username_reset_v1` (proposal
+  `supabase/proposed/20261115210000_account_username_reset_v1.sql`, service_role only). The SQL
+  counts the request BEFORE it looks the username up, in `account_private.username_signin_attempts`
+  under reset-only keys: 5 per (username, client) and 20 per client in 15 minutes, plus a shared
+  reset row (100 per 15 minutes). There is no per-username lock, so nobody can lock another
+  person out of reset.
+- Equal answers: the foreground does only the counting/resolve; the account read and the provider
+  `/auth/v1/recover` call run after the answer (`EdgeRuntime.waitUntil`), and every answer is
+  padded to a 900 ms floor. Answers: 200 `{"status":"accepted"}`, 429 `reset_throttled`
+  (Retry-After 900), 503 `reset_unavailable`, 400 `reset_invalid`. Only these reach the browser.
+- PKCE: the browser stores the recovery code verifier exactly as supabase-js does
+  (`src/lib/auth/recovery-pkce.ts`) and sends only the challenge; the function forwards it, so the
+  email link is the usual `/reset-password?recovery=1&code=...` and the existing landing exchanges it.
+  The redirect must be one of the four `accountRecoveryUrl` outputs (allowlist in the handler).
+- Turnstile: the token is forwarded to the provider call in the background only, so with CAPTCHA
+  enforced a bad token means no email but the same answer. Server-side token verification in the
+  function needs the Turnstile secret as a function secret (follow-up, owner).
+- Tests: `tests/username-password-reset.test.mjs` (equal answers/timing, malformed requests,
+  CORS, keys, PKCE format against the installed SDK), the pglite scratch test
+  `supabase/proposed/account_username_reset_v1.scratch-test.mjs` (non-enumeration and limits on
+  the real SQL), and `tests/e2e/account-reset-username.spec.ts` (390x844 and 320x568).
+- Owner go-live order: (1) apply the SQL (approve by sha256; rollback
+  `supabase/proposed/20261115210000_account_username_reset_v1.rollback.sql`); (2) deploy the
+  function `username-password-reset`; (3) check one request from the account origin returns
+  `{"status":"accepted"}` and a known test account gets the email; (4) set
+  `RESET_BY_USERNAME_LIVE = true` in `src/config/account.ts` and ship. Rollback: set the flag back
+  to false (the email form returns), then delete the function and run the rollback SQL.
 
 ## Turnstile CAPTCHA (FW-CAPTCHA-001)
 

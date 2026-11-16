@@ -1,5 +1,13 @@
 This file is a project-local inbox for repo-specific Playbook notes that may later be promoted upstream.
 
+## 2026-11-15 - Signed-out password reset by username (design direction #9), dark
+
+- Type: Account portal feature (client, behind `RESET_BY_USERNAME_LIVE = false`) + new Edge Function source + proposed SQL (not applied)
+- WHAT changed: Signed out, the reset form asks for a username (`#account-reset-username`) and always answers `reset.sentuser`; the request goes to the new Edge Function `username-password-reset`, which counts the request (per username+client, per client, shared reset row) before resolving the username in `account_api.account_resolve_username_reset_v1`, sends the provider recovery email in the background, and pads every answer to 900 ms. The browser keeps the PKCE verifier (`src/lib/auth/recovery-pkce.ts`) so the email link uses the existing `?recovery=1&code=` landing. Test adapter adds `auth_test=reset-email-legacy|reset-throttled|reset-unavailable`; the default fixture shows the username form.
+- WHY it changed: A typed email on a signed-out reset form lets anyone probe which addresses have accounts and send mail to them; a username plus one fixed answer, equal timing and pre-lookup limits removes that oracle.
+- Rule: A signed-out account request must answer identically (status, body, headers, timing floor) for known, unknown, unconfirmed, banned and deleted accounts, and count rate limits before the existence lookup; pin it with a handler test plus a pglite scratch test on the real SQL. The function never returns an email or user id.
+- Scope: Source and local regression only. The live portal keeps the email form until the owner applies the SQL, deploys the function and flips the flag (order in `docs/shared-account-portal-phase1.md`). No database, provider setting, credential or deployment effect from this PR.
+
 ## 2026-11-15 - Account dock Sign out ends this device only
 
 - Type: Account portal behaviour change (client); reverses the dock half of FF-ACCOUNT-004 W-2
