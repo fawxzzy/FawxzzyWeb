@@ -53,6 +53,8 @@ export const AUTH_MESSAGES = {
   "change.unavailable": ["error", "Changes are unavailable right now. Try again later."],
   "change.savefail": ["error", "Could not save the change. Try again."],
   "reset.sentany": ["success", "If that account exists, we sent a reset link to its email."],
+  // Signed-out reset by username: the same line whether or not the username has an account.
+  "reset.sentuser": ["success", "If that username has an account, we sent a reset link to its email."],
   "reset.expired": ["error", "That reset link expired. Send a new one."],
   "reset.invalid": ["error", "That reset link is not valid. Send a new one."],
   "reset.rate": ["error", "Too many reset requests. Wait a few minutes and try again."],
