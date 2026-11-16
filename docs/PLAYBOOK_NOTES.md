@@ -1,5 +1,15 @@
 This file is a project-local inbox for repo-specific Playbook notes that may later be promoted upstream.
 
+## 2026-11-15 - Delete account follow-up: lock before the cross-account check, owner_id, honest copy
+
+- Type: Proposed SQL change (not applied) + portal copy/failure mapping + docs; flag stays `DELETE_ACCOUNT_LIVE = false`
+- WHAT changed: Before the cross-account foreign-key walk the function locks this account's rows `FOR UPDATE` in every table it deletes from; a Storage file owned through `owner` (uuid) or `owner_id` (text) refuses the call (`support`) and the apply; the preflight requires postgres to see every `storage.objects` row (USAGE, SELECT, BYPASSRLS when RLS is on) and UPDATE on the deleted tables. A 23503/23001 rollback shows the "Contact support" line, not "Try again". The success line is "Your account was deleted." and the list says sign-in security logs may keep the email. Docs: the Fitness migrations DO declare keys to `auth.users` (profiles, Discord tokens/links/reports/cases); the orphan-row caveat stays only for the workout tables.
+- WHY it changed: Review of PR #192 before the SQL apply: a row inserted between the check and the delete could be cascaded away; `owner_id` was not checked; "Try again" can never succeed after a key rollback; GoTrue's `auth.audit_log_entries` keeps the email, so "its data were deleted" over-promised; the "no FK" doc statement was stale.
+- Rule: A check-then-delete across rows other sessions can reference must lock the target rows `FOR UPDATE` (not `FOR SHARE`/`FOR NO KEY UPDATE`: only `FOR UPDATE` conflicts with the `FOR KEY SHARE` an FK insert takes) before the check, and the definer needs UPDATE for it. Prove it in single-connection pglite via `xmax` (one new transaction id on every target row, none on other accounts' rows).
+- Rule: A security-definer check that reads an RLS table must be guaranteed to see every row (BYPASSRLS or ownership, checked in the preflight); a silently filtered read turns a refusal into a delete.
+- Failure Mode: Copy that says "data were deleted" while the auth provider's audit log keeps the email; say what stays.
+- Scope: Source and local regression only; no deployment, provider, credential or database effect.
+
 ## 2026-11-15 - Account page: delete account (self-service, all apps)
 
 - Type: Account portal feature (client, behind `DELETE_ACCOUNT_LIVE = false`) + proposed SQL (not applied) + pglite scratch test
@@ -10,6 +20,7 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - Rule: Password-proof honesty: a JWT `amr` check proves "a password sign-in in the last 10 minutes on a live session of this user", not "the password was typed now". Say exactly that, and make the owner dry run (refresh the session, confirm the refreshed token keeps the ORIGINAL amr timestamp) explicit before going live.
 - Rule: Only count rate-limit attempts that passed re-authentication; counting `reauth` refusals lets any token of the user's (no fresh password) lock them out.
 - Scope: Source and local regression only; no deployment, provider, credential or database effect. Until the owner applies the SQL and flips the flag, the row is hidden and the page is unchanged. Deleted data has no recovery except a provider backup.
+
 ## 2026-11-15 - Auth emails: one branded template with the real app icons
 
 - Type: Edge-function source change (auth-send-email) + static assets

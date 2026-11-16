@@ -8,8 +8,9 @@ import { AUTH_COPY, AUTH_MESSAGES, type AuthMessageId } from "../../src/lib/auth
  * is rate limited; the typed text must be the username ("fawxzzy"). `delete-unavailable` stands for
  * the SQL not applied yet, `delete-billing`/`delete-rate` for those database answers, `delete-gone`
  * for an account already deleted, `delete-expired` for a password check older than 10 minutes,
- * `delete-support` for the support refusal, `delete-off` for the live page while DELETE_ACCOUNT_LIVE
- * is false (no row).
+ * `delete-support` for the support refusal, `delete-blocked` for a foreign key the function does not
+ * know rolling the call back (23503), `delete-off` for the live page while DELETE_ACCOUNT_LIVE is false
+ * (no row).
  */
 const PASSWORD = "correct horse battery 1";
 const USERNAME = "fawxzzy";
@@ -176,6 +177,16 @@ test("delete refusals keep the account and say why", async ({ page }) => {
   await dock(page).click();
   await expect(noticeOf(page, "delete.support")).toHaveText(AUTH_MESSAGES["delete.support"][1]);
   await expect(surface(page)).toHaveAttribute("data-delete-step", "warning");
+  await expect(html(page)).not.toHaveAttribute("data-account-deleted", /.+/);
+
+  // A key the function does not know rolled the call back (23503): the same support line, never
+  // "Try again" (a retry can not succeed).
+  await open(page, "delete-blocked");
+  await toWarning(page);
+  await dock(page).click();
+  await expect(noticeOf(page, "delete.support")).toHaveText(AUTH_MESSAGES["delete.support"][1]);
+  await expect(noticeOf(page, "delete.fail")).toHaveCount(0);
+  await expect(page.getByText(/try again/i)).toHaveCount(0);
   await expect(html(page)).not.toHaveAttribute("data-account-deleted", /.+/);
 
   await open(page, "delete-unavailable");

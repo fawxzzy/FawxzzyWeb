@@ -463,8 +463,10 @@ existing account, or treat a client-side value as authoritative.
   open; (2) type the username (or the email when the account has none), trimmed and any case; (3) one
   plain-words screen of what is deleted (profile, username and sign-in; Fitness workouts, routines and
   history; Mazer progress and high scores, which are its leaderboard entries), one line that Discord
-  feedback and moderation records stay without the account link, and that it can not be undone; its red
-  dock deletes. Then `/login?notice=deleted` with "Your account and its data were deleted."
+  feedback and moderation records stay without the account link, one line that sign-in security logs may
+  keep the email for a while (GoTrue's `auth.audit_log_entries`, not touched; retention is the
+  provider's, UNKNOWN here), and that it can not be undone; its red dock deletes. Then
+  `/login?notice=deleted` with "Your account was deleted." (it does not claim every trace is gone).
 - Server: `account_api.account_delete_self(p_confirm text)` (authenticated only) calls the private
   `account_private.delete_account_v1`. It checks the password proof (below), then the rate limit, the
   typed text, billing and the support cases, then deletes every listed Fitness, Mazer and
@@ -487,7 +489,15 @@ existing account, or treat a client-side value as authoritative.
   if any row of ANOTHER account points at a row this call would delete (for example another account's
   `exercise_stats` or `progression_events`, whose keys to `exercises` are ON DELETE CASCADE, on this
   account's custom exercise), the call refuses instead of deleting the other account's rows. The check
-  reads every foreign key between the listed tables at call time.
+  reads every foreign key between the listed tables at call time. Right before it, the call locks this
+  account's rows in every table it deletes from (`SELECT ... FOR UPDATE`): another session's foreign-key
+  check on insert takes `FOR KEY SHARE` on the row it points at, which waits on that lock, so no row can
+  start pointing at this account's rows between the check and the deletes. A file in Storage owned by
+  the account (`storage.objects.owner` uuid or `owner_id` text) also refuses (`support`).
+- A key from a table outside the list can only be NO ACTION/RESTRICT (the preflight refuses the rest). A
+  row behind one makes the call fail with 23503 (or 23001) and roll back; the portal shows the same
+  "This account can not be deleted here. Contact support." line as `support`, never "Try again" (a
+  retry can not succeed).
 - Time limit: the call runs inside one API request, so the authenticated role's `statement_timeout`
   (Supabase default 8s; the preimage reports the live value and the largest per-account row counts) caps
   it. A very large account that hits it fails with nothing deleted; the owner deletes it by hand.
@@ -509,17 +519,24 @@ existing account, or treat a client-side value as authoritative.
   and `auth.users`, which schema holds each listed table (the Fitness repo's migrations say `public`,
   production uses `fitness`), the reserved #0 count, other accounts' references to custom exercises, the
   largest per-account row counts against the statement timeouts, postgres privileges and RLS bypass, no
-  storage objects with an owner), `account_delete_self_v1.scratch-test.mjs` (pglite: proves only that
-  account's rows go, across schemas, and that another account's cascading rows are never deleted).
+  storage objects with an owner or owner_id, the live foreign keys to `auth.users`, GoTrue audit log
+  size), `account_delete_self_v1.scratch-test.mjs` (pglite: proves only that account's rows go, across
+  schemas, that another account's cascading rows are never deleted, and that the call locks only this
+  account's rows before the check; pglite has one connection, so a concurrent insert is not raced).
 - Short screens (max-height 600px): the account page hides its lead line so the three rows, notice slot,
   links and dock still fit at 320x568 with wide Linux fonts. Copy never says "leaderboard" (pinned by
   `tests/username-signin-lockout.test.mjs`); the list says "Mazer progress and high scores".
 - Until applied: the row is hidden (flag off). If the flag were turned on before the SQL, the last step
   would show "Deleting is unavailable right now. Try again later." and delete nothing.
 - Known gaps: access tokens already issued stay valid until they expire (about 1 hour). Fitness server
-  actions re-check with `auth.getUser()` (fails for a deleted user), but Fitness tables have no foreign key
-  to `auth.users`, so a direct browser write in that window could leave an orphan row. Mazer re-checks with
-  `getUser`/`getClaims` on its account check.
+  actions re-check with `auth.getUser()` (fails for a deleted user). The Fitness migrations declare keys
+  to `auth.users` only on `profiles` (002), `discord_verification_tokens` (054),
+  `discord_member_links` (055), `discord_feedback_reports` (057/059) and `discord_moderation_cases`;
+  a write to those after the delete fails its key check. The workout tables (`sets`, `sessions`,
+  `routines`, `exercises`, `exercise_stats` and the rest) declare none, so a direct browser write to them
+  in that window could leave an orphan row. Which keys are live in production is UNKNOWN from source; the
+  preimage's `foreign_keys_to_auth_users` reports it. Mazer tables key to `auth.users` (cascade) and
+  Mazer re-checks with `getUser`/`getClaims` on its account check.
 
 ## Rollback and blocked state
 

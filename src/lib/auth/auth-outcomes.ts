@@ -171,7 +171,8 @@ const LOGIN_NOTICES = {
   confirmed: "signin.confirmed",
   // Sign out everywhere on the account page.
   everywhere: "signin.everywhere",
-  // Delete account on the account page: the account and its data are gone.
+  // Delete account on the account page: the account is gone (the copy does not claim every trace is:
+  // the sign-in provider's security log keeps the email for a while).
   deleted: "signin.deleted",
   resetdone: "signin.resetdone",
   session: "signin.session",
