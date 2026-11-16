@@ -156,3 +156,11 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHY it changed: the Web Projects snapshot lagged the Fitness owner board after the board fold merged.
 - Rule: Fitness re-pin copies the owner export and rebuilds the snapshot with `npm run data:project-board-owner-snapshot`, never by hand.
 - Scope: Source and local regression only. The Projects page changes only after the next production build; no deployment, provider, credential or database effect.
+
+## 2026-11-16 - Per-skin icons audited and pinned
+
+- Type: Source and contract test
+- WHAT changed: removed the unreferenced retired Fitness trident `public/apps/fitness/icon-192.png`; `tests/auth-email-contract.test.mjs` now pins the three portal icons by sha256 (Mazer M `/apps/mazer/storefront-icon.webp`, Fitness fox, Fawxzzy fox F `/app/icon-192.png`) and fails if two skins share a file or the trident returns.
+- WHY it changed: Zac asked that the Mazer skin show the Mazer M, Fitness the Fitness fox, website the Fawxzzy fox F. Audit of origin/main (0681f52) and live found every skin and email icon already correct; the pin stops a regression.
+- Scope: Source and local regression only; no provider, credential, database or deploy effect.
+
