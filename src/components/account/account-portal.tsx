@@ -75,6 +75,17 @@ import {
   type ChangeField,
   type ChangeProblem,
 } from "@/lib/auth/account-change";
+import {
+  accountDeleteFailure,
+  accountDeleteNotice,
+  deleteConfirmProblem,
+  deleteFieldsFor,
+  deleteReauthFailure,
+  deleteReauthProblem,
+  isAccountGone,
+  type DeleteProblem,
+  type DeleteStep,
+} from "@/lib/auth/account-delete";
 import { TurnstileField, type TurnstileFieldHandle } from "@/components/account/turnstile-field";
 import { resolveSignOutDestination, SIGNOUT_RETURN_PARAM } from "@/config/account-signout";
 import {
@@ -817,6 +828,8 @@ function AccountPanel({
   const [busy, setBusy] = useState(false);
   // Change username / change email (design point 12): which row is being changed, if any.
   const [changing, setChanging] = useState<ChangeField | null>(null);
+  // Delete account: true while the delete screen is open.
+  const [deleting, setDeleting] = useState(false);
   // Sign out everywhere: true while the notice box asks to confirm (step 1 of 2).
   const [confirmingEverywhere, setConfirmingEverywhere] = useState(false);
   // `/account?notice=` from an opened email-change link (allowlist).
@@ -946,6 +959,57 @@ function AccountPanel({
     setChanging(field);
   }
 
+  function startDelete() {
+    setNotice(null);
+    setQueryNoticeDismissed(true);
+    setConfirmingEverywhere(false);
+    setDeleting(true);
+  }
+
+  /**
+   * The account is gone (deleted now, or already). Every session died with it at the provider and
+   * the adapter cleared this browser's copy. Forget the remembered name if it was this account, then
+   * land on this host's sign-in with the done line.
+   */
+  function finishDelete(deletedSession: PortalSession, deletedName: string) {
+    writeOwnerHint(false);
+    const remembered = readRememberedIdentity()?.toLowerCase();
+    if (remembered && [deletedName, deletedSession.email ?? ""].some((value) => value.trim().toLowerCase() === remembered)) {
+      forgetRememberedIdentity();
+    }
+    const destination = contextualPath(`/login?${LOGIN_NOTICE_PARAM}=deleted`, context);
+    if (isLocalTestOrigin()) {
+      // Deterministic harness: record the destination, then land on it signed out in the same harness.
+      document.documentElement.dataset.signOutDestination = destination;
+      const landing = new URL(destination, window.location.origin);
+      landing.searchParams.set("auth_test", "success");
+      window.location.replace(`${landing.pathname}${landing.search}`);
+      return;
+    }
+    window.location.replace(destination);
+  }
+
+  if (adapter && session && deleting) {
+    return (
+      <AccountDeletePanel
+        adapter={adapter}
+        context={context}
+        currentUsername={currentUsername}
+        onCancel={() => setDeleting(false)}
+        onDeleteSettled={(gone) => {
+          if (gone) finishDelete(session, currentUsername);
+          else signingOutRef.current = false;
+        }}
+        onDeleteStarting={() => {
+          // The provider announces the lost session before the call returns; this page picks the
+          // destination itself (the done line), not the "session ended" redirect.
+          signingOutRef.current = true;
+        }}
+        session={session}
+      />
+    );
+  }
+
   if (adapter && session && changing) {
     return (
       <AccountChangePanel
@@ -1009,6 +1073,17 @@ function AccountPanel({
           type="email"
           value={session?.email ?? ""}
         />
+        {session && adapter?.deleteAccountLive ? (
+          <AuthField
+            action={{ disabled: busy, label: AUTH_COPY.aria.deleteAccount, onClick: startDelete }}
+            danger
+            id="account-delete-row"
+            label={AUTH_COPY.field.deleteAccount}
+            locked
+            name="delete-account"
+            value={AUTH_COPY.field.deleteAccountValue}
+          />
+        ) : null}
         <AuthNoticeSlot
           notice={shownNotice}
           onAction={shownNotice?.id === "account.loadfail"
@@ -1295,6 +1370,238 @@ function AccountChangePanel({
       </AuthLinks>
       <AuthLegal context={context} />
       <AuthDock busy={busy} disabled={cooldown.remaining > 0} form="account-change-form">
+        {dockLabel}
+      </AuthDock>
+    </section>
+  );
+}
+
+const DELETE_FIELD_IDS = {
+  confirmation: "account-delete-confirm",
+  password: "account-delete-password",
+} as const;
+
+/**
+ * Delete account. Step 1 re-enters the current password (same security check as sign-in; the fresh
+ * session it makes is the proof the server checks). Step 2 types the username (or the email for an
+ * account without one). Step 3 says in plain words what is deleted and that it can not be undone; its
+ * dock deletes. The database function decides every refusal; nothing is deleted by this page itself.
+ */
+function AccountDeletePanel({
+  adapter,
+  context,
+  currentUsername,
+  onCancel,
+  onDeleteSettled,
+  onDeleteStarting,
+  session,
+}: {
+  adapter: PortalAuthAdapter;
+  context: AccountExperienceContext;
+  currentUsername: string;
+  onCancel: () => void;
+  onDeleteSettled: (gone: boolean) => void;
+  onDeleteStarting: () => void;
+  session: PortalSession;
+}) {
+  const [step, setStep] = useState<DeleteStep>("password");
+  const [target, setTarget] = useState("");
+  const [typed, setTyped] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [gone, setGone] = useState(false);
+  const form = useFormNotice();
+  const captchaRef = useRef<TurnstileFieldHandle>(null);
+  const [captchaKey, setCaptchaKey] = useState(0);
+  const [captchaBroken, setCaptchaBroken] = useState(false);
+  const pendingFocus = useRef<string | undefined>(undefined);
+
+  const notice: AuthNotice | null =
+    form.notice ?? (step === "password" && captchaBroken ? authNotice("captcha.load") : null);
+
+  // Leaving the screen any way ends the step-1 session.
+  useEffect(() => () => void adapter.endAccountDelete(), [adapter]);
+
+  function show(id: AuthMessageId) {
+    const problem: DeleteProblem = { id, fields: deleteFieldsFor(id) };
+    form.problem(problem);
+    pendingFocus.current = problem.fields[0] ? DELETE_FIELD_IDS[problem.fields[0]] : undefined;
+  }
+
+  function showNow(id: AuthMessageId) {
+    show(id);
+    focusField(pendingFocus.current);
+    pendingFocus.current = undefined;
+  }
+
+  function noticeAction() {
+    if (notice?.id === "captcha.load") {
+      setCaptchaBroken(false);
+      setCaptchaKey((key) => key + 1);
+      form.clear();
+    } else if (notice?.id === "captcha.fail") {
+      captchaRef.current?.reset();
+      form.clear();
+    }
+  }
+
+  async function confirmPassword(password: string) {
+    const problem = deleteReauthProblem(password);
+    if (problem) {
+      showNow(problem.id);
+      return;
+    }
+    setBusy(true);
+    form.clear();
+    try {
+      const captchaToken = await captchaRef.current?.getToken();
+      const result = await adapter.beginAccountDelete(password, captchaToken);
+      setTarget(result.confirmTarget);
+      setStep("type");
+      pendingFocus.current = DELETE_FIELD_IDS.confirmation;
+    } catch (error) {
+      show(deleteReauthFailure(error));
+    } finally {
+      captchaRef.current?.reset();
+      setBusy(false);
+    }
+  }
+
+  function confirmTyped() {
+    const problem = deleteConfirmProblem(typed, target);
+    if (problem) {
+      showNow(problem.id);
+      return;
+    }
+    form.clear();
+    setStep("warning");
+  }
+
+  async function deleteNow() {
+    setBusy(true);
+    form.clear();
+    onDeleteStarting();
+    let settled = false;
+    try {
+      const status = await adapter.deleteAccount(typed);
+      if (isAccountGone(status)) {
+        settled = true;
+        setGone(true);
+        onDeleteSettled(true);
+        return;
+      }
+      const next = accountDeleteNotice(status);
+      setStep(next.step);
+      if (next.step === "password") setTarget("");
+      if (next.id) show(next.id);
+    } catch (error) {
+      show(accountDeleteFailure(error));
+    } finally {
+      if (!settled) {
+        onDeleteSettled(false);
+        setBusy(false);
+      }
+    }
+  }
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy || gone) return;
+    if (step === "password") {
+      await confirmPassword(String(new FormData(event.currentTarget).get("password") ?? ""));
+    } else if (step === "type") {
+      confirmTyped();
+    } else {
+      await deleteNow();
+    }
+  }
+
+  useEffect(() => {
+    if (busy || !pendingFocus.current) return;
+    focusField(pendingFocus.current);
+    pendingFocus.current = undefined;
+  }, [busy, step]);
+
+  const invalid = (name: "password" | "confirmation") => form.fields.has(name);
+  const describedBy = (name: "password" | "confirmation") => (invalid(name) ? "auth-notice" : undefined);
+  const dockLabel = step === "warning"
+    ? busy || gone ? AUTH_COPY.working.deleting : AUTH_COPY.button.deleteAccount
+    : busy ? AUTH_COPY.working.checking : AUTH_COPY.button.continue;
+
+  return (
+    <section
+      aria-labelledby="account-delete-title"
+      className="auth-surface"
+      data-auth-product={context.id}
+      data-auth-surface="account-delete"
+      data-delete-step={step}
+      style={authAccentStyle(context)}
+    >
+      <RuntimeNote />
+      <AuthHead
+        context={context}
+        lead={step === "password"
+          ? AUTH_COPY.lead.changeConfirm
+          : step === "type"
+            ? AUTH_COPY.lead.deleteType
+            : AUTH_COPY.lead.deleteWarning}
+        title={AUTH_COPY.title.deleteAccount}
+        titleId="account-delete-title"
+      />
+      <form className="auth-body" id="account-delete-form" noValidate onSubmit={submit}>
+        {step === "password" ? (
+          <>
+            <AuthField
+              autoComplete="username"
+              id="account-delete-current"
+              label={AUTH_COPY.field.username}
+              locked
+              name="current-username"
+              value={currentUsername || session.email || ""}
+            />
+            <AuthField
+              autoComplete="current-password"
+              describedBy={describedBy("password")}
+              disabled={busy}
+              id={DELETE_FIELD_IDS.password}
+              invalid={invalid("password")}
+              label={AUTH_COPY.field.password}
+              name="password"
+              onChange={() => form.edited("password")}
+              secret
+            />
+            <TurnstileField key={captchaKey} onUnavailable={() => setCaptchaBroken(true)} ref={captchaRef} />
+          </>
+        ) : step === "type" ? (
+          <AuthField
+            autoComplete="off"
+            describedBy={describedBy("confirmation")}
+            disabled={busy}
+            id={DELETE_FIELD_IDS.confirmation}
+            invalid={invalid("confirmation")}
+            label={AUTH_COPY.field.typeToConfirm(target)}
+            name="delete-confirm"
+            onChange={(next) => {
+              setTyped(next);
+              form.edited("confirmation");
+            }}
+            value={typed}
+          />
+        ) : (
+          <ul className="auth-delete-list">
+            {AUTH_COPY.deleteList.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+        )}
+        <AuthNoticeSlot notice={notice} onAction={noticeAction} />
+      </form>
+      <AuthLinks>
+        <button disabled={busy || gone} onClick={onCancel} type="button">
+          {AUTH_COPY.link.cancel}
+        </button>
+      </AuthLinks>
+      <AuthLegal context={context} />
+      <AuthDock busy={busy || gone} danger={step === "warning"} form="account-delete-form">
         {dockLabel}
       </AuthDock>
     </section>

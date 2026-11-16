@@ -117,6 +117,8 @@ function Spinner() {
 type AuthDockProps = {
   busy?: boolean;
   children: string;
+  /** The one irreversible action (Delete account): danger colours. */
+  danger?: boolean;
   disabled?: boolean;
 } & (
   | { form: string; href?: never; onClick?: never }
@@ -125,7 +127,7 @@ type AuthDockProps = {
 );
 
 /** The one primary action. It only ever says what it does or what it is doing; never an error. */
-export function AuthDock({ busy, children, disabled, form, href, onClick }: AuthDockProps) {
+export function AuthDock({ busy, children, danger, disabled, form, href, onClick }: AuthDockProps) {
   if (href) {
     return (
       <div className="auth-dock">
@@ -139,6 +141,7 @@ export function AuthDock({ busy, children, disabled, form, href, onClick }: Auth
         aria-busy={busy || undefined}
         className="auth-dock__button"
         data-busy={busy || undefined}
+        data-danger={danger || undefined}
         disabled={disabled || busy}
         form={form}
         onClick={onClick}
