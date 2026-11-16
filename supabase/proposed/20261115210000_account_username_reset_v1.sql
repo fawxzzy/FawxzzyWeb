@@ -19,9 +19,17 @@
 --     2. per-(username, client) request counter,  limit 5 per 15 minutes
 --     3. reset-only shared request counter,       limit 100 per 15 minutes (its own row; never the
 --        username sign-in global row repeat('0', 64), so reset traffic cannot throttle sign-in)
--- * No per-username aggregate lock: signed out, this is the only reset path, so a cap any stranger
---   could fill from several addresses would lock the owner out of recovery. Mail volume per account is
---   already capped by the provider (one recovery email per account per 60 seconds) and step 3.
+-- * Silent send cap per (username, client): only the first 2 requests per 15 minutes for one username
+--   from one client return the account (one request plus one resend). Requests 3-5 still answer
+--   throttled = false with resolved_user_id NULL, so the Edge Function sends its decoy recovery call
+--   instead of mailing the account, and the browser sees the identical answer. Counted for unknown
+--   usernames exactly like known ones, so it reveals nothing.
+-- * No per-username aggregate lock or aggregate send cap: signed out, this is the only reset path, so a
+--   cap any stranger could fill (from several addresses, or with one request per window) would lock the
+--   owner out of recovery. Mail volume per account is otherwise capped by the provider (one recovery
+--   email per account per 60 seconds) and step 3. Repeated mail to a known username from many
+--   addresses (and the newest mail replacing the owner's earlier link) is an accepted trade-off pending
+--   the owner (docs/shared-account-portal-phase1.md).
 -- * Counters reuse account_private.username_signin_attempts (same 15-minute window; the sign-in
 --   functions already delete rows older than 15 minutes, and so does this one). Keys are sha256 hex
 --   computed by the Edge Function from namespaced strings ("username-reset-client-v1:...",
@@ -121,14 +129,19 @@ begin
     return;
   end if;
 
+  -- The index probe runs for every request (same work for known, unknown and send-capped names);
+  -- past the per-(username, client) send cap the account is withheld, so no mail goes to it.
   return query
   select
-    (
+    case when pair_count > 2 then null::uuid else resolved.user_id end,
+    false
+  from (
+    select (
       select username_index.user_id
       from account_private.username_signin_index username_index
       where username_index.normalized_username = p_normalized_username
-    ),
-    false;
+    ) as user_id
+  ) resolved;
 end;
 $$;
 

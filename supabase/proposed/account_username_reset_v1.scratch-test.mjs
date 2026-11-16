@@ -20,6 +20,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
+  DECOY_RECIPIENT,
   createUsernameResetHandler,
   recipientFrom,
 } from "../functions/username-password-reset/handler.mjs";
@@ -190,10 +191,16 @@ const rowCount = async (db, key) =>
   db = await fresh();
   const knownSeq = [];
   const unknownSeq = [];
+  const knownIds = [];
   for (let i = 0; i < 7; i += 1) {
-    knownSeq.push((await resolveAs(db, "known", "203.0.113.1")).throttled);
+    const knownRow = await resolveAs(db, "known", "203.0.113.1");
+    knownSeq.push(knownRow.throttled);
+    knownIds.push(knownRow.userId === KNOWN ? "account" : knownRow.userId === null ? "none" : "other");
     unknownSeq.push((await resolveAs(db, "nobody", "203.0.113.2")).throttled);
   }
+  check("send cap: only requests 1-2 from one client return the account; 3-5 answer not-throttled with no account",
+    JSON.stringify(knownIds) === JSON.stringify(["account", "account", "none", "none", "none", "none", "none"])
+      && knownSeq.slice(2, 5).every((value) => value === false), JSON.stringify(knownIds));
   check("pair limit: requests 1-5 pass, the 6th is throttled", JSON.stringify(knownSeq) === JSON.stringify([false, false, false, false, false, true, true]), JSON.stringify(knownSeq));
   check("pair limit: an unknown name throttles at exactly the same request", JSON.stringify(knownSeq) === JSON.stringify(unknownSeq), JSON.stringify(unknownSeq));
   const throttledKnown = await resolveAs(db, "known", "203.0.113.1");
@@ -250,6 +257,7 @@ const rowCount = async (db, key) =>
   // End to end: the real Edge Function handler on this database.
   db = await fresh();
   const sent = [];
+  const tokens = [];
   const scheduled = [];
   const floor = 300;
   const handle = createUsernameResetHandler({
@@ -270,12 +278,15 @@ const rowCount = async (db, key) =>
     },
     async sendRecovery(input) {
       sent.push(input.email);
+      tokens.push(input.captchaToken);
+      return 200;
     },
     sha256: async (text) => hex(text),
   });
   const request = (identifier, ip) => new Request("https://project.example.test/functions/v1/username-password-reset", {
     body: JSON.stringify({
       code_challenge: "A".repeat(43),
+      captchaToken: "turnstile-token-fixture",
       code_challenge_method: "s256",
       identifier,
       redirect_to: "https://account.fawxzzy.com/reset-password?recovery=1",
@@ -303,8 +314,17 @@ const rowCount = async (db, key) =>
     Object.values(handlerMedians).every((value) => value >= floor - 2) && spread < 40,
     Object.entries(handlerMedians).map(([kind, value]) => `${kind} ${value.toFixed(0)}`).join(", "));
   await Promise.all(scheduled);
-  check("handler: mail only for the known and unconfirmed accounts (banned gets none)",
-    JSON.stringify([...new Set(sent)].sort()) === JSON.stringify(["known@example.test", "unconfirmed@example.test"]), JSON.stringify(sent));
+  check("handler: one provider call per request (12), each carrying the captcha token",
+    sent.length === 12 && tokens.every((token) => token === "turnstile-token-fixture"), `${sent.length} calls`);
+  check("handler: mail only for the known and unconfirmed accounts; unknown and banned go to the decoy",
+    JSON.stringify([...new Set(sent)].sort()) === JSON.stringify([DECOY_RECIPIENT, "known@example.test", "unconfirmed@example.test"].sort())
+      && sent.filter((email) => email === DECOY_RECIPIENT).length === 6, JSON.stringify(sent));
+  // Send cap end to end: the 3rd request for one username from one client goes to the decoy.
+  sent.length = 0;
+  for (let i = 0; i < 3; i += 1) await handle(request("known", "100.64.7.7"));
+  await Promise.all(scheduled);
+  check("handler: the 3rd request for one username from one client goes to the decoy, same answer",
+    JSON.stringify(sent) === JSON.stringify(["known@example.test", "known@example.test", DECOY_RECIPIENT]), JSON.stringify(sent));
   for (let i = 0; i < 5; i += 1) await handle(request("nobody", "100.64.9.9"));
   const sixthUnknown = await handle(request("nobody", "100.64.9.9"));
   for (let i = 0; i < 5; i += 1) await handle(request("known", "100.64.9.8"));
