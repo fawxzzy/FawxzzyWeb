@@ -480,6 +480,22 @@ test("parity: the email icon shows the same artwork as the portal auth screen ic
   }
 });
 
+test("icons: three separate portal icons, pinned (Mazer M, Fitness fox, Fawxzzy fox F); the retired Fitness trident stays deleted", async () => {
+  const { createHash } = await import("node:crypto");
+  const { existsSync } = await import("node:fs");
+  const PORTAL_ICON_SHA256 = {
+    website: "706fbaae6ed1f82d736b03f8d334246257c7c2ad12d8d2edb4b2ca4a37525018",
+    fitness: "68ea981e132b52b38a8cf56a9c931361881a52b19cb302eedc7502448f82a23e",
+    mazer: "d369527a7cf096cc16dc701ef8986b70875a78eff17a3e5016d27e0beec00826",
+  };
+  for (const [id, theme] of Object.entries(authThemes)) {
+    const bytes = await readFile(new URL(`../public${theme.iconPath}`, import.meta.url));
+    assert.equal(createHash("sha256").update(bytes).digest("hex"), PORTAL_ICON_SHA256[id], `${id} portal icon ${theme.iconPath}`);
+  }
+  assert.equal(new Set(Object.values(PORTAL_ICON_SHA256)).size, 3, "no two skins share an icon file");
+  assert.ok(!existsSync(new URL("../public/apps/fitness/icon-192.png", import.meta.url)), "retired Fitness trident icon is not shipped");
+});
+
 test("parity: the portal auth screens take their icon paths from auth-theme.mjs, not a second copy", async () => {
   const status = await readFile(new URL("../src/components/account/auth-status.tsx", import.meta.url), "utf8");
   assert.match(status, /supabase\/functions\/_shared\/auth-theme\.mjs/);
