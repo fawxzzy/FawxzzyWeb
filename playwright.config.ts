@@ -6,8 +6,20 @@ if (!["3210", "4312"].includes(testPort)) {
 }
 const testOrigin = `http://127.0.0.1:${testPort}`;
 
+// CI splits the e2e run across parallel jobs (see .github/workflows/ci.yml). These two specs hold most of the
+// wall time, so they get their own jobs and everything else runs together. Selection is by construction:
+// "slow" = exactly these files, "fast" = every other file, unset = all files (local default). A new spec lands
+// in "fast" automatically, so no test can be dropped by the split.
+const slowSpecs = [/account-no-scroll\.spec\.ts$/, /account-portal\.spec\.ts$/];
+const e2eGroup = process.env.E2E_GROUP || undefined;
+if (e2eGroup !== undefined && !["slow", "fast"].includes(e2eGroup)) {
+  throw new Error("E2E_GROUP must be unset, slow or fast");
+}
+
 export default defineConfig({
   testDir: "./tests/e2e",
+  ...(e2eGroup === "slow" ? { testMatch: slowSpecs } : {}),
+  ...(e2eGroup === "fast" ? { testIgnore: slowSpecs } : {}),
   fullyParallel: false,
   forbidOnly: Boolean(process.env.CI),
   retries: 0,

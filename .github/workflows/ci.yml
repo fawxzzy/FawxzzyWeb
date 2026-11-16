@@ -42,13 +42,33 @@ jobs:
           bash -eo pipefail -c "$steps"
 
   e2e:
-    # The final `npm run verify` step (`npm run test:e2e`, chromium + mobile-webkit), sharded by file.
-    name: E2E shard ${{ matrix.shard }}/4
+    # The final `npm run verify` step (`npm run test:e2e`, chromium + mobile-webkit), split into parallel jobs.
+    # The split is defined in playwright.config.ts (E2E_GROUP): "slow" is exactly account-no-scroll + account-portal,
+    # "fast" is every other spec, so the entries below partition the full 820-test run (13 + 118 + 131 + 558).
+    # Per-file wall time dominates, which is why the slow specs are isolated instead of count-sharded.
+    name: E2E ${{ matrix.name }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        include:
+          - name: webkit account-no-scroll
+            group: slow
+            args: --project=mobile-webkit account-no-scroll
+          - name: webkit account-portal
+            group: slow
+            args: --project=mobile-webkit account-portal
+          - name: chromium account specs
+            group: slow
+            args: --project=chromium
+          - name: other specs 1/2
+            group: fast
+            args: --shard=1/2
+          - name: other specs 2/2
+            group: fast
+            args: --shard=2/2
+    env:
+      E2E_GROUP: ${{ matrix.group }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -64,8 +84,8 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Playwright e2e (shard ${{ matrix.shard }}/4)
-        run: npm run test:e2e -- --shard=${{ matrix.shard }}/4
+      - name: Playwright e2e (${{ matrix.name }})
+        run: npm run test:e2e -- ${{ matrix.args }}
 
   visual-evidence:
     name: Visual evidence
