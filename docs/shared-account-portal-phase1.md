@@ -530,9 +530,10 @@ this subsection still holds, with `delete_account_v2` in place of `delete_accoun
 
 ### Base contract (from v1, still true for v2)
 
-- Hidden until live: the row shows only when `DELETE_ACCOUNT_LIVE` (`src/config/account.ts`) is true. It
-  stays `false` until the owner has applied the SQL below and done the dry run; with the flag off the
-  account page is the same as before this feature. Local fixtures (`auth_test`) show the row, except
+- Live since 2026-11-16: the row shows when `DELETE_ACCOUNT_LIVE` (`src/config/account.ts`) is true. v2 was
+  applied and dry-run proven that day (immediate delete, no undo; accounts with billing rows get the support
+  answer), then the flag was set to `true`. Rollback: set it back to `false`; with the flag off the account
+  page is the same as before this feature. Local fixtures (`auth_test`) show the row, except
   `auth_test=delete-off`.
 - Where: the last row on `/account` ("Delete account", danger style, trash button). Steps: (1) the current
   password, checked on a throw-away in-memory client whose fresh session is KEPT only while the screen is

@@ -122,10 +122,9 @@ test("the last step says in plain words what is deleted and that it can not be u
   assert.doesNotMatch(authNotice("signin.deleted").text, /data/i);
 });
 
-test("flag: DELETE_ACCOUNT_LIVE is off, the live adapter reads it and the row is gated on it", () => {
-  // Dark launch: no Delete account row until the owner applies the SQL and does the dry run. The PR
-  // that flips this updates this line on purpose.
-  assert.equal(account.DELETE_ACCOUNT_LIVE, false);
+test("flag: DELETE_ACCOUNT_LIVE is on, the live adapter reads it and the row is gated on it", () => {
+  // Live since 2026-11-16 (v2 applied and dry-run proven). Rollback is setting this back to false.
+  assert.equal(account.DELETE_ACCOUNT_LIVE, true);
   const adapter = readFileSync("src/lib/auth/browser-adapter.ts", "utf8");
   assert.match(adapter, /deleteAccountLive: DELETE_ACCOUNT_LIVE,/);
   assert.match(adapter, /deleteAccountLive: scenario !== "delete-off",/);
