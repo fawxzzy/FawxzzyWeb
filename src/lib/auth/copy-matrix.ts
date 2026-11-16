@@ -197,15 +197,16 @@ export const AUTH_COPY = {
   /**
    * The plain-words list on the last delete step, one line each: what IS deleted, what stays (Discord
    * feedback and moderation records keep their Discord ids and text, without the account link; the
-   * sign-in provider's security log keeps the email for its own retention time), and that it is
-   * permanent. Never promise more than account_api.account_delete_self removes.
+   * sign-in provider's security log and the retained migration archives and backups keep some data
+   * for their own retention time: owner decision 2026-11-16 "delete live data, keep archives"), and
+   * that it is permanent. Never promise more than account_api.account_delete_self removes.
    */
   deleteList: [
     "Your profile, username and sign-in",
     "Your Fitness workouts, routines and history",
     "Your Mazer progress and high scores",
     "Discord feedback and moderation records stay, with no link to you.",
-    "Sign-in security logs may keep your email for a while.",
+    "Sign-in logs and backups may keep some data for a while.",
     "This can not be undone. There is no way to get it back.",
   ],
   /** Screen-reader only names for icon buttons and live regions. */

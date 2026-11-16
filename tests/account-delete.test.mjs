@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
@@ -7,7 +8,8 @@ import { loadPortalModule } from "./helpers/load-portal-ts.mjs";
 /**
  * Delete account: the pure outcome mapping in src/lib/auth/account-delete.ts, the copy it points at,
  * the portal wiring, and the shape of the owner-gated SQL in supabase/proposed/ (never applied by CI;
- * supabase/proposed/account_delete_self_v1.scratch-test.mjs runs it for real in pglite).
+ * supabase/proposed/account_delete_self_v2.scratch-test.mjs runs it for real in pglite). v2 supersedes
+ * v1 (v1 refused the live database on 2026-11-16: unlisted account columns).
  */
 const del = loadPortalModule("src/lib/auth/account-delete.ts");
 const change = loadPortalModule("src/lib/auth/account-change.ts");
@@ -15,10 +17,13 @@ const { AUTH_MESSAGES, AUTH_COPY, authNotice } = loadPortalModule("src/lib/auth/
 const { loginNoticeFromQuery } = loadPortalModule("src/lib/auth/auth-outcomes.ts");
 const account = loadPortalModule("src/config/account.ts");
 
-const BASE = "supabase/proposed/20261115200000_account_delete_self_v1";
+const BASE = "supabase/proposed/20261116090000_account_delete_self_v2";
 const SQL = readFileSync(`${BASE}.sql`, "utf8");
 const ROLLBACK = readFileSync(`${BASE}.rollback.sql`, "utf8");
 const PREIMAGE = readFileSync(`${BASE}.preimage.sql`, "utf8");
+const LIVE_BODIES = JSON.parse(readFileSync("supabase/proposed/account_delete_self_v2.live-bodies.json", "utf8"));
+const V1_BASE = "supabase/proposed/20261115200000_account_delete_self_v1";
+const INNER = "create function account_private.delete_account_v2";
 
 test("every id the delete flow can return is a real matrix row", () => {
   const ids = new Set([
@@ -110,9 +115,10 @@ test("the last step says in plain words what is deleted and that it can not be u
   const all = [list, AUTH_COPY.lead.deleteWarning, AUTH_COPY.field.deleteAccountValue].join(" ");
   assert.doesNotMatch(all, /every app|everywhere|all your data|for good/i);
   assert.equal(authNotice("signin.deleted").tone, "success");
-  // GoTrue's audit log keeps the email and account id for a while: the copy says so and the success
-  // line does not claim the data is gone.
-  assert.ok(AUTH_COPY.deleteList.some((line) => /security logs may keep your email/i.test(line)));
+  // GoTrue's audit log and the retained archives/backups keep some data (owner decision 2026-11-16
+  // "delete live data, keep archives"): the copy says so and the success line does not claim the data
+  // is gone.
+  assert.ok(AUTH_COPY.deleteList.some((line) => /sign-in logs and backups may keep some data for a while/i.test(line)));
   assert.doesNotMatch(authNotice("signin.deleted").text, /data/i);
 });
 
@@ -157,8 +163,8 @@ test("proposed SQL: owner-gated shape (one transaction, preflight, private inner
   assert.match(SQL, /^begin;$/m);
   assert.match(SQL, /^commit;$/m);
   assert.match(SQL, /set local lock_timeout/);
-  assert.match(SQL, /UNLISTED_ACCOUNT_COLUMNS/);
-  assert.match(SQL, /create function account_private\.delete_account_v1\(p_user_id uuid, p_claims jsonb, p_confirm text\)/);
+  assert.match(SQL, /UNKNOWN_ACCOUNT_COLUMNS/);
+  assert.match(SQL, /create function account_private\.delete_account_v2\(p_user_id uuid, p_claims jsonb, p_confirm text\)/);
   assert.match(SQL, /create function account_api\.account_delete_self\(p_confirm text\)/);
   const definers = SQL.match(/security definer/g) ?? [];
   assert.ok(definers.length >= 2);
@@ -166,9 +172,9 @@ test("proposed SQL: owner-gated shape (one transaction, preflight, private inner
   assert.ok(paths.length >= 2, "every definer function pins an empty search_path");
   assert.match(SQL, /revoke all on function account_api\.account_delete_self\(text\) from public, anon/);
   assert.match(SQL, /grant execute on function account_api\.account_delete_self\(text\) to authenticated/);
-  assert.match(SQL, /revoke all on function account_private\.delete_account_v1\(uuid, jsonb, text\) from public/);
+  assert.match(SQL, /revoke all on function account_private\.delete_account_v2\(uuid, jsonb, text\) from public/);
   assert.doesNotMatch(SQL, /grant [^;]*to anon/i);
-  assert.doesNotMatch(SQL, /grant [^;]*account_private\.delete_account_v1[^;]*to authenticated/i);
+  assert.doesNotMatch(SQL, /grant [^;]*account_private\.delete_account_v2[^;]*to authenticated/i);
   assert.match(SQL, /pg_advisory_xact_lock/);
   assert.match(SQL, /interval '10 minutes'/, "fresh password window");
   assert.match(SQL, /auth\.sessions s where s\.id = session_text::uuid and s\.user_id = p_user_id/);
@@ -181,14 +187,14 @@ test("proposed SQL: owner-gated shape (one transaction, preflight, private inner
   assert.ok(SQL.includes("ORDER: apply change username v1 (20261115190000_account_change_username_v1.sql) FIRST"));
   assert.match(SQL, /statement_timeout/);
   assert.match(SQL, /CASCADE_REACHES_UNLISTED_TABLE/);
-  assert.match(SQL, /DELETE_TRIGGER_ON_LISTED_TABLE/);
+  assert.match(SQL, /UNREVIEWED_TRIGGER/);
   assert.match(SQL, /p\.user_number = 0/, "the reserved member #0 profile is refused");
   assert.match(SQL, /notify pgrst, 'reload schema'/);
   assert.ok(!readFileSync("supabase/config.toml", "utf8").includes("proposed"), "proposed/ is not a migrations path");
 });
 
 test("rate limit: reauth refusals are not recorded or counted; the count runs after the proof", () => {
-  const body = SQL.slice(SQL.indexOf("create function account_private.delete_account_v1"));
+  const body = SQL.slice(SQL.indexOf(INNER));
   assert.ok(!body.includes("values (p_user_id, 'reauth')"), "a reauth refusal writes nothing");
   assert.ok(body.includes("values (p_user_id, 'confirm')"), "the same insert shape exists for counted refusals");
   assert.ok(SQL.includes("check (outcome in ('confirm', 'billing', 'support'))"));
@@ -198,37 +204,99 @@ test("rate limit: reauth refusals are not recorded or counted; the count runs af
 });
 
 test("cross-account guard: another account's rows on this account's data refuse the call", () => {
-  const body = SQL.slice(SQL.indexOf("create function account_private.delete_account_v1"));
+  const body = SQL.slice(SQL.indexOf(INNER));
   const guard = body.indexOf("for ref in");
-  assert.ok(guard > body.indexOf("return 'billing'") && guard < body.indexOf("delete from fitness.sets"), "checked before any delete");
+  assert.ok(guard > body.indexOf("return 'billing'") && guard < body.indexOf("-- Delete and unlink, in order."), "checked before any delete");
   assert.ok(body.includes("from pg_catalog.pg_constraint k"));
   assert.match(body, /s\.%I is distinct from \$1/);
 });
 
 test("cross-account guard: this account's rows are locked FOR UPDATE before the walk", () => {
-  const body = SQL.slice(SQL.indexOf("create function account_private.delete_account_v1"));
+  const body = SQL.slice(SQL.indexOf(INNER));
   const lock = body.indexOf("for update) locked");
   const guard = body.indexOf("for ref in");
   assert.ok(lock > body.indexOf("return 'billing'") && lock < guard, "the row locks come right before the walk");
-  assert.ok(body.indexOf("foreach item in array owned loop") < lock);
+  assert.ok(body.indexOf("foreach item in array steps loop") < lock);
   // FOR UPDATE needs UPDATE: the preflight checks it for every table the call deletes from.
   assert.match(SQL, /SELECT \.\.\. FOR UPDATE \(the row locks before the cross-account walk\) needs UPDATE/);
 });
 
 test("storage: a file owned through owner or owner_id refuses the call and the apply", () => {
-  const body = SQL.slice(SQL.indexOf("create function account_private.delete_account_v1"));
+  const body = SQL.slice(SQL.indexOf(INNER));
   const storage = body.indexOf("to_regclass('storage.objects')");
   assert.ok(storage > body.indexOf("return 'billing'") && storage < body.indexOf("for update) locked"));
   assert.match(body, /a\.attname in \('owner', 'owner_id'\)/);
-  const preflight = SQL.slice(0, SQL.indexOf("create function account_private.delete_account_v1"));
+  const preflight = SQL.slice(0, SQL.indexOf(INNER));
   assert.match(preflight, /a\.attname in \('owner', 'owner_id'\)/);
   assert.match(preflight, /DELETE_ACCOUNT_PREFLIGHT_CANNOT_READ_STORAGE_OBJECTS/);
   assert.match(preflight, /rolbypassrls/);
+  // Review P3: FORCE row level security binds the owner too, so the readability check looks at it.
+  assert.match(preflight, /relforcerowsecurity/);
+});
+
+/** The quoted items of a `name text[] := array[ ... ];` (SQL) or `name(...) as (values ...)` block. */
+const quotedIn = (text, start, end) => {
+  const from = text.indexOf(start);
+  assert.ok(from >= 0, `block ${start} found`);
+  const block = text.slice(from, text.indexOf(end, from));
+  return [...block.matchAll(/'([^']+)'/g)].map((m) => m[1]);
+};
+
+test("v2: retained allow-list, trigger pins and key effects are the same in the apply and the preimage", () => {
+  const retained = quotedIn(SQL, "  retained text[] := array[", "];");
+  assert.ok(retained.length >= 30, `retained list (${retained.length})`);
+  for (const item of retained) {
+    assert.match(item, /^[a-z0-9_]+\.[a-z0-9_]+\.[a-z0-9_]+$/, `retained items are schema.table.column: ${item}`);
+    assert.ok(PREIMAGE.includes(`'${item}'`), `the preimage lists retained ${item}`);
+  }
+  // No live table is on the retained list: a retained column never belongs to a table the call deletes.
+  for (const live of ["fitness.sets.", "fitness.profiles.", "mazer.mazer_profiles.", "auth.users."]) {
+    assert.ok(!retained.some((item) => item.startsWith(live)), `${live} is not retained`);
+  }
+  const pins = (text) => [...new Set(text.match(/'[a-z_.]+\|[a-z_]+\|[a-z_.]+\|[0-9a-f]{32}\|\d+'/g) ?? [])].sort();
+  assert.equal(pins(SQL).length, 4, "four reviewed triggers");
+  assert.deepEqual(pins(PREIMAGE), pins(SQL));
+  // Preflight and call-time copies of the pins are identical.
+  for (const pin of pins(SQL)) assert.equal(SQL.split(pin).length - 1, 2, `${pin} pinned in the preflight and the function`);
+  // Each pin's md5 is the md5 of the live body kept in the fixture (read-only from the live database).
+  for (const pin of pins(SQL)) {
+    const [, , fn, hash] = pin.slice(1, -1).split("|");
+    const entry = LIVE_BODIES[`${fn}()`];
+    assert.ok(entry, `fixture has ${fn}`);
+    assert.equal(entry.md5, hash, `${fn} fixture md5`);
+    assert.equal(createHash("md5").update(entry.src, "utf8").digest("hex"), hash, `${fn} fixture body hashes to the pin`);
+  }
+  // The two deliberate key effects (cascade and set null), checked in both files.
+  for (const effect of ["account_private.username_signin_candidates.user_id:c", "platform.identity_map.auth_user_id:n"]) {
+    assert.ok(SQL.includes(`'${effect}'`), `apply expects ${effect}`);
+    assert.ok(PREIMAGE.includes(effect.replace(/:([cn])$/, "")), `preimage reports ${effect}`);
+  }
+  assert.match(SQL, /EXPECTED_FK_EFFECT_MISSING/);
+  assert.match(SQL, /EXPECTED_FK_EFFECT_IS_REFERENCED/);
+  assert.match(SQL, /ACCOUNT_DELETE_FK_EFFECT_INCOMPLETE/);
+});
+
+test("v2: locked vs changed rows, call-time trigger re-check, and timeouts (review P3)", () => {
+  const body = SQL.slice(SQL.indexOf(INNER));
+  assert.match(body, /ACCOUNT_DELETE_ROWCOUNT_EXCEEDS_LOCKED/);
+  assert.match(body, /ACCOUNT_DELETE_UNREVIEWED_TRIGGER/);
+  assert.ok(body.indexOf("ACCOUNT_DELETE_UNREVIEWED_TRIGGER") < body.indexOf("-- Delete and unlink, in order."), "trigger re-check runs before any delete");
+  assert.match(SQL, /set lock_timeout = '3s'/, "inner function: lock_timeout");
+  assert.match(SQL, /set statement_timeout = '30s'/, "API wrapper: statement_timeout (PostgREST applies it per call)");
+  assert.match(SQL, /DELETE_ACCOUNT_POSTCHECK_TIMEOUTS_NOT_SET/);
+  assert.match(SQL, /'v2'/, "audit rows say v2");
+});
+
+test("v1 is kept for the record and marked superseded", () => {
+  for (const file of [`${V1_BASE}.sql`, `${V1_BASE}.rollback.sql`, `${V1_BASE}.preimage.sql`, "supabase/proposed/account_delete_self_v1.scratch-test.mjs"]) {
+    assert.match(readFileSync(file, "utf8").slice(0, 600), /SUPERSEDED by .*20261116090000_account_delete_self_v2/, file);
+  }
+  assert.match(SQL, /SUPERSEDES/);
 });
 
 test("rollback drops the API, keeps the audit rows, and only takes USAGE back when unused", () => {
   assert.match(ROLLBACK, /drop function if exists account_api\.account_delete_self\(text\)/);
-  assert.match(ROLLBACK, /drop function if exists account_private\.delete_account_v1\(uuid, jsonb, text\)/);
+  assert.match(ROLLBACK, /drop function if exists account_private\.delete_account_v2\(uuid, jsonb, text\)/);
   assert.match(ROLLBACK, /drop table if exists account_private\.account_delete_attempts/);
   assert.doesNotMatch(ROLLBACK, /drop table if exists account_private\.account_deletions/);
   assert.match(ROLLBACK, /revoke usage on schema account_api from authenticated/);

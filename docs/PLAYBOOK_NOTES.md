@@ -1,5 +1,17 @@
 This file is a project-local inbox for repo-specific Playbook notes that may later be promoted upstream.
 
+## 2026-11-16 - Delete account v2: retained allow-list, deliberate key effects, pinned triggers
+
+- Type: Proposed SQL (not applied) + scratch test + copy line + docs; flag stays `DELETE_ACCOUNT_LIVE = false`; v1 kept, marked superseded
+- WHAT changed: `20261116090000_account_delete_self_v2.sql` (same API) adds a per-column retained allow-list for archive/backup/migration tables (owner decision "Delete live data, keep archives"), deletes `mazer.mazer_register_failures`, unlinks the TEXT `discordos.discord_feedback_reports.reporter_fitness_user_id`, expects and counts the `username_signin_candidates` CASCADE and the `platform.identity_map` SET NULL, pins the four triggers that fire here by body md5 (re-checked per call), compares locked with changed rows, counts FORCE RLS in the storage check, and sets `lock_timeout = 3s` (inner) and `statement_timeout = 30s` (API wrapper). Copy: "Sign-in logs and backups may keep some data for a while."
+- WHY it changed: The live read-only preimage refused v1 (37 unlisted columns, 2 FK effects, 2 DELETE triggers); review P3 notes.
+- Rule: A delete-everything function needs an explicit retained list, not just a deleted list: sweep every account-shaped column (uuid FK to auth.users, uuid named like a user id, and TEXT named like `*_user_id`) and refuse the apply on anything that is neither.
+- Rule: Pin triggers that run inside a privileged delete by table, name, function, `md5(prosrc)` and `tgtype`, keep the live bodies in a fixture, and re-check at call time; a later body change then stops the call instead of running unreviewed code.
+- Pattern: Prove the locked-vs-changed guard in single-connection pglite by injecting the concurrent insert into a test-only copy of the function at the exact point between the locks and the deletes.
+- Failure Mode: Slicing a migration to "just the function" carried its `drop trigger` along, so a refusal test passed for the wrong reason (no trigger at all); cut at the function's closing `$$;`.
+- Failure Mode: The live sign-in sync function differs from the repo migration (no repo holds the live body); pin the live body and flag the drift.
+- Scope: Source and local regression only; the preimage ran read-only against live; no apply, deployment, provider or credential effect.
+
 ## 2026-11-15 - Delete account follow-up: lock before the cross-account check, owner_id, honest copy
 
 - Type: Proposed SQL change (not applied) + portal copy/failure mapping + docs; flag stays `DELETE_ACCOUNT_LIVE = false`

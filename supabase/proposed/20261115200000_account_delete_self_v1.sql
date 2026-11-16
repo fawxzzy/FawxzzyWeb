@@ -1,3 +1,4 @@
+-- SUPERSEDED by 20261116090000_account_delete_self_v2 (2026-11-16): v1's preflight refused the live database (unlisted account columns in archive, discordos and platform tables). Kept for the record only; never apply.
 -- PROPOSED, OWNER-GATED. NOT APPLIED. Lives in supabase/proposed/ (not supabase/migrations/) so no
 -- migration runner or Git integration can apply it on merge. Apply only after the owner approves this
 -- file by sha256 (see docs/shared-account-portal-phase1.md, "Delete account").

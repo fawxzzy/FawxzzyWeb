@@ -455,6 +455,81 @@ existing account, or treat a client-side value as authoritative.
 
 ## Delete account (proposed SQL, owner-gated, not applied)
 
+### Delete account v2 (supersedes v1, 2026-11-16)
+
+v1 (`20261115200000_account_delete_self_v1.sql`) was never applied: its preflight refused the live
+database (37 unlisted account columns, 2 unlisted foreign key effects, 2 DELETE triggers). v2
+(`20261116090000_account_delete_self_v2.sql`) keeps v1's API, contract and checks (everything below
+this subsection still holds, with `delete_account_v2` in place of `delete_account_v1`) and adds:
+
+- **Owner decision (Zac, 2026-11-16): "Delete live data, keep archives".** The call deletes the live
+  rows and the `auth.users` row. Archive, backup and migration tables are kept on purpose, listed one
+  column at a time; a new account-shaped column anywhere else still refuses the apply
+  (`UNKNOWN_ACCOUNT_COLUMNS`, also for TEXT columns named like `*_fitness_user_id` / `*_auth_user_id`).
+  The project has no point-in-time recovery and no listed backups. The last step says "Sign-in logs
+  and backups may keep some data for a while."
+- Retained (the call never touches these; row counts are the 2026-11-16 preimage, total / naming a live
+  account). No retention schedule exists for any of them (owner item):
+
+  | Table (column) | Holds | Rows |
+  | --- | --- | --- |
+  | `account_private.username_collision_resolution_backup`, `username_shorten_backup` (`user_id`) | id + original username/metadata | 3/3 each |
+  | `atlas_identity_migration.packet_rollback` (`user_id`) | id + email | 107/107 |
+  | `atlas_identity_migration.source_identity_map` (`canonical_user_id`, `source_user_id`) | ids | 119 (114 / 4 live) |
+  | `atlas_identity_migration.mapping_wave2_rollback` (`before_canonical_user_id`, `source_user_id`) | ids | 2/0 |
+  | `atlas_migration_auth_data_r001.identity_map` (`canonical_auth_user_id`) | ids | 108/107 |
+  | `atlas_migration_auth_data_r001.private_auth_payload` (`canonical_auth_user_id`) | id + auth payload (email) | 216/214 |
+  | `fitness_archive.*` (19 columns: pre-move copies of the Fitness tables) | workout/billing/Discord copies | 0 live (112 `exercise_stats`, 4 billing) |
+  | `mazer.mazer_identity_map` (`legacy_user_id`, `master_user_id`) | ids | 20 (6 / 20 live) |
+  | `mazer.mazer_register_all_backfill_20261112` (`user_id`) | ids | 110/110 |
+  | `mazer.mazer_username_backfill_20261112` (`user_id`) | id + username | 8/8 |
+  | `platform_private.operations_operator_grants`, `operations_sessions` (`subject`) | operator ids, session times | 1/1, 15/15 |
+  | `atlas_mazer_r017` auth/master preimages, `identity_wave2_rollback` | emails/usernames in JSON/text, no uuid column (not swept) | not counted |
+  | GoTrue `auth.audit_log_entries` | email + id in payload | 0 |
+
+- Also deleted: `mazer.mazer_register_failures` (Mazer sign-up setup failure diagnostics).
+- Unlinked: `discordos.discord_feedback_reports.reporter_fitness_user_id` (a TEXT copy of the account
+  id) is set to null; the Discord handle and text stay (0 live rows on 2026-11-16), like the Fitness
+  Discord tables.
+- Deliberate foreign key effects, checked by the preflight and counted by the call: `auth.users` delete
+  CASCADES to `account_private.username_signin_candidates` (derived sign-in rows; 102/102 rows) and SETS
+  NULL `platform.identity_map.auth_user_id` (the identity row and anything keyed on `identity_id`, such
+  as `platform.work_projects`, stays). The apply refuses if either key is missing, has another action or
+  is itself referenced; the call raises `ACCOUNT_DELETE_FK_EFFECT_INCOMPLETE` if a row still names the
+  account afterwards.
+- Reviewed triggers, pinned by table, trigger, function, md5 of the live body and trigger type (bodies
+  in `account_delete_self_v2.live-bodies.json`, read-only from the live database): the Fitness position
+  repack triggers on `routine_day_exercises` and `session_exercises` (AFTER DELETE FOR EACH ROW, not
+  security definer, scoped to the same account and parent; the call deletes all of an account's rows
+  per table in one statement, so they have nothing left to move), the sign-in index sync on
+  `auth.users` and the `updated_at` trigger on `discordos.discord_feedback_reports`. Any other trigger
+  that fires on a delete or unlink here refuses the apply and is re-checked on every call. `auth.users`
+  also has three INSERT-only triggers (`account_guard_username_claim`,
+  `mazer_claim_signup_username_after_insert`, `mazer_register_user_after_insert`); they never fire on a
+  delete.
+- Known drift (owner item): the live `account_private.sync_username_signin_index()` body (md5
+  `b9b39b13...`) is not the repo migration's (`20260826163000`); the live one also maintains
+  `username_signin_candidates`. No repo holds the live body. v2 pins the live one.
+- Known Fitness bug (not changed here): the repack triggers renumber with a data-modifying CTE and an
+  outer UPDATE of the same rows, so deleting a single exercise leaves later positions negative (live:
+  25 `session_exercises`, 9 `routine_day_exercises`). The scratch test reproduces it.
+- Locked vs changed: each delete or unlink compares its row count with the rows locked for that table;
+  more raises `ACCOUNT_DELETE_ROWCOUNT_EXCEEDS_LOCKED` and rolls back (a row committed between the lock
+  and the delete under READ COMMITTED).
+- Time limits: the inner function sets `lock_timeout = 3s`; the API wrapper sets `statement_timeout =
+  30s`, which PostgREST applies for that call instead of the authenticated role's 8s. The largest live
+  account (23,991 Mazer receipts, 923 sets) is estimated at 2-4s from the plan; a real delete is not
+  timed (UNVERIFIED).
+- Storage check also considers FORCE row level security.
+- Files (`supabase/proposed/`): `20261116090000_account_delete_self_v2.sql`, `.rollback.sql`,
+  `.preimage.sql` (one read-only SELECT; passed against live 2026-11-16 with nothing blocking),
+  `account_delete_self_v2.live-bodies.json` (trigger bodies), `account_delete_self_v2.scratch-test.mjs`
+  (pglite, with the live-like schemas, keys and the live trigger bodies). The v1 files stay, marked
+  superseded. pglite runs as a superuser, so the force-RLS and no-BYPASSRLS preflight branches are
+  reviewed, not executed.
+
+### Base contract (from v1, still true for v2)
+
 - Hidden until live: the row shows only when `DELETE_ACCOUNT_LIVE` (`src/config/account.ts`) is true. It
   stays `false` until the owner has applied the SQL below and done the dry run; with the flag off the
   account page is the same as before this feature. Local fixtures (`auth_test`) show the row, except
@@ -464,12 +539,12 @@ existing account, or treat a client-side value as authoritative.
   open; (2) type the username (or the email when the account has none), trimmed and any case; (3) one
   plain-words screen of what is deleted (profile, username and sign-in; Fitness workouts, routines and
   history; Mazer progress and high scores, which are its leaderboard entries), one line that Discord
-  feedback and moderation records stay without the account link, one line that sign-in security logs may
-  keep the email for a while (GoTrue's `auth.audit_log_entries`, not touched; retention is the
-  provider's, UNKNOWN here), and that it can not be undone; its red dock deletes. Then
+  feedback and moderation records stay without the account link, one line that sign-in logs and backups
+  may keep some data for a while (GoTrue's `auth.audit_log_entries` and the retained archives above, not
+  touched; their retention is UNKNOWN here), and that it can not be undone; its red dock deletes. Then
   `/login?notice=deleted` with "Your account was deleted." (it does not claim every trace is gone).
 - Server: `account_api.account_delete_self(p_confirm text)` (authenticated only) calls the private
-  `account_private.delete_account_v1`. It checks the password proof (below), then the rate limit, the
+  `account_private.delete_account_v2` (v1: `delete_account_v1`). It checks the password proof (below), then the rate limit, the
   typed text, billing and the support cases, then deletes every listed Fitness, Mazer and
   `account_private` row and the `auth.users` row in ONE transaction (sessions, refresh tokens and
   identities cascade: sign-out everywhere). Answers: `deleted`, `gone` (already deleted, idempotent),
@@ -499,9 +574,9 @@ existing account, or treat a client-side value as authoritative.
   row behind one makes the call fail with 23503 (or 23001) and roll back; the portal shows the same
   "This account can not be deleted here. Contact support." line as `support`, never "Try again" (a
   retry can not succeed).
-- Time limit: the call runs inside one API request, so the authenticated role's `statement_timeout`
-  (Supabase default 8s; the preimage reports the live value and the largest per-account row counts) caps
-  it. A very large account that hits it fails with nothing deleted; the owner deletes it by hand.
+- Time limit: the call runs inside one API request. v1 relied on the authenticated role's
+  `statement_timeout` (8s live); v2 sets its own (see above). A very large account that hits it fails
+  with nothing deleted; the owner deletes it by hand.
 - Audit: one row in `account_private.account_deletions`: a PLAIN sha256 of the fixed public prefix
   `fawxzzy-account-delete-v1:` plus the user id (not salted: anyone with the uuid can recompute it, so
   the row is pseudonymous and re-identifiable from a known uuid), the time, per-table row counts and the
@@ -511,9 +586,9 @@ existing account, or treat a client-side value as authoritative.
   cases keep their row (Discord ids and text) with the account link cleared; Discord-only rows keyed by a
   Discord id (for example Spotify connections) are not touched; another account's rows on this account's
   custom exercise block the delete (`support`).
-- **There is no recovery.** Deleted rows come back only from a provider backup/PITR restore, if the
-  project has one. The rollback SQL removes the API, not the deletions.
-- Files (all in `supabase/proposed/`): `20261115200000_account_delete_self_v1.sql` (apply, after change
+- **There is no recovery.** The project has no PITR and no listed backups (2026-11-16), so deleted rows
+  can not be restored. The rollback SQL removes the API, not the deletions.
+- v1 files (superseded, kept for the record; never apply): `20261115200000_account_delete_self_v1.sql` (apply, after change
   username v1), `.rollback.sql`, `.preimage.sql` (one read-only SELECT: run it right before the apply and
   compare with what the preflight expects: every manifest table exists with a uuid column, no unlisted
   account columns, no cascade or set-null key from an unlisted table, the triggers on the listed tables

@@ -1,3 +1,4 @@
+-- SUPERSEDED by 20261116090000_account_delete_self_v2 (2026-11-16): v1's preflight refused the live database (unlisted account columns in archive, discordos and platform tables). Kept for the record only; never apply.
 -- READ-ONLY PREIMAGE for 20261115200000_account_delete_self_v1.sql. Run immediately before the apply
 -- (same session/day), save the output next to the approval, and compare it with what the apply's
 -- preflight expects. One SELECT, no writes, no row contents: only catalog facts and counts.

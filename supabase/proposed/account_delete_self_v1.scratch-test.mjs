@@ -1,3 +1,4 @@
+// SUPERSEDED by 20261116090000_account_delete_self_v2 (2026-11-16): v1's preflight refused the live database (unlisted account columns in archive, discordos and platform tables). Kept for the record only; never apply.
 // Scratch test for the PROPOSED delete-account v1 SQL (in-memory Postgres 17 via pglite; never touches
 // Supabase). Owner-run before approving the SQL; not part of CI (CI checks the file shape only, in
 // tests/account-delete.test.mjs).
