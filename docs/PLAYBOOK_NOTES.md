@@ -78,3 +78,11 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHY it changed: the Web Projects snapshot lagged the Mazer owner board after the board fold merged.
 - Rule: Mazer re-pin copies the owner export and rebuilds the snapshot with `npm run data:project-board-owner-snapshot`, never by hand.
 - Scope: Source and local regression only. The Projects page changes only after the next production build; no deployment, provider, credential or database effect.
+
+## 2026-11-15 - Email-change redirect uses an allow-listed confirm URL
+
+- Type: Source and contract test
+- WHAT changed: `accountEmailChangeUrl` in `src/config/account.ts` now returns `accountConfirmUrl(contextId)` (plain `/auth/confirm` for website; the fixed product-home `returnTo` for fitness/mazer). New `tests/supabase-redirect-allowlist.test.mjs` pins every portal redirect against `tests/fixtures/supabase-redirect-allowlist.mjs` (mirror of the live Supabase Redirect URLs list, read 2026-11-15).
+- WHY it changed: Supabase matches the allow list exactly, query string included; the old `?app=<id>` form matched nothing, so the link would fall back to the Site URL. The confirm route still lands an `email_change` token on `/account?notice=...` and never follows `returnTo`.
+- Known gaps pinned in the test (not fixed here): Fitness sign-up redirect carries a `state` param, and Mazer OAuth-continuation `returnTo` variants are not on the live list.
+- Scope: Source and local regression only; no provider, credential, database or deploy effect.

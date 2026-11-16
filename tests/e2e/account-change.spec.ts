@@ -143,7 +143,7 @@ test("change email: the link goes to the new address and the old one keeps worki
   await expect(html(page)).toHaveAttribute("data-email-change-requested", "new.address@example.test");
   await expect(html(page)).toHaveAttribute(
     "data-email-change-redirect",
-    "https://account.fawxzzy.com/auth/confirm?app=fitness",
+    "https://account.fawxzzy.com/auth/confirm?app=fitness&returnTo=https%3A%2F%2Ffitness.fawxzzy.com%2F",
   );
   await expect(noticeOf(page, "change.emailsent")).toContainText(maskEmail("new.address@example.test"));
   await expect(page.locator("#account-change-email")).toHaveValue("new.address@example.test");

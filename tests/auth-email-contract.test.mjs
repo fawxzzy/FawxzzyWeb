@@ -340,7 +340,7 @@ test("email_change: secure change sends two emails with the reversed token field
   );
 });
 
-test("email_change: the portal's change link lands on the confirm route, themed, with no product return", () => {
+test("email_change: the portal's change link lands on the allow-listed confirm route, themed", () => {
   for (const contextId of ["website", "fitness", "mazer"]) {
     const redirect = portalAccount.accountEmailChangeUrl(contextId);
     const [message] = planMessages(
@@ -354,7 +354,7 @@ test("email_change: the portal's change link lands on the confirm route, themed,
     assert.equal(`${link.origin}${link.pathname}`, ACCOUNT_CONFIRM_URL, contextId);
     assert.equal(link.searchParams.get("type"), "email_change");
     assert.equal(link.searchParams.get("token_hash"), "HASH_NEW");
-    assert.equal(link.searchParams.has("returnTo"), false, "an email change never carries a product return");
+    assert.equal(link.searchParams.get("returnTo"), contextId === "website" ? null : `https://${contextId}.fawxzzy.com/`, "the fixed allow-listed home; the confirm route never follows it for email_change");
     assert.equal(link.searchParams.get("app"), contextId === "website" ? null : contextId);
     const payload = parseConfirmPayload(link);
     assert.equal(payload?.type, "email_change");
