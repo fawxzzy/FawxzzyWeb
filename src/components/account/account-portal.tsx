@@ -848,7 +848,8 @@ function AccountPanel({
     setNotice(null);
     setConfirmingEverywhere(false);
     try {
-      await adapter.signOut();
+      // The dock ends only THIS device's session (local scope); "Sign out everywhere" is the global one.
+      await adapter.signOut("this-session");
       writeOwnerHint(false);
       const destination = new URL("/", context.destinationOrigin);
       if (context.id === "website") destination.searchParams.set("signedOut", "1");

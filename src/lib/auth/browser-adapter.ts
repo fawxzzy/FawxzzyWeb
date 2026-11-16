@@ -38,11 +38,12 @@ export type PortalSession = {
 };
 
 /**
- * What a portal sign-out ends. `everywhere` is the account page's Sign out: it revokes every
- * session the account holds at the provider (the portal's, Fitness's, Mazer's, other devices),
- * so the account site and the apps always agree on who is signed in. `this-session` ends only
- * the portal's own session in this browser (the throw-away recovery session after a password
- * reset, and the /signout endpoint that Mazer's Sign out uses). `other-sessions` ends every
+ * What a portal sign-out ends. `everywhere` is the account page's "Sign out everywhere" link
+ * only: it revokes every session the account holds at the provider (the portal's, Fitness's,
+ * Mazer's, other devices). `this-session` ends only the portal's own session in this browser: the
+ * account page's bottom Sign out button, the throw-away recovery session after a password
+ * reset, and the /signout endpoint that Mazer's Sign out uses. It is the default, so a bare call
+ * can never sign out other devices. `other-sessions` ends every
  * session of the account EXCEPT the one making the call; the password-reset flow runs it on the
  * recovery session first, so a changed password also signs out every other device and app. The
  * SDK fires no sign-out event and keeps the local copy for this scope, so it is always followed
@@ -270,7 +271,7 @@ const SESSION_REJECTED_CODES: ReadonlySet<string> = new Set([
  */
 export async function signOutOfPortal(
   auth: PortalSignOutAuth,
-  scope: PortalSignOutScope = "everywhere",
+  scope: PortalSignOutScope = "this-session",
 ) {
   const { error } = await auth.signOut({ scope: PORTAL_SIGN_OUT_SCOPES[scope] });
   if (!error) return;
@@ -538,7 +539,7 @@ export function createSupabaseAdapter(
       }
       return data.session.access_token;
     },
-    async signOut(scope = "everywhere") {
+    async signOut(scope = "this-session") {
       beginAuthMutation();
       await signOutOfPortal(client.auth, scope);
     },
@@ -777,7 +778,7 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       }
       return `local-${scenario ?? "default"}-oauth-token-1234567890`;
     },
-    async signOut(scope = "everywhere") {
+    async signOut(scope = "this-session") {
       beginAuthMutation();
       fail();
       // Harness marker so the browser tests can see which reach the page asked for.

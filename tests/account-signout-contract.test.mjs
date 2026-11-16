@@ -210,6 +210,23 @@ test("sign out everywhere: global scope, owner hint, then the portal sign-in wit
   assert.equal(outcomes.loginNoticeFromQuery(["everywhere"]), "signin.everywhere");
 });
 
+test("the dock Sign out ends this device only; only the Sign out everywhere link is global", () => {
+  const portal = read("src/components/account/account-portal.tsx");
+  const dock = portal.slice(portal.indexOf("async function signOut()"), portal.indexOf("async function signOutEverywhere"));
+  assert.ok(dock.includes('await adapter.signOut("this-session")'), "the dock must sign out with the local scope");
+  assert.ok(!/signOut\(\s*"everywhere"/.test(dock), "the dock must not sign out everywhere");
+  assert.ok(!/adapter\.signOut\(\s*\)/.test(dock), "the dock must name its scope");
+  const everywhere = portal.slice(portal.indexOf("async function signOutEverywhere"), portal.indexOf("function askSignOutEverywhere"));
+  assert.ok(everywhere.includes('await adapter.signOut("everywhere")'));
+  const adapterSource = read("src/lib/auth/browser-adapter.ts");
+  assert.match(adapterSource, /everywhere: "global",\s*"this-session": "local"/);
+  assert.equal((adapterSource.match(/async signOut\(scope = "this-session"\)/g) ?? []).length, 2, "a bare signOut() must stay local");
+  // Nothing the dock shows or lands on claims other devices were signed out.
+  const matrix = loadPortalModule("src/lib/auth/copy-matrix.ts");
+  assert.ok(!/every|other|all devices/i.test(matrix.AUTH_COPY.button.signOut + matrix.AUTH_COPY.working.signingOut));
+  assert.ok(!/device|every/i.test(matrix.authNotice("account.signoutfail").text));
+});
+
 test("sign out everywhere copy lives in the matrix, sentence case and plain", () => {
   const matrix = loadPortalModule("src/lib/auth/copy-matrix.ts");
   assert.equal(matrix.AUTH_COPY.link.signOutEverywhere, "Sign out everywhere");
