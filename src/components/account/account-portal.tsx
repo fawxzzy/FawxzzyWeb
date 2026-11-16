@@ -1073,7 +1073,7 @@ function AccountPanel({
           type="email"
           value={session?.email ?? ""}
         />
-        {session && adapter ? (
+        {session && adapter?.deleteAccountLive ? (
           <AuthField
             action={{ disabled: busy, label: AUTH_COPY.aria.deleteAccount, onClick: startDelete }}
             danger

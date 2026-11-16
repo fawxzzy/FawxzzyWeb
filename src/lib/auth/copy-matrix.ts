@@ -71,6 +71,7 @@ export const AUTH_MESSAGES = {
   "delete.confirmwrong": ["error", "That does not match. Type it exactly as shown."],
   "delete.reauth": ["error", "Your password check timed out. Enter your password again."],
   "delete.billing": ["error", "This account has a purchase. Contact support to delete it."],
+  "delete.support": ["error", "This account can not be deleted here. Contact support."],
   "delete.rate": ["error", "Too many delete attempts. Wait a few minutes and try again."],
   "delete.unavailable": ["error", "Deleting is unavailable right now. Try again later."],
   "delete.fail": ["error", "Could not delete your account. Try again."],
@@ -176,7 +177,7 @@ export const AUTH_COPY = {
     changeUsername: "Your new username works for sign-in right away.",
     changeEmail: "Your old email keeps working until you open the link.",
     deleteType: "Type the text shown to confirm it is your account.",
-    deleteWarning: "This deletes, in every app and for good:",
+    deleteWarning: "Deleting your account removes:",
     pageNotFound: STATUS_COPY.pageNotFoundLead,
     startAgainIn: (app: AuthAppName) => `Go back to ${app} and tap Sign in to start again.`,
   },
@@ -190,14 +191,19 @@ export const AUTH_COPY = {
     newUsername: "New username",
     newEmail: "New email",
     deleteAccount: "Delete account",
-    deleteAccountValue: "Removes it from every app",
+    deleteAccountValue: "Removes your account",
     typeToConfirm: (text: string) => `Type ${text}`,
   },
-  /** The plain-words list on the last delete step, one line each. */
+  /**
+   * The plain-words list on the last delete step, one line each: what IS deleted, what stays (Discord
+   * feedback and moderation records keep their Discord ids and text, without the account link), and
+   * that it is permanent. Never promise more than account_api.account_delete_self removes.
+   */
   deleteList: [
     "Your profile, username and sign-in",
     "Your Fitness workouts, routines and history",
     "Your Mazer progress and high scores",
+    "Discord feedback and moderation records stay, with no link to you.",
     "This can not be undone. There is no way to get it back.",
   ],
   /** Screen-reader only names for icon buttons and live regions. */

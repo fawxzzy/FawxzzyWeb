@@ -7,7 +7,9 @@ import { AUTH_COPY, AUTH_MESSAGES, type AuthMessageId } from "../../src/lib/auth
  * Nothing here reaches a live service. Fixtures: password "wrong-password" is rejected and "too-many"
  * is rate limited; the typed text must be the username ("fawxzzy"). `delete-unavailable` stands for
  * the SQL not applied yet, `delete-billing`/`delete-rate` for those database answers, `delete-gone`
- * for an account already deleted, `delete-expired` for a password check older than 10 minutes.
+ * for an account already deleted, `delete-expired` for a password check older than 10 minutes,
+ * `delete-support` for the support refusal, `delete-off` for the live page while DELETE_ACCOUNT_LIVE
+ * is false (no row).
  */
 const PASSWORD = "correct horse battery 1";
 const USERNAME = "fawxzzy";
@@ -51,6 +53,30 @@ test("Delete account is the last account row, in danger style, with a 44px butto
   // Signed out: no row (the page goes to sign in anyway).
   await page.goto("/account?auth_test=success");
   await expect(page.locator('[data-auth-field="delete-account"]')).toHaveCount(0);
+});
+
+test("flag off (DELETE_ACCOUNT_LIVE false): no row, and the page is the account page without it", async ({ page }) => {
+  // The account page markup with the row, minus the row, must equal the flag-off markup exactly.
+  const surfaceHtml = () =>
+    page.evaluate(() => {
+      const node = document.querySelector('[data-auth-surface="account-status"]')!.cloneNode(true) as HTMLElement;
+      node.querySelector('[data-auth-field="delete-account"]')?.remove();
+      return node.outerHTML;
+    });
+  await page.goto("/account?auth_test=session");
+  await expect(page.locator('[data-auth-field="delete-account"]')).toHaveCount(1);
+  const withRowRemoved = await surfaceHtml();
+  await page.goto("/account?auth_test=delete-off");
+  await expect(page.getByRole("heading", { name: AUTH_COPY.title.account })).toBeVisible();
+  await expect(page.locator('[data-auth-field="delete-account"]')).toHaveCount(0);
+  await expect(page.locator(".auth-body > .auth-field")).toHaveCount(2);
+  await expect(page.locator("[data-danger]")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: AUTH_COPY.aria.deleteAccount })).toHaveCount(0);
+  expect(await surfaceHtml()).toBe(withRowRemoved);
+  // Short screens keep the lead line (it only gives way when the third row is there).
+  await page.setViewportSize({ width: 320, height: 568 });
+  await expect(page.locator('[data-auth-surface="account-status"] .auth-lead')).toBeVisible();
+  expect(await fits(page)).toEqual({ overflowX: 0, overflowY: 0 });
 });
 
 test("delete: password, typed username, plain-words warning, then the sign-in screen says it is done", async ({ page }) => {
@@ -143,6 +169,14 @@ test("delete refusals keep the account and say why", async ({ page }) => {
   await toWarning(page);
   await dock(page).click();
   await expect(noticeOf(page, "delete.rate")).toBeVisible();
+
+  // Reserved member #0 account, or another account's rows point at this account's data.
+  await open(page, "delete-support");
+  await toWarning(page);
+  await dock(page).click();
+  await expect(noticeOf(page, "delete.support")).toHaveText(AUTH_MESSAGES["delete.support"][1]);
+  await expect(surface(page)).toHaveAttribute("data-delete-step", "warning");
+  await expect(html(page)).not.toHaveAttribute("data-account-deleted", /.+/);
 
   await open(page, "delete-unavailable");
   await toWarning(page);

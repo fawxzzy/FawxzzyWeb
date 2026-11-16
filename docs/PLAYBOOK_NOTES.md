@@ -2,11 +2,14 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 
 ## 2026-11-15 - Account page: delete account (self-service, all apps)
 
-- Type: Account portal feature (client) + proposed SQL (not applied) + pglite scratch test
-- WHAT changed: `/account` gets a last, danger-style "Delete account" row. Password (throw-away client, fresh session kept in memory as the proof), typed username, a plain-words list of what is deleted, then `account_api.account_delete_self` deletes every Fitness, Mazer and account_private row plus `auth.users` in one transaction and the page lands on `/login?notice=deleted`.
+- Type: Account portal feature (client, behind `DELETE_ACCOUNT_LIVE = false`) + proposed SQL (not applied) + pglite scratch test
+- WHAT changed: `/account` gets a last, danger-style "Delete account" row (hidden until the flag is on). Password (throw-away client, fresh session kept in memory as the proof), typed username, a plain-words list of what is deleted (and that Discord feedback/moderation records stay without the account link), then `account_api.account_delete_self` deletes every Fitness, Mazer and account_private row plus `auth.users` in one transaction and the page lands on `/login?notice=deleted`.
 - WHY it changed: People had no self-service way to delete their account and data in every app.
 - Rule: The SQL carries a manifest of every account-owned column and a preflight catalog sweep (`UNLISTED_ACCOUNT_COLUMNS`); a new table with a user/owner/account uuid column, or a foreign key to `auth.users`, must be added to the manifest (and the scratch test) or the apply refuses. The preimage must pass the sb-query read-only keyword filter (pinned in `tests/account-delete.test.mjs`).
-- Scope: Source and local regression only; no deployment, provider, credential or database effect. Until the owner applies the SQL the row says "Deleting is unavailable right now." Deleted data has no recovery except a provider backup.
+- Rule: A per-user delete must not trust "in the manifest" to mean "this user's rows": ON DELETE CASCADE keys between per-user tables (Fitness `exercise_stats`/`progression_events` -> `exercises`) can reach ANOTHER account's rows. Refuse at call time when any other account's row references a row being deleted, and refuse the apply when an unlisted table's key would cascade or set null.
+- Rule: Password-proof honesty: a JWT `amr` check proves "a password sign-in in the last 10 minutes on a live session of this user", not "the password was typed now". Say exactly that, and make the owner dry run (refresh the session, confirm the refreshed token keeps the ORIGINAL amr timestamp) explicit before going live.
+- Rule: Only count rate-limit attempts that passed re-authentication; counting `reauth` refusals lets any token of the user's (no fresh password) lock them out.
+- Scope: Source and local regression only; no deployment, provider, credential or database effect. Until the owner applies the SQL and flips the flag, the row is hidden and the page is unchanged. Deleted data has no recovery except a provider backup.
 ## 2026-11-15 - Signed-out password reset by username (design direction #9), dark
 
 - Type: Account portal feature (client, behind `RESET_BY_USERNAME_LIVE = false`) + new Edge Function source + proposed SQL (not applied)

@@ -368,6 +368,21 @@ const mentions = (row, key) => row.includes(ACCOUNTS[key]) || row.includes(SESSI
   const missing = pre?.manifest?.filter((m) => !m.table_exists).map((m) => m.item).join(",");
   check("preimage: every required listed table present (only the two optional ones absent)",
     missing === "account_private.account_delete_attempts.user_id,account_private.username_change_attempts.user_id", missing);
+  check("preimage: lists the triggers on auth.users (the username guard)",
+    pre?.triggers_on_listed_tables_and_auth_users?.some((t) => t.startsWith("auth.users account_guard_username_claim") && t.includes("ins upd")),
+    JSON.stringify(pre?.triggers_on_listed_tables_and_auth_users));
+  check("preimage: no cascade or set-null key from an unlisted table", pre?.cascade_or_null_from_unlisted_tables?.length === 0,
+    JSON.stringify(pre?.cascade_or_null_from_unlisted_tables));
+  check("preimage: names the schema each listed table lives in", JSON.stringify(pre?.same_named_tables?.sets) === '["fitness"]'
+    && JSON.stringify(pre?.same_named_tables?.mazer_profiles) === '["mazer"]', JSON.stringify(pre?.same_named_tables?.sets));
+  check("preimage: reserved member #0 column and count", pre?.reserved_member_zero?.user_number_column === true
+    && Number(pre?.reserved_member_zero?.profiles_numbered_zero) === 0, JSON.stringify(pre?.reserved_member_zero));
+  check("preimage: counts other accounts' references to custom exercises (none yet)",
+    Object.values(pre?.other_accounts_referencing_custom_exercises ?? { x: 1 }).every((n) => Number(n) === 0),
+    JSON.stringify(pre?.other_accounts_referencing_custom_exercises));
+  check("preimage: largest per-account row counts", Number(pre?.max_rows_one_account?.["fitness.sets"]) === 2
+    && Number(pre?.max_rows_one_account?.["mazer.mazer_cycle_receipts"]) === 2, JSON.stringify(pre?.max_rows_one_account));
+  check("preimage: reports statement timeouts", Array.isArray(pre?.statement_timeouts), JSON.stringify(pre?.statement_timeouts));
 
   let error = await tryExec(db, APPLY);
   check("apply: runs cleanly on a database shaped like production", error === null, error?.message);
@@ -394,13 +409,20 @@ const mentions = (row, key) => row.includes(ACCOUNTS[key]) || row.includes(SESSI
   check("reauth: amr is not password (magic link / oauth)", (await del(db, claimsFor("ALICE", { method: "otp" }), "alice")) === "reauth");
   check("reauth: session id that no longer exists (signed out)", (await del(db, claimsFor("ALICE", { session: "aaaaaaaa-dead-4000-8000-000000000000" }), "alice")) === "reauth");
   check("reauth: another account's live session", (await del(db, claimsFor("ALICE", { session: SESSION.BOB }), "alice")) === "reauth");
-  // Rate limit: five refused attempts in 15 minutes, then even a correct call is refused.
-  check("rate: 6th call within 15 minutes is refused before anything else", (await del(db, claimsFor("ALICE"), "Alice")) === "rate");
+  // Reauth refusals do not count: a token without a fresh password sign-in can not lock the person out.
+  for (let i = 0; i < 4; i += 1) await del(db, claimsFor("ALICE", { amrAt: null }), "alice");
+  const attemptCount = async (key) => Number((await db.query("select count(*) c from account_private.account_delete_attempts where user_id = $1", [ACCOUNTS[key]])).rows[0].c);
+  check("rate: nine reauth refusals wrote no attempt rows", (await attemptCount("ALICE")) === 0);
+  check("confirm: typed text is not the username (not rate-limited after nine reauth refusals)", (await del(db, claimsFor("ALICE"), "alicia")) === "confirm");
+  check("confirm: empty text", (await del(db, claimsFor("ALICE"), "  ")) === "confirm");
+  for (let i = 0; i < 3; i += 1) await del(db, claimsFor("ALICE"), "wrong");
+  check("rate: five refusals that passed the password proof are recorded", (await attemptCount("ALICE")) === 5);
+  // Rate limit: five counted refusals in 15 minutes, then even a correct call is refused.
+  check("rate: 6th proven call within 15 minutes is refused", (await del(db, claimsFor("ALICE"), "Alice")) === "rate");
   check("rate: refused call deleted nothing", (await db.query(`select count(*) c from auth.users where id = '${ALICE}'`)).rows[0].c == 1);
+  check("rate: a caller without the password proof still gets 'reauth', not 'rate'", (await del(db, claimsFor("ALICE", { amrAt: null }), "alice")) === "reauth");
   const ageAttempts = () => db.query("update account_private.account_delete_attempts set attempted_at = now() - interval '16 minutes' where user_id = $1", [ALICE]);
   await ageAttempts();
-  check("confirm: typed text is not the username", (await del(db, claimsFor("ALICE"), "alicia")) === "confirm");
-  check("confirm: empty text", (await del(db, claimsFor("ALICE"), "  ")) === "confirm");
   const unchangedAfterRefusals = JSON.stringify(await snapshot(db)) === JSON.stringify(before);
   check("refusals changed no account data (only attempt rows)", unchangedAfterRefusals);
   await ageAttempts();
@@ -454,14 +476,59 @@ const mentions = (row, key) => row.includes(ACCOUNTS[key]) || row.includes(SESSI
   check("confirm: an account without a username must type its email", (await del(db, claimsFor("NONAME"), "noname")) === "confirm");
   check("deleted: ...and the email (any case) works", (await del(db, claimsFor("NONAME"), "noname@example.TEST")) === "deleted");
 
-  // One transaction: a cross-account reference makes the whole call fail and keeps every row.
+  // Another account's rows that point at cara's custom exercise through ON DELETE CASCADE keys
+  // (exercise_stats, progression_events): the call refuses and nothing at all changes.
   const caraEx = (await db.query(`select id from fitness.exercises where user_id = '${CARA}'`)).rows[0].id;
+  const bobRoutine = (await db.query(`select id from fitness.routines where user_id = '${BOB}'`)).rows[0].id;
+  const bobRdx = (await db.query(`select id from fitness.routine_day_exercises where user_id = '${BOB}' and workout_plan_template_exercise_id is not null`)).rows[0].id;
+  const bobStat = uid("bbbbbbbb");
+  const bobEvent = uid("bbbbbbbb");
+  await db.exec(`
+insert into fitness.exercise_stats (id, user_id, exercise_id) values ('${bobStat}', '${BOB}', '${caraEx}');
+insert into fitness.progression_events (id, user_id, routine_id, routine_day_exercise_id, exercise_id) values ('${bobEvent}', '${BOB}', '${bobRoutine}', '${bobRdx}', '${caraEx}');`);
+  let beforeCara = await snapshot(db);
+  let caraOutcome = await del(db, claimsFor("CARA"), "cara");
+  check("cross-account: another account's cascading rows on cara's custom exercise make the call refuse", caraOutcome === "support", caraOutcome);
+  const bobKept = (await db.query(`select (select count(*) from fitness.exercise_stats where id = '${bobStat}') + (select count(*) from fitness.progression_events where id = '${bobEvent}') c`)).rows[0].c;
+  check("cross-account: bob's exercise_stats and progression_events rows are NOT deleted", Number(bobKept) === 2, String(bobKept));
+  const afterCara = await snapshot(db);
+  check("cross-account: nothing at all was deleted or changed", TABLES.every((t) => JSON.stringify(afterCara[t]) === JSON.stringify(beforeCara[t])));
+  check("cross-account: the refusal counts as an attempt (passed the password proof)", (await attemptCount("CARA")) === 1);
+  // Without the guard the cascade would have taken bob's rows: show the key really cascades here.
+  check("cross-account: those keys really are ON DELETE CASCADE in the scratch schema",
+    (await db.query("select count(*) c from pg_constraint where contype = 'f' and confrelid = 'fitness.exercises'::regclass and confdeltype = 'c'")).rows[0].c == 2);
+  await db.exec(`delete from fitness.exercise_stats where id = '${bobStat}'; delete from fitness.progression_events where id = '${bobEvent}';`);
+  // A NO ACTION key (routine_day_exercises) answers the same refusal instead of a raw foreign key error.
   const bobDay = (await db.query(`select id from fitness.routine_days where user_id = '${BOB}'`)).rows[0].id;
   await db.exec(`insert into fitness.routine_day_exercises (id, user_id, routine_day_id, exercise_id) values ('${uid("bbbbbbbb")}', '${BOB}', '${bobDay}', '${caraEx}')`);
-  const beforeCara = await snapshot(db);
-  const caraOutcome = await del(db, claimsFor("CARA"), "cara");
-  check("transaction: another account using cara's custom exercise makes the call fail", caraOutcome.startsWith("error:23503"), caraOutcome);
+  beforeCara = await snapshot(db);
+  caraOutcome = await del(db, claimsFor("CARA"), "cara");
+  check("cross-account: another account's routine using cara's custom exercise refuses too", caraOutcome === "support", caraOutcome);
+  check("cross-account: ...and nothing at all was deleted", JSON.stringify(await snapshot(db)) === JSON.stringify(beforeCara));
+  // A self-referencing set-null key: bob's routine day copied from cara's day would be changed.
+  await db.exec(`delete from fitness.routine_day_exercises where user_id = '${BOB}' and exercise_id = '${caraEx}'`);
+  const caraDay = (await db.query(`select id from fitness.routine_days where user_id = '${CARA}'`)).rows[0].id;
+  await db.exec(`update fitness.routine_days set duplicate_source_routine_day_id = '${caraDay}' where id = '${bobDay}'`);
+  caraOutcome = await del(db, claimsFor("CARA"), "cara");
+  check("cross-account: another account's row that would only be set null also refuses", caraOutcome === "support", caraOutcome);
+  await db.exec(`update fitness.routine_days set duplicate_source_routine_day_id = null where id = '${bobDay}'`);
+
+  // One transaction: an unlisted table's NO ACTION key into cara's rows makes the whole call fail.
+  await db.exec(`create table public.exercise_pins (id uuid primary key, exercise_id uuid references fitness.exercises(id));
+insert into public.exercise_pins (id, exercise_id) values ('${uid("cccccccc")}', '${caraEx}');`);
+  beforeCara = await snapshot(db);
+  caraOutcome = await del(db, claimsFor("CARA"), "cara");
+  check("transaction: an unlisted table's NO ACTION key makes the call fail", caraOutcome.startsWith("error:23503"), caraOutcome);
   check("transaction: ...and nothing at all was deleted", JSON.stringify(await snapshot(db)) === JSON.stringify(beforeCara));
+  await db.exec("drop table public.exercise_pins");
+
+  // The reserved Fitness member #0 profile (the owner's own account) is refused.
+  await db.exec(`update fitness.profiles set user_number = 0 where id = '${BOB}'`);
+  const beforeZero = await snapshot(db);
+  const zeroOutcome = await del(db, claimsFor("BOB"), "bob");
+  check("reserved: the member #0 profile's account is refused (support)", zeroOutcome === "support", zeroOutcome);
+  check("reserved: ...and nothing was deleted", JSON.stringify(await snapshot(db)) === JSON.stringify(beforeZero));
+  await db.exec(`update fitness.profiles set user_number = 999 where id = '${BOB}'`);
 
   // Preflight and rollback.
   error = await tryExec(db, APPLY);
@@ -542,6 +609,19 @@ alter function account_api.account_delete_self(text) owner to sim_owner;
     ["an account_api function executable by authenticated", "create function account_api.leaky() returns int language sql as 'select 1';", /EXECUTABLE_BY_AUTHENTICATED: account_api\.leaky\(\)/],
     ["anon with USAGE on account_api", "grant usage on schema account_api to anon;", /ANON_HAS_ACCOUNT_API_USAGE/],
     ["an audit table of another shape", "create table account_private.account_deletions (id bigint, email text);", /AUDIT_TABLE_SHAPE_DIFFERS/],
+    ["an unlisted table whose key cascades from a listed table",
+      "create table public.exercise_notes (id uuid primary key, exercise_id uuid references fitness.exercises(id) on delete cascade, body text);",
+      /CASCADE_REACHES_UNLISTED_TABLE: public\.exercise_notes -> fitness\.exercises/],
+    ["an unlisted table whose key is set null from a listed table",
+      "create table public.session_tags (id uuid primary key, session_id uuid references fitness.sessions(id) on delete set null);",
+      /CASCADE_REACHES_UNLISTED_TABLE: public\.session_tags -> fitness\.sessions/],
+    ["a DELETE trigger on a listed table",
+      "create function public.renumber() returns trigger language plpgsql as $$ begin return old; end $$; create trigger renumber after delete on fitness.profiles for each row execute function public.renumber();",
+      /DELETE_TRIGGER_ON_LISTED_TABLE: fitness\.profiles\.renumber/],
+    ["a DELETE trigger on auth.users other than the sign-in index one",
+      "create function public.audit_users() returns trigger language plpgsql as $$ begin return old; end $$; create trigger audit_users after delete on auth.users for each row execute function public.audit_users();",
+      /DELETE_TRIGGER_ON_LISTED_TABLE: auth\.users\.audit_users/],
+    ["a profiles table without user_number", "alter table fitness.profiles drop column user_number;", /RESERVED_PROFILE_COLUMN_MISSING/],
   ];
   for (const [name, extra, pattern] of refusals) {
     db = await fresh({ extra });

@@ -699,8 +699,9 @@
     margin-top: 8px;
   }
 
-  /* The account page carries three rows (username, email, Delete account); its lead is the line that gives way. */
-  .auth-surface[data-auth-surface="account-status"] .auth-lead {
+  /* With the Delete account row (DELETE_ACCOUNT_LIVE) the account page carries three rows; its lead is
+     the line that gives way. Without the row the page is unchanged. */
+  .auth-surface[data-auth-surface="account-status"]:has(.auth-field[data-danger]) .auth-lead {
     display: none;
   }
 }

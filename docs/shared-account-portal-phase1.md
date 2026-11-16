@@ -454,36 +454,68 @@ existing account, or treat a client-side value as authoritative.
 
 ## Delete account (proposed SQL, owner-gated, not applied)
 
+- Hidden until live: the row shows only when `DELETE_ACCOUNT_LIVE` (`src/config/account.ts`) is true. It
+  stays `false` until the owner has applied the SQL below and done the dry run; with the flag off the
+  account page is the same as before this feature. Local fixtures (`auth_test`) show the row, except
+  `auth_test=delete-off`.
 - Where: the last row on `/account` ("Delete account", danger style, trash button). Steps: (1) the current
   password, checked on a throw-away in-memory client whose fresh session is KEPT only while the screen is
   open; (2) type the username (or the email when the account has none), trimmed and any case; (3) one
-  plain-words screen of what goes (profile, username and sign-in; Fitness workouts, routines and history;
-  Mazer progress and high scores, which are its leaderboard entries) and that it can not be undone; its red dock deletes. Then
-  `/login?notice=deleted` with "Your account and its data were deleted."
+  plain-words screen of what is deleted (profile, username and sign-in; Fitness workouts, routines and
+  history; Mazer progress and high scores, which are its leaderboard entries), one line that Discord
+  feedback and moderation records stay without the account link, and that it can not be undone; its red
+  dock deletes. Then `/login?notice=deleted` with "Your account and its data were deleted."
 - Server: `account_api.account_delete_self(p_confirm text)` (authenticated only) calls the private
-  `account_private.delete_account_v1`. It requires a password `amr` from the last 10 minutes and a
-  `session_id` that is still live in `auth.sessions` (the password never reaches SQL), checks the typed
-  text, refuses accounts with any Fitness billing row, rate limits refusals (5 per 15 minutes per account),
-  then deletes every listed Fitness, Mazer and `account_private` row and the `auth.users` row in ONE
-  transaction (sessions, refresh tokens and identities cascade: sign-out everywhere). Answers: `deleted`,
-  `gone` (already deleted, idempotent), `reauth`, `confirm`, `billing`, `rate`.
-- Audit: one row in `account_private.account_deletions` (salted sha256 of the id, time, per-table row
-  counts, version). No email, no username. Kept on rollback.
+  `account_private.delete_account_v1`. It checks the password proof (below), then the rate limit, the
+  typed text, billing and the support cases, then deletes every listed Fitness, Mazer and
+  `account_private` row and the `auth.users` row in ONE transaction (sessions, refresh tokens and
+  identities cascade: sign-out everywhere). Answers: `deleted`, `gone` (already deleted, idempotent),
+  `reauth`, `confirm`, `billing`, `support`, `rate`.
+- What the password proof really is: the SQL never sees the password. It accepts a JWT whose `amr` has a
+  password sign-in from the last 10 minutes and whose `session_id` is still live in `auth.sessions` for
+  the same user. That proves "a password sign-in in the last 10 minutes on a live session of this
+  account", NOT "the password was typed just now": any token of that session passes, including a
+  refreshed one if GoTrue keeps the original `amr` timestamp on refresh. Owner dry run before turning the
+  row on: sign in with a password, refresh the session, decode the refreshed access token and confirm its
+  `amr` entry is `password` with the ORIGINAL sign-in time; then call with a token older than 10 minutes
+  and confirm `reauth`.
+- Rate limit: 5 refused calls per 15 minutes per account, counting ONLY calls that passed the password
+  proof (`confirm`, `billing`, `support`). A `reauth` refusal writes nothing, so a token without a fresh
+  password sign-in can not block the person from deleting.
+- Support refusals: the account holding the reserved Fitness member #0 profile (`user_number = 0`, the
+  owner's own account; Fitness migration 20260718015422 requires exactly one) is never deleted here; and
+  if any row of ANOTHER account points at a row this call would delete (for example another account's
+  `exercise_stats` or `progression_events`, whose keys to `exercises` are ON DELETE CASCADE, on this
+  account's custom exercise), the call refuses instead of deleting the other account's rows. The check
+  reads every foreign key between the listed tables at call time.
+- Time limit: the call runs inside one API request, so the authenticated role's `statement_timeout`
+  (Supabase default 8s; the preimage reports the live value and the largest per-account row counts) caps
+  it. A very large account that hits it fails with nothing deleted; the owner deletes it by hand.
+- Audit: one row in `account_private.account_deletions`: a PLAIN sha256 of the fixed public prefix
+  `fawxzzy-account-delete-v1:` plus the user id (not salted: anyone with the uuid can recompute it, so
+  the row is pseudonymous and re-identifiable from a known uuid), the time, per-table row counts and the
+  version. No email, no username. Kept on rollback.
 - Decisions (owner can reverse): immediate delete, no grace period, no undo, no deleted-account store;
   billing blocks deletion (support handles refunds and records); Discord feedback reports and moderation
-  cases keep their row with the account link cleared; a custom exercise another account still uses blocks
-  the delete (the transaction rolls back, nothing is half-deleted).
+  cases keep their row (Discord ids and text) with the account link cleared; Discord-only rows keyed by a
+  Discord id (for example Spotify connections) are not touched; another account's rows on this account's
+  custom exercise block the delete (`support`).
 - **There is no recovery.** Deleted rows come back only from a provider backup/PITR restore, if the
   project has one. The rollback SQL removes the API, not the deletions.
 - Files (all in `supabase/proposed/`): `20261115200000_account_delete_self_v1.sql` (apply, after change
   username v1), `.rollback.sql`, `.preimage.sql` (one read-only SELECT: run it right before the apply and
   compare with what the preflight expects: every manifest table exists with a uuid column, no unlisted
-  account columns, postgres privileges and RLS bypass, no storage objects with an owner),
-  `account_delete_self_v1.scratch-test.mjs` (pglite: proves only that account's rows go, across schemas).
+  account columns, no cascade or set-null key from an unlisted table, the triggers on the listed tables
+  and `auth.users`, which schema holds each listed table (the Fitness repo's migrations say `public`,
+  production uses `fitness`), the reserved #0 count, other accounts' references to custom exercises, the
+  largest per-account row counts against the statement timeouts, postgres privileges and RLS bypass, no
+  storage objects with an owner), `account_delete_self_v1.scratch-test.mjs` (pglite: proves only that
+  account's rows go, across schemas, and that another account's cascading rows are never deleted).
 - Short screens (max-height 600px): the account page hides its lead line so the three rows, notice slot,
   links and dock still fit at 320x568 with wide Linux fonts. Copy never says "leaderboard" (pinned by
   `tests/username-signin-lockout.test.mjs`); the list says "Mazer progress and high scores".
-- Until applied: the portal shows "Deleting is unavailable right now. Try again later."
+- Until applied: the row is hidden (flag off). If the flag were turned on before the SQL, the last step
+  would show "Deleting is unavailable right now. Try again later." and delete nothing.
 - Known gaps: access tokens already issued stay valid until they expire (about 1 hour). Fitness server
   actions re-check with `auth.getUser()` (fails for a deleted user), but Fitness tables have no foreign key
   to `auth.users`, so a direct browser write in that window could leave an orphan row. Mazer re-checks with

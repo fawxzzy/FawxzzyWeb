@@ -6,7 +6,13 @@
 -- their data in every app, from account.fawxzzy.com/account.
 --
 --   account_api.account_delete_self(p_confirm text) returns text
---     'deleted' | 'gone' | 'reauth' | 'confirm' | 'billing' | 'rate'
+--     'deleted' | 'gone' | 'reauth' | 'confirm' | 'billing' | 'support' | 'rate'
+--
+-- ORDER: apply change username v1 (20261115190000_account_change_username_v1.sql) FIRST. Its preflight
+-- refuses once authenticated already has USAGE on account_api (which this file grants if missing), and
+-- its rollback revokes that USAGE, which would also switch this function off (fails safe: the portal
+-- shows "unavailable"). The portal keeps the Delete account row hidden (DELETE_ACCOUNT_LIVE = false in
+-- src/config/account.ts) until this file is applied and the owner dry run below passes.
 --
 -- DECISION (owner to confirm): immediate, permanent delete. No grace period, no undo, no standing store
 -- of deleted accounts. There is NO recovery for deleted rows other than a provider backup/PITR restore,
@@ -14,35 +20,58 @@
 --
 -- * Who: only the authenticated role, only for auth.uid(). Never anon. The inner function, the attempts
 --   table and the audit table are not reachable through the API.
--- * Proof of the password: the portal re-enters the password with a throwaway sign-in and calls this
---   function with THAT fresh session. Here the signed JWT must carry a password `amr` entry from the
---   last 10 minutes and a `session_id` that is still live in auth.sessions for the same user. The
---   password itself never reaches SQL. Anything else answers 'reauth'.
+-- * What the password proof really is: the portal signs in again with the password on a throwaway
+--   client and calls this function with THAT session. SQL never sees the password. It checks that the
+--   signed JWT carries a password `amr` entry from the last 10 minutes and a `session_id` that is still
+--   live in auth.sessions for the same user. So the proof is "a password sign-in in the last 10 minutes
+--   on a live session of this account", not "the password was typed just now": any token of that same
+--   session (including one refreshed within the 10 minutes, if GoTrue keeps the original amr timestamp
+--   on refresh) passes. Anything else answers 'reauth'. OWNER DRY RUN before turning the portal row on:
+--   sign in with a password, refresh the session, decode the refreshed access token and confirm its amr
+--   entry is method 'password' with the ORIGINAL sign-in timestamp (not the refresh time); then call
+--   with a token older than 10 minutes and confirm 'reauth'.
 -- * Typed confirmation: p_confirm must equal the current username (trimmed, any case); an account with
 --   no username types its email instead. Otherwise 'confirm'.
 -- * Billing: an account with any Fitness billing row (customer, purchase or entitlement) is NOT deleted
 --   ('billing'); the portal sends the person to support. (Owner decision: refunds, receipts and record
 --   retention are not decided by this function.)
+-- * Support: refused ('support', the portal sends the person to support) when
+--     - the account holds the reserved Fitness member #0 profile (fitness.profiles.user_number = 0, the
+--       owner's own account). Fitness migration 20260718015422 requires exactly one reserved #0 profile
+--       whenever any profile exists, so deleting it would break that precondition; or
+--     - any row of ANOTHER account references a row this call would delete (for example another
+--       account's exercise_stats or progression_events pointing at this account's custom exercise; those
+--       foreign keys are ON DELETE CASCADE and would silently delete the other account's rows). The check
+--       walks every foreign key into the tables listed below at call time, so a new key is covered too.
 -- * Rate limit: per account, at most 5 refused attempts per 15 minutes ('rate'), under a per-account
---   advisory lock so concurrent calls cannot race the count or the delete.
+--   advisory lock so concurrent calls cannot race the count or the delete. Only calls that PASSED the
+--   password proof count (refusals 'confirm', 'billing', 'support'): a 'reauth' refusal writes nothing,
+--   so a token without a fresh password sign-in can not lock the person out of deleting. The rate check
+--   runs after the proof, so 'rate' is only ever told to a caller who proved the password.
 -- * Idempotent: once the account is gone the call answers 'gone' and writes nothing.
 -- * One transaction: Fitness rows, Mazer rows, the username sign-in index and attempt rows, then the
 --   auth.users row (which cascades every GoTrue session, refresh token and identity: sign-out
---   everywhere). Any error (for example another account referencing this account's custom exercise)
---   rolls back everything; nothing is half-deleted.
--- * Audit: one row in account_private.account_deletions with sha256('fawxzzy-account-delete-v1:' ||
---   user id), the time, per-table row counts and the version. No username, email or other PII.
--- * Discord: feedback reports and moderation cases that name this account keep their row but lose the
---   account link (reporter_fitness_user_id / target_fitness_user_id set to null, as the original
---   ON DELETE SET NULL foreign keys did). Member links and verification tokens are deleted.
+--   everywhere). Any error rolls back everything; nothing is half-deleted.
+-- * Time limit: the whole call runs inside the API request, so the authenticated role's
+--   statement_timeout (Supabase default 8s; the preimage reports the live value) caps it, whatever this
+--   file sets. A very large account (the preimage reports the largest per-account row counts) could hit
+--   it: the call then fails with nothing deleted (the portal says "Could not delete your account") and
+--   the owner deletes that account by hand. No partial delete is possible.
+-- * Audit: one row in account_private.account_deletions with a PLAIN sha256 of the fixed public prefix
+--   'fawxzzy-account-delete-v1:' and the user id, the time, per-table row counts and the version. No
+--   username, email or other PII. It is not salted: anyone who has the uuid can recompute the hash, so
+--   the row is pseudonymous (re-identifiable from a known uuid), not anonymous.
+-- * Discord: feedback reports and moderation cases that name this account keep their row (Discord ids
+--   and text stay) but lose the account link (reporter_fitness_user_id / target_fitness_user_id set to
+--   null, as the original ON DELETE SET NULL foreign keys did). Member links and verification tokens are
+--   deleted. Discord-only rows keyed by a Discord id (for example Spotify connections) are not touched.
 -- * Safety net: the preflight sweeps the catalog and REFUSES the apply if any table outside the system
 --   schemas has a user-shaped uuid column or a foreign key to auth.users that this file does not list,
---   if a listed table or column is missing, or if Storage holds files owned by any account. A database
---   that differs from the repo's picture of it fails the apply instead of leaving personal data behind.
--- * Ordering with change username v1 (20261115190000): apply change username FIRST. Its preflight
---   refuses once authenticated already has USAGE on account_api (which this file grants if missing),
---   and its rollback revokes that USAGE, which would also switch this function off (fails safe: the
---   portal shows "unavailable").
+--   if a foreign key from an unlisted table into a table this file deletes from would cascade or set
+--   null/default, if a listed table has a DELETE trigger (or auth.users does, other than the live
+--   username sign-in index trigger), if a listed table or
+--   column is missing, or if Storage holds files owned by any account. A database that differs from the
+--   repo's picture of it fails the apply instead of leaving personal data behind or touching other rows.
 begin;
 set local lock_timeout = '3s';
 set local statement_timeout = '15s';
@@ -196,6 +225,57 @@ begin
     raise exception 'DELETE_ACCOUNT_PREFLIGHT_UNLISTED_ACCOUNT_COLUMNS: %', leaked;
   end if;
 
+  -- A delete may only reach rows this file lists. Any foreign key from an UNLISTED table into a table
+  -- this file deletes from (or into auth.users, outside GoTrue's own schemas) that would cascade, set
+  -- null or set default refuses the apply: those rows would change without being named here. (NO ACTION
+  -- and RESTRICT keys are safe: they make the call fail and roll back.) Keys between listed tables are
+  -- checked per call for other accounts' rows; see delete_account_v1.
+  select string_agg(format('%I.%I -> %s (%s)', n.nspname, c.relname, k.confrelid::regclass, k.conname), ', ' order by 1) into leaked
+  from pg_constraint k
+  join pg_class c on c.oid = k.conrelid
+  join pg_namespace n on n.oid = c.relnamespace
+  where k.contype = 'f'
+    and k.confdeltype in ('c', 'n', 'd')
+    and n.nspname <> all (system_schemas)
+    and k.conrelid <> all (array(
+      select to_regclass(format('%I.%I', split_part(m.entry, '.', 1), split_part(m.entry, '.', 2)))
+      from unnest(manifest || optional) as m(entry)
+      where to_regclass(format('%I.%I', split_part(m.entry, '.', 1), split_part(m.entry, '.', 2))) is not null))
+    and k.confrelid = any (array(
+      select to_regclass(format('%I.%I', split_part(m.entry, '.', 1), split_part(m.entry, '.', 2)))
+      from unnest(manifest) as m(entry)
+      where split_part(m.entry, '.', 2) not in ('discord_feedback_reports', 'discord_moderation_cases', 'billing_customers', 'billing_purchases', 'user_entitlements')
+      union all select 'auth.users'::regclass));
+  if leaked is not null then
+    raise exception 'DELETE_ACCOUNT_PREFLIGHT_CASCADE_REACHES_UNLISTED_TABLE: %', leaked;
+  end if;
+
+  -- DELETE triggers would run unreviewed code inside the delete (for example renumbering members). The
+  -- one known, reviewed exception: the live username sign-in index trigger on auth.users
+  -- (supabase/migrations/20260826163000_account_username_signin_index.sql), which removes the index row.
+  select string_agg(format('%s.%s', t.tgrelid::regclass, t.tgname), ', ' order by 1) into leaked
+  from pg_trigger t
+  where not t.tgisinternal
+    and (t.tgtype & 8) <> 0
+    and not (t.tgrelid = 'auth.users'::regclass and t.tgname = 'sync_username_signin_index'
+             and t.tgfoid = coalesce(to_regprocedure('account_private.sync_username_signin_index()')::oid, 0::oid))
+    and t.tgrelid = any (array(
+      select to_regclass(format('%I.%I', split_part(m.entry, '.', 1), split_part(m.entry, '.', 2)))
+      from unnest(manifest) as m(entry)
+      union all select 'auth.users'::regclass));
+  if leaked is not null then
+    raise exception 'DELETE_ACCOUNT_PREFLIGHT_DELETE_TRIGGER_ON_LISTED_TABLE: %', leaked;
+  end if;
+
+  -- The reserved member #0 check reads fitness.profiles.user_number.
+  if not exists (
+    select 1 from pg_attribute a
+    where a.attrelid = 'fitness.profiles'::regclass and a.attname = 'user_number' and a.attnum > 0
+      and not a.attisdropped and a.atttypid in ('integer'::regtype, 'bigint'::regtype, 'smallint'::regtype)
+  ) then
+    raise exception 'DELETE_ACCOUNT_PREFLIGHT_RESERVED_PROFILE_COLUMN_MISSING: fitness.profiles.user_number';
+  end if;
+
   -- Storage objects are files; deleting their rows would orphan the files. None may be owned today.
   if to_regclass('storage.objects') is not null then
     if not has_table_privilege('postgres', 'storage.objects', 'select') then
@@ -243,11 +323,12 @@ $preflight$;
 create table account_private.account_delete_attempts (
   id bigint generated always as identity primary key,
   user_id uuid not null,
-  outcome text not null check (outcome in ('reauth', 'confirm', 'billing')),
+  outcome text not null check (outcome in ('confirm', 'billing', 'support')),
   attempted_at timestamptz not null default now()
 );
--- No foreign key to auth.users (the applier is not known to hold REFERENCES on it). Rows older than
--- 24 hours are pruned per account on each call; a successful delete removes the account's rows.
+-- Only calls that passed the password proof are recorded ('reauth' refusals write nothing). No foreign
+-- key to auth.users (the applier is not known to hold REFERENCES on it). Rows older than 24 hours are
+-- pruned per account on each call; a successful delete removes the account's rows.
 create index account_delete_attempts_user_time on account_private.account_delete_attempts (user_id, attempted_at);
 alter table account_private.account_delete_attempts enable row level security;
 revoke all on table account_private.account_delete_attempts from public, anon, authenticated;
@@ -279,6 +360,23 @@ declare
   fresh_password boolean := false;
   counts jsonb := '{}'::jsonb;
   n bigint;
+  ref record;
+  shared boolean;
+  -- schema.table.column naming the account, as in the preflight list (the optional tables may be absent).
+  owned constant text[] := array[
+    'fitness.sets.user_id', 'fitness.session_exercises.user_id', 'fitness.session_follow_up_jobs.user_id',
+    'fitness.progression_events.user_id', 'fitness.sessions.user_id', 'fitness.exercise_stats.user_id',
+    'fitness.routine_day_exercises.user_id', 'fitness.routine_days.user_id', 'fitness.routines.user_id',
+    'fitness.workout_plan_template_exercises.user_id', 'fitness.workout_plan_templates.user_id',
+    'fitness.exercises.user_id', 'fitness.discord_verification_tokens.user_id',
+    'fitness.discord_member_links.fitness_user_id', 'fitness.discord_feedback_reports.reporter_fitness_user_id',
+    'fitness.discord_moderation_cases.target_fitness_user_id', 'fitness.profiles.id',
+    'fitness.billing_customers.user_id', 'fitness.billing_purchases.user_id', 'fitness.user_entitlements.user_id',
+    'mazer.mazer_profiles.user_id', 'mazer.mazer_progression_states.user_id',
+    'mazer.mazer_ai_progression_states.user_id', 'mazer.mazer_cycle_receipts.user_id',
+    'account_private.username_signin_index.user_id', 'account_private.username_change_attempts.user_id',
+    'account_private.account_delete_attempts.user_id'
+  ];
 begin
   if p_user_id is null then
     raise exception using errcode = '42501', message = 'ACCOUNT_DELETE_NOT_SIGNED_IN';
@@ -296,14 +394,8 @@ begin
     return 'gone';
   end if;
 
-  if (select count(*) from account_private.account_delete_attempts a
-      where a.user_id = p_user_id and a.attempted_at > now() - interval '15 minutes') >= 5 then
-    return 'rate';
-  end if;
-  delete from account_private.account_delete_attempts a
-  where a.user_id = p_user_id and a.attempted_at < now() - interval '24 hours';
-
-  -- Fresh password sign-in on a live session of this same account.
+  -- Fresh password sign-in on a live session of this same account. A refusal here writes nothing and
+  -- does not count toward the rate limit (see the header).
   if jsonb_typeof(p_claims -> 'amr') = 'array' then
     select exists (
       select 1 from jsonb_array_elements(p_claims -> 'amr') entry
@@ -317,9 +409,16 @@ begin
      or session_text is null
      or session_text !~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
      or not exists (select 1 from auth.sessions s where s.id = session_text::uuid and s.user_id = p_user_id) then
-    insert into account_private.account_delete_attempts (user_id, outcome) values (p_user_id, 'reauth');
     return 'reauth';
   end if;
+
+  -- Rate limit: only attempts that passed the password proof are recorded and counted.
+  if (select count(*) from account_private.account_delete_attempts a
+      where a.user_id = p_user_id and a.attempted_at > now() - interval '15 minutes') >= 5 then
+    return 'rate';
+  end if;
+  delete from account_private.account_delete_attempts a
+  where a.user_id = p_user_id and a.attempted_at < now() - interval '24 hours';
 
   if typed = '' or typed is distinct from (case when account_name <> '' then account_name else account_email end) then
     insert into account_private.account_delete_attempts (user_id, outcome) values (p_user_id, 'confirm');
@@ -332,6 +431,46 @@ begin
     insert into account_private.account_delete_attempts (user_id, outcome) values (p_user_id, 'billing');
     return 'billing';
   end if;
+
+  -- The reserved Fitness member #0 profile (the owner's own account) is never deleted here.
+  if exists (select 1 from fitness.profiles p where p.id = p_user_id and p.user_number = 0) then
+    insert into account_private.account_delete_attempts (user_id, outcome) values (p_user_id, 'support');
+    return 'support';
+  end if;
+
+  -- No other account's rows may be deleted or changed: walk every foreign key (read from the catalog at
+  -- call time, so a key added later is covered) from a listed table into a table this call deletes from,
+  -- and refuse if any row of ANOTHER account (or of no account) points at one of this account's rows.
+  -- Keys from unlisted tables can only be NO ACTION/RESTRICT (the preflight refuses the rest), which
+  -- make the call fail and roll back.
+  for ref in
+    select k.conrelid::regclass::text as src, src_list.col as src_col,
+           k.confrelid::regclass::text as dst, dst_list.col as dst_col,
+           (select string_agg(format('d.%I = s.%I', da.attname, sa.attname), ' and ' order by u.ord)
+              from unnest(k.conkey, k.confkey) with ordinality as u(src_att, dst_att, ord)
+              join pg_catalog.pg_attribute sa on sa.attrelid = k.conrelid and sa.attnum = u.src_att
+              join pg_catalog.pg_attribute da on da.attrelid = k.confrelid and da.attnum = u.dst_att) as join_on
+    from pg_catalog.pg_constraint k
+    join (select to_regclass(format('%I.%I', split_part(e, '.', 1), split_part(e, '.', 2))) as rel,
+                 split_part(e, '.', 3) as col
+          from unnest(owned) e) src_list on src_list.rel = k.conrelid
+    join (select to_regclass(format('%I.%I', split_part(e, '.', 1), split_part(e, '.', 2))) as rel,
+                 split_part(e, '.', 3) as col
+          from unnest(owned) e
+          where split_part(e, '.', 2) not in ('discord_feedback_reports', 'discord_moderation_cases',
+                                              'billing_customers', 'billing_purchases', 'user_entitlements')) dst_list
+      on dst_list.rel = k.confrelid
+    where k.contype = 'f'
+    order by 1, 3
+  loop
+    execute format('select exists (select 1 from %s s join %s d on %s where d.%I = $1 and s.%I is distinct from $1)',
+                   ref.src, ref.dst, ref.join_on, ref.dst_col, ref.src_col)
+      into shared using p_user_id;
+    if shared then
+      insert into account_private.account_delete_attempts (user_id, outcome) values (p_user_id, 'support');
+      return 'support';
+    end if;
+  end loop;
 
   -- Fitness, leaves first (several foreign keys between these tables are ON DELETE NO ACTION).
   delete from fitness.sets t where t.user_id = p_user_id;

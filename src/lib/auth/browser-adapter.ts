@@ -19,6 +19,7 @@ import {
   isLiveAccountAdapterOrigin,
   isLocalAuthTestOrigin,
   RESET_BY_USERNAME_LIVE,
+  DELETE_ACCOUNT_LIVE,
 } from "@/config/account";
 import { clearRecoveryPkce, startRecoveryPkce } from "@/lib/auth/recovery-pkce";
 import { USERNAME_THROTTLED_CODE, UsernameSignInThrottledError } from "@/lib/auth/errors";
@@ -99,6 +100,11 @@ export type PortalAuthAdapter = {
    * until the server side (Edge Function username-password-reset + its SQL) is live.
    */
   resetByUsername: boolean;
+  /**
+   * Signed in, the account page shows the Delete account row only when this is true; it is false
+   * until the server function account_api.account_delete_self is applied (DELETE_ACCOUNT_LIVE).
+   */
+  deleteAccountLive: boolean;
   /**
    * Signed-out reset by username. Resolves for every accepted request, whether or not the username
    * has an account (the server answers the same either way). Throws with `status`/`code` only for a
@@ -634,6 +640,7 @@ export function createSupabaseAdapter(
       if (error) throw error;
     },
     resetByUsername: RESET_BY_USERNAME_LIVE,
+    deleteAccountLive: DELETE_ACCOUNT_LIVE,
     async requestPasswordResetByUsername(username, contextId, returnTarget, captchaToken) {
       // The provider call happens on the server, so this browser prepares the PKCE verifier the
       // recovery link is exchanged with (lib/auth/recovery-pkce.ts) and sends only its challenge.
@@ -781,6 +788,8 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       "delete-rate",
       "delete-gone",
       "delete-expired",
+      "delete-support",
+      "delete-off",
     ].includes(scenario)
       ? { displayName: "fawxzzy", email: "preview.user@example.test", userId: "preview-user" }
       : null;
@@ -936,6 +945,8 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
     // has an account); `reset-throttled` and `reset-unavailable` answer like the rate limit and a
     // missing server function. `reset-email-legacy` keeps the email form (the flag-off live path).
     resetByUsername: scenario !== "reset-email-legacy",
+    // The Delete account row shows in every fixture except `delete-off` (the flag-off live page).
+    deleteAccountLive: scenario !== "delete-off",
     async requestPasswordResetByUsername(username, contextId, returnTarget) {
       fail();
       if (scenario === "reset-throttled") {
@@ -977,8 +988,9 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
     },
     // Delete account fixtures. Same passwords as above ("wrong-password", "too-many"). The typed
     // text must match the username. `delete-unavailable` behaves like the database function is not
-    // applied, `delete-billing`/`delete-rate` return those answers, `delete-gone` answers "gone"
-    // (already deleted), `delete-expired` answers "reauth" once (password check too old).
+    // applied, `delete-billing`/`delete-support`/`delete-rate` return those answers, `delete-gone`
+    // answers "gone" (already deleted), `delete-expired` answers "reauth" once (password check too
+    // old), `delete-off` hides the row (DELETE_ACCOUNT_LIVE off).
     // Harness markers record each step; nothing leaves the browser.
     async beginAccountDelete(password) {
       fail();
@@ -1008,6 +1020,7 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
         return "confirm";
       }
       if (scenario === "delete-billing") return "billing";
+      if (scenario === "delete-support") return "support";
       if (scenario === "delete-rate") return "rate";
       const status = scenario === "delete-gone" ? "gone" : "deleted";
       beginAuthMutation();
@@ -1129,6 +1142,8 @@ export function resolvePortalAuthAdapter(
       "delete-rate",
       "delete-gone",
       "delete-expired",
+      "delete-support",
+      "delete-off",
       "confirm-pending",
       "reset-email-legacy",
       "reset-throttled",

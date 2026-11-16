@@ -21,7 +21,7 @@ export type DeleteInputField = "password" | "confirmation";
 export type DeleteProblem = { id: AuthMessageId; fields: DeleteInputField[] };
 
 /** What `account_api.account_delete_self` answers. Anything else is treated as a failure. */
-export const ACCOUNT_DELETE_STATUSES = ["deleted", "gone", "reauth", "confirm", "billing", "rate"] as const;
+export const ACCOUNT_DELETE_STATUSES = ["deleted", "gone", "reauth", "confirm", "billing", "support", "rate"] as const;
 
 export type AccountDeleteStatus = (typeof ACCOUNT_DELETE_STATUSES)[number];
 
@@ -83,6 +83,9 @@ export function accountDeleteNotice(status: AccountDeleteStatus): { id: AuthMess
       return { id: "delete.confirmwrong", step: "type" };
     case "billing":
       return { id: "delete.billing", step: "warning" };
+    case "support":
+      // The reserved member #0 account, or another account's rows point at this account's data.
+      return { id: "delete.support", step: "warning" };
     case "rate":
       return { id: "delete.rate", step: "warning" };
   }

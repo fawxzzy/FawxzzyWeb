@@ -3,6 +3,10 @@
 -- preflight expects. One SELECT, no writes, no row contents: only catalog facts and counts.
 -- (Privilege names are split, e.g. 'UPD' || 'ATE', because the read-only query runner rejects any
 -- text containing certain write keywords, even inside strings.)
+-- The Fitness repo's migrations create these tables in schema public; production keeps them in schema
+-- fitness. 'same_named_tables' lists every schema that holds a table of each listed name, so the owner
+-- can see which copy the apply will act on. 'max_rows_one_account' is the largest per-account row count
+-- of the big tables, to compare with 'statement_timeouts' (the whole call runs inside one API request).
 with manifest(item) as (
   values
     ('fitness.sets.user_id'), ('fitness.session_exercises.user_id'), ('fitness.session_follow_up_jobs.user_id'),
@@ -116,5 +120,60 @@ select jsonb_pretty(jsonb_build_object(
       (select split_part(cfg, '=', 2) from pg_db_role_setting s join pg_roles r on r.oid = s.setrole,
          unnest(s.setconfig) cfg where r.rolname = 'authenticated' and cfg like 'statement_timeout=%' limit 1),
       'default')
+  ),
+  'statement_timeouts', (
+    select coalesce(jsonb_agg(format('%s: %s', coalesce(r.rolname, 'all roles'), cfg) order by 1), '[]'::jsonb)
+    from pg_db_role_setting s left join pg_roles r on r.oid = s.setrole, unnest(s.setconfig) cfg
+    where cfg like 'statement_timeout=%'
+  ),
+  'same_named_tables', (
+    select jsonb_object_agg(t.tbl, (
+      select coalesce(jsonb_agg(n.nspname order by n.nspname), '[]'::jsonb)
+      from pg_class c join pg_namespace n on n.oid = c.relnamespace
+      where c.relname = t.tbl and c.relkind in ('r', 'p')))
+    from (select distinct tbl from parsed) t
+  ),
+  'triggers_on_listed_tables_and_auth_users', (
+    select coalesce(jsonb_agg(format('%s %s enabled=%s fn=%s fires=%s%s%s%s', t.tgrelid::regclass, t.tgname, t.tgenabled,
+                                     t.tgfoid::regproc,
+                                     case when (t.tgtype & 4) <> 0 then 'ins ' else '' end,
+                                     case when (t.tgtype & 8) <> 0 then 'del ' else '' end,
+                                     case when (t.tgtype & 16) <> 0 then 'upd ' else '' end,
+                                     case when (t.tgtype & 32) <> 0 then 'trunc' else '' end) order by 1), '[]'::jsonb)
+    from pg_trigger t
+    where not t.tgisinternal
+      and (t.tgrelid = 'auth.users'::regclass or t.tgrelid in (select rel from parsed where rel is not null))
+  ),
+  'cascade_or_null_from_unlisted_tables', (
+    select coalesce(jsonb_agg(format('%s -> %s (%s) ondel=%s', k.conrelid::regclass, k.confrelid::regclass, k.conname, k.confdeltype) order by 1), '[]'::jsonb)
+    from pg_constraint k join pg_class c on c.oid = k.conrelid join pg_namespace n on n.oid = c.relnamespace
+    where k.contype = 'f' and k.confdeltype in ('c', 'n', 'd')
+      and n.nspname not in (select nsp from system_schemas)
+      and k.conrelid not in (select rel from parsed where rel is not null)
+      and (k.confrelid = 'auth.users'::regclass or k.confrelid in (select rel from parsed where rel is not null))
+  ),
+  'reserved_member_zero', jsonb_build_object(
+    'user_number_column', exists (select 1 from pg_attribute a where a.attrelid = 'fitness.profiles'::regclass
+                                  and a.attname = 'user_number' and a.attnum > 0 and not a.attisdropped),
+    'profiles_numbered_zero', (select count(*) from fitness.profiles p where (to_jsonb(p) ->> 'user_number') = '0')
+  ),
+  'other_accounts_referencing_custom_exercises', jsonb_build_object(
+    'routine_day_exercises', (select count(*) from fitness.routine_day_exercises s join fitness.exercises e on e.id = s.exercise_id
+                              where e.user_id is not null and s.user_id is distinct from e.user_id),
+    'session_exercises', (select count(*) from fitness.session_exercises s join fitness.exercises e on e.id = s.exercise_id
+                          where e.user_id is not null and s.user_id is distinct from e.user_id),
+    'exercise_stats', (select count(*) from fitness.exercise_stats s join fitness.exercises e on e.id = s.exercise_id
+                       where e.user_id is not null and s.user_id is distinct from e.user_id),
+    'progression_events', (select count(*) from fitness.progression_events s join fitness.exercises e on e.id = s.exercise_id
+                           where e.user_id is not null and s.user_id is distinct from e.user_id)
+  ),
+  'max_rows_one_account', jsonb_build_object(
+    'fitness.sets', (select coalesce(max(x.n), 0) from (select count(*) n from fitness.sets group by user_id) x),
+    'fitness.session_exercises', (select coalesce(max(x.n), 0) from (select count(*) n from fitness.session_exercises group by user_id) x),
+    'fitness.sessions', (select coalesce(max(x.n), 0) from (select count(*) n from fitness.sessions group by user_id) x),
+    'fitness.exercise_stats', (select coalesce(max(x.n), 0) from (select count(*) n from fitness.exercise_stats group by user_id) x),
+    'fitness.progression_events', (select coalesce(max(x.n), 0) from (select count(*) n from fitness.progression_events group by user_id) x),
+    'fitness.routine_day_exercises', (select coalesce(max(x.n), 0) from (select count(*) n from fitness.routine_day_exercises group by user_id) x),
+    'mazer.mazer_cycle_receipts', (select coalesce(max(x.n), 0) from (select count(*) n from mazer.mazer_cycle_receipts group by user_id) x)
   )
 ));

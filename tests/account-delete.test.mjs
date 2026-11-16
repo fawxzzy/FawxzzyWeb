@@ -13,6 +13,7 @@ const del = loadPortalModule("src/lib/auth/account-delete.ts");
 const change = loadPortalModule("src/lib/auth/account-change.ts");
 const { AUTH_MESSAGES, AUTH_COPY, authNotice } = loadPortalModule("src/lib/auth/copy-matrix.ts");
 const { loginNoticeFromQuery } = loadPortalModule("src/lib/auth/auth-outcomes.ts");
+const account = loadPortalModule("src/config/account.ts");
 
 const BASE = "supabase/proposed/20261115200000_account_delete_self_v1";
 const SQL = readFileSync(`${BASE}.sql`, "utf8");
@@ -36,8 +37,8 @@ test("every id the delete flow can return is a real matrix row", () => {
   for (const id of ids) assert.ok(id && Object.hasOwn(AUTH_MESSAGES, id), `missing matrix row ${id}`);
 });
 
-test("the server answers are exactly the six the SQL returns", () => {
-  assert.deepEqual([...del.ACCOUNT_DELETE_STATUSES].sort(), ["billing", "confirm", "deleted", "gone", "rate", "reauth"]);
+test("the server answers are exactly the seven the SQL returns", () => {
+  assert.deepEqual([...del.ACCOUNT_DELETE_STATUSES].sort(), ["billing", "confirm", "deleted", "gone", "rate", "reauth", "support"]);
   for (const status of del.ACCOUNT_DELETE_STATUSES) {
     assert.match(SQL, new RegExp(`return '${status}'`), `SQL returns '${status}'`);
     assert.equal(del.isAccountDeleteStatus(status), true);
@@ -71,6 +72,7 @@ test("each answer goes to the right step with the right line", () => {
   assert.deepEqual(del.accountDeleteNotice("confirm"), { id: "delete.confirmwrong", step: "type" });
   assert.deepEqual(del.accountDeleteNotice("billing"), { id: "delete.billing", step: "warning" });
   assert.deepEqual(del.accountDeleteNotice("rate"), { id: "delete.rate", step: "warning" });
+  assert.deepEqual(del.accountDeleteNotice("support"), { id: "delete.support", step: "warning" });
   assert.equal(del.accountDeleteNotice("deleted").id, null);
   assert.equal(del.accountDeleteNotice("gone").id, null);
   assert.deepEqual(del.deleteFieldsFor("change.pwwrong"), ["password"]);
@@ -96,7 +98,27 @@ test("the last step says in plain words what is deleted and that it can not be u
   for (const word of [/profile/i, /username/i, /Fitness/, /Mazer/, /scores/i, /can not be undone/i]) {
     assert.match(list, word);
   }
+  // No over-promise: Discord feedback and moderation records stay (without the account link), so the
+  // copy never says everything goes "in every app" or "everywhere".
+  assert.ok(AUTH_COPY.deleteList.some((line) => /Discord feedback and moderation records stay/.test(line)));
+  const all = [list, AUTH_COPY.lead.deleteWarning, AUTH_COPY.field.deleteAccountValue].join(" ");
+  assert.doesNotMatch(all, /every app|everywhere|all your data|for good/i);
   assert.equal(authNotice("signin.deleted").tone, "success");
+});
+
+test("flag: DELETE_ACCOUNT_LIVE is off, the live adapter reads it and the row is gated on it", () => {
+  // Dark launch: no Delete account row until the owner applies the SQL and does the dry run. The PR
+  // that flips this updates this line on purpose.
+  assert.equal(account.DELETE_ACCOUNT_LIVE, false);
+  const adapter = readFileSync("src/lib/auth/browser-adapter.ts", "utf8");
+  assert.match(adapter, /deleteAccountLive: DELETE_ACCOUNT_LIVE,/);
+  assert.match(adapter, /deleteAccountLive: scenario !== "delete-off",/);
+  const portal = readFileSync("src/components/account/account-portal.tsx", "utf8");
+  assert.match(portal, /\{session && adapter\?\.deleteAccountLive \? \(\s+<AuthField[\s\S]{0,200}id="account-delete-row"/);
+  // The short-screen rule that hides the lead applies only when the row is there.
+  const css = readFileSync("src/styles/page-families/auth-surface.css", "utf8");
+  assert.match(css, /\[data-auth-surface="account-status"\]:has\(\.auth-field\[data-danger\]\) \.auth-lead/);
+  assert.doesNotMatch(css, /\[data-auth-surface="account-status"\] \.auth-lead/);
 });
 
 test("portal wiring: danger row last, three steps, danger dock only on the last one", () => {
@@ -141,9 +163,36 @@ test("proposed SQL: owner-gated shape (one transaction, preflight, private inner
   assert.match(SQL, /interval '10 minutes'/, "fresh password window");
   assert.match(SQL, /auth\.sessions s where s\.id = session_text::uuid and s\.user_id = p_user_id/);
   assert.match(SQL, /delete from auth\.users/);
-  assert.match(SQL, /fawxzzy-account-delete-v1:/, "audit row stores a salted hash, not the id");
+  assert.match(SQL, /fawxzzy-account-delete-v1:/, "audit row stores a hash, not the id");
+  // Honest wording: the hash is plain (fixed public prefix), not salted.
+  assert.doesNotMatch(SQL.replace(/not salted/gi, ""), /salted/i);
+  assert.match(SQL, /PLAIN sha256/);
+  assert.match(SQL, /It is not salted/);
+  assert.ok(SQL.includes("ORDER: apply change username v1 (20261115190000_account_change_username_v1.sql) FIRST"));
+  assert.match(SQL, /statement_timeout/);
+  assert.match(SQL, /CASCADE_REACHES_UNLISTED_TABLE/);
+  assert.match(SQL, /DELETE_TRIGGER_ON_LISTED_TABLE/);
+  assert.match(SQL, /p\.user_number = 0/, "the reserved member #0 profile is refused");
   assert.match(SQL, /notify pgrst, 'reload schema'/);
   assert.ok(!readFileSync("supabase/config.toml", "utf8").includes("proposed"), "proposed/ is not a migrations path");
+});
+
+test("rate limit: reauth refusals are not recorded or counted; the count runs after the proof", () => {
+  const body = SQL.slice(SQL.indexOf("create function account_private.delete_account_v1"));
+  assert.ok(!body.includes("values (p_user_id, 'reauth')"), "a reauth refusal writes nothing");
+  assert.ok(body.includes("values (p_user_id, 'confirm')"), "the same insert shape exists for counted refusals");
+  assert.ok(SQL.includes("check (outcome in ('confirm', 'billing', 'support'))"));
+  const reauth = body.indexOf("return 'reauth'");
+  const rate = body.indexOf("return 'rate'");
+  assert.ok(reauth > 0 && rate > reauth, "the rate check runs only after the password proof passed");
+});
+
+test("cross-account guard: another account's rows on this account's data refuse the call", () => {
+  const body = SQL.slice(SQL.indexOf("create function account_private.delete_account_v1"));
+  const guard = body.indexOf("for ref in");
+  assert.ok(guard > body.indexOf("return 'billing'") && guard < body.indexOf("delete from fitness.sets"), "checked before any delete");
+  assert.ok(body.includes("from pg_catalog.pg_constraint k"));
+  assert.match(body, /s\.%I is distinct from \$1/);
 });
 
 test("rollback drops the API, keeps the audit rows, and only takes USAGE back when unused", () => {
