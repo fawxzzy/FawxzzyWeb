@@ -11,8 +11,6 @@ export const FITNESS_HANDOFF_MASTER_PROJECT_REF = "bxtcuhkotumitoqtrcej";
 
 export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
   fitnessConsumerMerges: [
-    // Reviewed Fitness main after PR237-239 (Settings, Session and History on the card system; live until the loader release; d6a625c4 is the live rollback after it).
-    "d6a625c4b78786b56564b5d29497050fa96183ae",
     // Reviewed Fitness main after PR241 (app loader rebuild; live; the rollback after the PR256-257 release).
     "c48235cb31b1289faafa5b734848bf4d821ff3d1",
     // Reviewed Fitness main after PR256-257 (live until the PR258-266 release; the rollback after it).
@@ -23,8 +21,10 @@ export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
     "9979e22faa639d4fb60d915e4a02fefded823dc3",
     // Reviewed Fitness main after PR267-278 (ScreenHeader lanes H0-H3, account screens on the portal with device-only sign out, Auth Surface v2 copy parity; live; the rollback after the PR279+ release).
     "b761e6527e72bbfe34386cfe49e49674610ccfec",
-    // Reviewed Fitness main 1ebbd945 (current source; b761e652 above is the live rollback).
+    // Reviewed Fitness main 1ebbd945 (live; the rollback after the PR283 release).
     "1ebbd945312b6d48bfbb46fad28c3134767b932c",
+    // Reviewed Fitness main 02917bfb (PR283; current source; 1ebbd945 above is the live rollback).
+    "02917bfb0612dce212d3aa55e0f338c0b0e6d57d",
   ],
   state: "active",
 } as const satisfies FitnessHandoffActivation);
