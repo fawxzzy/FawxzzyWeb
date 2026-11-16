@@ -688,9 +688,8 @@ test("wiring: the live adapter posts a username and a challenge, never an email,
   assert.ok(method.includes("identifier: username"));
   assert.ok(method.includes("redirect_to: accountRecoveryUrl(contextId, returnTarget)"));
   assert.doesNotMatch(method, /resetPasswordForEmail|email:/);
-  // Dark launch: the live portal keeps the email form until the owner applies the SQL and deploys the
-  // function. The PR that flips this updates this line on purpose.
-  assert.equal(account.RESET_BY_USERNAME_LIVE, false);
+  // Live since 2026-11-15 (go-live step 7): the signed-out portal asks for a username, not an email.
+  assert.equal(account.RESET_BY_USERNAME_LIVE, true);
   const config = readFileSync("supabase/config.toml", "utf8");
   assert.match(config, /\[functions\.username-password-reset\]\s*\nverify_jwt = false/);
   const index = readFileSync("supabase/functions/username-password-reset/index.ts", "utf8");
