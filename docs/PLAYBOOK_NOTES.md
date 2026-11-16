@@ -197,3 +197,11 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHAT changed: Delete account refusals (`delete.billing`, `delete.support`, including the blocked foreign-key case) replace the red dock with a plain "Back to account" button; Sign out unavailable now says "Sign-out is unavailable right now. Try again in a minute." (new `signout.unavailable`) and its Try again is enabled (reloads the page); unavailable notices all end "Try again in a minute."; "can not" is "cannot"; the inline "Retry" action is "Try again".
 - WHY it changed: a final read-only comparison of the account screens found a destructive button beside a refusal, a sign-in line on the sign-out screen with a dimmed button, and mixed wording.
 - Scope: Source and local regression only; no provider, credential, database or deploy effect.
+
+## 2026-11-16 - Fitness handoff allowlist adds 1ebbd945
+
+- Type: Auth handoff allowlist
+- WHAT changed: `FITNESS_HANDOFF_ACTIVATION.fitnessConsumerMerges` adds Fitness main `1ebbd945312b6d48bfbb46fad28c3134767b932c`, keeps the live `b761e6527e72bbfe34386cfe49e49674610ccfec` as the rollback entry and drops the oldest `bca97957aea3b856caff87dde99ebc959cce6c43`; `docs/fitness-session-handoff.md` and `tests/e2e/fitness-handoff.spec.ts` match.
+- WHY it changed: the portal checks `readiness.sourceCommit` against this list before retrieving credentials, so the next Fitness release must be listed before it deploys.
+- Rule: the tuple stays 7 entries; new sha last, live sha kept as rollback, oldest dropped.
+- Scope: Source and local regression only; no provider, credential, database or deploy effect.
