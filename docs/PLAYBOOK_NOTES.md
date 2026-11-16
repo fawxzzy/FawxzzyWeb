@@ -1,12 +1,20 @@
 This file is a project-local inbox for repo-specific Playbook notes that may later be promoted upstream.
 
+## 2026-11-15 - Account dock Sign out ends this device only
+
+- Type: Account portal behaviour change (client); reverses the dock half of FF-ACCOUNT-004 W-2
+- WHAT changed: The bottom "Sign out" button on `/account` now calls `adapter.signOut("this-session")` (Supabase `scope: "local"`). "Sign out everywhere" stays the only global action. A bare `adapter.signOut()` now defaults to local so a caller cannot widen the reach by accident. `/signout` was already local; its screens and the dock result make no claim about other devices.
+- WHY it changed: Zac decided (2026-11-15) that the dock should end only the device in hand, so people who just want to leave a shared screen do not sign out their other devices and apps.
+- Rule: Reach is named at each call site and pinned in `tests/account-signout-contract.test.mjs` and `tests/e2e/account-portal.spec.ts`. Copy for the dock must never mention other devices.
+- Scope: Source and local regression only; no deployment, provider, credential or database effect. Fitness's own sign-out is still global.
+
 ## 2026-11-15 - Account portal: password-manager autofill and Sign out everywhere
 
 - Type: Account portal feature (client)
 - WHAT changed: The sign-in identifier gets `inputmode=email`; new passwords (sign-up, new password) carry `minlength` and Safari `passwordrules` from `PASSWORD_MINIMUM` through the new `AuthField` `newPasswordMinimum` prop; the new-password step renders a hidden read-only `autocomplete=username` input with the account email; the signed-in reset email is `autocomplete=username`. The account page gains a "Sign out everywhere" link: the first tap asks in the one notice box (`account.everywhereconfirm`), the action calls `adapter.signOut("everywhere")`, clears the owner hint and lands on `/login?notice=everywhere` (`signin.everywhere`); a failure shows `change.unavailable`. The test adapter adds `auth_test=signout-everywhere-fail`.
 - WHY it changed: Password managers on iOS, Android and 1Password could not tell which saved login a new password belonged to or what length to generate, and people had no explicit, confirmed way to end every session after losing a device.
 - Rule: Autofill attributes are pinned per screen in `tests/e2e/account-autofill.spec.ts`; a new account input updates that spec. A new username stays `autocomplete=off` so managers do not offer the old name.
-- Scope: Source and local regression only; no deployment, provider, credential or database effect. The dock "Sign out" stays global (FF-ACCOUNT-004 W-2).
+- Scope: Source and local regression only; no deployment, provider, credential or database effect. The dock "Sign out" was global here; superseded 2026-11-15 (see the next entry).
 
 ## 2026-11-15 - Account page: change username and change email (design point 12)
 

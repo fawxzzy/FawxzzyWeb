@@ -308,9 +308,9 @@ test("the live adapter signs out through the scoped helper and validates through
       email: "renamed@example.test",
       userId: USER_ID,
     });
-    await adapter.signOut();
+    await adapter.signOut("everywhere");
     await adapter.signIn("signed.in@example.test", "correct-horse-battery-staple");
-    await adapter.signOut("this-session");
+    await adapter.signOut();
   } finally {
     globalThis.fetch = originalFetch;
   }

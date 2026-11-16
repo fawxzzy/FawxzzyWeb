@@ -80,14 +80,17 @@ redirects must be admitted individually in a future packet; do not add a broad p
 - Phase one shares credentials, not seamless sessions. A person signs in once per product origin.
   (The Fitness handoff below is the one deliberate exception: it hands Fitness the portal's current
   session pair, so both origins then hold one provider session.)
-- Sign-out reach (FF-ACCOUNT-004 W-2). "Sign out" on the account page asks the provider to
-  revoke the account's sessions everywhere (Supabase `scope: "global"`: every session and refresh
-  token for the account, so the portal, Fitness, Mazer and other devices can no longer refresh),
-  because a Fitness sign-out already behaves that way and a narrower portal sign-out left the apps
-  apparently signed in. Access tokens already issued stay valid until they expire, so anything that
+- Sign-out reach (FF-ACCOUNT-004 W-2, dock half reversed 2026-11-15). The bottom "Sign out" button
+  on the account page ends only THIS device's portal session (Supabase `scope: "local"`; owner
+  decision 2026-11-15). Its result makes no claim about other devices or apps. Only the "Sign out
+  everywhere" link below asks the provider to revoke the account's sessions everywhere (`scope:
+  "global"`: every session and refresh token, so the portal, Fitness, Mazer and other devices can
+  no longer refresh). Before 2026-11-15 the dock was global too, because a Fitness sign-out already
+  behaves that way; Fitness's own sign-out is still global. For the global link, access tokens
+  already issued stay valid until they expire, so anything that
   verifies them offline (rather than asking the provider) keeps working until then; whether Mazer
-  notices a revoked session promptly is not verified. The one narrower use is ending the portal's
-  own throw-away recovery session after "Save new password" (`scope: "local"`): choosing a new
+  notices a revoked session promptly is not verified. Local scope is also used to end the portal's
+  own throw-away recovery session after "Save new password": choosing a new
   password does not sign the person out of the apps they are using. A sign-out the provider cannot
   complete (network, 5xx, rate limit) is reported as an error. Only a session another app already
   revoked (revoked or unknown refresh token, missing session) counts as signed out, never as a
@@ -101,8 +104,8 @@ redirects must be admitted individually in a future packet; do not add a broad p
   action calls the same `scope: "global"` sign-out, clears the owner hint and lands on the portal
   sign-in with "You are signed out on every device." (`/login?notice=everywhere`). A failure keeps
   the person signed in and shows "Changes are unavailable right now. Try again later." The dock
-  "Sign out" is unchanged (still global), so today both reach the same sessions; the link differs in
-  the confirm step and the landing. Reach per app, from source (not verified live): Fitness checks
+  "Sign out" is local (this device only), so the link is the only way to end other devices from the
+  account page. Reach per app, from source (not verified live): Fitness checks
   the user with the provider on each protected server render, so it notices on the next page load;
   Mazer reads only its cached session and has no `getUser()` revalidation, so it looks signed in until
   its access token expires and the refresh fails (provider default about an hour), and its database

@@ -1952,6 +1952,8 @@ test("account status copies the compact Mazer hierarchy without unfinished servi
     "data-sign-out-destination",
     `${accountContract.publicHubOrigin}/?signedOut=1`,
   );
+  // The dock ends only this device's session; "Sign out everywhere" is the only global action.
+  await expect(page.locator("html")).toHaveAttribute("data-sign-out-scope", "this-session");
   await page.waitForTimeout(600);
   await expect(page).toHaveURL(/\/account\?auth_test=session$/);
   await expect(page.locator("html")).not.toHaveAttribute("data-session-lost-redirect", /.+/);
