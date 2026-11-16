@@ -193,6 +193,15 @@ export function accountRecoveryUrl(
  */
 export const RESET_BY_USERNAME_LIVE = false;
 
+/**
+ * Delete account on the signed-in account page. Stays false until the owner has applied
+ * supabase/proposed/20261115200000_account_delete_self_v1.sql (after change username v1) and done its
+ * dry run; until then the account page shows no Delete account row and is unchanged. Flipping it is a
+ * one-line change. Local test fixtures (`auth_test`) show the row regardless, except
+ * `auth_test=delete-off`.
+ */
+export const DELETE_ACCOUNT_LIVE = false;
+
 export function accountConfirmUrl(
   contextId: AccountExperienceContextId,
   state?: string,

@@ -151,6 +151,19 @@ test("change username and email: locked current name, current password, then the
   }
 });
 
+test("delete account: locked current name, current password, then a typed check managers must not fill", async ({ page }) => {
+  await page.goto("/account?auth_test=session");
+  await page.getByRole("button", { name: AUTH_COPY.aria.deleteAccount }).click();
+  const surface = page.locator('[data-auth-surface="account-delete"]');
+  await expect(surface).toHaveAttribute("data-delete-step", "password");
+  await expectField(page, "account-delete-current", { autocomplete: "username", name: "current-username", readonly: true, type: "text" });
+  await expectField(page, "account-delete-password", { autocomplete: "current-password", name: "password", type: "password" });
+  await page.locator("#account-delete-password").fill("correct horse battery 1");
+  await page.locator(".auth-dock__button").click();
+  await expect(surface).toHaveAttribute("data-delete-step", "type");
+  await expectField(page, "account-delete-confirm", { autocomplete: "off", name: "delete-confirm", type: "text" });
+});
+
 test("no portal form asks for a typed one-time code", async ({ page }) => {
   for (const path of [
     "/login?auth_test=success",
