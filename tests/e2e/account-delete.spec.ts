@@ -9,8 +9,8 @@ import { AUTH_COPY, AUTH_MESSAGES, type AuthMessageId } from "../../src/lib/auth
  * the SQL not applied yet, `delete-billing`/`delete-rate` for those database answers, `delete-gone`
  * for an account already deleted, `delete-expired` for a password check older than 10 minutes,
  * `delete-support` for the support refusal, `delete-blocked` for a foreign key the function does not
- * know rolling the call back (23503), `delete-off` for the live page while DELETE_ACCOUNT_LIVE is false
- * (no row).
+ * know rolling the call back (23503), `delete-off` for the page as it looks with DELETE_ACCOUNT_LIVE off
+ * (no row; the flag itself is on since 2026-11-16).
  */
 const PASSWORD = "correct horse battery 1";
 const USERNAME = "fawxzzy";
@@ -56,7 +56,7 @@ test("Delete account is the last account row, in danger style, with a 44px butto
   await expect(page.locator('[data-auth-field="delete-account"]')).toHaveCount(0);
 });
 
-test("flag off (DELETE_ACCOUNT_LIVE false): no row, and the page is the account page without it", async ({ page }) => {
+test("flag off (auth_test=delete-off, as when DELETE_ACCOUNT_LIVE is false): no row, and the page is the account page without it", async ({ page }) => {
   // The account page markup with the row, minus the row, must equal the flag-off markup exactly.
   const surfaceHtml = () =>
     page.evaluate(() => {

@@ -1,5 +1,11 @@
 This file is a project-local inbox for repo-specific Playbook notes that may later be promoted upstream.
 
+## 2026-11-16 - Delete account goes live (flag on)
+
+- Type: Config flip + test/doc update; `DELETE_ACCOUNT_LIVE = true`
+- WHAT changed: `account_api.account_delete_self` v2 was applied and dry-run proven 2026-11-16 (immediate delete, no undo; billing accounts get the support answer), so the Delete account row and confirm flow now show on `/account`. The stale v1 path comment in `src/config/account.ts` now points at the v2 file; `auth_test=delete-off` still renders the flag-off page. Rollback: set the flag to `false`.
+- Rule: A flag flip PR updates the test that pins the flag and the doc line that says it is hidden in the same change, and keeps a fixture that renders the off state.
+
 ## 2026-11-16 - Delete account v2: retained allow-list, deliberate key effects, pinned triggers
 
 - Type: Proposed SQL (not applied) + scratch test + copy line + docs; flag stays `DELETE_ACCOUNT_LIVE = false`; v1 kept, marked superseded
