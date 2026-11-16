@@ -164,3 +164,11 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHY it changed: Zac asked that the Mazer skin show the Mazer M, Fitness the Fitness fox, website the Fawxzzy fox F. Audit of origin/main (0681f52) and live found every skin and email icon already correct; the pin stops a regression.
 - Scope: Source and local regression only; no provider, credential, database or deploy effect.
 
+
+## 2026-11-16 - Fitness board re-pin after Fitness PR #281
+
+- Type: Board data only
+- WHAT changed: `planning/board-sources/fitness.project-board.owner-export.v1.json` is re-pinned to the Fitness owner export on Fitness `main` (merge of PR #281; 42 cards, sha256 `427e378cd874`), and the generated owner snapshot `src/server/projects/owner-board.generated.mjs` is rebuilt from it.
+- WHY it changed: the Web Projects snapshot lagged the Fitness owner board after the release b761e652 board fold merged.
+- Rule: Fitness re-pin copies the owner export and rebuilds the snapshot with `npm run data:project-board-owner-snapshot`, never by hand; a re-pin PR also needs this notes entry.
+- Scope: Source and local regression only. The Projects page changes only after the next production build; no deployment, provider, credential or database effect.
