@@ -185,13 +185,12 @@ export function accountRecoveryUrl(
 }
 
 /**
- * Signed-out password reset by USERNAME (design direction #9). Stays false until the owner has applied
- * supabase/proposed/20261115210000_account_username_reset_v1.sql and deployed the Edge Function
- * username-password-reset; until then the signed-out reset form keeps asking for the email (the
- * live path it replaces). Flipping it is a one-line change. Local test fixtures (`auth_test`) show the
- * username form regardless, except `auth_test=reset-email-legacy`.
+ * Signed-out password reset by USERNAME (design direction #9). Live since 2026-11-15 (SQL applied, Edge Function
+ * username-password-reset deployed and dark-verified). Rollback: set it back to false (the signed-out
+ * form returns to asking for the email), then delete the function and run the rollback SQL. Local
+ * test fixtures (`auth_test`) show the username form regardless, except `auth_test=reset-email-legacy`.
  */
-export const RESET_BY_USERNAME_LIVE = false;
+export const RESET_BY_USERNAME_LIVE = true;
 
 /**
  * Delete account on the signed-in account page. Stays false until the owner has applied

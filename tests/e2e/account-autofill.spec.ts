@@ -96,7 +96,7 @@ test("reset request: username when signed out, the locked account email when sig
   await expect(page.locator("#account-reset-username")).toHaveAttribute("maxlength", "15");
   await expect(page.locator("#account-reset-email")).toHaveCount(0);
 
-  // Until the server side is live (RESET_BY_USERNAME_LIVE), the live portal keeps the email form.
+  // The legacy email form survives only as the rollback fixture (RESET_BY_USERNAME_LIVE = false).
   await page.goto("/reset-password?auth_test=reset-email-legacy");
   await expect(page.locator('[data-auth-surface="recovery"]')).toHaveAttribute("data-auth-state", "signed-out");
   await expectField(page, "account-reset-email", { autocomplete: "email", inputmode: "email", name: "email", type: "email" });

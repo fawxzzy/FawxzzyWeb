@@ -188,9 +188,9 @@ redirects must be admitted individually in a future packet; do not add a broad p
   account email (a locked field) and the notice names the masked address. Signed out, the answer
   is "If that account exists, we sent a reset link to its email." whatever happened at the
   provider; only sending failures (rate limit, send failure, no connection) get their own line.
-  The approved design asks for a username field when signed out; that path is built behind
-  `RESET_BY_USERNAME_LIVE` (see "Reset password by username" below) and the live signed-out
-  request keeps taking an email until the owner applies its SQL and deploys its Edge Function.
+  The approved design asks for a username field when signed out; that path is live
+  (`RESET_BY_USERNAME_LIVE = true` since 2026-11-15, see "Reset password by username" below), so
+  the signed-out request takes a username and never an email.
 - Portal copy lives only in the copy matrix (`src/lib/auth/copy-matrix.ts`). Every line is at
   most 70 characters and `npm run test:account-copy` fails on any other visible text in the auth
   screen components (see `docs/auth-surface-family.md`).
@@ -439,7 +439,8 @@ existing account, or treat a client-side value as authoritative.
      provider's own logs and its rate counters).
   6. If Supabase CAPTCHA is on: replay one used Turnstile token at `/auth/v1/recover` after a reset
      request for a known and for an unknown username; both replays must fail the same way.
-  7. Set `RESET_BY_USERNAME_LIVE = true` in `src/config/account.ts` and ship.
+  7. Set `RESET_BY_USERNAME_LIVE = true` in `src/config/account.ts` and ship. Done 2026-11-15
+     (steps 1-6 passed the same day; the signed-out reset now takes a username).
   Rollback: set the flag back to false (the email form returns), then delete the function and run
   the rollback SQL.
 

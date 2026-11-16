@@ -17,9 +17,17 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHY it changed: Zac asked (2026-11-15) for every auth email to carry the app's real icon and the same look and plain words as the sign-in screens, with masked addresses.
 - Rule: Email icon files are immutable (emails in inboxes link to them); `tests/auth-email-contract.test.mjs` pins their sha256 and checks each one visually matches the portal icon. Deploy the portal before the function so the icon URLs exist.
 - Scope: Source and local regression only. The function deploy is the owner's (ask-first); no Supabase, env, DNS or deployment effect from this PR.
+## 2026-11-15 - Signed-out reset by username goes live (RESET_BY_USERNAME_LIVE = true)
+
+- Type: Account portal flag flip (client); no SQL or Edge Function change
+- WHAT changed: `RESET_BY_USERNAME_LIVE` is `true`. The signed-out reset form shows only the username field and the success line never reveals whether an account exists; the email form remains only in the signed-in locked view and the `auth_test=reset-email-legacy` rollback fixture.
+- WHY it changed: Go-live step 7. The backend was applied and dark-verified 2026-11-15 (SQL, function v1, header, equal-answer and log proofs); Zac accepted the flood/mail-trade-off recorded in the entry below.
+- Rule: Rollback is the one-line flag revert (email form returns), then delete the function and run the rollback SQL. Pinned in `tests/username-password-reset.test.mjs`.
+- Scope: Source and local regression only. Deploying the portal is a separate step.
+
 ## 2026-11-15 - Signed-out password reset by username (design direction #9), dark
 
-- Type: Account portal feature (client, behind `RESET_BY_USERNAME_LIVE = false`) + new Edge Function source + proposed SQL (not applied)
+- Type: Account portal feature (client, now live, see the entry above) + new Edge Function source + proposed SQL (not applied)
 - WHAT changed: Signed out, the reset form asks for a username (`#account-reset-username`) and always answers `reset.sentuser`; the request goes to the new Edge Function `username-password-reset`, which counts the request (per username+client, per client, shared reset row) before resolving the username in `account_api.account_resolve_username_reset_v1`, sends the provider recovery email in the background, and pads every answer to 900 ms. The browser keeps the PKCE verifier (`src/lib/auth/recovery-pkce.ts`) so the email link uses the existing `?recovery=1&code=` landing. Test adapter adds `auth_test=reset-email-legacy|reset-throttled|reset-unavailable`; the default fixture shows the username form.
 - WHY it changed: A typed email on a signed-out reset form lets anyone probe which addresses have accounts and send mail to them; a username plus one fixed answer, equal timing and pre-lookup limits removes that oracle.
 - Rule: A signed-out account request must answer identically (status, body, headers, timing floor) for known, unknown, unconfirmed, banned and deleted accounts, and count rate limits before the existence lookup; pin it with a handler test plus a pglite scratch test on the real SQL. The function never returns an email or user id.
