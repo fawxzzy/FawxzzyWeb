@@ -1142,6 +1142,8 @@ test("utility forms preserve password-manager and autofill semantics", async ({ 
   );
 
   await page.goto("/reset-password?auth_test=success");
+  await expect(page.getByLabel("Username")).toHaveAttribute("autocomplete", "username");
+  await page.goto("/reset-password?auth_test=reset-email-legacy");
   await expect(page.getByLabel("Email")).toHaveAttribute("autocomplete", "email");
 });
 
@@ -1461,6 +1463,20 @@ test("a username lockout shows its own message while email sign-in is unaffected
 
 test("reset request says what is missing before any provider call", async ({ page }) => {
   await page.goto("/reset-password?auth_test=success");
+  const username = page.getByLabel("Username");
+  await expect(username).toBeEnabled();
+  await dockButton(page).click();
+  await expect(noticeOf(page, "signup.userinvalid")).toHaveText(authNotice("signup.userinvalid").text);
+  await expect(username).toBeFocused();
+  await username.fill("a b");
+  await dockButton(page).click();
+  await expect(noticeOf(page, "signup.userinvalid")).toBeVisible();
+  await expect(fieldFrame(page, "account-reset-username")).toHaveAttribute("data-invalid", "true");
+  await expect(page.locator("html")).not.toHaveAttribute("data-reset-username", /.*/);
+});
+
+test("legacy email reset request says what is missing before any provider call", async ({ page }) => {
+  await page.goto("/reset-password?auth_test=reset-email-legacy");
   const email = page.getByLabel("Email");
   await expect(email).toBeEnabled();
   await dockButton(page).click();
@@ -2369,8 +2385,20 @@ test("serialized duplicate username reconciliation keeps both users and restores
 
 test("recovery exchanges PKCE before exposing the password form", async ({ browserName, page }) => {
   test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
-  // Signed out, the answer never says whether an account uses the address.
+  // Signed out, the answer never says whether the username has an account, and shows no address.
   await page.goto("/reset-password?auth_test=success");
+  await expect(page.getByLabel("Username")).toBeEnabled();
+  await page.getByLabel("Username").fill("private.user");
+  await dockButton(page).click();
+  await expect(page.locator('[data-notice-id="reset.sentuser"][role="status"]')).toHaveText(
+    authNotice("reset.sentuser").text,
+  );
+  await expect(page.locator("body")).not.toContainText("@");
+  await expect(dockButton(page)).toHaveText(/^Resend in 0:\d\d$/);
+  await expect(dockButton(page)).toBeDisabled();
+
+  // The legacy email form (flag off) keeps its own fixed line.
+  await page.goto("/reset-password?auth_test=reset-email-legacy");
   await expect(page.getByLabel("Email")).toBeEnabled();
   await page.getByLabel("Email").fill("private@example.test");
   await dockButton(page).click();
@@ -2378,13 +2406,11 @@ test("recovery exchanges PKCE before exposing the password form", async ({ brows
     authNotice("reset.sentany").text,
   );
   await expect(page.locator("body")).not.toContainText("private@example.test");
-  await expect(dockButton(page)).toHaveText(/^Resend in 0:\d\d$/);
-  await expect(dockButton(page)).toBeDisabled();
 
-  // A provider that cannot send gets its own line, never the success line.
+  // A service that cannot send gets its own line, never the success line.
   await page.goto("/reset-password?auth_test=error");
-  await expect(page.getByLabel("Email")).toBeEnabled();
-  await page.getByLabel("Email").fill("private@example.test");
+  await expect(page.getByLabel("Username")).toBeEnabled();
+  await page.getByLabel("Username").fill("private.user");
   await dockButton(page).click();
   await expect(noticeOf(page, "reset.sendfail")).toBeVisible();
 
@@ -2399,7 +2425,7 @@ test("recovery exchanges PKCE before exposing the password form", async ({ brows
   await page.goto("/reset-password?recovery=1&auth_test=error&code=failed-code");
   await expect(noticeOf(page, "reset.invalid")).toHaveText(authNotice("reset.invalid").text);
   await expect(page.getByRole("heading", { name: "Reset password" })).toBeVisible();
-  await expect(page.getByLabel("Email")).toBeVisible();
+  await expect(page.getByLabel("Username")).toBeVisible();
   await expect(page.locator("form").getByLabel("New password", { exact: true })).toHaveCount(0);
   await expect(page).toHaveURL(/\/reset-password\?recovery=1$/);
 
@@ -2411,8 +2437,8 @@ test("recovery exchanges PKCE before exposing the password form", async ({ brows
   await page.goto("/reset-password?recovery=1&auth_test=success");
   await expect(noticeOf(page, "reset.expired")).toHaveText(authNotice("reset.expired").text);
   await expect(page.locator("form").getByLabel("New password", { exact: true })).toHaveCount(0);
-  await page.getByLabel("Email").fill("private@example.test");
-  // Typing the address is the next step; the old reason clears.
+  await page.getByLabel("Username").fill("private.user");
+  // Typing the username is the next step; the old reason clears.
   await expect(page.locator("#auth-notice")).toHaveCount(0);
 
   await page.goto("/reset-password?recovery=1&auth_test=success&code=one-time-code");

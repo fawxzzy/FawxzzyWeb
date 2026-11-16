@@ -6,6 +6,7 @@ import {
   classifyRuntimeOrigin,
   resolveAccountAuthIntent,
   resolveAccountExperienceContext,
+  RESET_BY_USERNAME_LIVE,
   type AccountAuthIntent,
   type AccountExperienceContext,
 } from "@/config/account";
@@ -49,12 +50,14 @@ import {
   passwordSaveFailure,
   resetRequestFailure,
   resetRequestProblem,
+  resetUsernameProblem,
   signInFailure,
   signInProblem,
   signUpFailure,
   signUpProblem,
   type AuthField as FieldName,
   type FormProblem,
+  usernameResetFailure,
 } from "@/lib/auth/auth-outcomes";
 import {
   ACCOUNT_NOTICE_PARAM,
@@ -1409,6 +1412,9 @@ function ResetPanel({
   // The recovery session's own address, once the link is accepted (hidden username for autofill).
   const recoveryEmail = useSignedInEmail(adapter, recoveryReady);
   const internalMazerReturn = useInternalMazerReturn(context);
+  // Design direction #9: signed out, the request takes a USERNAME, never a typed email (once the
+  // server side is live; see RESET_BY_USERNAME_LIVE). Signed in, the account's address stays locked.
+  const resetByUsername = !signedInEmail && (adapter ? adapter.resetByUsername : RESET_BY_USERNAME_LIVE);
 
   const linkNotice: AuthMessageId | null = linkNoticeDismissed || !recovery
     ? null
@@ -1488,8 +1494,41 @@ function ResetPanel({
     }
   }
 
+  async function requestLinkByUsername() {
+    if (!adapter) return;
+    const username = (document.getElementById("account-reset-username") as HTMLInputElement | null)?.value.trim() ?? "";
+    const problem = resetUsernameProblem(username);
+    if (problem) {
+      form.problem(problem);
+      setLinkNoticeDismissed(true);
+      focusField("account-reset-username");
+      return;
+    }
+    setBusy(true);
+    clearAll();
+    cooldown.start();
+    try {
+      const captchaToken = await captchaRef.current?.getToken();
+      await adapter.requestPasswordResetByUsername(username, context.id, internalMazerReturn, captchaToken);
+      // One fixed line for every username: the server never says whether it has an account, and no
+      // address (masked or not) is ever shown here.
+      setSentTo(username);
+      form.show("reset.sentuser");
+      cooldown.start(RESEND_SECONDS);
+    } catch (error) {
+      form.show(usernameResetFailure(error));
+    } finally {
+      captchaRef.current?.reset();
+      setBusy(false);
+    }
+  }
+
   async function requestLink() {
     if (!adapter) return;
+    if (resetByUsername) {
+      await requestLinkByUsername();
+      return;
+    }
     const target = signedInEmail ?? (document.getElementById("account-reset-email") as HTMLInputElement | null)?.value.trim() ?? "";
     const problem = signedInEmail ? null : resetRequestProblem(target);
     if (problem) {
@@ -1606,6 +1645,18 @@ function ResetPanel({
             name="email"
             type="email"
             value={signedInEmail}
+          />
+        ) : resetByUsername ? (
+          <AuthField
+            autoComplete="username"
+            describedBy={describedBy("username")}
+            disabled={signedInEmail === undefined && Boolean(adapter)}
+            id="account-reset-username"
+            invalid={invalid("username")}
+            label={AUTH_COPY.field.username}
+            maxLength={15}
+            name="username"
+            onChange={() => edited("username")}
           />
         ) : (
           <AuthField
