@@ -375,27 +375,73 @@ existing account, or treat a client-side value as authoritative.
   under reset-only keys: 5 per (username, client) and 20 per client in 15 minutes, plus a shared
   reset row (100 per 15 minutes). There is no per-username lock, so nobody can lock another
   person out of reset.
+- Silent send cap: only the first 2 requests per 15 minutes for one username from one client
+  return the account (a request plus one resend). Requests 3-5 still get the normal answer, but the
+  provider call goes to the decoy (below), so repeat clicks from one network do not mail the owner
+  again. It is counted for unknown usernames too and does not touch the owner on another network. A
+  per-username send cap across all clients was rejected: anyone could fill it with one request per
+  window and silently stop the owner's own reset mail.
 - Equal answers: the foreground does only the counting/resolve; the account read and the provider
-  `/auth/v1/recover` call run after the answer (`EdgeRuntime.waitUntil`), and every answer is
-  padded to a 900 ms floor. Answers: 200 `{"status":"accepted"}`, 429 `reset_throttled`
+  `/auth/v1/recover` call run after the answer is scheduled (`EdgeRuntime.waitUntil`), and every
+  answer is padded to a 900 ms floor. Answers: 200 `{"status":"accepted"}`, 429 `reset_throttled`
   (Retry-After 900), 503 `reset_unavailable`, 400 `reset_invalid`. Only these reach the browser.
+- One provider call per accepted request, hit or miss: the account's address when the username
+  resolves to one that can receive mail, otherwise `DECOY_RECIPIENT`
+  (`username-reset-decoy@fawxzzy.invalid`; `.invalid` is reserved and never delivers). A miss
+  also makes the same account lookup (`DECOY_USER_ID`, an id no account has), so the call comes
+  after the same work on both paths. This is what spends the caller's Turnstile token at the
+  provider for unknown usernames too: once Supabase CAPTCHA is on, a replayed token fails the same
+  way whether or not the username exists. With CAPTCHA enforced a bad token means no email but the
+  same answer. Verifying the token inside the function (Turnstile siteverify) would need the
+  Turnstile secret as a function secret; it is not wired and not needed for non-enumeration.
 - PKCE: the browser stores the recovery code verifier exactly as supabase-js does
   (`src/lib/auth/recovery-pkce.ts`) and sends only the challenge; the function forwards it, so the
   email link is the usual `/reset-password?recovery=1&code=...` and the existing landing exchanges it.
   The redirect must be one of the four `accountRecoveryUrl` outputs (allowlist in the handler).
-- Turnstile: the token is forwarded to the provider call in the background only, so with CAPTCHA
-  enforced a bad token means no email but the same answer. Server-side token verification in the
-  function needs the Turnstile secret as a function secret (follow-up, owner).
-- Tests: `tests/username-password-reset.test.mjs` (equal answers/timing, malformed requests,
-  CORS, keys, PKCE format against the installed SDK), the pglite scratch test
-  `supabase/proposed/account_username_reset_v1.scratch-test.mjs` (non-enumeration and limits on
-  the real SQL), and `tests/e2e/account-reset-username.spec.ts` (390x844 and 320x568).
-- Owner go-live order: (1) apply the SQL (approve by sha256; rollback
-  `supabase/proposed/20261115210000_account_username_reset_v1.rollback.sql`); (2) deploy the
-  function `username-password-reset`; (3) check one request from the account origin returns
-  `{"status":"accepted"}` and a known test account gets the email; (4) set
-  `RESET_BY_USERNAME_LIVE = true` in `src/config/account.ts` and ship. Rollback: set the flag back
-  to false (the email form returns), then delete the function and run the rollback SQL.
+- Client address (`CLIENT_ADDRESS_SOURCE` in the handler): `cf-connecting-ip` if present, else the
+  RIGHTMOST `x-forwarded-for` hop (the one the nearest proxy appends). Leftmost entries are caller
+  controlled and never used; a unit test proves forged leftmost entries do not change the bucket.
+  `username-password-signin` still reads the leftmost hop (follow-up, outside this change).
+- Provider key: the function sends the new publishable key (`SUPABASE_PUBLISHABLE_KEYS`, `default`
+  entry first) and falls back to the legacy `SUPABASE_ANON_KEY`. A non-JWT publishable key goes
+  only in `apikey`; a legacy JWT key also goes in `Authorization`.
+- Logging: one line per background send, `{"event":"username_reset_send","outcome":"2xx"}` (HTTP
+  status class, `not_sent`, `network_error` or `schedule_error`). Never a username, email, address,
+  token or user id. The body is read as a stream and cut off past 4 KB.
+- Tests: `tests/username-password-reset.test.mjs` (equal answers/timing, one decoy call per miss with
+  the same token and request shape, forged `x-forwarded-for`, log content, streamed body cap,
+  provider key order, malformed requests, CORS, keys, PKCE format against the installed SDK), the
+  pglite scratch test `supabase/proposed/account_username_reset_v1.scratch-test.mjs`
+  (non-enumeration, limits and the send cap on the real SQL), and
+  `tests/e2e/account-reset-username.spec.ts` (390x844 and 320x568).
+- Accepted trade-off pending Zac (not fixed by design): anyone who knows a username can make the
+  provider mail its owner from many networks (up to the provider's one mail per account per 60
+  seconds and the shared 100 per 15 minutes), and each new mail replaces the owner's earlier reset
+  link; and a flood from many networks can fill the shared 100-per-15-minutes row, pausing reset by
+  username for everyone for up to 15 minutes (the 429 answer is the same for every username). A
+  per-username cap would stop the first but lets a stranger block the owner's reset, which is worse
+  on the only signed-out reset path.
+- Owner go-live order (each step required):
+  1. Apply the SQL (approve by sha256; rollback
+     `supabase/proposed/20261115210000_account_username_reset_v1.rollback.sql`).
+  2. Check no auth user has the email `username-reset-decoy@fawxzzy.invalid` or the id
+     `00000000-0000-4000-8000-000000000000`.
+  3. Deploy the function `username-password-reset`.
+  4. Prove which client-address header the platform sets: one request with a forged
+     `x-forwarded-for` (for example `1.2.3.4, <your address>`) must land in the same counter bucket
+     as one without it (the per-client counter row increments, no new row). If the runtime sets
+     neither header as described, stop and fix `CLIENT_ADDRESS_SOURCE` first.
+  5. One request from the account origin returns `{"status":"accepted"}`, a known test account gets
+     the email, and the function log shows `username_reset_send` with outcome `2xx` for both a known
+     and an unknown username (a decoy call answered 4xx means the provider rejects the decoy
+     address: fix that before going live. The token is still spent, since the provider checks
+     CAPTCHA before the recover handler runs, but the decoy would then differ from a hit in the
+     provider's own logs and its rate counters).
+  6. If Supabase CAPTCHA is on: replay one used Turnstile token at `/auth/v1/recover` after a reset
+     request for a known and for an unknown username; both replays must fail the same way.
+  7. Set `RESET_BY_USERNAME_LIVE = true` in `src/config/account.ts` and ship.
+  Rollback: set the flag back to false (the email form returns), then delete the function and run
+  the rollback SQL.
 
 ## Turnstile CAPTCHA (FW-CAPTCHA-001)
 
