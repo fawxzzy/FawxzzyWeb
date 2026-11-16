@@ -218,3 +218,10 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHAT changed: `planning/board-sources/mazer.project-board.owner-export.v1.json` is a byte copy of the Mazer owner export at Mazer main `38cb43f4` (283 cards, 68 archived), and `src/server/projects/owner-board.generated.mjs` is regenerated from it with `npm run data:project-board-owner-snapshot`. No hand edits.
 - WHY it changed: the Projects page only updates on a Web build, and the snapshot was still the 272-card export from before the Mazer board fold (PR #637 there).
 - Scope: Source and generated data only; no provider, credential, database or alias effect. Preview and snapshot tests were run by `web-repin prepare`.
+
+## 2026-11-16 Re-pin the Fitness owner export snapshot (42 cards)
+- WHAT changed: `planning/board-sources/fitness.project-board.owner-export.v1.json` is a byte copy of the Fitness owner export at Fitness main `90ba936a` (42 cards, sha256 93f3faf9dbeaae0839dcb01b66d8273d7008e9822327c530bbdf0e72530e95ad), and `src/server/projects/owner-board.generated.mjs` is regenerated from it with `npm run data:project-board-owner-snapshot`. No hand edits.
+- WHY it changed: the Projects page only updates on a Web build, and the snapshot predated the Fitness board fold (PR #284 there: three design cards completed, account card text refreshed).
+- Rule: re-pin by copying the export and regenerating; never hand-patch the generated file.
+- Failure Mode: a re-pin without this entry fails Playbook verify.
+- Scope: Source and generated data only; no provider, credential, database or alias effect.
