@@ -1973,11 +1973,11 @@ test("account sign-out from Mazer heads for Mazer, never the login page", async 
   await expect(page.locator("html")).not.toHaveAttribute("data-session-lost-redirect", /.+/);
 });
 
-test("the account page signs out everywhere, the recovery session only itself", async ({ browserName, page }) => {
+test("the account page dock signs out this device only, the recovery session only itself", async ({ browserName, page }) => {
   test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
   await page.goto("/account?auth_test=session");
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
-  await expect(page.locator("html")).toHaveAttribute("data-sign-out-scope", "everywhere");
+  await expect(page.locator("html")).toHaveAttribute("data-sign-out-scope", "this-session");
 
   // Choosing a new password ends the throw-away recovery session, not the person's apps.
   await page.goto("/reset-password?recovery=1&auth_test=success&code=one-time-code");
