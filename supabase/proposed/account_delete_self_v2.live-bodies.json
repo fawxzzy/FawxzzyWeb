@@ -1,0 +1,28 @@
+{
+  "_note": "Function bodies (pg_proc.prosrc) read-only from the live Fawxzzy database on 2026-11-16, byte for byte (the repack bodies use CRLF). Used by account_delete_self_v2.scratch-test.mjs so the trigger pins (md5 of the body) are tested against the real code. Not applied anywhere.",
+  "account_private.sync_username_signin_index()": {
+    "md5": "b9b39b13b97ce3ac15daabe487600ff7",
+    "config": "search_path=pg_catalog, account_private",
+    "src": "\ndeclare\n  old_candidate text;\n  new_candidate text;\n  lock_candidate text;\n  projection_username text;\n  projection_alias text;\nbegin\n  if tg_op <> 'INSERT' then old_candidate := lower(trim(coalesce(old.raw_user_meta_data ->> 'username', ''))); end if;\n  if tg_op <> 'DELETE' then new_candidate := lower(trim(coalesce(new.raw_user_meta_data ->> 'username', ''))); end if;\n  for lock_candidate in\n    select candidate from unnest(array[old_candidate, new_candidate]) candidate\n    where candidate ~ '^[a-z0-9._-]{2,15}$'\n    group by candidate order by candidate\n  loop\n    perform pg_advisory_xact_lock(hashtextextended('account_username:' || lock_candidate, 0));\n  end loop;\n  if old_candidate ~ '^[a-z0-9._-]{2,15}$' then\n    perform account_private.refresh_username_signin_candidate(old_candidate);\n  end if;\n  if new_candidate ~ '^[a-z0-9._-]{2,15}$' and new_candidate is distinct from old_candidate then\n    perform account_private.refresh_username_signin_candidate(new_candidate);\n  end if;\n  -- Derived private lookup is maintained in the same Auth row transaction.\n  if tg_op = 'DELETE' then\n    delete from account_private.username_signin_candidates where user_id = old.id;\n  else\n    projection_username := lower(btrim(coalesce(new.raw_user_meta_data ->> 'username', '')));\n    if projection_username !~ '^[a-z0-9._-]{2,15}$' then projection_username := null; end if;\n    projection_alias := case when jsonb_typeof(new.raw_user_meta_data -> 'display_name') = 'string'\n      then lower(btrim(new.raw_user_meta_data ->> 'display_name')) else null end;\n    if projection_alias !~ '^[a-z0-9._-]{2,15}$' then projection_alias := null; end if;\n    if projection_username is null and projection_alias is null then\n      delete from account_private.username_signin_candidates where user_id = new.id;\n    else\n      insert into account_private.username_signin_candidates(user_id, normalized_username, normalized_alias)\n      values(new.id, projection_username, projection_alias)\n      on conflict(user_id) do update set normalized_username=excluded.normalized_username,normalized_alias=excluded.normalized_alias;\n    end if;\n  end if;\n  return coalesce(new, old);\nend;\n"
+  },
+  "account_private.refresh_username_signin_candidate(text)": {
+    "md5": "2d55f1401c7f2ef035ae2676e81c0d0b",
+    "config": null,
+    "src": "\nbegin\n  perform pg_advisory_xact_lock(hashtextextended('account_username:' || candidate, 0));\n  delete from account_private.username_signin_index where normalized_username = candidate;\n  insert into account_private.username_signin_index (user_id, normalized_username, updated_at)\n  select candidate_user.id, candidate, now()\n  from auth.users candidate_user\n  where lower(trim(coalesce(candidate_user.raw_user_meta_data ->> 'username', ''))) = candidate\n    and not exists (\n      select 1 from auth.users conflicting_user\n      where conflicting_user.id <> candidate_user.id\n        and lower(trim(coalesce(conflicting_user.raw_user_meta_data ->> 'username', ''))) = candidate\n    );\nend;\n"
+  },
+  "discordos.set_updated_at()": {
+    "md5": "9b1889f56258bf9d6554213c05019c76",
+    "config": "search_path=discordos, pg_temp",
+    "src": "\nbegin\n  new.updated_at = now();\n  return new;\nend;\n"
+  },
+  "fitness.repack_routine_day_exercise_positions_after_delete()": {
+    "md5": "af1c93d5b67733b5489d5d919ec55700",
+    "config": "search_path=fitness, pg_temp",
+    "src": "\r\nbegin\r\n  with shifted as (\r\n    update fitness.routine_day_exercises\r\n    set position = -(position + 1)\r\n    where routine_day_id = old.routine_day_id\r\n      and user_id = old.user_id\r\n      and position > old.position\r\n    returning id\r\n  )\r\n  update fitness.routine_day_exercises as target\r\n  set position = -target.position - 2\r\n  from shifted\r\n  where target.id = shifted.id;\r\n\r\n  return old;\r\nend;\r\n"
+  },
+  "fitness.repack_session_exercise_positions_after_delete()": {
+    "md5": "7b4e4b9cf32bf6e0bf107d7ae645fce5",
+    "config": "search_path=fitness, pg_temp",
+    "src": "\r\nbegin\r\n  with shifted as (\r\n    update fitness.session_exercises\r\n    set position = -(position + 1)\r\n    where session_id = old.session_id\r\n      and user_id = old.user_id\r\n      and position > old.position\r\n    returning id\r\n  )\r\n  update fitness.session_exercises as target\r\n  set position = -target.position - 2\r\n  from shifted\r\n  where target.id = shifted.id;\r\n\r\n  return old;\r\nend;\r\n"
+  }
+}
