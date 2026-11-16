@@ -1,5 +1,13 @@
 This file is a project-local inbox for repo-specific Playbook notes that may later be promoted upstream.
 
+## 2026-11-15 - Account page: delete account (self-service, all apps)
+
+- Type: Account portal feature (client) + proposed SQL (not applied) + pglite scratch test
+- WHAT changed: `/account` gets a last, danger-style "Delete account" row. Password (throw-away client, fresh session kept in memory as the proof), typed username, a plain-words list of what is deleted, then `account_api.account_delete_self` deletes every Fitness, Mazer and account_private row plus `auth.users` in one transaction and the page lands on `/login?notice=deleted`.
+- WHY it changed: People had no self-service way to delete their account and data in every app.
+- Rule: The SQL carries a manifest of every account-owned column and a preflight catalog sweep (`UNLISTED_ACCOUNT_COLUMNS`); a new table with a user/owner/account uuid column, or a foreign key to `auth.users`, must be added to the manifest (and the scratch test) or the apply refuses. The preimage must pass the sb-query read-only keyword filter (pinned in `tests/account-delete.test.mjs`).
+- Scope: Source and local regression only; no deployment, provider, credential or database effect. Until the owner applies the SQL the row says "Deleting is unavailable right now." Deleted data has no recovery except a provider backup.
+
 ## 2026-11-15 - Account dock Sign out ends this device only
 
 - Type: Account portal behaviour change (client); reverses the dock half of FF-ACCOUNT-004 W-2

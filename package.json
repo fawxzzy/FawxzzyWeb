@@ -35,7 +35,7 @@
     "test:auth-email": "node --test tests/auth-email-contract.test.mjs",
     "test:username-signin": "node --test tests/username-signin-lockout.test.mjs tests/username-signin-lockout-v4.test.mjs",
     "test:account-copy": "node --test tests/account-copy-length.test.mjs tests/account-copy-matrix.test.mjs",
-    "test:account-change": "node --test tests/account-change.test.mjs",
+    "test:account-change": "node --test tests/account-change.test.mjs tests/account-delete.test.mjs",
     "test:password-reset": "node --test tests/account-password-reset-contract.test.mjs",
     "test:account-signout": "node --test tests/account-signout-contract.test.mjs",
     "email:preview": "node scripts/email-preview.mjs",

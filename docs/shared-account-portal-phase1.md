@@ -370,6 +370,40 @@ existing account, or treat a client-side value as authoritative.
 - Enable order: (1) this widget live in Web AND Fitness; (2) turn Supabase Auth CAPTCHA ON (owner pastes the Turnstile secret in the dashboard); (3) verify sign-in, sign-up and reset on the account origin. Rollback: turn CAPTCHA off in the dashboard. No code change needed.
 - Open item: the `username-password-signin` edge function must verify or forward the token itself before enforcement, or username sign-in will be rejected.
 
+## Delete account (proposed SQL, owner-gated, not applied)
+
+- Where: the last row on `/account` ("Delete account", danger style, trash button). Steps: (1) the current
+  password, checked on a throw-away in-memory client whose fresh session is KEPT only while the screen is
+  open; (2) type the username (or the email when the account has none), trimmed and any case; (3) one
+  plain-words screen of what goes (profile, username and sign-in; Fitness workouts, routines and history;
+  Mazer progress and leaderboard entries) and that it can not be undone; its red dock deletes. Then
+  `/login?notice=deleted` with "Your account and its data were deleted."
+- Server: `account_api.account_delete_self(p_confirm text)` (authenticated only) calls the private
+  `account_private.delete_account_v1`. It requires a password `amr` from the last 10 minutes and a
+  `session_id` that is still live in `auth.sessions` (the password never reaches SQL), checks the typed
+  text, refuses accounts with any Fitness billing row, rate limits refusals (5 per 15 minutes per account),
+  then deletes every listed Fitness, Mazer and `account_private` row and the `auth.users` row in ONE
+  transaction (sessions, refresh tokens and identities cascade: sign-out everywhere). Answers: `deleted`,
+  `gone` (already deleted, idempotent), `reauth`, `confirm`, `billing`, `rate`.
+- Audit: one row in `account_private.account_deletions` (salted sha256 of the id, time, per-table row
+  counts, version). No email, no username. Kept on rollback.
+- Decisions (owner can reverse): immediate delete, no grace period, no undo, no deleted-account store;
+  billing blocks deletion (support handles refunds and records); Discord feedback reports and moderation
+  cases keep their row with the account link cleared; a custom exercise another account still uses blocks
+  the delete (the transaction rolls back, nothing is half-deleted).
+- **There is no recovery.** Deleted rows come back only from a provider backup/PITR restore, if the
+  project has one. The rollback SQL removes the API, not the deletions.
+- Files (all in `supabase/proposed/`): `20261115200000_account_delete_self_v1.sql` (apply, after change
+  username v1), `.rollback.sql`, `.preimage.sql` (one read-only SELECT: run it right before the apply and
+  compare with what the preflight expects: every manifest table exists with a uuid column, no unlisted
+  account columns, postgres privileges and RLS bypass, no storage objects with an owner),
+  `account_delete_self_v1.scratch-test.mjs` (pglite: proves only that account's rows go, across schemas).
+- Until applied: the portal shows "Deleting is unavailable right now. Try again later."
+- Known gaps: access tokens already issued stay valid until they expire (about 1 hour). Fitness server
+  actions re-check with `auth.getUser()` (fails for a deleted user), but Fitness tables have no foreign key
+  to `auth.users`, so a direct browser write in that window could leave an orphan row. Mazer re-checks with
+  `getUser`/`getClaims` on its account check.
+
 ## Rollback and blocked state
 
 Source rollback is a normal revert of the portal PR. Provider rollback is not executable until a
