@@ -1,20 +1,20 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_fitness_owner_registry_167f5d11ed3e",
+  "export_id": "pbe_fitness_owner_registry_182b924e9a5d",
   "project_id": "fitness",
   "board_id": "fitness:project-feedback:fitness-active",
   "owner": "fitness",
   "adapter_id": "fitness-owner-registry-v1",
-  "source_revision": "sha256:167f5d11ed3e68324811bc9e2cef1f8e8f0c47c6a8cbd03207f77fb8f1ada2ce",
-  "generated_at": "2026-11-16T02:45:25.000Z",
+  "source_revision": "sha256:182b924e9a5de536b21b5ad32f0c2e7fb34bfc76fbd4cb7863f44dbb2521d789",
+  "generated_at": "2026-11-16T07:40:45.000Z",
   "sources": [
     {
       "source_id": "fitness-owner-work-registry",
       "kind": "json",
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json",
-      "revision": "sha256:0a391e8f4d225bf8d3c7086603a3f3a5fbe07aa0b3f5ccda645473afcfa9e024",
-      "observed_at": "2026-11-16T02:45:25.000Z"
+      "revision": "sha256:6a5c8a6913d8470941d25f8e1e1101e5e4367b7003b4777476d70e26e2eef808",
+      "observed_at": "2026-11-16T07:40:45.000Z"
     },
     {
       "source_id": "fitness-feedback-monetization-roadmap",
@@ -22,7 +22,7 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs",
       "revision": "sha256:78aa8b8300f0c21258144da0a5bdd6fdc4c9ff1337e265b2552094ebf3505ba6",
-      "observed_at": "2026-11-16T02:45:25.000Z"
+      "observed_at": "2026-11-16T07:40:45.000Z"
     },
     {
       "source_id": "fitness-session-timer-roadmap",
@@ -30,7 +30,7 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs",
       "revision": "sha256:58b1235add45e05d51712f433e2e67d4536b878f4edfad6ab6908d9402c55bcc",
-      "observed_at": "2026-11-16T02:45:25.000Z"
+      "observed_at": "2026-11-16T07:40:45.000Z"
     },
     {
       "source_id": "fitness-owner-export-adapter",
@@ -38,7 +38,7 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs",
       "revision": "sha256:e8485f9091fb27f574b2999d1ca4ad9acf94c3f28b0d5f462836bf43ba3ec562",
-      "observed_at": "2026-11-16T02:45:25.000Z"
+      "observed_at": "2026-11-16T07:40:45.000Z"
     }
   ],
   "cards": [
@@ -157,7 +157,7 @@
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Finish Account Site Setup for the Fitness App",
-        "description": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it. Done and live as of 2026-11-13: starting sign-up from the account site, clearer sign-up feedback messages, one global sign-out that also signs people out of the app, and saving a changed username or contact address. Checked live only in headless Chromium with a standing test account (sign-in, account site handoff, sign-out then redirect to sign-in); not checked on a real phone. Still open: the recovery link needs an owner setup step on the account side and a live check, and a real-phone pass is pending.",
+        "description": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it. Done and live as of 2026-11-13: starting sign-up from the account site, clearer sign-up feedback messages, one global sign-out that also signs people out of the app, and saving a changed username or contact address. Checked live only in headless Chromium with a standing test account (sign-in, account site handoff, sign-out then redirect to sign-in); not checked on a real phone. Still open: the recovery link needs an owner setup step on the account side and a live check, and a real-phone pass is pending. Board update 2026-11-16: Account portal integration live in b761e652 (Account row opens the account site, sign-out via host); phone check and where account changes live are open PR #275 merged (b761e652). Deployed: production build b761e652. Checked only in headless Chromium, not on a real phone.",
         "card_type": "feature",
         "lifecycle": "in-progress",
         "priority": "high",
@@ -166,7 +166,7 @@
           "FF-AUTH-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-13T17:40:00.000Z",
+        "updated_at": "2026-11-16T07:40:45.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-ACCOUNT-004",
         "extensions": {
           "owner_status": "in_progress",
@@ -178,11 +178,11 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-ACCOUNT-004",
         "source_status": "current",
-        "source_updated_at": "2026-11-13T17:40:00.000Z"
+        "source_updated_at": "2026-11-16T07:40:45.000Z"
       },
       "content": {
-        "summary": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it. Done and live as of 2026-11-13: starting sign-up from the account site, clearer sign-up feedback messages, one global sign-out that also signs people out of the app, and saving a changed username or contact address. Checked live only in headless Chromium with a standing test account (sign-in, account site handoff, sign-out then redirect to sign-in); not checked on a real phone. Still open: the recovery link needs an owner setup step on the account side and a live check, and a real-phone pass is pending.",
-        "objective": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it. Done and live as of 2026-11-13: starting sign-up from the account site, clearer sign-up feedback messages, one global sign-out that also signs people out of the app, and saving a changed username or contact address. Checked live only in headless Chromium with a standing test account (sign-in, account site handoff, sign-out then redirect to sign-in); not checked on a real phone. Still open: the recovery link needs an owner setup step on the account side and a live check, and a real-phone pass is pending.",
+        "summary": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it. Done and live as of 2026-11-13: starting sign-up from the account site, clearer sign-up feedback messages, one global sign-out that also signs people out of the app, and saving a changed username or contact address. Checked live only in headless Chromium with a standing test account (sign-in, account site handoff, sign-out then redirect to sign-in); not checked on a real phone. Still open: the recovery link needs an owner setup step on the account side and a live check, and a real-phone pass is pending. Board update 2026-11-16: Account portal integration live in b761e652 (Account row opens the account site, sign-out via host); phone check and where account changes live are open PR #275 merged (b761e652). Deployed: production build b761e652. Checked only in headless Chromium, not on a real phone.",
+        "objective": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it. Done and live as of 2026-11-13: starting sign-up from the account site, clearer sign-up feedback messages, one global sign-out that also signs people out of the app, and saving a changed username or contact address. Checked live only in headless Chromium with a standing test account (sign-in, account site handoff, sign-out then redirect to sign-in); not checked on a real phone. Still open: the recovery link needs an owner setup step on the account side and a live check, and a real-phone pass is pending. Board update 2026-11-16: Account portal integration live in b761e652 (Account row opens the account site, sign-out via host); phone check and where account changes live are open PR #275 merged (b761e652). Deployed: production build b761e652. Checked only in headless Chromium, not on a real phone.",
         "acceptance_criteria": [
           "Sign-up, sign-in, sign-out and forgotten-sign-in recovery all work from the account site and return people to the Fitness app.",
           "The account site and the app always agree on who is signed in.",
@@ -496,14 +496,14 @@
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Consistent cards across the app",
-        "description": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system is merged and live on the Routines, Today, Settings, Session and History screens. Checked only in headless Chromium, on development fixtures and in a signed-in render sweep of those screens (no overflow, no console errors, no controls under 32px), not on a real phone. Still to do: the routine editor and routine creation, heatmap labels under 11px, the History filter toggle and the logger plus and minus steppers at 44px, and retiring the old exercise card once nothing uses it. Board update 2026-11-16: Routines detail screens, Days library and form fields now use the one header and labelled inputs; merged, not deployed. PR #273 merged (bdcd99e9). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Session, history detail, exercise, setup, account and legal screens now use the one header and one Back button; merged, not deployed. PR #274 merged (654a67f7). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Every screen now uses the one header; the old header code is deleted and a test blocks it returning; merged, not deployed. PR #276 merged (c5c423e6). Deployed: production build none. Checked only in headless Chromium, not on a real phone.",
+        "description": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system is merged and live on the Routines, Today, Settings, Session and History screens. Checked only in headless Chromium, on development fixtures and in a signed-in render sweep of those screens (no overflow, no console errors, no controls under 32px), not on a real phone. Still to do: the routine editor and routine creation, heatmap labels under 11px, the History filter toggle and the logger plus and minus steppers at 44px, and retiring the old exercise card once nothing uses it. Board update 2026-11-16: Every screen now uses the one header; the old header code is deleted and a test blocks it returning; merged, not deployed. PR #276 merged (c5c423e6). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Account row now opens the account portal, the in-app username edit is retired, and sign-out stays on screen with an error if it fails; merged, not deployed. PR #275 merged (b761e652). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Floors, chips, dock roles, ScreenHeader on every screen live in b761e652; headless live QA passed, phone check pending PR #264 merged (d335131a), PR #265 merged (730a9e30). Deployed: production build b761e652. Checked only in headless Chromium, not on a real phone.",
         "card_type": "feature",
         "lifecycle": "review",
         "priority": "medium",
         "owner": "fitness",
         "dependencies": [],
         "board_version": 1,
-        "updated_at": "2026-11-16T02:45:25.000Z",
+        "updated_at": "2026-11-16T07:39:58.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-DESIGN-001",
         "extensions": {
           "owner_status": "review",
@@ -515,11 +515,11 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-DESIGN-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-16T02:45:25.000Z"
+        "source_updated_at": "2026-11-16T07:39:58.000Z"
       },
       "content": {
-        "summary": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system is merged and live on the Routines, Today, Settings, Session and History screens. Checked only in headless Chromium, on development fixtures and in a signed-in render sweep of those screens (no overflow, no console errors, no controls under 32px), not on a real phone. Still to do: the routine editor and routine creation, heatmap labels under 11px, the History filter toggle and the logger plus and minus steppers at 44px, and retiring the old exercise card once nothing uses it. Board update 2026-11-16: Routines detail screens, Days library and form fields now use the one header and labelled inputs; merged, not deployed. PR #273 merged (bdcd99e9). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Session, history detail, exercise, setup, account and legal screens now use the one header and one Back button; merged, not deployed. PR #274 merged (654a67f7). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Every screen now uses the one header; the old header code is deleted and a test blocks it returning; merged, not deployed. PR #276 merged (c5c423e6). Deployed: production build none. Checked only in headless Chromium, not on a real phone.",
-        "objective": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system is merged and live on the Routines, Today, Settings, Session and History screens. Checked only in headless Chromium, on development fixtures and in a signed-in render sweep of those screens (no overflow, no console errors, no controls under 32px), not on a real phone. Still to do: the routine editor and routine creation, heatmap labels under 11px, the History filter toggle and the logger plus and minus steppers at 44px, and retiring the old exercise card once nothing uses it. Board update 2026-11-16: Routines detail screens, Days library and form fields now use the one header and labelled inputs; merged, not deployed. PR #273 merged (bdcd99e9). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Session, history detail, exercise, setup, account and legal screens now use the one header and one Back button; merged, not deployed. PR #274 merged (654a67f7). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Every screen now uses the one header; the old header code is deleted and a test blocks it returning; merged, not deployed. PR #276 merged (c5c423e6). Deployed: production build none. Checked only in headless Chromium, not on a real phone.",
+        "summary": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system is merged and live on the Routines, Today, Settings, Session and History screens. Checked only in headless Chromium, on development fixtures and in a signed-in render sweep of those screens (no overflow, no console errors, no controls under 32px), not on a real phone. Still to do: the routine editor and routine creation, heatmap labels under 11px, the History filter toggle and the logger plus and minus steppers at 44px, and retiring the old exercise card once nothing uses it. Board update 2026-11-16: Every screen now uses the one header; the old header code is deleted and a test blocks it returning; merged, not deployed. PR #276 merged (c5c423e6). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Account row now opens the account portal, the in-app username edit is retired, and sign-out stays on screen with an error if it fails; merged, not deployed. PR #275 merged (b761e652). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Floors, chips, dock roles, ScreenHeader on every screen live in b761e652; headless live QA passed, phone check pending PR #264 merged (d335131a), PR #265 merged (730a9e30). Deployed: production build b761e652. Checked only in headless Chromium, not on a real phone.",
+        "objective": "Give every screen the same card look and behavior so the app feels like one product. Done: the shared card system is merged and live on the Routines, Today, Settings, Session and History screens. Checked only in headless Chromium, on development fixtures and in a signed-in render sweep of those screens (no overflow, no console errors, no controls under 32px), not on a real phone. Still to do: the routine editor and routine creation, heatmap labels under 11px, the History filter toggle and the logger plus and minus steppers at 44px, and retiring the old exercise card once nothing uses it. Board update 2026-11-16: Every screen now uses the one header; the old header code is deleted and a test blocks it returning; merged, not deployed. PR #276 merged (c5c423e6). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Account row now opens the account portal, the in-app username edit is retired, and sign-out stays on screen with an error if it fails; merged, not deployed. PR #275 merged (b761e652). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Floors, chips, dock roles, ScreenHeader on every screen live in b761e652; headless live QA passed, phone check pending PR #264 merged (d335131a), PR #265 merged (730a9e30). Deployed: production build b761e652. Checked only in headless Chromium, not on a real phone.",
         "acceptance_criteria": [
           "Routines, Today, Settings, Session and History screens use the shared cards (merged and live).",
           "Those screens pass a signed-in render sweep with no page overflow and no console errors (headless Chromium only).",
@@ -551,7 +551,7 @@
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Finish the remaining screens on the shared card style",
-        "description": "Move the last screens onto the shared card style once the main screens are settled: the routine editor and routine creation, the exercise picker, the progression editor and the stretch panel. Also raise the remaining 9 to 10px text and the controls under 32px on those screens. Board update 2026-11-15: Partial, merged not deployed: routine chooser, editor and add-day screens on the shared card style; 'day' wording across that flow incl. server messages. Exercise picker, progression editor and stretch panel not done; one 'workout plan' string left in the day rest dock. Headless only, no phone check. PR #246 merged (4989c729). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Copy lane merged: days instead of workout plans, short dock labels, plain error copy; not device-checked PR #261 merged (ff27c12e). Deployed: production build none. Checked only in headless Chromium, not on a real phone.",
+        "description": "Move the last screens onto the shared card style once the main screens are settled: the routine editor and routine creation, the exercise picker, the progression editor and the stretch panel. Also raise the remaining 9 to 10px text and the controls under 32px on those screens. Board update 2026-11-15: Partial, merged not deployed: routine chooser, editor and add-day screens on the shared card style; 'day' wording across that flow incl. server messages. Exercise picker, progression editor and stretch panel not done; one 'workout plan' string left in the day rest dock. Headless only, no phone check. PR #246 merged (4989c729). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Copy lane merged: days instead of workout plans, short dock labels, plain error copy; not device-checked PR #261 merged (ff27c12e). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Copy/day terminology live in b761e652; phone check pending PR #261 merged (ff27c12e). Deployed: production build b761e652. Checked only in headless Chromium, not on a real phone.",
         "card_type": "feature",
         "lifecycle": "review",
         "priority": "low",
@@ -560,7 +560,7 @@
           "FF-DESIGN-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-15T15:54:51.000Z",
+        "updated_at": "2026-11-16T07:40:10.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-DESIGN-002",
         "extensions": {
           "owner_status": "review",
@@ -572,11 +572,11 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-DESIGN-002",
         "source_status": "current",
-        "source_updated_at": "2026-11-15T15:54:51.000Z"
+        "source_updated_at": "2026-11-16T07:40:10.000Z"
       },
       "content": {
-        "summary": "Move the last screens onto the shared card style once the main screens are settled: the routine editor and routine creation, the exercise picker, the progression editor and the stretch panel. Also raise the remaining 9 to 10px text and the controls under 32px on those screens. Board update 2026-11-15: Partial, merged not deployed: routine chooser, editor and add-day screens on the shared card style; 'day' wording across that flow incl. server messages. Exercise picker, progression editor and stretch panel not done; one 'workout plan' string left in the day rest dock. Headless only, no phone check. PR #246 merged (4989c729). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Copy lane merged: days instead of workout plans, short dock labels, plain error copy; not device-checked PR #261 merged (ff27c12e). Deployed: production build none. Checked only in headless Chromium, not on a real phone.",
-        "objective": "Move the last screens onto the shared card style once the main screens are settled: the routine editor and routine creation, the exercise picker, the progression editor and the stretch panel. Also raise the remaining 9 to 10px text and the controls under 32px on those screens. Board update 2026-11-15: Partial, merged not deployed: routine chooser, editor and add-day screens on the shared card style; 'day' wording across that flow incl. server messages. Exercise picker, progression editor and stretch panel not done; one 'workout plan' string left in the day rest dock. Headless only, no phone check. PR #246 merged (4989c729). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Copy lane merged: days instead of workout plans, short dock labels, plain error copy; not device-checked PR #261 merged (ff27c12e). Deployed: production build none. Checked only in headless Chromium, not on a real phone.",
+        "summary": "Move the last screens onto the shared card style once the main screens are settled: the routine editor and routine creation, the exercise picker, the progression editor and the stretch panel. Also raise the remaining 9 to 10px text and the controls under 32px on those screens. Board update 2026-11-15: Partial, merged not deployed: routine chooser, editor and add-day screens on the shared card style; 'day' wording across that flow incl. server messages. Exercise picker, progression editor and stretch panel not done; one 'workout plan' string left in the day rest dock. Headless only, no phone check. PR #246 merged (4989c729). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Copy lane merged: days instead of workout plans, short dock labels, plain error copy; not device-checked PR #261 merged (ff27c12e). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Copy/day terminology live in b761e652; phone check pending PR #261 merged (ff27c12e). Deployed: production build b761e652. Checked only in headless Chromium, not on a real phone.",
+        "objective": "Move the last screens onto the shared card style once the main screens are settled: the routine editor and routine creation, the exercise picker, the progression editor and the stretch panel. Also raise the remaining 9 to 10px text and the controls under 32px on those screens. Board update 2026-11-15: Partial, merged not deployed: routine chooser, editor and add-day screens on the shared card style; 'day' wording across that flow incl. server messages. Exercise picker, progression editor and stretch panel not done; one 'workout plan' string left in the day rest dock. Headless only, no phone check. PR #246 merged (4989c729). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Copy lane merged: days instead of workout plans, short dock labels, plain error copy; not device-checked PR #261 merged (ff27c12e). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Copy/day terminology live in b761e652; phone check pending PR #261 merged (ff27c12e). Deployed: production build b761e652. Checked only in headless Chromium, not on a real phone.",
         "acceptance_criteria": [
           "The routine editor, routine creation, exercise picker, progression editor and stretch panel use the shared cards.",
           "No text on these screens is below the app minimum size, and no control is under 32px.",
@@ -658,7 +658,7 @@
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Small leftovers after the card redesign",
-        "description": "Small items found after the card redesign: the Today offline info control has the wrong id, the History page has no top-level heading, and Finish shows minutes as 75 min instead of 1h 15m. Also still to do: 44px logger steppers and heatmap labels of at least 11px. Board update 2026-11-15: Leftovers merged, not deployed: History h1, Today offline info id fix, 44px logger steppers and History filter/search, 11px heatmap labels, Settings Account card is a real link, 3 unused components removed. SurfaceMetricGrid scroll not audited; headless only, no phone check. PR #245 merged (650254e8). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Toast bridge allow-lists codes on login and reset (crafted URL text no longer shown); Today info id and finish duration format already fixed in #245/#249; merged, not deployed; headless-only, not device-checked PR #251 merged (5de4243b). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Branded not-found page and plain error-boundary copy merged; not device-checked PR #262 merged (39b6c780). Deployed: production build none. Checked only in headless Chromium, not on a real phone.",
+        "description": "Small items found after the card redesign: the Today offline info control has the wrong id, the History page has no top-level heading, and Finish shows minutes as 75 min instead of 1h 15m. Also still to do: 44px logger steppers and heatmap labels of at least 11px. Board update 2026-11-15: Toast bridge allow-lists codes on login and reset (crafted URL text no longer shown); Today info id and finish duration format already fixed in #245/#249; merged, not deployed; headless-only, not device-checked PR #251 merged (5de4243b). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Branded not-found page and plain error-boundary copy merged; not device-checked PR #262 merged (39b6c780). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Branded 404 and error boundaries live in b761e652; phone check pending PR #262 merged (39b6c780). Deployed: production build b761e652. Checked only in headless Chromium, not on a real phone.",
         "card_type": "feature",
         "lifecycle": "review",
         "priority": "low",
@@ -667,7 +667,7 @@
           "FF-DESIGN-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-15T07:25:30.000Z",
+        "updated_at": "2026-11-16T07:40:17.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-DESIGN-004",
         "extensions": {
           "owner_status": "review",
@@ -679,11 +679,11 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-DESIGN-004",
         "source_status": "current",
-        "source_updated_at": "2026-11-15T07:25:30.000Z"
+        "source_updated_at": "2026-11-16T07:40:17.000Z"
       },
       "content": {
-        "summary": "Small items found after the card redesign: the Today offline info control has the wrong id, the History page has no top-level heading, and Finish shows minutes as 75 min instead of 1h 15m. Also still to do: 44px logger steppers and heatmap labels of at least 11px. Board update 2026-11-15: Leftovers merged, not deployed: History h1, Today offline info id fix, 44px logger steppers and History filter/search, 11px heatmap labels, Settings Account card is a real link, 3 unused components removed. SurfaceMetricGrid scroll not audited; headless only, no phone check. PR #245 merged (650254e8). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Toast bridge allow-lists codes on login and reset (crafted URL text no longer shown); Today info id and finish duration format already fixed in #245/#249; merged, not deployed; headless-only, not device-checked PR #251 merged (5de4243b). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Branded not-found page and plain error-boundary copy merged; not device-checked PR #262 merged (39b6c780). Deployed: production build none. Checked only in headless Chromium, not on a real phone.",
-        "objective": "Small items found after the card redesign: the Today offline info control has the wrong id, the History page has no top-level heading, and Finish shows minutes as 75 min instead of 1h 15m. Also still to do: 44px logger steppers and heatmap labels of at least 11px. Board update 2026-11-15: Leftovers merged, not deployed: History h1, Today offline info id fix, 44px logger steppers and History filter/search, 11px heatmap labels, Settings Account card is a real link, 3 unused components removed. SurfaceMetricGrid scroll not audited; headless only, no phone check. PR #245 merged (650254e8). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Toast bridge allow-lists codes on login and reset (crafted URL text no longer shown); Today info id and finish duration format already fixed in #245/#249; merged, not deployed; headless-only, not device-checked PR #251 merged (5de4243b). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Branded not-found page and plain error-boundary copy merged; not device-checked PR #262 merged (39b6c780). Deployed: production build none. Checked only in headless Chromium, not on a real phone.",
+        "summary": "Small items found after the card redesign: the Today offline info control has the wrong id, the History page has no top-level heading, and Finish shows minutes as 75 min instead of 1h 15m. Also still to do: 44px logger steppers and heatmap labels of at least 11px. Board update 2026-11-15: Toast bridge allow-lists codes on login and reset (crafted URL text no longer shown); Today info id and finish duration format already fixed in #245/#249; merged, not deployed; headless-only, not device-checked PR #251 merged (5de4243b). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Branded not-found page and plain error-boundary copy merged; not device-checked PR #262 merged (39b6c780). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Branded 404 and error boundaries live in b761e652; phone check pending PR #262 merged (39b6c780). Deployed: production build b761e652. Checked only in headless Chromium, not on a real phone.",
+        "objective": "Small items found after the card redesign: the Today offline info control has the wrong id, the History page has no top-level heading, and Finish shows minutes as 75 min instead of 1h 15m. Also still to do: 44px logger steppers and heatmap labels of at least 11px. Board update 2026-11-15: Toast bridge allow-lists codes on login and reset (crafted URL text no longer shown); Today info id and finish duration format already fixed in #245/#249; merged, not deployed; headless-only, not device-checked PR #251 merged (5de4243b). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Branded not-found page and plain error-boundary copy merged; not device-checked PR #262 merged (39b6c780). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Branded 404 and error boundaries live in b761e652; phone check pending PR #262 merged (39b6c780). Deployed: production build b761e652. Checked only in headless Chromium, not on a real phone.",
         "acceptance_criteria": [
           "The Today offline info control has a correct, unique id.",
           "The History page has one top-level heading.",
@@ -1542,14 +1542,14 @@
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "End the login on the server at sign-out",
-        "description": "Signing out of the app should end the login on the server, not only clear it on the phone. An old signed-in request must be rejected after sign-out. Board update 2026-11-15: Sign-out now ends the server session; merged, not deployed, production replay pending PR #263 merged (0633baba). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Sign-out now ends the login on the server. Live in production on build pg3ri6mtm; after sign-out, an old signed-in request is rejected with no data. Portal handoff check passed. PR #263 merged (0633baba). Deployed: production build pg3ri6mtm. Checked only in headless Chromium, not on a real phone.",
+        "description": "Signing out of the app should end the login on the server, not only clear it on the phone. An old signed-in request must be rejected after sign-out. Board update 2026-11-15: Sign-out now ends the server session; merged, not deployed, production replay pending PR #263 merged (0633baba). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Sign-out now ends the login on the server. Live in production on build pg3ri6mtm; after sign-out, an old signed-in request is rejected with no data. Portal handoff check passed. PR #263 merged (0633baba). Deployed: production build pg3ri6mtm. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Sign-out now ends the session on the server: merged and live in b761e652; live check shows the old session can no longer open Today PR #263 merged (0633baba). Deployed: production build b761e652. Checked only in headless Chromium, not on a real phone.",
         "card_type": "feature",
         "lifecycle": "completed",
         "priority": "high",
         "owner": "fitness",
         "dependencies": [],
         "board_version": 1,
-        "updated_at": "2026-11-15T18:24:52.000Z",
+        "updated_at": "2026-11-16T07:40:31.000Z",
         "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-RELIABILITY-004",
         "extensions": {
           "owner_status": "fixed",
@@ -1561,11 +1561,11 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-RELIABILITY-004",
         "source_status": "current",
-        "source_updated_at": "2026-11-15T18:24:52.000Z"
+        "source_updated_at": "2026-11-16T07:40:31.000Z"
       },
       "content": {
-        "summary": "Signing out of the app should end the login on the server, not only clear it on the phone. An old signed-in request must be rejected after sign-out. Board update 2026-11-15: Sign-out now ends the server session; merged, not deployed, production replay pending PR #263 merged (0633baba). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Sign-out now ends the login on the server. Live in production on build pg3ri6mtm; after sign-out, an old signed-in request is rejected with no data. Portal handoff check passed. PR #263 merged (0633baba). Deployed: production build pg3ri6mtm. Checked only in headless Chromium, not on a real phone.",
-        "objective": "Signing out of the app should end the login on the server, not only clear it on the phone. An old signed-in request must be rejected after sign-out. Board update 2026-11-15: Sign-out now ends the server session; merged, not deployed, production replay pending PR #263 merged (0633baba). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Sign-out now ends the login on the server. Live in production on build pg3ri6mtm; after sign-out, an old signed-in request is rejected with no data. Portal handoff check passed. PR #263 merged (0633baba). Deployed: production build pg3ri6mtm. Checked only in headless Chromium, not on a real phone.",
+        "summary": "Signing out of the app should end the login on the server, not only clear it on the phone. An old signed-in request must be rejected after sign-out. Board update 2026-11-15: Sign-out now ends the server session; merged, not deployed, production replay pending PR #263 merged (0633baba). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Sign-out now ends the login on the server. Live in production on build pg3ri6mtm; after sign-out, an old signed-in request is rejected with no data. Portal handoff check passed. PR #263 merged (0633baba). Deployed: production build pg3ri6mtm. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Sign-out now ends the session on the server: merged and live in b761e652; live check shows the old session can no longer open Today PR #263 merged (0633baba). Deployed: production build b761e652. Checked only in headless Chromium, not on a real phone.",
+        "objective": "Signing out of the app should end the login on the server, not only clear it on the phone. An old signed-in request must be rejected after sign-out. Board update 2026-11-15: Sign-out now ends the server session; merged, not deployed, production replay pending PR #263 merged (0633baba). Deployed: production build none. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Sign-out now ends the login on the server. Live in production on build pg3ri6mtm; after sign-out, an old signed-in request is rejected with no data. Portal handoff check passed. PR #263 merged (0633baba). Deployed: production build pg3ri6mtm. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Sign-out now ends the session on the server: merged and live in b761e652; live check shows the old session can no longer open Today PR #263 merged (0633baba). Deployed: production build b761e652. Checked only in headless Chromium, not on a real phone.",
         "acceptance_criteria": [
           "After sign-out an old signed-in request is rejected with no data",
           "The fix is live in production and re-checked after deploy",
