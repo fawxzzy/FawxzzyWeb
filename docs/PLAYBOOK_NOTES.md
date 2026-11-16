@@ -50,6 +50,14 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHY it changed: Users had no way to fix a username or move to a new email without support; the username path must keep the live claim guard, sign-up messages and a rate limit, which needs a definer function, not a raw metadata update.
 - Rule: Every `account_api` function in a migration or proposal must `revoke ... from public` (static test in `tests/account-change.test.mjs`), because granting USAGE on `account_api` to `authenticated` would otherwise expose PUBLIC-executable functions, and per-schema default privileges cannot remove PUBLIC's default.
 - Scope: Source and local regression only. Until the owner applies the SQL, Change username shows "Changes are unavailable right now."; the edge-function change needs an owner deploy; no database, provider setting, credential or deployment effect from this PR.
+## 2026-11-15 - Fitness handoff allowlist for Fitness PR267-278; Settings returnTo pinned
+
+- Type: Release gate data + regression tests
+- WHAT changed: `FITNESS_HANDOFF_ACTIVATION` now lists Fitness main `b761e6527e72bbfe34386cfe49e49674610ccfec` (PR267-278) as the newest source, keeps `9979e22faa639d4fb60d915e4a02fefded823dc3` (PR258-270, live per `/api/app-version`) as the rollback and drops the oldest `529eb6c4b01706521bb4f1f2708c583030118fa7`. `tests/e2e/fitness-handoff.spec.ts` pins the Fitness Settings Account link (`/account?app=fitness&returnTo=https://fitness.fawxzzy.com/settings`): accepted as a return target, the signed-in Account page renders without a redirect, a sign-in handoff lands on `/entry`, and hostile variants (`//evil.com`, `/\evil`, foreign or look-alike origins, `http:`, credentials, tokens, `javascript:`, `data:`) stay closed.
+- WHY it changed: Fitness PR275 sends signed-in people to the portal Account page with `returnTo=/settings`; the portal must not reject it, and the release is blocked unless the portal accepts its exact commit.
+- Rule: The handoff path set (`/`, `/entry`, `/today`) is a two-sided contract with Fitness `ALLOWED_RETURN_PATHS`. Widen it on Fitness first; a portal-only change makes Fitness echo `/entry`, the echo check fails and the handoff fails closed.
+- Scope: Source and local regression only; no deployment, alias, provider, credential or database effect.
+
 ## 2026-11-15 - Fitness handoff allowlist for Fitness PR258-270
 
 - Type: Release gate data

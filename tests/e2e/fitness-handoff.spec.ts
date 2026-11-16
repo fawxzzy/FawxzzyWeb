@@ -11,6 +11,9 @@ import {
   FITNESS_HANDOFF_ACTIVATION, FITNESS_HANDOFF_MASTER_PROJECT_REF,
   FITNESS_HANDOFF_READINESS_CONTRACT_VERSION, FITNESS_HANDOFF_UNAVAILABLE,
 } from "../../src/lib/auth/fitness-handoff";
+import { accountExperienceContexts } from "../../src/config/account";
+import { sanitizePostAuthReturnTarget, sanitizeReturnTarget } from "../../src/config/account-return";
+import { parseConfirmPayload, sanitizeLinkDestination } from "../../src/lib/auth/callback-contract";
 
 const id = "a".repeat(43);
 const origin = "https://fitness.fawxzzy.com";
@@ -29,8 +32,9 @@ const releaseNov14FitnessMerge = "c48235cb31b1289faafa5b734848bf4d821ff3d1";
 const releaseNov15FitnessMerge = "3db7fe30cb397b83042950f3ef642c930a8e0b8b";
 const releaseNov15bFitnessMerge = "d335131a8602206c5c7702ac7fd3399c26c43f35";
 const releaseNov15cFitnessMerge = "9979e22faa639d4fb60d915e4a02fefded823dc3";
+const releaseNov15dFitnessMerge = "b761e6527e72bbfe34386cfe49e49674610ccfec";
 const acceptedFitnessMerges = [
-  releaseNov13FitnessMerge, releaseNov13bFitnessMerge, releaseNov13cFitnessMerge, releaseNov14FitnessMerge, releaseNov15FitnessMerge, releaseNov15bFitnessMerge, releaseNov15cFitnessMerge] as const;
+  releaseNov13bFitnessMerge, releaseNov13cFitnessMerge, releaseNov14FitnessMerge, releaseNov15FitnessMerge, releaseNov15bFitnessMerge, releaseNov15cFitnessMerge, releaseNov15dFitnessMerge] as const;
 const legacyFitnessMerge = "f87f2dc7e0cc3cbead0eb3ea5ed7b9c592fdfa94";
 const pair = { accessToken: "synthetic-access", refreshToken: "synthetic-refresh" };
 const rotatedPair = { accessToken: "rotated-access", refreshToken: "rotated-refresh" };
@@ -38,7 +42,7 @@ const readiness = {
   authProjectRef: FITNESS_HANDOFF_MASTER_PROJECT_REF,
   contractVersion: FITNESS_HANDOFF_READINESS_CONTRACT_VERSION,
   handoffStore: "available",
-  sourceCommit: releaseNov15cFitnessMerge,
+  sourceCommit: releaseNov15dFitnessMerge,
 };
 const begin = { ok: true, handoffId: id, readiness, returnTo: "/today" };
 const end = { ok: true, returnTo: "/today", session: rotatedPair };
@@ -101,7 +105,7 @@ test("Fitness release binding accepts all transition sources and rejects every u
   }
 
   for (const sourceCommit of [sessionAtomicityFitnessMerge, boardRefreshFitnessMerge, legacyFitnessMerge, "0".repeat(40), "a".repeat(40),
-    "6ab6c782e239b50a8adf00cc65e553f679c8abda", loginAutofillFitnessMerge, "8070196cd3f5efbe2faf7fe8719971cf2ebd1e39", "dbbe305fc511633166c1a65396fdf9ef6a1c79f1", droppedFitnessMerge, droppedRetainedRollbackFitnessMerge, usernameReleaseFitnessMerge, legacyRetirementFitnessMerge, passwordPolicyFitnessMerge, legacyRetirementFitnessMerge.toUpperCase(), usernameReleaseFitnessMerge.toUpperCase(),
+    "6ab6c782e239b50a8adf00cc65e553f679c8abda", releaseNov13FitnessMerge, loginAutofillFitnessMerge, "8070196cd3f5efbe2faf7fe8719971cf2ebd1e39", "dbbe305fc511633166c1a65396fdf9ef6a1c79f1", droppedFitnessMerge, droppedRetainedRollbackFitnessMerge, usernameReleaseFitnessMerge, legacyRetirementFitnessMerge, passwordPolicyFitnessMerge, legacyRetirementFitnessMerge.toUpperCase(), usernameReleaseFitnessMerge.toUpperCase(),
     ` ${usernameReleaseFitnessMerge}`, usernameReleaseFitnessMerge.slice(0, 7),
     passwordPolicyFitnessMerge.toUpperCase(), passwordPolicyFitnessMerge.slice(0, 7),
     loginAutofillFitnessMerge.toUpperCase(), loginAutofillFitnessMerge.slice(0, 7),
@@ -113,7 +117,8 @@ test("Fitness release binding accepts all transition sources and rejects every u
     releaseNov14FitnessMerge.toUpperCase(), releaseNov14FitnessMerge.slice(0, 7),
     releaseNov15FitnessMerge.toUpperCase(), releaseNov15FitnessMerge.slice(0, 7),
     releaseNov15bFitnessMerge.toUpperCase(), releaseNov15bFitnessMerge.slice(0, 7),
-    releaseNov15cFitnessMerge.toUpperCase(), releaseNov15cFitnessMerge.slice(0, 7)]) {
+    releaseNov15cFitnessMerge.toUpperCase(), releaseNov15cFitnessMerge.slice(0, 7),
+    releaseNov15dFitnessMerge.toUpperCase(), releaseNov15dFitnessMerge.slice(0, 7)]) {
     let reads = 0;
     const rejected = fixture([json({
       ...begin,
@@ -177,6 +182,70 @@ for (const target of ["//evil.test", "https://evil.test/", "/login", "/auth/sess
     expect(fitnessReturnPath(target)).toBe("/entry");
   });
 }
+
+// Fitness PR275 Settings "Account" row: getFitnessAccountPortalUrl("/account", "/settings") sends the
+// absolute Fitness URL. The portal accepts it as a return target (never the `/account` rejection), but
+// the handoff path set stays `/`, `/entry`, `/today` on both sides, so a handoff lands on `/entry`.
+// Adding `/settings` needs Fitness's ALLOWED_RETURN_PATHS first, or the echoed returnTo stops matching.
+const fitnessSettingsReturn = `${origin}/settings`;
+const fitnessSettingsAccountUrl =
+  `https://account.fawxzzy.com/account?app=fitness&returnTo=${encodeURIComponent(fitnessSettingsReturn)}`;
+
+test("Fitness Settings returnTo is an accepted portal target that hands off to /entry", () => {
+  const fitness = accountExperienceContexts.fitness;
+  const returnTo = new URL(fitnessSettingsAccountUrl).searchParams.get("returnTo");
+  expect(returnTo).toBe(fitnessSettingsReturn);
+  expect(sanitizeReturnTarget(returnTo)).toBe(fitnessSettingsReturn);
+  expect(sanitizePostAuthReturnTarget(returnTo, fitness)).toBe(fitnessSettingsReturn);
+  expect(sanitizeLinkDestination(fitnessSettingsReturn)).toBe(fitnessSettingsReturn);
+  expect(fitnessReturnPath(fitnessSettingsReturn)).toBe("/entry");
+  expect(parseConfirmPayload(new URL(
+    `https://account.fawxzzy.com/auth/confirm?app=fitness&token_hash=h&type=signup&returnTo=${encodeURIComponent(fitnessSettingsReturn)}`,
+  ))?.returnTo).toBe(fitnessSettingsReturn);
+  // The bare path is not a portal return target: the Fitness context falls back to the product root.
+  expect(sanitizeReturnTarget("/settings")).toBe("/account");
+  expect(sanitizePostAuthReturnTarget("/settings", fitness)).toBe(`${origin}/`);
+  expect(fitnessReturnPath("/settings")).toBe("/entry");
+});
+
+for (const hostile of ["//evil.com", "//evil.com/settings", "/\\evil.com", "/\\evil.com/settings",
+  "https://evil.com/settings", "https://fitness.fawxzzy.com.evil.com/settings",
+  "http://fitness.fawxzzy.com/settings", "https://user:pass@fitness.fawxzzy.com/settings",
+  `${origin}/settings#access_token=secret`, `${origin}/settings?token=secret`,
+  "javascript:alert(1)", "JaVaScRiPt:alert(1)//fitness.fawxzzy.com/settings",
+  "data:text/html,<script>alert(1)</script>"]) {
+  test(`hostile Fitness Settings returnTo stays closed: ${hostile}`, () => {
+    const fitness = accountExperienceContexts.fitness;
+    expect(sanitizeReturnTarget(hostile)).toBe("/account");
+    expect(sanitizePostAuthReturnTarget(hostile, fitness)).toBe(`${origin}/`);
+    expect(sanitizeLinkDestination(hostile)).toBe("/account");
+    expect(fitnessReturnPath(hostile)).toBe("/entry");
+  });
+}
+
+test("signed-in Account page opened from Fitness Settings renders for Fitness without redirecting", async ({ page }) => {
+  const target = `/account?app=fitness&auth_test=session&returnTo=${encodeURIComponent(fitnessSettingsReturn)}`;
+  await page.goto(target);
+  await expect(page.locator('[data-auth-product="fitness"]').first()).toBeVisible();
+  await expect(page.locator('[data-auth-field-action="username"]')).toHaveCount(1);
+  expect(new URL(page.url()).pathname).toBe("/account");
+  expect(new URL(page.url()).searchParams.get("returnTo")).toBe(fitnessSettingsReturn);
+});
+
+test("Fitness Settings returnTo through portal sign-in hands off to the closed /entry landing", async ({ page }) => {
+  const outgoing: string[] = [];
+  await page.route("https://fitness.fawxzzy.com/**", async (route) => {
+    outgoing.push(route.request().url());
+    await route.abort();
+  });
+  await page.goto(`/login?app=fitness&auth_test=success&returnTo=${encodeURIComponent(fitnessSettingsReturn)}`);
+  await page.getByLabel("Email or username").fill("fixture.user");
+  await page.getByLabel("Password", { exact: true }).fill("fixture-password");
+  await page.locator(".auth-dock__button").click();
+  await expect.poll(() => page.locator("html").getAttribute("data-post-auth-destination"))
+    .toBe(`${origin}/entry`);
+  expect(outgoing).toEqual([]);
+});
 
 for (const response of [
   null, [], { ...begin, ok: false }, { ...begin, handoffId: "short" },
