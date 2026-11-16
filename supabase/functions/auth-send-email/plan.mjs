@@ -1,5 +1,5 @@
 import { resolveAuthThemeFromRedirect } from "../_shared/auth-theme.mjs";
-import { renderEmail } from "./render.mjs";
+import { maskEmail, renderEmail } from "./render.mjs";
 
 /**
  * Turns a Supabase Send Email hook payload into the concrete messages to send.
@@ -32,8 +32,10 @@ const NOTIFICATIONS = {
   },
   email_changed_notification: {
     subject: (name) => `Your ${name} email address was changed`,
-    title: "Email address changed",
+    title: "Email changed",
     body: "The email address on your account was just changed.",
+    /** The account address is already the new one when this notice is sent. */
+    bodyFor: (account, newEmail) => `Your ${account} email changed to ${maskEmail(newEmail)}.`,
   },
   phone_changed_notification: {
     subject: (name) => `Your ${name} phone number was changed`,
@@ -106,75 +108,92 @@ export function buildActionLink({ supabaseUrl, tokenHash, type, redirectTo }) {
   return buildVerifyUrl(supabaseUrl, tokenHash, type, redirectTo);
 }
 
-/** Per-type copy. Plain language, no marketing. */
-function linkCopy(type, theme, variant) {
+/**
+ * How long a link stays valid, as the portal promises it ("reset.sent" in
+ * src/lib/auth/copy-matrix.ts: "It expires in 1 hour.").
+ */
+const LINK_LIFETIME = "1 hour";
+const LINK_ONCE = `The link works once and expires in ${LINK_LIFETIME}.`;
+
+/**
+ * Per-type copy: sentence case, short, plain, the same words as the portal
+ * copy matrix where one exists. Emails are always shown masked (maskEmail) and
+ * always derived from the addresses in this message.
+ *
+ * @param {string} type email_action_type
+ * @param {object} theme
+ * @param {{ email: string, newEmail?: string, variant?: "current" | "new", secure?: boolean }} who
+ */
+function linkCopy(type, theme, who) {
   const account = theme.accountLabel;
+  const email = maskEmail(who.email);
   switch (type) {
     case "signup":
       return {
         subject: `Confirm your ${theme.kicker} account`,
-        preheader: "Confirm your email address to finish creating your account.",
+        preheader: `Confirm ${email} to finish creating your account.`,
         title: "Confirm your email",
-        paragraphs: [`Confirm your email address to finish creating your ${account}.`, "The link works once and expires soon."],
+        paragraphs: [`Tap the button to confirm ${email} and finish creating your ${account}.`, LINK_ONCE],
         label: "Confirm email",
-        footerNote: "If you did not create an account, you can ignore this email.",
+        footerNote: "Did not sign up? You can ignore this email.",
       };
     case "invite":
       return {
-        subject: `You have been invited to ${theme.kicker}`,
+        subject: `You are invited to ${theme.kicker}`,
         preheader: "Accept your invitation to create an account.",
         title: "You are invited",
-        paragraphs: [`You have been invited to create a ${account}. Use the button below to accept.`, "The link works once and expires soon."],
-        label: "Accept invitation",
-        footerNote: "If you were not expecting an invitation, you can ignore this email.",
+        paragraphs: [`Tap the button to create your ${account} with ${email}.`, LINK_ONCE],
+        label: "Accept invite",
+        footerNote: "Not expecting this? You can ignore this email.",
       };
     case "magiclink":
     case "email":
       return {
         subject: `Your ${theme.kicker} sign-in link`,
-        preheader: "Use this link to sign in.",
+        preheader: "Tap the link to sign in.",
         title: "Sign in",
-        paragraphs: [`Use the button below to sign in to your ${account}.`, "The link works once and expires soon."],
+        paragraphs: [`Tap the button to sign in to your ${account} as ${email}.`, LINK_ONCE],
         label: "Sign in",
-        footerNote: "If you did not ask to sign in, you can ignore this email.",
+        footerNote: "Did not ask to sign in? You can ignore this email.",
       };
     case "recovery":
       return {
         subject: `Reset your ${theme.kicker} password`,
-        preheader: "Use this link to choose a new password.",
-        title: "Reset your password",
-        paragraphs: [
-          `We received a request to reset the password for your ${account}. Use the button below to choose a new one.`,
-          "The link works once and expires soon.",
-        ],
-        label: "Choose a new password",
-        footerNote: "If you did not ask for this, you can ignore this email. Your password will not change.",
+        preheader: `Choose a new password for ${email}.`,
+        title: "Reset password",
+        paragraphs: [`Tap the button to choose a new password for ${email}.`, LINK_ONCE],
+        label: "Reset password",
+        footerNote: "Did not ask for this? You can ignore this email. Your password stays the same.",
       };
-    case "email_change":
-      if (variant === "current") {
+    case "email_change": {
+      const newEmail = maskEmail(who.newEmail);
+      if (who.variant === "current") {
         return {
           subject: `Approve your ${theme.kicker} email change`,
-          preheader: "Approve the change of your account email address.",
+          preheader: `Approve moving your account to ${newEmail}.`,
           title: "Approve email change",
           paragraphs: [
-            `A request was made to change the email address on your ${account}. Use the button below to approve it from this address.`,
-            "The link works once and expires soon.",
+            `Tap the button to move your ${account} from ${email} to ${newEmail}.`,
+            `Open the link we sent to ${newEmail} too. Both expire in ${LINK_LIFETIME}.`,
           ],
           label: "Approve change",
-          footerNote: "If you did not ask for this, you can ignore this email. Your address will not change.",
+          footerNote: "Did not ask for this? You can ignore this email. Your email stays the same.",
         };
       }
       return {
-        subject: `Confirm your new ${theme.kicker} email address`,
-        preheader: "Confirm this address for your account.",
-        title: "Confirm your new email",
+        subject: `Confirm your new ${theme.kicker} email`,
+        preheader: `Confirm ${newEmail} for your account.`,
+        title: "Confirm new email",
         paragraphs: [
-          `Confirm that you want to use this address for your ${account}.`,
-          "The link works once and expires soon.",
+          `Tap the button to use ${newEmail} for your ${account}.`,
+          who.secure
+            ? `Open the link we sent to ${email} too. Both expire in ${LINK_LIFETIME}.`
+            : `Your old email keeps working until you open the link. It expires in ${LINK_LIFETIME}.`,
         ],
         label: "Confirm email",
-        footerNote: "If you did not ask for this, you can ignore this email.",
+        footerNote: "Did not ask for this? You can ignore this email. Your email stays the same.",
       };
+    }
     default:
       return null;
   }
@@ -226,8 +245,8 @@ export function planMessages(payload, { supabaseUrl }) {
           subject: `Your ${theme.kicker} security code`,
           preheader: "Enter this code to confirm your change.",
           title: "Your security code",
-          paragraphs: ["Enter this code to confirm the change you are making. It works once and expires soon."],
-          footerNote: "If you did not ask for this, you can ignore this email and consider changing your password.",
+          paragraphs: ["Enter this code to confirm your change. It works once and expires soon."],
+          footerNote: "Did not ask for this? Ignore this email and change your password.",
         },
         code: data.token,
       }),
@@ -239,9 +258,9 @@ export function planMessages(payload, { supabaseUrl }) {
     if (!isNonEmptyString(newEmail) || !EMAIL_ADDRESS.test(newEmail)) {
       throw new HookPayloadError("Missing new email address");
     }
-    const current = linkCopy(type, theme, "current");
-    const next = linkCopy(type, theme, "new");
     const secure = isNonEmptyString(data.token_hash) && isNonEmptyString(data.token_hash_new);
+    const current = linkCopy(type, theme, { email: user.email, newEmail, variant: "current", secure });
+    const next = linkCopy(type, theme, { email: user.email, newEmail, variant: "new", secure });
     if (secure) {
       // Supabase names are reversed for backward compatibility: the current
       // address gets token_hash_new, the new address gets token_hash.
@@ -254,7 +273,7 @@ export function planMessages(payload, { supabaseUrl }) {
     return [message({ theme, to: newEmail, copy: next, button: { label: next.label, url: url(tokenHash) } })];
   }
 
-  const copy = linkCopy(type, theme);
+  const copy = linkCopy(type, theme, { email: user.email });
   if (copy) {
     return [message({ theme, to: user.email, copy, button: { label: copy.label, url: url(data.token_hash) } })];
   }
@@ -268,16 +287,17 @@ export function planMessages(payload, { supabaseUrl }) {
     const to = type === "email_changed_notification" && isNonEmptyString(oldEmail) && EMAIL_ADDRESS.test(oldEmail)
       ? oldEmail
       : user.email;
+    const body = notification.bodyFor ? notification.bodyFor(theme.accountLabel, user.email) : notification.body;
     return [
       message({
         theme,
         to,
         copy: {
           subject: notification.subject(theme.kicker),
-          preheader: notification.body,
+          preheader: body,
           title: notification.title,
-          paragraphs: [notification.body, "No action is needed if this was you."],
-          footerNote: "If this was not you, reset your password right away.",
+          paragraphs: [body, "No action is needed if this was you."],
+          footerNote: "Not you? Reset your password right away.",
         },
       }),
     ];
@@ -293,7 +313,7 @@ export function planMessages(payload, { supabaseUrl }) {
         preheader: "There is a new notice about your account.",
         title: "Account notice",
         paragraphs: ["There is a new notice about your account. No action is needed from this email."],
-        footerNote: "If you were not expecting this, you can ignore it.",
+        footerNote: "Not expecting this? You can ignore it.",
       },
     }),
   ];
