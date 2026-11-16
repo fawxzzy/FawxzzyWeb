@@ -93,7 +93,7 @@ test("failures: backend missing reads unavailable, never 'nothing happened' gues
 
 test("the last step says in plain words what is deleted and that it can not be undone", () => {
   const list = AUTH_COPY.deleteList.join(" ");
-  for (const word of [/profile/i, /username/i, /Fitness/, /Mazer/, /leaderboard/i, /can not be undone/i]) {
+  for (const word of [/profile/i, /username/i, /Fitness/, /Mazer/, /scores/i, /can not be undone/i]) {
     assert.match(list, word);
   }
   assert.equal(authNotice("signin.deleted").tone, "success");

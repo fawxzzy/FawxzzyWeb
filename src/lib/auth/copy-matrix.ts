@@ -195,7 +195,7 @@ export const AUTH_COPY = {
   deleteList: [
     "Your profile, username and sign-in",
     "Your Fitness workouts, routines and history",
-    "Your Mazer progress and leaderboard entries",
+    "Your Mazer progress and high scores",
     "This can not be undone. There is no way to get it back.",
   ],
   /** Screen-reader only names for icon buttons and live regions. */

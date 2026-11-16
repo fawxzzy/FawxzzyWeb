@@ -376,7 +376,7 @@ existing account, or treat a client-side value as authoritative.
   password, checked on a throw-away in-memory client whose fresh session is KEPT only while the screen is
   open; (2) type the username (or the email when the account has none), trimmed and any case; (3) one
   plain-words screen of what goes (profile, username and sign-in; Fitness workouts, routines and history;
-  Mazer progress and leaderboard entries) and that it can not be undone; its red dock deletes. Then
+  Mazer progress and high scores, which are its leaderboard entries) and that it can not be undone; its red dock deletes. Then
   `/login?notice=deleted` with "Your account and its data were deleted."
 - Server: `account_api.account_delete_self(p_confirm text)` (authenticated only) calls the private
   `account_private.delete_account_v1`. It requires a password `amr` from the last 10 minutes and a
@@ -398,6 +398,9 @@ existing account, or treat a client-side value as authoritative.
   compare with what the preflight expects: every manifest table exists with a uuid column, no unlisted
   account columns, postgres privileges and RLS bypass, no storage objects with an owner),
   `account_delete_self_v1.scratch-test.mjs` (pglite: proves only that account's rows go, across schemas).
+- Short screens (max-height 600px): the account page hides its lead line so the three rows, notice slot,
+  links and dock still fit at 320x568 with wide Linux fonts. Copy never says "leaderboard" (pinned by
+  `tests/username-signin-lockout.test.mjs`); the list says "Mazer progress and high scores".
 - Until applied: the portal shows "Deleting is unavailable right now. Try again later."
 - Known gaps: access tokens already issued stay valid until they expire (about 1 hour). Fitness server
   actions re-check with `auth.getUser()` (fails for a deleted user), but Fitness tables have no foreign key

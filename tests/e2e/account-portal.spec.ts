@@ -1939,7 +1939,7 @@ test("account status copies the compact Mazer hierarchy without unfinished servi
   expect(await context.cookies()).toEqual([]);
 
   await expect(page.getByText(AUTH_COPY.lead.account)).toBeVisible();
-  await expect(page.locator(".auth-field[data-locked]")).toHaveCount(2);
+  await expect(page.locator(".auth-field[data-locked]")).toHaveCount(3);
   const linksBox = await page.locator(".auth-links").boundingBox();
   const dockBox = await dockButton(page).boundingBox();
   expect(linksBox).not.toBeNull();

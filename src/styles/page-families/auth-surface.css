@@ -698,6 +698,11 @@
   .auth-dock {
     margin-top: 8px;
   }
+
+  /* The account page carries three rows (username, email, Delete account); its lead is the line that gives way. */
+  .auth-surface[data-auth-surface="account-status"] .auth-lead {
+    display: none;
+  }
 }
 
 /*
