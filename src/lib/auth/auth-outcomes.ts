@@ -69,6 +69,11 @@ export function resetRequestProblem(email: string): FormProblem | null {
   return EMAIL_PATTERN.test(email.trim()) ? null : { id: "signup.emailinvalid", fields: ["email"] };
 }
 
+/** Signed-out reset by username: only the format is checked here; existence is never asked. */
+export function resetUsernameProblem(username: string): FormProblem | null {
+  return USERNAME_PATTERN.test(username.trim()) ? null : { id: "signup.userinvalid", fields: ["username"] };
+}
+
 /** Fields a provider outcome points at, so the right box gets the error outline. */
 export function fieldsFor(id: AuthMessageId): AuthField[] {
   switch (id) {
@@ -133,6 +138,20 @@ export function resetRequestFailure(error: unknown, signedIn: boolean): AuthMess
   if (status(error) === 429 || code(error) === "over_email_send_rate_limit") {
     return signedIn ? "reset.rate" : "reset.sentany";
   }
+  return "reset.sendfail";
+}
+
+/**
+ * Signed-out reset by username. The server answers every accepted request the same way, so the only
+ * failures are about the request itself: its rate limit (counted before, and independent of, whether
+ * the username exists, so "too many" reveals nothing) or the service being unavailable.
+ */
+export function usernameResetFailure(error: unknown): AuthMessageId {
+  if (isOfflineError(error)) return "signin.offline";
+  if (isCaptchaError(error)) return "captcha.fail";
+  if (status(error) === 429 || code(error) === "reset_throttled") return "reset.rate";
+  // reset_invalid (the format was already checked here, so it means origin, key or link config),
+  // reset_unavailable and anything else: a sending problem, never an account answer.
   return "reset.sendfail";
 }
 

@@ -184,6 +184,15 @@ export function accountRecoveryUrl(
   return url.href;
 }
 
+/**
+ * Signed-out password reset by USERNAME (design direction #9). Stays false until the owner has applied
+ * supabase/proposed/20261115210000_account_username_reset_v1.sql and deployed the Edge Function
+ * username-password-reset; until then the signed-out reset form keeps asking for the email (the
+ * live path it replaces). Flipping it is a one-line change. Local test fixtures (`auth_test`) show the
+ * username form regardless, except `auth_test=reset-email-legacy`.
+ */
+export const RESET_BY_USERNAME_LIVE = false;
+
 export function accountConfirmUrl(
   contextId: AccountExperienceContextId,
   state?: string,

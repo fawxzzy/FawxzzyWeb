@@ -178,8 +178,24 @@ const NOTICE_CASES = [
     notice: "signup.userinvalid",
   },
   {
-    name: "reset request, invalid email",
+    name: "reset request, invalid username",
     path: "/reset-password?auth_test=success",
+    fill: async (page: Page) => {
+      await page.locator("#account-reset-username").fill("a b");
+    },
+    notice: "signup.userinvalid",
+  },
+  {
+    name: "reset request by username, sent",
+    path: "/reset-password?auth_test=success",
+    fill: async (page: Page) => {
+      await page.locator("#account-reset-username").fill("someone");
+    },
+    notice: "reset.sentuser",
+  },
+  {
+    name: "legacy reset request, invalid email",
+    path: "/reset-password?auth_test=reset-email-legacy",
     fill: async (page: Page) => {
       await page.locator("#account-reset-email").fill("nope");
     },
