@@ -1,0 +1,45 @@
+name: Setup FawxzzyWeb CI job
+description: Node 24 with the npm cache, npm ci, and (optionally) Playwright chromium + webkit with a browser cache.
+
+inputs:
+  browsers:
+    description: Install Playwright chromium and webkit ("true" or "false").
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: "24.x"
+        cache: npm
+        cache-dependency-path: package-lock.json
+
+    - name: Install dependencies
+      shell: bash
+      run: npm ci
+
+    - name: Resolve Playwright version
+      if: inputs.browsers == 'true'
+      id: pw
+      shell: bash
+      run: echo "version=$(npx playwright --version | tr ' ' '-')" >> "$GITHUB_OUTPUT"
+
+    - name: Cache Playwright browsers
+      if: inputs.browsers == 'true'
+      id: pw-cache
+      uses: actions/cache@v6
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-chromium-webkit
+
+    - name: Install browsers
+      if: inputs.browsers == 'true' && steps.pw-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: npx playwright install --with-deps chromium webkit
+
+    - name: Install browser system dependencies (browsers cached)
+      if: inputs.browsers == 'true' && steps.pw-cache.outputs.cache-hit == 'true'
+      shell: bash
+      run: npx playwright install-deps chromium webkit
