@@ -18,7 +18,9 @@ import {
   type AccountExperienceContextId,
   isLiveAccountAdapterOrigin,
   isLocalAuthTestOrigin,
+  RESET_BY_USERNAME_LIVE,
 } from "@/config/account";
+import { clearRecoveryPkce, startRecoveryPkce } from "@/lib/auth/recovery-pkce";
 import { USERNAME_THROTTLED_CODE, UsernameSignInThrottledError } from "@/lib/auth/errors";
 import {
   isUsernameChangeStatus,
@@ -82,6 +84,22 @@ export type PortalAuthAdapter = {
   signOut(scope?: PortalSignOutScope): Promise<void>;
   requestPasswordReset(
     email: string,
+    contextId: AccountExperienceContextId,
+    returnTarget?: string,
+    captchaToken?: string,
+  ): Promise<void>;
+  /**
+   * Signed out, the reset form asks for a USERNAME (never an email) when this is true; it is false
+   * until the server side (Edge Function username-password-reset + its SQL) is live.
+   */
+  resetByUsername: boolean;
+  /**
+   * Signed-out reset by username. Resolves for every accepted request, whether or not the username
+   * has an account (the server answers the same either way). Throws with `status`/`code` only for a
+   * malformed request, the rate limit or an unavailable service.
+   */
+  requestPasswordResetByUsername(
+    username: string,
     contextId: AccountExperienceContextId,
     returnTarget?: string,
     captchaToken?: string,
@@ -550,6 +568,40 @@ export function createSupabaseAdapter(
       });
       if (error) throw error;
     },
+    resetByUsername: RESET_BY_USERNAME_LIVE,
+    async requestPasswordResetByUsername(username, contextId, returnTarget, captchaToken) {
+      // The provider call happens on the server, so this browser prepares the PKCE verifier the
+      // recovery link is exchanged with (lib/auth/recovery-pkce.ts) and sends only its challenge.
+      const verifierStorage = fitnessCommitFence.storage;
+      const { codeChallenge, codeChallengeMethod } = await startRecoveryPkce(verifierStorage, accountContract.storageKey);
+      let response: Response;
+      try {
+        response = await fetch(`${url}/functions/v1/username-password-reset`, {
+          body: JSON.stringify({
+            code_challenge: codeChallenge,
+            code_challenge_method: codeChallengeMethod,
+            identifier: username,
+            redirect_to: accountRecoveryUrl(contextId, returnTarget),
+            ...captchaOptions(captchaToken),
+          }),
+          headers: {
+            apikey: publishableKey,
+            "Content-Type": "application/json",
+          },
+          method: "POST",
+        });
+      } catch (error) {
+        await clearRecoveryPkce(verifierStorage, accountContract.storageKey);
+        throw error;
+      }
+      if (response.ok) return;
+      const payload = await response.json().catch(() => null) as { code?: unknown } | null;
+      await clearRecoveryPkce(verifierStorage, accountContract.storageKey);
+      throw Object.assign(new Error("Username reset request failed."), {
+        code: typeof payload?.code === "string" ? payload.code : undefined,
+        status: response.status,
+      });
+    },
     async reauthenticate(password, captchaToken) {
       const { data: current, error: sessionError } = await client.auth.getSession();
       if (sessionError) throw sessionError;
@@ -800,6 +852,21 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
     async requestPasswordReset() {
       fail();
     },
+    // Username reset fixtures. Every username gets the same answer (the server never says whether it
+    // has an account); `reset-throttled` and `reset-unavailable` answer like the rate limit and a
+    // missing server function. `reset-email-legacy` keeps the email form (the flag-off live path).
+    resetByUsername: scenario !== "reset-email-legacy",
+    async requestPasswordResetByUsername(username, contextId, returnTarget) {
+      fail();
+      if (scenario === "reset-throttled") {
+        throw Object.assign(new Error("Too many requests"), { code: "reset_throttled", status: 429 });
+      }
+      if (scenario === "reset-unavailable") {
+        throw Object.assign(new Error("Service unavailable"), { code: "reset_unavailable", status: 503 });
+      }
+      document.documentElement.dataset.resetUsername = username;
+      document.documentElement.dataset.resetRedirect = accountRecoveryUrl(contextId, returnTarget);
+    },
     // Change username / email fixtures. Deterministic by input: the password "wrong-password" is
     // rejected and "too-many" is rate limited, the name "taken-name" and the address
     // "taken@example.test" belong to someone else.
@@ -933,6 +1000,9 @@ export function resolvePortalAuthAdapter(
       "change-unavailable",
       "signout-everywhere-fail",
       "confirm-pending",
+      "reset-email-legacy",
+      "reset-throttled",
+      "reset-unavailable",
     ].includes(scenario) &&
     isLocalAuthTestOrigin(location.origin)
   ) {

@@ -4,6 +4,9 @@ schemas = ["mazer", "fitness", "account_api"]
 [functions.username-password-signin]
 verify_jwt = false
 
+[functions.username-password-reset]
+verify_jwt = false
+
 [functions.first-party-analytics]
 verify_jwt = false
 

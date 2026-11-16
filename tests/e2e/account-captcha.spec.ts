@@ -64,9 +64,9 @@ test("a broken widget shows the one notice with Retry, and the form still submit
   const before = await renders();
   await notice.getByRole("button", { name: "Retry" }).click();
   await expect.poll(renders).toBeGreaterThan(before);
-  await page.getByLabel("Email").fill("person@example.test");
+  await page.getByLabel("Username").fill("person.one");
   await page.locator("#account-reset-form").evaluate((f) => (f as HTMLFormElement).requestSubmit());
-  await expect(page.locator('[data-notice-id="reset.sentany"]')).toBeVisible();
+  await expect(page.locator('[data-notice-id="reset.sentuser"]')).toBeVisible();
 });
 
 test("the widget is reset after a failed sign-in", async ({ page }) => {
