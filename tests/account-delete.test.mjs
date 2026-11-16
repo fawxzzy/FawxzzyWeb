@@ -87,6 +87,12 @@ test("failures: backend missing reads unavailable, never 'nothing happened' gues
   assert.equal(del.accountDeleteFailure({ status: 404 }), "delete.unavailable");
   assert.equal(del.accountDeleteFailure(new TypeError("fetch failed")), "signin.offline");
   assert.equal(del.accountDeleteFailure({ status: 500, code: "XX000" }), "delete.fail");
+  // A key the function does not know rolled the call back: retrying can not help, so it is the support
+  // line (same as the 'support' refusal), never "Try again".
+  assert.equal(del.accountDeleteFailure({ status: 409, code: "23503" }), "delete.support");
+  assert.equal(del.accountDeleteFailure({ status: 400, code: "23001" }), "delete.support");
+  assert.doesNotMatch(authNotice("delete.support").text, /try again/i);
+  assert.match(authNotice("delete.support").text, /support/i);
   assert.equal(del.deleteReauthFailure({ code: "invalid_credentials", status: 400 }), "change.pwwrong");
   assert.equal(del.deleteReauthFailure({ code: "captcha_failed", status: 400 }), "captcha.fail");
   // The failure line must not promise anything about the data: the call may have committed.
@@ -104,6 +110,10 @@ test("the last step says in plain words what is deleted and that it can not be u
   const all = [list, AUTH_COPY.lead.deleteWarning, AUTH_COPY.field.deleteAccountValue].join(" ");
   assert.doesNotMatch(all, /every app|everywhere|all your data|for good/i);
   assert.equal(authNotice("signin.deleted").tone, "success");
+  // GoTrue's audit log keeps the email and account id for a while: the copy says so and the success
+  // line does not claim the data is gone.
+  assert.ok(AUTH_COPY.deleteList.some((line) => /security logs may keep your email/i.test(line)));
+  assert.doesNotMatch(authNotice("signin.deleted").text, /data/i);
 });
 
 test("flag: DELETE_ACCOUNT_LIVE is off, the live adapter reads it and the row is gated on it", () => {
@@ -193,6 +203,27 @@ test("cross-account guard: another account's rows on this account's data refuse 
   assert.ok(guard > body.indexOf("return 'billing'") && guard < body.indexOf("delete from fitness.sets"), "checked before any delete");
   assert.ok(body.includes("from pg_catalog.pg_constraint k"));
   assert.match(body, /s\.%I is distinct from \$1/);
+});
+
+test("cross-account guard: this account's rows are locked FOR UPDATE before the walk", () => {
+  const body = SQL.slice(SQL.indexOf("create function account_private.delete_account_v1"));
+  const lock = body.indexOf("for update) locked");
+  const guard = body.indexOf("for ref in");
+  assert.ok(lock > body.indexOf("return 'billing'") && lock < guard, "the row locks come right before the walk");
+  assert.ok(body.indexOf("foreach item in array owned loop") < lock);
+  // FOR UPDATE needs UPDATE: the preflight checks it for every table the call deletes from.
+  assert.match(SQL, /SELECT \.\.\. FOR UPDATE \(the row locks before the cross-account walk\) needs UPDATE/);
+});
+
+test("storage: a file owned through owner or owner_id refuses the call and the apply", () => {
+  const body = SQL.slice(SQL.indexOf("create function account_private.delete_account_v1"));
+  const storage = body.indexOf("to_regclass('storage.objects')");
+  assert.ok(storage > body.indexOf("return 'billing'") && storage < body.indexOf("for update) locked"));
+  assert.match(body, /a\.attname in \('owner', 'owner_id'\)/);
+  const preflight = SQL.slice(0, SQL.indexOf("create function account_private.delete_account_v1"));
+  assert.match(preflight, /a\.attname in \('owner', 'owner_id'\)/);
+  assert.match(preflight, /DELETE_ACCOUNT_PREFLIGHT_CANNOT_READ_STORAGE_OBJECTS/);
+  assert.match(preflight, /rolbypassrls/);
 });
 
 test("rollback drops the API, keeps the audit rows, and only takes USAGE back when unused", () => {

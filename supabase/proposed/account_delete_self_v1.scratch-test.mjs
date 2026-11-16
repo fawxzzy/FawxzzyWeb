@@ -88,18 +88,21 @@ create function auth.jwt() returns jsonb language sql stable as $$
     nullif(current_setting('request.jwt.claims', true), '')
   )::jsonb
 $$;
-create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, owner uuid, name text);
+create table storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, owner uuid, owner_id text, name text);
+create table auth.audit_log_entries (instance_id uuid, id uuid primary key, payload json, created_at timestamptz default now(), ip_address varchar(64));
 create function account_api.account_resolve_username_signin_v4(text) returns uuid language sql as 'select null::uuid';
 revoke all on function account_api.account_resolve_username_signin_v4(text) from public, anon, authenticated;
 grant execute on function account_api.account_resolve_username_signin_v4(text) to service_role;
 `;
 
 // Fitness (schema fitness): columns used by the delete plus the foreign keys between the tables, with the
-// ON DELETE actions from the Fitness migrations (NO ACTION where the migration names none). No foreign
-// key to auth.users, as in the master project.
+// ON DELETE actions from the Fitness migrations (NO ACTION where the migration names none). The keys to
+// auth.users are the ones the Fitness migrations declare (002 profiles, 054 tokens, 055 member links,
+// 057/059 feedback reports, moderation cases); the workout tables declare none. What is live is read by
+// the preimage (foreign_keys_to_auth_users).
 const FITNESS = `
 create schema fitness;
-create table fitness.profiles (id uuid primary key, user_number int);
+create table fitness.profiles (id uuid primary key references auth.users(id) on delete cascade, user_number int);
 create table fitness.exercises (id uuid primary key, user_id uuid, name text not null);
 create table fitness.routines (id uuid primary key, user_id uuid not null, name text);
 create table fitness.workout_plan_templates (id uuid primary key, user_id uuid not null, name text, source_routine_day_id uuid);
@@ -137,10 +140,10 @@ create table fitness.progression_events (
   exercise_id uuid not null references fitness.exercises(id) on delete cascade,
   source_session_id uuid references fitness.sessions(id) on delete set null
 );
-create table fitness.discord_verification_tokens (id uuid primary key, user_id uuid not null, discord_user_id text);
-create table fitness.discord_member_links (id uuid primary key, fitness_user_id uuid not null, discord_user_id text);
-create table fitness.discord_feedback_reports (id uuid primary key, reporter_fitness_user_id uuid, reporter_discord_user_id text, body text);
-create table fitness.discord_moderation_cases (id uuid primary key, target_fitness_user_id uuid, target_discord_user_id text, reason text);
+create table fitness.discord_verification_tokens (id uuid primary key, user_id uuid not null references auth.users(id) on delete cascade, discord_user_id text);
+create table fitness.discord_member_links (id uuid primary key, fitness_user_id uuid not null references auth.users(id) on delete cascade, discord_user_id text);
+create table fitness.discord_feedback_reports (id uuid primary key, reporter_fitness_user_id uuid references auth.users(id) on delete set null, reporter_discord_user_id text, body text);
+create table fitness.discord_moderation_cases (id uuid primary key, target_fitness_user_id uuid references auth.users(id) on delete set null, target_discord_user_id text, reason text);
 create table fitness.billing_customers (id uuid primary key, user_id uuid not null);
 create table fitness.billing_purchases (id uuid primary key, user_id uuid not null);
 create table fitness.user_entitlements (id uuid primary key, user_id uuid not null, granted_via_purchase_id uuid references fitness.billing_purchases(id) on delete set null);
@@ -383,6 +386,13 @@ const mentions = (row, key) => row.includes(ACCOUNTS[key]) || row.includes(SESSI
   check("preimage: largest per-account row counts", Number(pre?.max_rows_one_account?.["fitness.sets"]) === 2
     && Number(pre?.max_rows_one_account?.["mazer.mazer_cycle_receipts"]) === 2, JSON.stringify(pre?.max_rows_one_account));
   check("preimage: reports statement timeouts", Array.isArray(pre?.statement_timeouts), JSON.stringify(pre?.statement_timeouts));
+  check("preimage: counts Storage files with either owner column (none)", Number(pre?.storage_objects_with_owner) === 0,
+    JSON.stringify(pre?.storage_objects_with_owner));
+  check("preimage: reports GoTrue's audit log size (not touched by the delete)",
+    pre?.auth_audit_log_entries && Number(pre.auth_audit_log_entries.rows) >= 0, JSON.stringify(pre?.auth_audit_log_entries));
+  check("preimage: lists the Fitness keys to auth.users",
+    ["fitness.profiles", "fitness.discord_verification_tokens", "fitness.discord_member_links"].every((t) =>
+      (pre?.foreign_keys_to_auth_users ?? []).some((k) => k.startsWith(t + " "))), JSON.stringify(pre?.foreign_keys_to_auth_users));
 
   let error = await tryExec(db, APPLY);
   check("apply: runs cleanly on a database shaped like production", error === null, error?.message);
@@ -486,9 +496,32 @@ const mentions = (row, key) => row.includes(ACCOUNTS[key]) || row.includes(SESSI
   await db.exec(`
 insert into fitness.exercise_stats (id, user_id, exercise_id) values ('${bobStat}', '${BOB}', '${caraEx}');
 insert into fitness.progression_events (id, user_id, routine_id, routine_day_exercise_id, exercise_id) values ('${bobEvent}', '${BOB}', '${bobRoutine}', '${bobRdx}', '${caraEx}');`);
+  // Row locks before the walk: SELECT ... FOR UPDATE writes the locking transaction's id into each row's
+  // xmax, and it stays there after the commit. (Earlier key-share locks from the child inserts above
+  // left older ids there.) pglite has one connection, so a second session's insert can not be raced
+  // here; the lock itself is what blocks that insert's FOR KEY SHARE key check.
+  const LOCKED = [["fitness.exercises", "user_id"], ["fitness.sessions", "user_id"], ["fitness.sets", "user_id"],
+    ["fitness.routines", "user_id"], ["fitness.routine_days", "user_id"], ["fitness.profiles", "id"],
+    ["fitness.discord_member_links", "fitness_user_id"], ["mazer.mazer_profiles", "user_id"]];
+  const xmaxes = async (user) => {
+    const out = {};
+    for (const [t, c] of LOCKED) out[t] = (await db.query(`select xmax::text x from ${t} where ${c} = $1`, [user])).rows.map((r) => r.x);
+    return out;
+  };
+  const caraXmaxBefore = await xmaxes(CARA);
+  check("locks: cara has rows in every locked table", Object.values(caraXmaxBefore).every((xs) => xs.length > 0), JSON.stringify(caraXmaxBefore));
+  const bobXmaxBefore = await xmaxes(BOB);
   let beforeCara = await snapshot(db);
   let caraOutcome = await del(db, claimsFor("CARA"), "cara");
   check("cross-account: another account's cascading rows on cara's custom exercise make the call refuse", caraOutcome === "support", caraOutcome);
+  const caraXmaxAfter = await xmaxes(CARA);
+  const lockXids = new Set(Object.values(caraXmaxAfter).flat());
+  const [lockXid] = lockXids;
+  check("locks: the call locked every one of cara's rows (one new transaction id in every xmax) before the walk refused",
+    lockXids.size === 1 && lockXid !== "0" && !Object.values(caraXmaxBefore).flat().includes(lockXid)
+      && Object.values(caraXmaxAfter).every((xs) => xs.length > 0), JSON.stringify(caraXmaxAfter));
+  check("locks: no other account's row was locked", JSON.stringify(await xmaxes(BOB)) === JSON.stringify(bobXmaxBefore)
+    && (await db.query(`select xmax::text x from fitness.exercise_stats where id = '${bobStat}'`)).rows[0].x === "0");
   const bobKept = (await db.query(`select (select count(*) from fitness.exercise_stats where id = '${bobStat}') + (select count(*) from fitness.progression_events where id = '${bobEvent}') c`)).rows[0].c;
   check("cross-account: bob's exercise_stats and progression_events rows are NOT deleted", Number(bobKept) === 2, String(bobKept));
   const afterCara = await snapshot(db);
@@ -529,6 +562,17 @@ insert into public.exercise_pins (id, exercise_id) values ('${uid("cccccccc")}',
   check("reserved: the member #0 profile's account is refused (support)", zeroOutcome === "support", zeroOutcome);
   check("reserved: ...and nothing was deleted", JSON.stringify(await snapshot(db)) === JSON.stringify(beforeZero));
   await db.exec(`update fitness.profiles set user_number = 999 where id = '${BOB}'`);
+
+  // A file in Storage owned by the account, through the newer text owner_id or the legacy uuid owner:
+  // refused (support) before any lock or delete, nothing changed.
+  for (const [column, value] of [["owner_id", `'${BOB}'`], ["owner", `'${BOB}'::uuid`]]) {
+    await db.exec(`insert into storage.objects (bucket_id, ${column}, name) values ('avatars', ${value}, 'bob-${column}.png')`);
+    const beforeFile = await snapshot(db);
+    const fileOutcome = await del(db, claimsFor("BOB"), "bob");
+    check(`storage: a file owned through ${column} makes the call refuse (support)`, fileOutcome === "support", fileOutcome);
+    check(`storage (${column}): ...and nothing was deleted`, JSON.stringify(await snapshot(db)) === JSON.stringify(beforeFile));
+    await db.exec(`delete from storage.objects where name = 'bob-${column}.png'`);
+  }
 
   // Preflight and rollback.
   error = await tryExec(db, APPLY);
@@ -576,13 +620,15 @@ insert into public.exercise_pins (id, exercise_id) values ('${uid("cccccccc")}',
   await db.exec(APPLY);
   await db.exec(`
 create role sim_owner nologin noinherit bypassrls;
-grant usage on schema auth, fitness, mazer, account_private to sim_owner;
+grant usage on schema auth, fitness, mazer, account_private, storage to sim_owner;
+grant select on storage.objects to sim_owner;
 grant select, update, delete on auth.users to sim_owner;
 grant select on auth.sessions to sim_owner;
 grant select, delete on all tables in schema fitness to sim_owner;
+grant update on all tables in schema fitness, mazer to sim_owner;
 grant update on fitness.discord_feedback_reports, fitness.discord_moderation_cases to sim_owner;
 grant select, delete on all tables in schema mazer to sim_owner;
-grant select, insert, delete on account_private.account_delete_attempts, account_private.username_signin_index to sim_owner;
+grant select, insert, update, delete on account_private.account_delete_attempts, account_private.username_signin_index to sim_owner;
 grant select, insert on account_private.account_deletions to sim_owner;
 grant execute on function auth.uid(), auth.jwt() to sim_owner;
 alter function account_private.delete_account_v1(uuid, jsonb, text) owner to sim_owner;
@@ -590,6 +636,7 @@ alter function account_api.account_delete_self(text) owner to sim_owner;
 `);
   // RLS on, no policies, as on the production app tables: the owner sees rows only through BYPASSRLS.
   for (const table of TABLES.filter((t) => /^(fitness|mazer)./.test(t))) await db.exec(`alter table ${table} enable row level security`);
+  await db.exec("alter table storage.objects enable row level security");
   check("non-superuser owner: is not a superuser", (await db.query("select rolsuper s from pg_roles where rolname = 'sim_owner'")).rows[0].s === false);
   let simOutcome = await del(db, claimsFor("CARA"), "nope");
   check("non-superuser owner: refusal path works", simOutcome === "confirm", simOutcome);
@@ -606,6 +653,7 @@ alter function account_api.account_delete_self(text) owner to sim_owner;
     ["a listed table that is missing", "drop table fitness.session_follow_up_jobs;", /LISTED_TABLE_MISSING: fitness\.session_follow_up_jobs/],
     ["a listed column that is not a uuid", "alter table fitness.sets alter column user_id type text;", /LISTED_COLUMN_MISSING_OR_NOT_UUID: fitness\.sets\.user_id/],
     ["Storage files owned by an account", `insert into storage.objects (bucket_id, owner, name) values ('avatars', '${BOB}', 'me.png');`, /STORAGE_HAS_ACCOUNT_OWNED_FILES: avatars/],
+    ["Storage files owned through owner_id", `insert into storage.objects (bucket_id, owner_id, name) values ('uploads', '${BOB}', 'me.png');`, /STORAGE_HAS_ACCOUNT_OWNED_FILES: uploads/],
     ["an account_api function executable by authenticated", "create function account_api.leaky() returns int language sql as 'select 1';", /EXECUTABLE_BY_AUTHENTICATED: account_api\.leaky\(\)/],
     ["anon with USAGE on account_api", "grant usage on schema account_api to anon;", /ANON_HAS_ACCOUNT_API_USAGE/],
     ["an audit table of another shape", "create table account_private.account_deletions (id bigint, email text);", /AUDIT_TABLE_SHAPE_DIFFERS/],
