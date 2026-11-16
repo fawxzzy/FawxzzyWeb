@@ -70,22 +70,37 @@ async function newContext(
 
 // Callback and confirm links without a code replace themselves with sign in plus a notice
 // (Auth Surface v2), so settle waits out that one navigation before measuring.
-async function settle(page: Page) {
+async function retryAcrossNavigation<T>(page: Page, run: () => Promise<T>): Promise<T> {
   for (let attempt = 0; ; attempt += 1) {
-    await page.waitForLoadState("load");
     try {
-      await page.evaluate(() => document.fonts.ready);
-      await page.waitForTimeout(150);
-      await page.evaluate(() => document.readyState);
-      return;
+      await page.waitForLoadState("load");
+      return await run();
     } catch (error) {
-      if (attempt >= 3 || !String(error).includes("Execution context was destroyed")) throw error;
+      const navigating = String(error).includes("Execution context was destroyed");
+      if (attempt >= 5 || !navigating) throw error;
     }
   }
 }
 
+// A late client redirect can land between any two evaluates (seen on mobile-webkit under workers=3),
+// so settle waits until the URL has held still for a quiet window, and every later page.evaluate
+// is wrapped to retry once the replacement document has loaded.
+async function settle(page: Page) {
+  let last = "";
+  let stableSince = Date.now();
+  while (Date.now() - stableSince < 600) {
+    await retryAcrossNavigation(page, () => page.evaluate(() => document.fonts.ready.then(() => true)));
+    const url = page.url();
+    if (url !== last) {
+      last = url;
+      stableSince = Date.now();
+    }
+    await page.waitForTimeout(100);
+  }
+}
+
 async function measure(page: Page) {
-  return page.evaluate(() => {
+  return retryAcrossNavigation(page, () => page.evaluate(() => {
     window.scrollTo(0, 10_000);
     const scrolledTo = window.scrollY;
     window.scrollTo(0, 0);
@@ -104,7 +119,7 @@ async function measure(page: Page) {
         return body ? body.scrollHeight - body.clientHeight : 0;
       })(),
     };
-  });
+  }));
 }
 
 // The iOS-toolbar pass runs on the phone sizes only (the desktop size has no dynamic toolbar).
@@ -173,7 +188,7 @@ const NOTICE_CASES = [
 ] as const;
 
 async function layout(page: Page) {
-  return page.evaluate(() => {
+  return retryAcrossNavigation(page, () => page.evaluate(() => {
     const box = (selector: string) => {
       const element = document.querySelector(selector);
       if (!element) return null;
@@ -190,7 +205,7 @@ async function layout(page: Page) {
       slot: box("[data-auth-slot]"),
       title: box(".auth-title"),
     };
-  });
+  }));
 }
 
 for (const noticeCase of NOTICE_CASES) {
