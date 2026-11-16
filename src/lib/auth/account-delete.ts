@@ -120,7 +120,7 @@ export function accountDeleteFailure(error: unknown): AuthMessageId {
   if (typeof navigator !== "undefined" && navigator.onLine === false) return "signin.offline";
   if (status(error) === 429) return "delete.rate";
   // A foreign key the function does not know (23503 foreign_key_violation, 23001 restrict_violation)
-  // rolled the whole call back. Trying again can not succeed, so this is the "Contact support" line.
+  // rolled the whole call back. Trying again cannot succeed, so this is the "Contact support" line.
   if (DELETE_BLOCKED_CODES.has(code(error))) return "delete.support";
   return "delete.fail";
 }

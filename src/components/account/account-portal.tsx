@@ -1521,6 +1521,7 @@ function AccountDeletePanel({
     pendingFocus.current = undefined;
   }, [busy, step]);
 
+  const refused = notice?.id === "delete.billing" || notice?.id === "delete.support";
   const invalid = (name: "password" | "confirmation") => form.fields.has(name);
   const describedBy = (name: "password" | "confirmation") => (invalid(name) ? "auth-notice" : undefined);
   const dockLabel = step === "warning"
@@ -1601,9 +1602,14 @@ function AccountDeletePanel({
         </button>
       </AuthLinks>
       <AuthLegal context={context} />
-      <AuthDock busy={busy || gone} danger={step === "warning"} form="account-delete-form">
-        {dockLabel}
-      </AuthDock>
+      {refused ? (
+        // A refusal (purchase, support-only account) cannot be retried: no destructive button, just a way back.
+        <AuthDock onClick={onCancel}>{AUTH_COPY.link.backToAccount}</AuthDock>
+      ) : (
+        <AuthDock busy={busy || gone} danger={step === "warning"} form="account-delete-form">
+          {dockLabel}
+        </AuthDock>
+      )}
     </section>
   );
 }
@@ -2216,15 +2222,19 @@ function SignOutPanel({
       <RuntimeNote />
       <AuthHead context={context} title={AUTH_COPY.title.signOut} titleId="signout-title" />
       <div className="auth-body">
-        <AuthNoticeSlot notice={authNotice(state === "error" ? "account.signoutfail" : "signin.unavailable")} />
+        <AuthNoticeSlot notice={authNotice(state === "error" ? "account.signoutfail" : "signout.unavailable")} />
       </div>
       <AuthLinks>
         <a href={contextualPath("/login", context)}>{AUTH_COPY.link.signIn}</a>
       </AuthLinks>
       <AuthLegal context={context} />
       <AuthDock
-        disabled={state !== "error"}
         onClick={() => {
+          // Unavailable means the account service did not resolve; only a fresh load can ask again.
+          if (state === "unavailable") {
+            window.location.reload();
+            return;
+          }
           setState("working");
           setAttempt((count) => count + 1);
         }}

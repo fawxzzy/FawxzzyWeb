@@ -242,7 +242,7 @@ test("sign out everywhere copy lives in the matrix, sentence case and plain", ()
     text: "You are signed out on every device.",
   });
   // The failure is the shared unavailable line, word for word.
-  assert.equal(matrix.authNotice("change.unavailable").text, "Changes are unavailable right now. Try again later.");
+  assert.equal(matrix.authNotice("change.unavailable").text, "Changes are unavailable right now. Try again in a minute.");
   for (const text of ["Sign out on every device and app?", "You are signed out on every device."]) {
     assert.doesNotMatch(text, /session|token|scope|global|revoke/i, "no jargon");
   }
@@ -294,4 +294,15 @@ test("the Mazer authorization loading state has no visible text", () => {
   assert.equal((source.match(/await holdLoader\(\);/g) ?? []).length, 4, "every loader exit holds the minimum");
   assert.match(source, /className="oauth-bare"/);
   assert.match(read("src/styles/page-families/account-forms.css"), /\.oauth-bare \{[^}]*background: #02080f;/);
+});
+
+test("unavailable notices share one ending, and no retry label or 'can not' is left", () => {
+  const matrix = loadPortalModule("src/lib/auth/copy-matrix.ts");
+  assert.equal(matrix.authNotice("signout.unavailable").text, "Sign-out is unavailable right now. Try again in a minute.");
+  for (const id of Object.keys(matrix.AUTH_MESSAGES)) {
+    const notice = matrix.authNotice(id, "zac@icloud.com");
+    if (/unavailable right now/.test(notice.text)) assert.match(notice.text, /Try again in a minute\.$/, id);
+    assert.doesNotMatch(notice.text, /can not|Try again later/, id);
+    assert.notEqual(notice.action, "Retry", id);
+  }
 });

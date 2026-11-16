@@ -190,3 +190,10 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHY it changed: the Web Projects snapshot lagged the Fitness owner board after the release b761e652 board fold merged.
 - Rule: Fitness re-pin copies the owner export and rebuilds the snapshot with `npm run data:project-board-owner-snapshot`, never by hand; a re-pin PR also needs this notes entry.
 - Scope: Source and local regression only. The Projects page changes only after the next production build; no deployment, provider, credential or database effect.
+
+## 2026-11-16 - Account screens final cross-check fixes
+
+- Type: Copy and UI
+- WHAT changed: Delete account refusals (`delete.billing`, `delete.support`, including the blocked foreign-key case) replace the red dock with a plain "Back to account" button; Sign out unavailable now says "Sign-out is unavailable right now. Try again in a minute." (new `signout.unavailable`) and its Try again is enabled (reloads the page); unavailable notices all end "Try again in a minute."; "can not" is "cannot"; the inline "Retry" action is "Try again".
+- WHY it changed: a final read-only comparison of the account screens found a destructive button beside a refusal, a sign-in line on the sign-out screen with a dimmed button, and mixed wording.
+- Scope: Source and local regression only; no provider, credential, database or deploy effect.

@@ -104,9 +104,9 @@ test("failures: backend missing reads unavailable, never 'nothing happened' gues
   assert.doesNotMatch(authNotice("delete.fail").text, /nothing was deleted/i);
 });
 
-test("the last step says in plain words what is deleted and that it can not be undone", () => {
+test("the last step says in plain words what is deleted and that it cannot be undone", () => {
   const list = AUTH_COPY.deleteList.join(" ");
-  for (const word of [/profile/i, /username/i, /Fitness/, /Mazer/, /scores/i, /can not be undone/i]) {
+  for (const word of [/profile/i, /username/i, /Fitness/, /Mazer/, /scores/i, /cannot be undone/i]) {
     assert.match(list, word);
   }
   // No over-promise: Discord feedback and moderation records stay (without the account link), so the

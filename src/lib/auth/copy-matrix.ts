@@ -22,11 +22,12 @@ export const AUTH_MESSAGES = {
   "signin.wrong": ["error", "Wrong email, username or password. Try again."],
   "signin.throttled": ["error", "Too many attempts. Wait a few minutes, or sign in with your email."],
   "signin.unavailable": ["error", "Sign-in is unavailable right now. Try again in a minute."],
+  "signout.unavailable": ["error", "Sign-out is unavailable right now. Try again in a minute."],
   "signin.unconfirmed": ["error", "Confirm your email first. Check your inbox for the link."],
   "signin.session": ["error", "Your session ended. Sign in again to continue."],
   "signin.offline": ["error", "No connection. Check your internet and try again."],
-  "captcha.load": ["error", "Security check could not load. Check your connection.", "Retry"],
-  "captcha.fail": ["error", "Security check failed. Try the check again.", "Retry"],
+  "captcha.load": ["error", "Security check could not load. Check your connection.", "Try again"],
+  "captcha.fail": ["error", "Security check failed. Try the check again.", "Try again"],
   "signin.confirmed": ["success", "Email confirmed. Sign in to continue."],
   "signin.resetdone": ["success", "Password saved. Sign in with your new password."],
   "signin.callback": ["error", "We could not finish signing you in. Sign in again."],
@@ -50,7 +51,7 @@ export const AUTH_MESSAGES = {
   "change.usersame": ["error", "That is already your username."],
   "change.emailhalf": ["info", "One more step. Open the link we sent to your other address."],
   "change.linkfail": ["error", "That change link expired or was already used. Ask again."],
-  "change.unavailable": ["error", "Changes are unavailable right now. Try again later."],
+  "change.unavailable": ["error", "Changes are unavailable right now. Try again in a minute."],
   "change.savefail": ["error", "Could not save the change. Try again."],
   "reset.sentany": ["success", "If that account exists, we sent a reset link to its email."],
   // Signed-out reset by username: the same line whether or not the username has an account.
@@ -62,7 +63,7 @@ export const AUTH_MESSAGES = {
   "reset.mismatch": ["error", "The two passwords do not match."],
   "reset.same": ["error", "Choose a password different from your current one."],
   "reset.savefail": ["error", "Could not save your password. Try again."],
-  "account.loadfail": ["error", "Could not load your account. Try again.", "Retry"],
+  "account.loadfail": ["error", "Could not load your account. Try again.", "Try again"],
   "account.signoutfail": ["error", "Could not sign out. Try again."],
   // Sign out everywhere (account page): the in-page confirm, and the line on the sign-in screen after.
   "account.everywhereconfirm": ["info", "Sign out on every device and app?", "Sign out everywhere"],
@@ -71,9 +72,9 @@ export const AUTH_MESSAGES = {
   "delete.confirmwrong": ["error", "That does not match. Type it exactly as shown."],
   "delete.reauth": ["error", "Your password check timed out. Enter your password again."],
   "delete.billing": ["error", "This account has a purchase. Contact support to delete it."],
-  "delete.support": ["error", "This account can not be deleted here. Contact support."],
+  "delete.support": ["error", "This account cannot be deleted here. Contact support."],
   "delete.rate": ["error", "Too many delete attempts. Wait a few minutes and try again."],
-  "delete.unavailable": ["error", "Deleting is unavailable right now. Try again later."],
+  "delete.unavailable": ["error", "Deleting is unavailable right now. Try again in a minute."],
   "delete.fail": ["error", "Could not delete your account. Try again."],
   "signin.deleted": ["success", "Your account was deleted."],
   "page.crash": ["error", STATUS_COPY.crash],
@@ -134,7 +135,7 @@ export const AUTH_COPY = {
     deleting: "Deleting…",
     opening: (app: AuthAppName) => `Opening ${app}…`,
   },
-  /** "Resend in 0:30" while a link can not be sent again yet. */
+  /** "Resend in 0:30" while a link cannot be sent again yet. */
   resendIn: (seconds: number) => `Resend in 0:${String(Math.max(0, Math.min(59, seconds))).padStart(2, "0")}`,
   link: {
     createAccount: "Create account",
@@ -207,7 +208,7 @@ export const AUTH_COPY = {
     "Your Mazer progress and high scores",
     "Discord feedback and moderation records stay, with no link to you.",
     "Sign-in logs and backups may keep some data for a while.",
-    "This can not be undone. There is no way to get it back.",
+    "This cannot be undone. There is no way to get it back.",
   ],
   /** Screen-reader only names for icon buttons and live regions. */
   aria: {
