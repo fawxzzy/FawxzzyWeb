@@ -54,15 +54,15 @@ for (const route of ["/login", "/login?intent=signup", "/reset-password"]) {
   });
 }
 
-test("a broken widget shows the one notice with Retry, and the form still submits", async ({ page }) => {
+test("a broken widget shows the one notice with Try again, and the form still submits", async ({ page }) => {
   await stubTurnstile(page, "broken");
   await page.goto("/reset-password?auth_test=success");
   const notice = page.locator('[data-notice-id="captcha.load"]');
-  await expect(notice).toHaveText(/Security check could not load\. Check your connection\.\s*Retry/);
-  // Retry mounts a fresh widget.
+  await expect(notice).toHaveText(/Security check could not load\. Check your connection\.\s*Try again/);
+  // Try again mounts a fresh widget.
   const renders = () => page.evaluate(() => (window as unknown as { __turnstile: { renders: number } }).__turnstile.renders);
   const before = await renders();
-  await notice.getByRole("button", { name: "Retry" }).click();
+  await notice.getByRole("button", { name: "Try again" }).click();
   await expect.poll(renders).toBeGreaterThan(before);
   await page.getByLabel("Username").fill("person.one");
   await page.locator("#account-reset-form").evaluate((f) => (f as HTMLFormElement).requestSubmit());

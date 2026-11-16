@@ -164,6 +164,9 @@ test("delete refusals keep the account and say why", async ({ page }) => {
   await dock(page).click();
   await expect(noticeOf(page, "delete.billing")).toBeVisible();
   await expect(surface(page)).toHaveAttribute("data-delete-step", "warning");
+  // A refusal offers no destructive button: the dock becomes a plain way back.
+  await expect(dock(page)).toHaveText(AUTH_COPY.link.backToAccount);
+  await expect(dock(page)).not.toHaveAttribute("data-danger", /.*/);
   await expect(html(page)).not.toHaveAttribute("data-account-deleted", /.+/);
 
   await open(page, "delete-rate");
@@ -180,11 +183,12 @@ test("delete refusals keep the account and say why", async ({ page }) => {
   await expect(html(page)).not.toHaveAttribute("data-account-deleted", /.+/);
 
   // A key the function does not know rolled the call back (23503): the same support line, never
-  // "Try again" (a retry can not succeed).
+  // "Try again" (a retry cannot succeed).
   await open(page, "delete-blocked");
   await toWarning(page);
   await dock(page).click();
   await expect(noticeOf(page, "delete.support")).toHaveText(AUTH_MESSAGES["delete.support"][1]);
+  await expect(dock(page)).toHaveText(AUTH_COPY.link.backToAccount);
   await expect(noticeOf(page, "delete.fail")).toHaveCount(0);
   await expect(page.getByText(/try again/i)).toHaveCount(0);
   await expect(html(page)).not.toHaveAttribute("data-account-deleted", /.+/);

@@ -71,7 +71,7 @@ function NoticeIcon({ tone }: { tone: AuthNotice["tone"] }) {
 
 /**
  * The one message box (id `auth-notice`, the target of an invalid field's aria-describedby). Its
- * slot is always rendered at a fixed height so nothing moves when a message appears or clears. `onAction` renders the matrix action (Retry, Sign in) inline.
+ * slot is always rendered at a fixed height so nothing moves when a message appears or clears. `onAction` renders the matrix action (Try again, Sign in) inline.
  */
 export function AuthNoticeSlot({
   notice,

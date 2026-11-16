@@ -123,3 +123,13 @@ test("the Mazer authorization loading state is Mazer's loader: #02080f, icon aft
   expect(facts.iconSize).toBe(Math.round(Math.min(150, Math.max(88, Math.min(facts.innerWidth, facts.innerHeight) * 0.3))));
   expect(facts.scrollHeight).toBeLessThanOrEqual(facts.innerHeight + 1);
 });
+
+test("sign-out unavailable says so in sign-out words and its Try again is not dimmed", async ({ page }) => {
+  // Without an auth_test scenario the local origin has no live adapter, so the screen is unavailable.
+  await page.goto("/signout");
+  await expect(page.locator('[data-notice-id="signout.unavailable"]')).toHaveText(
+    "Sign-out is unavailable right now. Try again in a minute.",
+  );
+  await expect(page.getByText("Sign-in is unavailable")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Try again" })).toBeEnabled();
+});

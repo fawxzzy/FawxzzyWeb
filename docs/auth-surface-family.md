@@ -20,7 +20,7 @@ Every account screen (sign in, create account, reset request, new password, acco
 2. The product name as a small kicker, then the title. No username or other identity under any title.
 3. An optional centred lead sentence (only where the mock has one; a screen showing a notice drops its lead).
 4. Labelled fields with sentence-case labels. A value the person does not type (a remembered identity, the signed-in email, a value already sent) is a locked field with a lock icon. Password fields get the shared show/hide toggle.
-5. ONE notice box in a fixed, reserved slot directly under the fields. The slot always takes its height, so a message appearing or clearing never moves anything and is never clipped; it can carry one inline action (Retry, Sign in).
+5. ONE notice box in a fixed, reserved slot directly under the fields. The slot always takes its height, so a message appearing or clearing never moves anything and is never clipped; it can carry one inline action (Try again, Sign in).
 6. A compact text-link row with short accent bars between links, then the legal row (`Privacy` | `Terms`) where the context has one.
 7. One full-width dock button that only ever says what it does or what it is doing (spinner plus a working label). It never carries an error.
 

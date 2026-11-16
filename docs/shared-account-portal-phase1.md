@@ -103,7 +103,7 @@ redirects must be admitted individually in a future packet; do not add a broad p
   app?" with a "Sign out everywhere" action; the link turns into "Cancel"); no browser dialog. The
   action calls the same `scope: "global"` sign-out, clears the owner hint and lands on the portal
   sign-in with "You are signed out on every device." (`/login?notice=everywhere`). A failure keeps
-  the person signed in and shows "Changes are unavailable right now. Try again later." The dock
+  the person signed in and shows "Changes are unavailable right now. Try again in a minute." The dock
   "Sign out" is local (this device only), so the link is the only way to end other devices from the
   account page. Reach per app, from source (not verified live): Fitness checks
   the user with the provider on each protected server render, so it notices on the next page load;
@@ -155,7 +155,7 @@ redirects must be admitted individually in a future packet; do not add a broad p
     The SQL is owner-gated and lives in `supabase/proposed/` (not `migrations/`, so nothing applies
     it on merge) with its rollback and a pglite scratch test
     (`account_change_username_v1.scratch-test.mjs`). Until it is applied the call fails with
-    PGRST202/42501 and the screen says "Changes are unavailable right now. Try again later."
+    PGRST202/42501 and the screen says "Changes are unavailable right now. Try again in a minute."
   - Email: `updateUser({ email })` with `emailRedirectTo` = the confirm route themed by `app`, with
     no product return (`accountEmailChangeUrl`). The provider sends the link to the NEW address; the
     old address keeps working until it is opened. An `email_change` confirm link always lands on
@@ -542,7 +542,7 @@ this subsection still holds, with `delete_account_v2` in place of `delete_accoun
   history; Mazer progress and high scores, which are its leaderboard entries), one line that Discord
   feedback and moderation records stay without the account link, one line that sign-in logs and backups
   may keep some data for a while (GoTrue's `auth.audit_log_entries` and the retained archives above, not
-  touched; their retention is UNKNOWN here), and that it can not be undone; its red dock deletes. Then
+  touched; their retention is UNKNOWN here), and that it cannot be undone; its red dock deletes. Then
   `/login?notice=deleted` with "Your account was deleted." (it does not claim every trace is gone).
 - Server: `account_api.account_delete_self(p_confirm text)` (authenticated only) calls the private
   `account_private.delete_account_v2` (v1: `delete_account_v1`). It checks the password proof (below), then the rate limit, the
@@ -560,7 +560,7 @@ this subsection still holds, with `delete_account_v2` in place of `delete_accoun
   and confirm `reauth`.
 - Rate limit: 5 refused calls per 15 minutes per account, counting ONLY calls that passed the password
   proof (`confirm`, `billing`, `support`). A `reauth` refusal writes nothing, so a token without a fresh
-  password sign-in can not block the person from deleting.
+  password sign-in cannot block the person from deleting.
 - Support refusals: the account holding the reserved Fitness member #0 profile (`user_number = 0`, the
   owner's own account; Fitness migration 20260718015422 requires exactly one) is never deleted here; and
   if any row of ANOTHER account points at a row this call would delete (for example another account's
@@ -573,7 +573,7 @@ this subsection still holds, with `delete_account_v2` in place of `delete_accoun
   the account (`storage.objects.owner` uuid or `owner_id` text) also refuses (`support`).
 - A key from a table outside the list can only be NO ACTION/RESTRICT (the preflight refuses the rest). A
   row behind one makes the call fail with 23503 (or 23001) and roll back; the portal shows the same
-  "This account can not be deleted here. Contact support." line as `support`, never "Try again" (a
+  "This account cannot be deleted here. Contact support." line as `support`, never "Try again" (a
   retry can not succeed).
 - Time limit: the call runs inside one API request. v1 relied on the authenticated role's
   `statement_timeout` (8s live); v2 sets its own (see above). A very large account that hits it fails
@@ -588,7 +588,7 @@ this subsection still holds, with `delete_account_v2` in place of `delete_accoun
   Discord id (for example Spotify connections) are not touched; another account's rows on this account's
   custom exercise block the delete (`support`).
 - **There is no recovery.** The project has no PITR and no listed backups (2026-11-16), so deleted rows
-  can not be restored. The rollback SQL removes the API, not the deletions.
+  cannot be restored. The rollback SQL removes the API, not the deletions.
 - v1 files (superseded, kept for the record; never apply): `20261115200000_account_delete_self_v1.sql` (apply, after change
   username v1), `.rollback.sql`, `.preimage.sql` (one read-only SELECT: run it right before the apply and
   compare with what the preflight expects: every manifest table exists with a uuid column, no unlisted
@@ -604,7 +604,7 @@ this subsection still holds, with `delete_account_v2` in place of `delete_accoun
   links and dock still fit at 320x568 with wide Linux fonts. Copy never says "leaderboard" (pinned by
   `tests/username-signin-lockout.test.mjs`); the list says "Mazer progress and high scores".
 - Until applied: the row is hidden (flag off). If the flag were turned on before the SQL, the last step
-  would show "Deleting is unavailable right now. Try again later." and delete nothing.
+  would show "Deleting is unavailable right now. Try again in a minute." and delete nothing.
 - Known gaps: access tokens already issued stay valid until they expire (about 1 hour). Fitness server
   actions re-check with `auth.getUser()` (fails for a deleted user). The Fitness migrations declare keys
   to `auth.users` only on `profiles` (002), `discord_verification_tokens` (054),
