@@ -104,3 +104,11 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHY it changed: Supabase matches the allow list exactly, query string included; the old `?app=<id>` form matched nothing, so the link would fall back to the Site URL. The confirm route still lands an `email_change` token on `/account?notice=...` and never follows `returnTo`.
 - Known gaps pinned in the test (not fixed here): Fitness sign-up redirect carries a `state` param, and Mazer OAuth-continuation `returnTo` variants are not on the live list.
 - Scope: Source and local regression only; no provider, credential, database or deploy effect.
+
+## 2026-11-15 - Fitness board re-pin after Fitness PR #278
+
+- Type: Board data only
+- WHAT changed: `planning/board-sources/fitness.project-board.owner-export.v1.json` is re-pinned to the Fitness owner export on Fitness `main` (merge `71f06bfa`, PR #278; 42 cards, sha256 `a00ea1e44b21`), and the generated owner snapshot `src/server/projects/owner-board.generated.mjs` is rebuilt from it.
+- WHY it changed: the Web Projects snapshot lagged the Fitness owner board after the board fold merged.
+- Rule: Fitness re-pin copies the owner export and rebuilds the snapshot with `npm run data:project-board-owner-snapshot`, never by hand.
+- Scope: Source and local regression only. The Projects page changes only after the next production build; no deployment, provider, credential or database effect.
