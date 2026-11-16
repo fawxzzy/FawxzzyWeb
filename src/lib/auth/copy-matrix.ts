@@ -75,7 +75,7 @@ export const AUTH_MESSAGES = {
   "delete.rate": ["error", "Too many delete attempts. Wait a few minutes and try again."],
   "delete.unavailable": ["error", "Deleting is unavailable right now. Try again later."],
   "delete.fail": ["error", "Could not delete your account. Try again."],
-  "signin.deleted": ["success", "Your account and its data were deleted."],
+  "signin.deleted": ["success", "Your account was deleted."],
   "page.crash": ["error", STATUS_COPY.crash],
   "page.offline": ["error", "You are offline. We will reconnect when you are back."],
   "mazer.cancelled": ["error", "Sign-in did not finish. Tap Sign in to try again."],
@@ -196,14 +196,16 @@ export const AUTH_COPY = {
   },
   /**
    * The plain-words list on the last delete step, one line each: what IS deleted, what stays (Discord
-   * feedback and moderation records keep their Discord ids and text, without the account link), and
-   * that it is permanent. Never promise more than account_api.account_delete_self removes.
+   * feedback and moderation records keep their Discord ids and text, without the account link; the
+   * sign-in provider's security log keeps the email for its own retention time), and that it is
+   * permanent. Never promise more than account_api.account_delete_self removes.
    */
   deleteList: [
     "Your profile, username and sign-in",
     "Your Fitness workouts, routines and history",
     "Your Mazer progress and high scores",
     "Discord feedback and moderation records stay, with no link to you.",
+    "Sign-in security logs may keep your email for a while.",
     "This can not be undone. There is no way to get it back.",
   ],
   /** Screen-reader only names for icon buttons and live regions. */

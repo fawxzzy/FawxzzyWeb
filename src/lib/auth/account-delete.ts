@@ -111,11 +111,16 @@ function code(error: unknown) {
   return typeof value === "string" ? value : "";
 }
 
+const DELETE_BLOCKED_CODES = new Set(["23503", "23001"]);
+
 /** The delete call itself failed (no answer from the function). */
 export function accountDeleteFailure(error: unknown): AuthMessageId {
   if (isChangeBackendMissing(error)) return "delete.unavailable";
   if (error instanceof TypeError || (status(error) === 0 && !code(error))) return "signin.offline";
   if (typeof navigator !== "undefined" && navigator.onLine === false) return "signin.offline";
   if (status(error) === 429) return "delete.rate";
+  // A foreign key the function does not know (23503 foreign_key_violation, 23001 restrict_violation)
+  // rolled the whole call back. Trying again can not succeed, so this is the "Contact support" line.
+  if (DELETE_BLOCKED_CODES.has(code(error))) return "delete.support";
   return "delete.fail";
 }

@@ -789,6 +789,7 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       "delete-gone",
       "delete-expired",
       "delete-support",
+      "delete-blocked",
       "delete-off",
     ].includes(scenario)
       ? { displayName: "fawxzzy", email: "preview.user@example.test", userId: "preview-user" }
@@ -990,7 +991,8 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
     // text must match the username. `delete-unavailable` behaves like the database function is not
     // applied, `delete-billing`/`delete-support`/`delete-rate` return those answers, `delete-gone`
     // answers "gone" (already deleted), `delete-expired` answers "reauth" once (password check too
-    // old), `delete-off` hides the row (DELETE_ACCOUNT_LIVE off).
+    // old), `delete-blocked` fails like a foreign key the function does not know rolled the call back
+    // (23503), `delete-off` hides the row (DELETE_ACCOUNT_LIVE off).
     // Harness markers record each step; nothing leaves the browser.
     async beginAccountDelete(password) {
       fail();
@@ -1022,6 +1024,9 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       if (scenario === "delete-billing") return "billing";
       if (scenario === "delete-support") return "support";
       if (scenario === "delete-rate") return "rate";
+      if (scenario === "delete-blocked") {
+        throw Object.assign(new Error("update or delete violates foreign key constraint"), { code: "23503", status: 409 });
+      }
       const status = scenario === "delete-gone" ? "gone" : "deleted";
       beginAuthMutation();
       deleteChecked = false;
@@ -1143,6 +1148,7 @@ export function resolvePortalAuthAdapter(
       "delete-gone",
       "delete-expired",
       "delete-support",
+      "delete-blocked",
       "delete-off",
       "confirm-pending",
       "reset-email-legacy",

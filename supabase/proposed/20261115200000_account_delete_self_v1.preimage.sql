@@ -108,7 +108,14 @@ select jsonb_pretty(jsonb_build_object(
   ),
   'storage_objects_with_owner', case
     when to_regclass('storage.objects') is null then null
-    else (select count(*) from storage.objects o where o.owner is not null)
+    -- Both owner columns (legacy uuid `owner`, newer text `owner_id`); to_jsonb so a missing column is null.
+    else (select count(*) from storage.objects o
+          where to_jsonb(o)->>'owner' is not null or to_jsonb(o)->>'owner_id' is not null)
+  end,
+  -- GoTrue's audit log is not touched by the function; its retention is the provider's.
+  'auth_audit_log_entries', case
+    when to_regclass('auth.audit_log_entries') is null then null
+    else (select jsonb_build_object('rows', count(*), 'oldest', min(a.created_at)) from auth.audit_log_entries a)
   end,
   'billing_accounts', jsonb_build_object(
     'customers', (select count(distinct b.user_id) from fitness.billing_customers b),

@@ -3,7 +3,8 @@
 -- file by sha256 (see docs/shared-account-portal-phase1.md, "Delete account").
 --
 -- Delete account v1 (account portal): a signed-in person deletes their own Fawxzzy account, and with it
--- their data in every app, from account.fawxzzy.com/account.
+-- the Fitness, Mazer and account rows listed below, from account.fawxzzy.com/account. What it does NOT
+-- delete is listed too (Discord records, GoTrue's audit log, Storage files).
 --
 --   account_api.account_delete_self(p_confirm text) returns text
 --     'deleted' | 'gone' | 'reauth' | 'confirm' | 'billing' | 'support' | 'rate'
@@ -43,6 +44,18 @@
 --       account's exercise_stats or progression_events pointing at this account's custom exercise; those
 --       foreign keys are ON DELETE CASCADE and would silently delete the other account's rows). The check
 --       walks every foreign key into the tables listed below at call time, so a new key is covered too.
+--       Before the walk the call locks this account's rows in every table it deletes from (SELECT ... FOR
+--       UPDATE). A foreign-key check on another session's INSERT or key UPDATE takes FOR KEY SHARE on the
+--       row it points at, which conflicts with FOR UPDATE, so no new row can start pointing at this
+--       account's rows between the walk and the deletes: that insert waits for this call and then fails
+--       its own key check (the row is gone), or this call waits for it and the walk then sees it. The
+--       auth.users row is locked FOR UPDATE first, which also holds back new rows in tables whose key
+--       points at auth.users; or
+--     - Storage holds a file owned by this account (storage.objects.owner uuid or owner_id text). This
+--       function does not delete files (deleting the row would orphan the stored object).
+--   A key from an unlisted table can only be NO ACTION/RESTRICT (the preflight refuses the rest); a row
+--   behind one makes the call fail with 23503 (or 23001) and roll back. The portal shows that as the same "Contact
+--   support" line as 'support', never "Try again" (retrying can not succeed).
 -- * Rate limit: per account, at most 5 refused attempts per 15 minutes ('rate'), under a per-account
 --   advisory lock so concurrent calls cannot race the count or the delete. Only calls that PASSED the
 --   password proof count (refusals 'confirm', 'billing', 'support'): a 'reauth' refusal writes nothing,
@@ -65,13 +78,19 @@
 --   and text stay) but lose the account link (reporter_fitness_user_id / target_fitness_user_id set to
 --   null, as the original ON DELETE SET NULL foreign keys did). Member links and verification tokens are
 --   deleted. Discord-only rows keyed by a Discord id (for example Spotify connections) are not touched.
+-- * Not touched: GoTrue's auth.audit_log_entries (its JSON payload holds the account id and email of
+--   sign-in and account events). It has no foreign key to auth.users and its retention is the provider's
+--   (UNKNOWN here; the preimage reports its row count and oldest entry), so the portal copy says
+--   security logs may keep the email instead of claiming every trace is gone.
 -- * Safety net: the preflight sweeps the catalog and REFUSES the apply if any table outside the system
 --   schemas has a user-shaped uuid column or a foreign key to auth.users that this file does not list,
 --   if a foreign key from an unlisted table into a table this file deletes from would cascade or set
 --   null/default, if a listed table has a DELETE trigger (or auth.users does, other than the live
---   username sign-in index trigger), if a listed table or
---   column is missing, or if Storage holds files owned by any account. A database that differs from the
---   repo's picture of it fails the apply instead of leaving personal data behind or touching other rows.
+--   username sign-in index trigger), if a listed table or column is missing, if Storage holds files
+--   owned by any account (owner or owner_id) or postgres can not see every storage.objects row, or if
+--   postgres lacks a privilege the call needs (UPDATE included, for the row locks). A database that
+--   differs from the repo's picture of it fails the apply instead of leaving personal data behind or
+--   touching other rows.
 begin;
 set local lock_timeout = '3s';
 set local statement_timeout = '15s';
@@ -278,14 +297,25 @@ begin
 
   -- Storage objects are files; deleting their rows would orphan the files. None may be owned today.
   if to_regclass('storage.objects') is not null then
-    if not has_table_privilege('postgres', 'storage.objects', 'select') then
+    -- The function (owner postgres) checks this account's files at call time, so postgres must see every
+    -- row: SELECT, schema USAGE, and BYPASSRLS (or ownership) when row level security is on. A check
+    -- that silently saw no rows would let a file owner's account be deleted.
+    if not has_schema_privilege('postgres', 'storage', 'usage')
+       or not has_table_privilege('postgres', 'storage.objects', 'select')
+       or exists (
+         select 1 from pg_class c, pg_roles r
+         where c.oid = 'storage.objects'::regclass and r.rolname = 'postgres'
+           and c.relrowsecurity and not r.rolbypassrls and not r.rolsuper and c.relowner <> r.oid
+       ) then
       raise exception 'DELETE_ACCOUNT_PREFLIGHT_CANNOT_READ_STORAGE_OBJECTS';
     end if;
-    if exists (
-      select 1 from pg_attribute a
-      where a.attrelid = 'storage.objects'::regclass and a.attname = 'owner' and not a.attisdropped
-    ) then
-      execute 'select string_agg(distinct bucket_id, '', '') from storage.objects where owner is not null' into leaked;
+    -- Both owner columns: the legacy uuid `owner` and the newer text `owner_id`.
+    select string_agg(format('%I is not null', a.attname), ' or ' order by a.attname) into item
+    from pg_attribute a
+    where a.attrelid = 'storage.objects'::regclass and a.attname in ('owner', 'owner_id')
+      and a.attnum > 0 and not a.attisdropped;
+    if item is not null then
+      execute 'select string_agg(distinct bucket_id, '', '') from storage.objects where ' || item into leaked;
       if leaked is not null then
         raise exception 'DELETE_ACCOUNT_PREFLIGHT_STORAGE_HAS_ACCOUNT_OWNED_FILES: %', leaked;
       end if;
@@ -313,7 +343,9 @@ begin
        or (parts[2] in ('discord_feedback_reports', 'discord_moderation_cases')
            and not has_table_privilege('postgres', format('%I.%I', parts[1], parts[2]), 'update'))
        or (parts[2] not in ('discord_feedback_reports', 'discord_moderation_cases', 'billing_customers', 'billing_purchases', 'user_entitlements')
-           and not has_table_privilege('postgres', format('%I.%I', parts[1], parts[2]), 'delete')) then
+           and (not has_table_privilege('postgres', format('%I.%I', parts[1], parts[2]), 'delete')
+                -- SELECT ... FOR UPDATE (the row locks before the cross-account walk) needs UPDATE.
+                or not has_table_privilege('postgres', format('%I.%I', parts[1], parts[2]), 'update'))) then
       raise exception 'DELETE_ACCOUNT_PREFLIGHT_OWNER_LACKS_PRIVILEGE_ON: %', item;
     end if;
   end loop;
@@ -362,6 +394,8 @@ declare
   n bigint;
   ref record;
   shared boolean;
+  item text;
+  rel regclass;
   -- schema.table.column naming the account, as in the preflight list (the optional tables may be absent).
   owned constant text[] := array[
     'fitness.sets.user_id', 'fitness.session_exercises.user_id', 'fitness.session_follow_up_jobs.user_id',
@@ -438,11 +472,40 @@ begin
     return 'support';
   end if;
 
+  -- Files in Storage owned by this account (legacy uuid `owner` or text `owner_id`): not deleted here.
+  rel := to_regclass('storage.objects');
+  if rel is not null then
+    select string_agg(format('o.%I::text = $1::text', a.attname), ' or ' order by a.attname) into item
+    from pg_catalog.pg_attribute a
+    where a.attrelid = rel and a.attname in ('owner', 'owner_id') and a.attnum > 0 and not a.attisdropped;
+    if item is not null then
+      execute 'select exists (select 1 from storage.objects o where ' || item || ')' into shared using p_user_id;
+      if shared then
+        insert into account_private.account_delete_attempts (user_id, outcome) values (p_user_id, 'support');
+        return 'support';
+      end if;
+    end if;
+  end if;
+
+  -- Lock this account's rows in every table this call deletes from, BEFORE the walk below. FOR UPDATE
+  -- conflicts with the FOR KEY SHARE lock another session's foreign-key check takes on the row it points
+  -- at, so no row can start pointing at this account's rows between the walk and the deletes (see the
+  -- header). Same table order on every call; optional tables that are absent are skipped.
+  foreach item in array owned loop
+    continue when split_part(item, '.', 2) in ('discord_feedback_reports', 'discord_moderation_cases',
+                                                'billing_customers', 'billing_purchases', 'user_entitlements');
+    rel := to_regclass(format('%I.%I', split_part(item, '.', 1), split_part(item, '.', 2)));
+    continue when rel is null;
+    execute format('select count(*) from (select 1 from %s t where t.%I = $1 for update) locked',
+                   rel, split_part(item, '.', 3))
+      into n using p_user_id;
+  end loop;
+
   -- No other account's rows may be deleted or changed: walk every foreign key (read from the catalog at
   -- call time, so a key added later is covered) from a listed table into a table this call deletes from,
   -- and refuse if any row of ANOTHER account (or of no account) points at one of this account's rows.
   -- Keys from unlisted tables can only be NO ACTION/RESTRICT (the preflight refuses the rest), which
-  -- make the call fail and roll back.
+  -- make the call fail with 23503 and roll back (the portal says to contact support).
   for ref in
     select k.conrelid::regclass::text as src, src_list.col as src_col,
            k.confrelid::regclass::text as dst, dst_list.col as dst_col,
