@@ -213,3 +213,8 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHY it changed: the portal checks `readiness.sourceCommit` against this list before retrieving credentials, so the next Fitness release must be listed before it deploys.
 - Rule: the tuple stays 7 entries; new sha last, live sha kept as rollback, oldest dropped.
 - Scope: Source and local regression only; no provider, credential, database or deploy effect.
+
+## 2026-11-16 Re-pin the Mazer owner export snapshot (283 cards)
+- WHAT changed: `planning/board-sources/mazer.project-board.owner-export.v1.json` is a byte copy of the Mazer owner export at Mazer main `38cb43f4` (283 cards, 68 archived), and `src/server/projects/owner-board.generated.mjs` is regenerated from it with `npm run data:project-board-owner-snapshot`. No hand edits.
+- WHY it changed: the Projects page only updates on a Web build, and the snapshot was still the 272-card export from before the Mazer board fold (PR #637 there).
+- Scope: Source and generated data only; no provider, credential, database or alias effect. Preview and snapshot tests were run by `web-repin prepare`.
