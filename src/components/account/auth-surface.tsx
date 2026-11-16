@@ -47,10 +47,23 @@ function PencilIcon() {
   );
 }
 
+function TrashIcon() {
+  return (
+    <svg aria-hidden="true" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24">
+      <path d="M4.5 7h15" />
+      <path d="M9.5 7V5a1.5 1.5 0 011.5-1.5h2A1.5 1.5 0 0114.5 5v2" />
+      <path d="M6.5 7l.9 11.6a2 2 0 002 1.9h5.2a2 2 0 002-1.9L17.5 7" />
+      <path d="M10.2 11v5.5M13.8 11v5.5" />
+    </svg>
+  );
+}
+
 type AuthFieldProps = {
   /** A locked row that can be changed: an icon button in place of the lock (account page). */
   action?: { label: string; onClick: () => void; disabled?: boolean };
   autoComplete?: string;
+  /** A destructive row (Delete account): danger colours and a trash icon on the action. */
+  danger?: boolean;
   describedBy?: string;
   disabled?: boolean;
   id: string;
@@ -77,6 +90,7 @@ type AuthFieldProps = {
 export function AuthField({
   action,
   autoComplete,
+  danger,
   describedBy,
   disabled,
   id,
@@ -100,6 +114,7 @@ export function AuthField({
     <div
       className="auth-field"
       data-auth-field={name}
+      data-danger={danger || undefined}
       data-invalid={invalid || undefined}
       data-locked={locked || undefined}
     >
@@ -132,7 +147,7 @@ export function AuthField({
           onClick={action.onClick}
           type="button"
         >
-          <PencilIcon />
+          {danger ? <TrashIcon /> : <PencilIcon />}
         </button>
       ) : locked ? (
         <LockIcon />

@@ -214,6 +214,41 @@
   cursor: default;
 }
 
+/* Delete account row: the one destructive row, in the error red rather than the app accent. */
+.auth-field[data-danger] {
+  border-color: rgb(255 107 120 / 0.4);
+}
+
+.auth-field[data-danger] label,
+.auth-field[data-danger] .auth-field__toggle {
+  color: #ff8f99;
+}
+
+.auth-field[data-danger] .auth-field__toggle:focus-visible {
+  outline-color: rgb(255 107 120 / 0.85);
+}
+
+/* The delete list on the last step: short plain lines, the last one (cannot be undone) in red. */
+.auth-delete-list {
+  margin: 0;
+  padding: 0 0 0 20px;
+  color: rgb(246 249 247 / 0.86);
+  font-size: 15px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.auth-delete-list li + li {
+  margin-top: 6px;
+}
+
+.auth-delete-list li:last-child {
+  color: #ffd9dc;
+  font-weight: 600;
+  list-style: none;
+  margin-left: -20px;
+}
+
 .auth-field__icon {
   position: absolute;
   top: 50%;
@@ -437,6 +472,16 @@
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
+}
+
+.auth-dock__button[data-danger] {
+  background: linear-gradient(180deg, #ffb3ba, #ff6b78);
+  box-shadow: 0 0 26px rgb(255 107 120 / 0.3), inset 0 1px 0 rgb(255 255 255 / 0.5);
+  color: #1a0306;
+}
+
+.auth-dock__button[data-danger]:focus-visible {
+  outline-color: rgb(255 107 120 / 0.85);
 }
 
 .auth-dock__button:disabled {

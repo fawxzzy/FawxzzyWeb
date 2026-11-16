@@ -25,6 +25,12 @@ import {
   ReauthMismatchError,
   type UsernameChangeStatus,
 } from "@/lib/auth/account-change";
+import {
+  deleteConfirmTarget,
+  isAccountDeleteStatus,
+  isAccountGone,
+  type AccountDeleteStatus,
+} from "@/lib/auth/account-delete";
 import { isBrowserSafeSupabasePublicKey } from "@/lib/auth/supabase-public-key.mjs";
 import {
   completeFitnessHandoff, fitnessReturnPath, FitnessHandoffError,
@@ -96,6 +102,20 @@ export type PortalAuthAdapter = {
   changeUsername(username: string): Promise<{ status: UsernameChangeStatus; session: PortalSession | null }>;
   /** Sends the change link to the NEW address; the change applies only when that link is opened. */
   requestEmailChange(email: string, contextId: AccountExperienceContextId): Promise<void>;
+  /**
+   * Delete account, step 1: the current password on a throw-away client, like `reauthenticate`, but
+   * the fresh session is KEPT (in memory only) because it is the proof the server checks. Returns the
+   * text step 2 asks the person to type (username, or email when there is none).
+   */
+  beginAccountDelete(password: string, captchaToken?: string): Promise<{ confirmTarget: string }>;
+  /**
+   * Delete account, last step: calls `account_api.account_delete_self` with the step-1 session. On
+   * `deleted`/`gone` this browser is signed out too (every other session died with the account).
+   * Without a step-1 session it answers `reauth` and calls nothing.
+   */
+  deleteAccount(confirm: string): Promise<AccountDeleteStatus>;
+  /** Ends the step-1 session (Cancel, leaving the page). Safe to call at any time. */
+  endAccountDelete(): Promise<void>;
   updatePassword(password: string): Promise<void>;
   confirm(tokenHash: string, type: EmailOtpType): Promise<PortalSession | null>;
   exchangeCode(code: string): Promise<PortalSession | null>;
@@ -396,6 +416,51 @@ export function createSupabaseAdapter(
     },
   });
 
+  /**
+   * A throw-away client with its own in-memory storage: a password check never replaces, refreshes
+   * or signs out the page's session. Throws when the password is wrong or another account answers.
+   */
+  async function passwordCheck(password: string, captchaToken?: string) {
+    const { data: current, error: sessionError } = await client.auth.getSession();
+    if (sessionError) throw sessionError;
+    const email = current.session?.user.email;
+    const userId = current.session?.user.id;
+    if (!email || !userId) throw new ReauthMismatchError();
+    const memory = new Map<string, string>();
+    const checker = createClient(url, publishableKey, {
+      auth: {
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+        persistSession: false,
+        storage: {
+          getItem: (key) => memory.get(key) ?? null,
+          removeItem: (key) => void memory.delete(key),
+          setItem: (key, value) => void memory.set(key, value),
+        },
+        storageKey: `${accountContract.storageKey}.reauth`,
+      },
+    });
+    const { data, error } = await checker.auth.signInWithPassword({
+      email,
+      password,
+      options: captchaOptions(captchaToken),
+    });
+    if (error) throw error;
+    if (!data.user || data.user.id !== userId) {
+      await checker.auth.signOut({ scope: "local" }).catch(() => undefined);
+      throw new ReauthMismatchError();
+    }
+    return { checker, user: data.user };
+  }
+
+  // Delete account: the step-1 session, held in memory only while the delete screen is open.
+  let deleteChecker: SupabaseClient | null = null;
+  async function endDeleteChecker() {
+    const checker = deleteChecker;
+    deleteChecker = null;
+    if (checker) await checker.auth.signOut({ scope: "local" }).catch(() => undefined);
+  }
+
   return {
     kind: "supabase",
     getAuthGeneration() {
@@ -551,36 +616,44 @@ export function createSupabaseAdapter(
       if (error) throw error;
     },
     async reauthenticate(password, captchaToken) {
-      const { data: current, error: sessionError } = await client.auth.getSession();
-      if (sessionError) throw sessionError;
-      const email = current.session?.user.email;
-      const userId = current.session?.user.id;
-      if (!email || !userId) throw new ReauthMismatchError();
-      // A throw-away client with its own in-memory storage: the check never replaces, refreshes or
-      // signs out the page's session. The session it creates is ended right away.
-      const memory = new Map<string, string>();
-      const checker = createClient(url, publishableKey, {
-        auth: {
-          autoRefreshToken: false,
-          detectSessionInUrl: false,
-          persistSession: false,
-          storage: {
-            getItem: (key) => memory.get(key) ?? null,
-            removeItem: (key) => void memory.delete(key),
-            setItem: (key, value) => void memory.set(key, value),
-          },
-          storageKey: `${accountContract.storageKey}.reauth`,
-        },
-      });
-      const { data, error } = await checker.auth.signInWithPassword({
-        email,
-        password,
-        options: captchaOptions(captchaToken),
-      });
-      if (error) throw error;
-      const sameUser = data.user?.id === userId;
+      // The session the check creates is ended right away.
+      const { checker } = await passwordCheck(password, captchaToken);
       await checker.auth.signOut({ scope: "local" }).catch(() => undefined);
-      if (!sameUser) throw new ReauthMismatchError();
+    },
+    async beginAccountDelete(password, captchaToken) {
+      await endDeleteChecker();
+      const { checker, user } = await passwordCheck(password, captchaToken);
+      deleteChecker = checker;
+      return { confirmTarget: deleteConfirmTarget(user.user_metadata?.username, user.email) };
+    },
+    async deleteAccount(confirm) {
+      const checker = deleteChecker;
+      if (!checker) return "reauth";
+      const { data, error, status } = await checker
+        .schema("account_api")
+        .rpc("account_delete_self", { p_confirm: confirm });
+      if (error) {
+        throw Object.assign(new Error("Account delete failed."), {
+          code: error.code,
+          message: error.message,
+          status,
+        });
+      }
+      if (!isAccountDeleteStatus(data)) {
+        throw Object.assign(new Error("Account delete returned an unknown answer."), { status });
+      }
+      if (data === "reauth") await endDeleteChecker();
+      if (isAccountGone(data)) {
+        // The account row is gone, and with it every session at the provider. Clear the local copies
+        // (the provider answers the logout calls with "not found", which the SDK treats as done).
+        await endDeleteChecker();
+        beginAuthMutation();
+        await client.auth.signOut({ scope: "local" }).catch(() => undefined);
+      }
+      return data;
+    },
+    async endAccountDelete() {
+      await endDeleteChecker();
     },
     async changeUsername(username) {
       const { data, error, status } = await client
@@ -651,10 +724,17 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       "change-rate",
       "change-unavailable",
       "signout-everywhere-fail",
+      "delete-unavailable",
+      "delete-billing",
+      "delete-rate",
+      "delete-gone",
+      "delete-expired",
     ].includes(scenario)
       ? { displayName: "fawxzzy", email: "preview.user@example.test", userId: "preview-user" }
       : null;
   const listeners = new Set<(value: PortalSession | null) => void>();
+  let deleteChecked = false;
+  let deleteExpiredOnce = false;
   const fail = () => {
     if (scenario === "error") throw new Error("Deterministic local test error");
   };
@@ -828,6 +908,51 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       publish();
       return { status: "changed", session };
     },
+    // Delete account fixtures. Same passwords as above ("wrong-password", "too-many"). The typed
+    // text must match the username. `delete-unavailable` behaves like the database function is not
+    // applied, `delete-billing`/`delete-rate` return those answers, `delete-gone` answers "gone"
+    // (already deleted), `delete-expired` answers "reauth" once (password check too old).
+    // Harness markers record each step; nothing leaves the browser.
+    async beginAccountDelete(password) {
+      fail();
+      if (!session) throw new ReauthMismatchError();
+      if (password === "too-many") throw Object.assign(new Error("Too many requests"), { status: 429 });
+      if (password === "wrong-password") {
+        throw Object.assign(new Error("Invalid login credentials"), { code: "invalid_credentials", status: 400 });
+      }
+      deleteChecked = true;
+      document.documentElement.dataset.deleteChecked = "true";
+      return { confirmTarget: deleteConfirmTarget(session.displayName, session.email) };
+    },
+    async deleteAccount(confirm) {
+      fail();
+      if (!deleteChecked || !session) return "reauth";
+      const log = document.documentElement.dataset.deleteCalls;
+      document.documentElement.dataset.deleteCalls = String(Number(log ?? "0") + 1);
+      if (scenario === "delete-unavailable") {
+        throw Object.assign(new Error("Could not find the function"), { code: "PGRST202", status: 404 });
+      }
+      if (scenario === "delete-expired" && !deleteExpiredOnce) {
+        deleteExpiredOnce = true;
+        deleteChecked = false;
+        return "reauth";
+      }
+      if (confirm.trim().toLowerCase() !== deleteConfirmTarget(session.displayName, session.email).toLowerCase()) {
+        return "confirm";
+      }
+      if (scenario === "delete-billing") return "billing";
+      if (scenario === "delete-rate") return "rate";
+      const status = scenario === "delete-gone" ? "gone" : "deleted";
+      beginAuthMutation();
+      deleteChecked = false;
+      session = null;
+      document.documentElement.dataset.accountDeleted = status;
+      publish();
+      return status;
+    },
+    async endAccountDelete() {
+      deleteChecked = false;
+    },
     async requestEmailChange(email, contextId) {
       fail();
       if (scenario === "change-unavailable") {
@@ -932,6 +1057,11 @@ export function resolvePortalAuthAdapter(
       "change-rate",
       "change-unavailable",
       "signout-everywhere-fail",
+      "delete-unavailable",
+      "delete-billing",
+      "delete-rate",
+      "delete-gone",
+      "delete-expired",
       "confirm-pending",
     ].includes(scenario) &&
     isLocalAuthTestOrigin(location.origin)

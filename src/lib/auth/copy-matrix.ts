@@ -65,6 +65,14 @@ export const AUTH_MESSAGES = {
   // Sign out everywhere (account page): the in-page confirm, and the line on the sign-in screen after.
   "account.everywhereconfirm": ["info", "Sign out on every device and app?", "Sign out everywhere"],
   "signin.everywhere": ["success", "You are signed out on every device."],
+  // Delete account (account page): refusals from account_api.account_delete_self, and the done line.
+  "delete.confirmwrong": ["error", "That does not match. Type it exactly as shown."],
+  "delete.reauth": ["error", "Your password check timed out. Enter your password again."],
+  "delete.billing": ["error", "This account has a purchase. Contact support to delete it."],
+  "delete.rate": ["error", "Too many delete attempts. Wait a few minutes and try again."],
+  "delete.unavailable": ["error", "Deleting is unavailable right now. Try again later."],
+  "delete.fail": ["error", "Could not delete your account. Try again."],
+  "signin.deleted": ["success", "Your account and its data were deleted."],
   "page.crash": ["error", STATUS_COPY.crash],
   "page.offline": ["error", "You are offline. We will reconnect when you are back."],
   "mazer.cancelled": ["error", "Sign-in did not finish. Tap Sign in to try again."],
@@ -108,6 +116,7 @@ export const AUTH_COPY = {
     continue: "Continue",
     saveUsername: "Save username",
     sendLink: "Send link",
+    deleteAccount: "Delete account",
     tryAgain: STATUS_COPY.tryAgain,
     goToAccount: STATUS_COPY.goToAccount,
     open: (app: AuthAppName) => `Open ${app}`,
@@ -119,6 +128,7 @@ export const AUTH_COPY = {
     saving: "Saving…",
     signingOut: "Signing out…",
     checking: "Checking…",
+    deleting: "Deleting…",
     opening: (app: AuthAppName) => `Opening ${app}…`,
   },
   /** "Resend in 0:30" while a link can not be sent again yet. */
@@ -153,6 +163,7 @@ export const AUTH_COPY = {
     signOut: "Sign out",
     changeUsername: "Change username",
     changeEmail: "Change email",
+    deleteAccount: "Delete account",
   },
   lead: {
     resetRequest: "We will email a reset link to the address on your account.",
@@ -162,6 +173,8 @@ export const AUTH_COPY = {
     changeConfirm: "Enter your password to continue.",
     changeUsername: "Your new username works for sign-in right away.",
     changeEmail: "Your old email keeps working until you open the link.",
+    deleteType: "Type the text shown to confirm it is your account.",
+    deleteWarning: "This deletes, in every app and for good:",
     pageNotFound: STATUS_COPY.pageNotFoundLead,
     startAgainIn: (app: AuthAppName) => `Go back to ${app} and tap Sign in to start again.`,
   },
@@ -174,7 +187,17 @@ export const AUTH_COPY = {
     confirmPassword: "Confirm password",
     newUsername: "New username",
     newEmail: "New email",
+    deleteAccount: "Delete account",
+    deleteAccountValue: "Removes it from every app",
+    typeToConfirm: (text: string) => `Type ${text}`,
   },
+  /** The plain-words list on the last delete step, one line each. */
+  deleteList: [
+    "Your profile, username and sign-in",
+    "Your Fitness workouts, routines and history",
+    "Your Mazer progress and leaderboard entries",
+    "This can not be undone. There is no way to get it back.",
+  ],
   /** Screen-reader only names for icon buttons and live regions. */
   aria: {
     showPassword: "Show password",
@@ -182,6 +205,7 @@ export const AUTH_COPY = {
     locked: "Locked",
     changeUsername: "Change username",
     changeEmail: "Change email",
+    deleteAccount: "Delete account",
   },
 } as const;
 
