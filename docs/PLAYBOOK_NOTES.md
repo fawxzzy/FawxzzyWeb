@@ -1,5 +1,12 @@
 This file is a project-local inbox for repo-specific Playbook notes that may later be promoted upstream.
 
+## 2026-11-15 - Auth emails: one branded template with the real app icons
+
+- Type: Edge-function source change (auth-send-email) + static assets
+- WHAT changed: Every auth email renders one template: dark card with an accent glow, the app's own icon (the only image, `https://account.fawxzzy.com/email/icons/<app>-192.png`, byte-exact copies of each product's branding PNG), kicker, big light title, short copy, one pill button. Addresses are masked with the copy-matrix rule; the email-change, confirm and reset copy names the masked addresses and says links expire in 1 hour. `auth-theme.mjs` now owns `iconPath` (portal) and `emailIconPath` (email) per app, and `auth-status.tsx` reads `iconPath` from it.
+- WHY it changed: Zac asked (2026-11-15) for every auth email to carry the app's real icon and the same look and plain words as the sign-in screens, with masked addresses.
+- Rule: Email icon files are immutable (emails in inboxes link to them); `tests/auth-email-contract.test.mjs` pins their sha256 and checks each one visually matches the portal icon. Deploy the portal before the function so the icon URLs exist.
+- Scope: Source and local regression only. The function deploy is the owner's (ask-first); no Supabase, env, DNS or deployment effect from this PR.
 ## 2026-11-15 - Signed-out password reset by username (design direction #9), dark
 
 - Type: Account portal feature (client, behind `RESET_BY_USERNAME_LIVE = false`) + new Edge Function source + proposed SQL (not applied)

@@ -1,6 +1,6 @@
 # Auth email hook (branded, per-app transactional email)
 
-Status: source only. Nothing in this runbook has been performed. The function is not deployed, the hook is not enabled, and no secret is set.
+Status (2026-11-15): the owner reports the function live as version 8 with the hook enabled. That is not verified from this repo; the repo holds source only. The branded-icon template described below is source only until the owner deploys it (see "Deploy order for template changes").
 
 ## What this is
 
@@ -11,6 +11,33 @@ Supabase Auth normally sends its own plain emails (recovery, sign-up confirmatio
 3. Renders the email (HTML and plain text) and sends it through Resend.
 
 The email shows the same product marker as the sign-in screen at the top (`FITNESS`, `MAZER`, `FAWXZZY`), the same accent color, and the same dark canvas. Those values come from one shared file, `supabase/functions/_shared/auth-theme.mjs`. The portal (`src/config/account.ts`) reads that file too, and `npm run test:auth-email` fails if the portal screens, the portal CSS base colors, or the email ever disagree.
+
+## The one template
+
+Every email (confirm, reset, email change to either address, the "email changed" notice, the code email, every other notice) uses one layout: dark canvas, a card with a soft glow in the app accent, the app's own icon, the product kicker, a big light title, short sentence-case copy, at most one pill button (with a plain "Button not working?" link under it), then a short footer. Addresses are always shown masked (`z•••@icloud.com`, the same rule as `maskEmail` in `src/lib/auth/copy-matrix.ts`, parity-tested). Copy never says "needs verification", "(later)", "token" or "Supabase"; link lifetimes say "1 hour" (copy matrix `reset.sent`).
+
+### App icons in email
+
+The icon is the only image. It is an absolute https URL on the account host, `https://account.fawxzzy.com/email/icons/<app>-192.png` (`emailAssetOrigin` + `emailIconPath` in `auth-theme.mjs`), served from `public/email/icons/`. PNG, not WebP or SVG, because several mail clients show neither. The files are byte-exact copies of each product's own branding output; they are not drawn here. The portal sign-in screens read `iconPath` from the same theme file, and `npm run test:auth-email` checks that each email icon visually matches its portal icon and that each file still has the sha256 below.
+
+| App | File | Source | sha256 |
+| --- | --- | --- | --- |
+| Fawxzzy (website) | `public/email/icons/website-192.png` | FawxzzyWeb `public/app/icon-192.png` | `706fbaae6ed1f82d736b03f8d334246257c7c2ad12d8d2edb4b2ca4a37525018` |
+| Fitness | `public/email/icons/fitness-192.png` | fawxzzy-fitness main `public/app/icon-192.png` (same bytes as `https://fitness.fawxzzy.com/app/icon-192.png`) | `558f4236982b7d81b37e9beebebbab6de990ba5c4f8e1326686d56ac1f387b84` |
+| Mazer | `public/email/icons/mazer-192.png` | mazer main `public/icons/icon-192.png` (same bytes as `https://mazer.fawxzzy.com/icons/icon-192.png`) | `cf8f46d880655b987bd10d9d371117525043cf842d7cb10270e741a653f30785` |
+
+Rule: never rename or delete these files. Emails already in inboxes point at them. To change an icon, copy the new branding output over the file, update the sha256 in the test and this table, and deploy the portal before the function.
+
+### Deploy order for template changes
+
+1. Deploy the portal (Vercel) and check that `https://account.fawxzzy.com/email/icons/{website,fitness,mazer}-192.png` each return 200 `image/png`.
+2. Then deploy the function (owner, ask-first): `supabase functions deploy auth-send-email --project-ref bxtcuhkotumitoqtrcej`. Deploying the function first sends emails with a broken image until step 1.
+
+### Client limits (dark mode and styling)
+
+- The glow (`box-shadow`) shows in Apple Mail and iOS Mail only. Gmail and Outlook drop it; the accent ring and border remain.
+- Outlook desktop squares the card, icon and button corners and may block images until the reader allows them (the icon has `alt=""`, so it leaves an empty 72 px box, not broken text).
+- The template is already dark and declares `color-scheme: dark light`. Clients that force their own dark mode (Gmail apps, Outlook.com) may still shift colors; Gmail iOS can invert light text. This has not been checked in real clients.
 
 Handled `email_action_type` values: `signup`, `invite`, `magiclink`, `email`, `recovery`, `email_change` (including the secure two-address case), `reauthentication` (6-digit code), the seven `*_notification` types (no link), and a neutral fallback for any unknown future type (no link).
 
@@ -74,16 +101,17 @@ If emails stop arriving after enabling: disable the hook first, then read the fu
 ## Local commands
 
 - `npm run test:auth-email` runs the hermetic tests (also part of `npm run verify`).
-- `npm run email:preview` writes rendered HTML and text for default/fitness/mazer x recovery/signup to `C:/ATLAS/tmp/wt/email-preview` (outside the repo, never committed). Pass a directory argument to change it.
+- `npm run email:preview` writes rendered HTML and text for default/fitness/mazer x signup, recovery, email change (single and secure pair), email-changed notice, password-changed notice and code email to `C:/ATLAS/tmp/wt/email-preview` (outside the repo, never committed). Pass a directory argument to change it. Add `-- --local-assets` to load the icons from this checkout's `public/` instead of the account host (needed before the portal deploy).
 
 ## Files
 
-- `supabase/functions/_shared/auth-theme.mjs`: the single source of truth for per-app tokens.
+- `supabase/functions/_shared/auth-theme.mjs`: the single source of truth for per-app tokens and icon paths.
+- `public/email/icons/`: the email icons (see the provenance table).
 - `supabase/functions/auth-send-email/`: `index.ts` (Deno entry), `handler.mjs` (hook contract), `standard-webhooks.mjs` (signature check), `plan.mjs` (link and copy per action type), `render.mjs` (HTML and text), `resend.mjs` (sender).
 - `tests/auth-email-contract.test.mjs`, `tests/helpers/load-portal-ts.mjs`.
 
 ## Not covered
 
-- Real-client rendering (Gmail, Apple Mail, Outlook) has not been checked; only a Chromium render of the HTML was inspected. Outlook desktop ignores `border-radius`, so the button is square there.
+- Real-client rendering (Gmail, Apple Mail, Outlook) has not been checked; only a Chromium render of the HTML at 390 px was inspected. See "Client limits" above.
 - The sign-in screen's bottom action is a light-to-accent gradient; the email button is a solid accent with dark text, chosen so the contrast check is exact.
 - Resend rate limits and bounce handling are not implemented; a Resend failure returns an error to Supabase.
