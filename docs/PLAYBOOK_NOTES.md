@@ -10,6 +10,13 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - Rule: Password-proof honesty: a JWT `amr` check proves "a password sign-in in the last 10 minutes on a live session of this user", not "the password was typed now". Say exactly that, and make the owner dry run (refresh the session, confirm the refreshed token keeps the ORIGINAL amr timestamp) explicit before going live.
 - Rule: Only count rate-limit attempts that passed re-authentication; counting `reauth` refusals lets any token of the user's (no fresh password) lock them out.
 - Scope: Source and local regression only; no deployment, provider, credential or database effect. Until the owner applies the SQL and flips the flag, the row is hidden and the page is unchanged. Deleted data has no recovery except a provider backup.
+## 2026-11-15 - Auth emails: one branded template with the real app icons
+
+- Type: Edge-function source change (auth-send-email) + static assets
+- WHAT changed: Every auth email renders one template: dark card with an accent glow, the app's own icon (the only image, `https://account.fawxzzy.com/email/icons/<app>-192.png`, byte-exact copies of each product's branding PNG), kicker, big light title, short copy, one pill button. Addresses are masked with the copy-matrix rule; the email-change, confirm and reset copy names the masked addresses and says links expire in 1 hour. `auth-theme.mjs` now owns `iconPath` (portal) and `emailIconPath` (email) per app, and `auth-status.tsx` reads `iconPath` from it.
+- WHY it changed: Zac asked (2026-11-15) for every auth email to carry the app's real icon and the same look and plain words as the sign-in screens, with masked addresses.
+- Rule: Email icon files are immutable (emails in inboxes link to them); `tests/auth-email-contract.test.mjs` pins their sha256 and checks each one visually matches the portal icon. Deploy the portal before the function so the icon URLs exist.
+- Scope: Source and local regression only. The function deploy is the owner's (ask-first); no Supabase, env, DNS or deployment effect from this PR.
 ## 2026-11-15 - Signed-out password reset by username (design direction #9), dark
 
 - Type: Account portal feature (client, behind `RESET_BY_USERNAME_LIVE = false`) + new Edge Function source + proposed SQL (not applied)
@@ -114,3 +121,11 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHY it changed: Supabase matches the allow list exactly, query string included; the old `?app=<id>` form matched nothing, so the link would fall back to the Site URL. The confirm route still lands an `email_change` token on `/account?notice=...` and never follows `returnTo`.
 - Known gaps pinned in the test (not fixed here): Fitness sign-up redirect carries a `state` param, and Mazer OAuth-continuation `returnTo` variants are not on the live list.
 - Scope: Source and local regression only; no provider, credential, database or deploy effect.
+
+## 2026-11-15 - Fitness board re-pin after Fitness PR #278
+
+- Type: Board data only
+- WHAT changed: `planning/board-sources/fitness.project-board.owner-export.v1.json` is re-pinned to the Fitness owner export on Fitness `main` (merge `71f06bfa`, PR #278; 42 cards, sha256 `a00ea1e44b21`), and the generated owner snapshot `src/server/projects/owner-board.generated.mjs` is rebuilt from it.
+- WHY it changed: the Web Projects snapshot lagged the Fitness owner board after the board fold merged.
+- Rule: Fitness re-pin copies the owner export and rebuilds the snapshot with `npm run data:project-board-owner-snapshot`, never by hand.
+- Scope: Source and local regression only. The Projects page changes only after the next production build; no deployment, provider, credential or database effect.

@@ -19,7 +19,10 @@ import {
 } from "../supabase/functions/auth-send-email/plan.mjs";
 import {
   blendHex,
+  EMAIL_ICON_SIZE,
+  emailIconUrl,
   escapeHtml,
+  maskEmail,
   renderEmail,
   rgbTripletToHex,
   themeColors,
@@ -293,7 +296,8 @@ test("every email_action_type renders html + plain text with subject, preheader 
       assert.ok(message.subject.length > 3 && !/[\r\n]/.test(message.subject), `${type} subject`);
       assert.match(message.html, /^<!doctype html>/, type);
       assert.ok(message.text.length > 40, `${type} plain text present`);
-      assert.ok(message.text.includes("person@example.test") || message.text.includes("new-address@example.test"), `${type} recipient in text`);
+      assert.ok(message.text.includes(`Sent to ${maskEmail(message.to)} `), `${type} masked recipient in text`);
+      assert.ok(message.html.includes(`Sent to ${escapeHtml(maskEmail(message.to))} `), `${type} masked recipient in html`);
       assert.match(message.html, /display:none;max-height:0;overflow:hidden/, `${type} preheader block`);
       assert.match(message.html, /<meta name="color-scheme" content="dark light">/, type);
       assert.match(message.html, /max-width:600px/, type);
@@ -394,17 +398,155 @@ test("notification and fallback emails never include an action link", () => {
   }
 });
 
-test("emails carry no remote images, webfonts, trackers or scripts", () => {
+test("emails carry exactly one image (the app icon) and no webfonts, trackers or scripts", () => {
   for (const [type, data] of ACTION_CASES) {
     const [message] = planMessages(
       hookPayload({ user: { new_email: "n@example.test" }, email_data: { email_action_type: type, ...data } }),
       { supabaseUrl: SUPABASE_URL },
     );
-    for (const forbidden of [/<img/i, /<link/i, /<script/i, /<iframe/i, /@import/i, /@font-face/i, /url\(/i, /http:\/\//i, /<form/i]) {
+    for (const forbidden of [/<link/i, /<script/i, /<iframe/i, /@import/i, /@font-face/i, /url\(/i, /http:\/\//i, /<form/i, /background(-image)?\s*:\s*[^;"]*gradient/i]) {
       assert.doesNotMatch(message.html, forbidden, `${type} ${forbidden}`);
     }
+    const images = [...message.html.matchAll(/<img\b[^>]*>/gi)].map((match) => match[0]);
+    assert.equal(images.length, 1, `${type} has one image`);
+    const src = images[0].match(/\ssrc="([^"]*)"/)[1];
+    assert.equal(src, emailIconUrl(resolveAuthThemeFromRedirect(data.redirect_to ?? accountRecoveryUrl("fitness"))), `${type} image is the app icon`);
+    assert.match(images[0], new RegExp(`width="${EMAIL_ICON_SIZE}" height="${EMAIL_ICON_SIZE}"`), `${type} icon has fixed size (Outlook)`);
+    assert.match(images[0], /\salt=""/, `${type} icon is decorative: the kicker under it names the app`);
     const hrefs = [...message.html.matchAll(/href="([^"]*)"/g)].map((match) => match[1]);
     for (const href of hrefs) assert.match(href, /^https:\/\//);
+  }
+});
+
+// -------------------------------------------------------------------- icons
+
+// Byte-exact copies of each app's own branding output (AGENTS.md: no repo-owned canonical icons).
+// A rebrand updates the source app first, then re-copies here and updates the hash.
+const EMAIL_ICON_SOURCES = {
+  website: { source: "FawxzzyWeb public/app/icon-192.png", sha256: "706fbaae6ed1f82d736b03f8d334246257c7c2ad12d8d2edb4b2ca4a37525018" },
+  fitness: { source: "fawxzzy-fitness public/app/icon-192.png", sha256: "558f4236982b7d81b37e9beebebbab6de990ba5c4f8e1326686d56ac1f387b84" },
+  mazer: { source: "mazer public/icons/icon-192.png", sha256: "cf8f46d880655b987bd10d9d371117525043cf842d7cb10270e741a653f30785" },
+};
+
+test("icons: every theme's email icon is an absolute https URL on the account host under /email/icons/", () => {
+  assert.equal(authThemeBase.emailAssetOrigin, new URL(ACCOUNT_CONFIRM_URL).origin, "icons come from the host the links point to");
+  for (const [id, theme] of Object.entries(authThemes)) {
+    const url = new URL(emailIconUrl(theme));
+    assert.equal(url.protocol, "https:", id);
+    assert.equal(url.origin, "https://account.fawxzzy.com", id);
+    assert.match(url.pathname, /^\/email\/icons\/[a-z]+-192\.png$/, id);
+    assert.equal(url.search + url.hash, "", `${id} icon URL carries no query (no tracking)`);
+  }
+  assert.equal(new Set(Object.values(authThemes).map(emailIconUrl)).size, 3, "each app has its own icon");
+});
+
+test("icons: each email icon file ships from public/, is a 192 px PNG and is the app's own branding output", async () => {
+  const { createHash } = await import("node:crypto");
+  const { default: sharp } = await import("sharp");
+  assert.deepEqual(Object.keys(EMAIL_ICON_SOURCES).sort(), Object.keys(authThemes).sort());
+  for (const [id, theme] of Object.entries(authThemes)) {
+    const bytes = await readFile(new URL(`../public${theme.emailIconPath}`, import.meta.url));
+    assert.deepEqual([...bytes.subarray(0, 8)], [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], `${id} is a PNG (email clients do not all show WebP or SVG)`);
+    const meta = await sharp(bytes).metadata();
+    assert.equal(meta.width, 192, `${id} width`);
+    assert.equal(meta.height, 192, `${id} height`);
+    assert.ok(meta.width >= EMAIL_ICON_SIZE * 2, `${id} stays sharp at 2x`);
+    assert.ok(bytes.length < 100 * 1024, `${id} is small enough for mobile mail (${bytes.length} bytes)`);
+    assert.equal(createHash("sha256").update(bytes).digest("hex"), EMAIL_ICON_SOURCES[id].sha256, `${id} is the exact ${EMAIL_ICON_SOURCES[id].source}`);
+  }
+});
+
+test("parity: the email icon shows the same artwork as the portal auth screen icon", async () => {
+  const { default: sharp } = await import("sharp");
+  const thumb = async (path) =>
+    sharp(await readFile(new URL(`../public${path}`, import.meta.url)))
+      .flatten({ background: authThemeBase.canvasHex })
+      .resize(24, 24, { fit: "fill" })
+      .removeAlpha()
+      .raw()
+      .toBuffer();
+  const distance = (a, b) => a.reduce((sum, value, index) => sum + Math.abs(value - b[index]), 0) / a.length;
+  const thumbs = {};
+  for (const [id, theme] of Object.entries(authThemes)) {
+    thumbs[id] = { email: await thumb(theme.emailIconPath), portal: await thumb(theme.iconPath) };
+  }
+  for (const id of Object.keys(authThemes)) {
+    const same = distance(thumbs[id].email, thumbs[id].portal);
+    assert.ok(same < 12, `${id}: email icon differs from the portal icon (mean channel distance ${same.toFixed(1)})`);
+    for (const other of Object.keys(authThemes).filter((key) => key !== id)) {
+      const cross = distance(thumbs[id].email, thumbs[other].portal);
+      assert.ok(cross > same * 1.5, `${id}: the check is real (${other} portal icon scores ${cross.toFixed(1)} vs ${same.toFixed(1)})`);
+    }
+  }
+});
+
+test("parity: the portal auth screens take their icon paths from auth-theme.mjs, not a second copy", async () => {
+  const status = await readFile(new URL("../src/components/account/auth-status.tsx", import.meta.url), "utf8");
+  assert.match(status, /supabase\/functions\/_shared\/auth-theme\.mjs/);
+  for (const id of Object.keys(authThemes)) assert.match(status, new RegExp(`authThemes\\.${id}\\.iconPath`));
+  for (const theme of Object.values(authThemes)) {
+    assert.ok(!status.includes(`"${theme.iconPath}"`), `auth-status.tsx hard-codes ${theme.iconPath}`);
+  }
+  const render = await readFile(new URL("../supabase/functions/auth-send-email/render.mjs", import.meta.url), "utf8");
+  assert.doesNotMatch(render, /["'][^"']*\.(png|webp|svg|jpe?g)["']/i, "render.mjs hard-codes an image path");
+});
+
+// -------------------------------------------------------------------- words
+
+test("words: emails are masked the same way as the portal copy matrix, always from the message's own addresses", () => {
+  const matrix = loadPortalModule("src/lib/auth/copy-matrix.ts");
+  for (const sample of ["zac@icloud.com", "  a.b+c@example.test ", "x@y", "", "nodomain", "@example.test", "o'brien&co@example.test"]) {
+    assert.equal(maskEmail(sample), matrix.maskEmail(sample), JSON.stringify(sample));
+  }
+  const payload = (type, extra = {}) =>
+    hookPayload({
+      user: { email: "person@example.test", new_email: "new-address@example.test" },
+      email_data: { email_action_type: type, redirect_to: accountConfirmUrl("fitness", "s"), ...extra },
+    });
+  const [signup] = planMessages(payload("signup"), { supabaseUrl: SUPABASE_URL });
+  assert.ok(signup.text.includes("confirm p•••@example.test and finish"), "signup names the masked address");
+  const [recovery] = planMessages(payload("recovery", { redirect_to: accountRecoveryUrl("fitness") }), { supabaseUrl: SUPABASE_URL });
+  assert.ok(recovery.text.includes("new password for p•••@example.test"), "recovery names the masked address");
+  const secure = planMessages(payload("email_change", { token_hash: "N", token_hash_new: "C" }), { supabaseUrl: SUPABASE_URL });
+  assert.ok(secure[0].text.includes("from p•••@example.test to n•••@example.test"), "current address sees both, masked");
+  assert.ok(secure[1].text.includes("use n•••@example.test for your Fitness account"), "new address sees itself, masked");
+  assert.ok(secure[1].text.includes("link we sent to p•••@example.test too"), "secure change says both links are needed");
+  const [single] = planMessages(payload("email_change"), { supabaseUrl: SUPABASE_URL });
+  assert.ok(single.text.includes("Your old email keeps working until you open the link."), "copy-matrix lead.changeEmail wording");
+  const [changed] = planMessages(
+    hookPayload({ user: { email: "new-address@example.test" }, email_data: { email_action_type: "email_changed_notification", old_email: "old@example.test", redirect_to: accountConfirmUrl("mazer", "s") } }),
+    { supabaseUrl: SUPABASE_URL },
+  );
+  assert.equal(changed.to, "old@example.test");
+  assert.ok(changed.text.includes("Your Mazer account email changed to n•••@example.test."), "notice names the new address, masked");
+  assert.ok(changed.text.includes("Sent to o•••@example.test "), "footer names the old address, masked");
+});
+
+test("words: no email shows a full address, a retired line or jargon", () => {
+  const matrix = loadPortalModule("src/lib/auth/copy-matrix.ts");
+  const banned = [...matrix.RETIRED_AUTH_COPY, "needs verification", "(later)", "token", "OTP", "redirect", "Supabase", "expires soon."];
+  for (const app of ["website", "fitness", "mazer"]) {
+    for (const [type, data] of ACTION_CASES) {
+      const messages = planMessages(
+        hookPayload({
+          user: { email: "person@example.test", new_email: "new-address@example.test" },
+          email_data: { email_action_type: type, ...data, token_hash_new: type === "email_change" ? "C" : "", redirect_to: accountConfirmUrl(app, "s"), old_email: "old@example.test" },
+        }),
+        { supabaseUrl: SUPABASE_URL },
+      );
+      for (const message of messages) {
+        // Only the human-readable words: drop the link lines (they carry token_hash) before checking.
+        const words = message.text.split("\n").filter((line) => !/^https:\/\//.test(line)).join("\n");
+        for (const phrase of banned.filter((item) => !(type === "reauthentication" && item === "expires soon."))) {
+          assert.ok(!words.includes(phrase), `${app}/${type}: "${phrase}"`);
+        }
+        for (const address of ["person@example.test", "new-address@example.test", "old@example.test"]) {
+          assert.ok(!words.includes(address), `${app}/${type}: full address ${address} in words`);
+          assert.ok(!message.html.replace(/href="[^"]*"|>https:\/\/[^<]*</g, "").includes(address), `${app}/${type}: full address ${address} in html`);
+        }
+        assert.match(message.subject, /^[A-Z][^A-Z]*( [A-Z][a-z]+)?[^A-Z]*$/, `${app}/${type} subject is sentence case`);
+      }
+    }
   }
 });
 
@@ -427,18 +569,21 @@ test("escaping: user-controlled strings are HTML-escaped in every position", () 
     recipient: `a"b<i>@example.test`,
   };
   const { html } = renderEmail(view);
-  for (const raw of ["<script", "<img", "<b>", "<i>", "<u>", "<s>", "<code>"]) {
+  for (const raw of ["<script", "<img src=x", "<b>", "<i>", "<u>", "<s>", "<code>"]) {
     assert.ok(!html.includes(raw), `unescaped ${raw}`);
   }
+  assert.equal(html.match(/<img\b/g).length, 1, "only the app icon image");
   assert.ok(html.includes("?a=&quot;&gt;&lt;script&gt;alert(2)&lt;/script&gt;&amp;b=1"), "url attribute escaped");
-  assert.ok(html.includes("a&quot;b&lt;i&gt;@example.test"));
+  assert.ok(html.includes("a•••@example.test"), "recipient is shown masked");
+  assert.ok(!html.includes("a&quot;b&lt;i&gt;@example.test"), "the full recipient is never shown");
   assert.ok(html.includes("&amp;b=1"));
 });
 
 test("escaping: a recipient with markup-significant characters is escaped in a planned message", () => {
-  const [message] = planMessages(hookPayload({ user: { email: "o'brien&co@example.test" } }), { supabaseUrl: SUPABASE_URL });
-  assert.ok(message.html.includes("o&#39;brien&amp;co@example.test"));
-  assert.doesNotMatch(message.html, /o'brien&co/);
+  const [message] = planMessages(hookPayload({ user: { email: "o'brien&co@ex'am&ple.test" } }), { supabaseUrl: SUPABASE_URL });
+  assert.ok(message.html.includes("o•••@ex&#39;am&amp;ple.test"));
+  assert.doesNotMatch(message.html, /ex'am&ple/);
+  assert.doesNotMatch(message.html, /brien/, "the local part is masked away");
 });
 
 // ---------------------------------------------------------------- contrast
@@ -451,6 +596,9 @@ test("contrast: every themed text/background pair is at least 4.5:1 (button text
       "body text on canvas": [colors.text, colors.canvas],
       "muted text on canvas": [colors.muted, colors.canvas],
       "accent kicker/link on canvas": [colors.accent, colors.canvas],
+      "body text on card": [colors.text, colors.surface],
+      "muted text on card": [colors.muted, colors.surface],
+      "accent kicker/link on card": [colors.accent, colors.surface],
     };
     for (const [name, [foreground, background]] of Object.entries(pairs)) {
       const ratio = contrast(foreground, background);
