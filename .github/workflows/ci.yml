@@ -11,33 +11,99 @@ on:
 permissions:
   contents: read
 
+env:
+  EVIDENCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  EVIDENCE_BRANCH: ${{ github.head_ref || github.ref_name }}
+
 jobs:
-  verify:
+  # `npm run verify` is split across parallel jobs. The `verify` job at the bottom aggregates them and is the
+  # one check name the main ruleset requires. Do not name any other job `verify`.
+
+  static-checks:
+    # Every `npm run verify` step except the final Playwright step (lint, node tests, build, discovery,
+    # owner-board-static, lifeline smoke, visual regression). The step list is read from package.json.
+    name: Static checks
     runs-on: ubuntu-latest
-    env:
-      EVIDENCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-      EVIDENCE_BRANCH: ${{ github.head_ref || github.ref_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           ref: ${{ env.EVIDENCE_SHA }}
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
+      - name: Setup
+        uses: ./.github/actions/setup
         with:
-          node-version: "24.x"
-          cache: npm
-          cache-dependency-path: package-lock.json
+          browsers: "true"
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Verify (all steps except e2e)
+        run: |
+          steps="$(node .github/scripts/verify-static-steps.mjs)"
+          echo "$steps"
+          bash -eo pipefail -c "$steps"
 
-      - name: Install browsers
-        run: npx playwright install --with-deps chromium webkit
+  e2e:
+    # The final `npm run verify` step (`npm run test:e2e`, chromium + mobile-webkit), split into parallel jobs.
+    # The split is defined in playwright.config.ts (E2E_GROUP): "slow" is exactly account-no-scroll + account-portal,
+    # "fast" is every other spec, so the entries below partition the full 820-test run (13 + 118 + 131 + 558).
+    # Per-file wall time dominates, which is why the slow specs are isolated instead of count-sharded.
+    name: E2E ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: webkit account-no-scroll
+            group: slow
+            args: --project=mobile-webkit account-no-scroll
+          - name: webkit account-portal
+            group: slow
+            args: --project=mobile-webkit account-portal
+          - name: chromium account specs
+            group: slow
+            args: --project=chromium
+          - name: other specs 1/2
+            group: fast
+            args: --shard=1/2
+          - name: other specs 2/2
+            group: fast
+            args: --shard=2/2
+    env:
+      E2E_GROUP: ${{ matrix.group }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.EVIDENCE_SHA }}
 
-      - name: Verify
-        run: npm run verify
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          browsers: "true"
+
+      # The e2e web server serves out/, which `npm run verify` produces with `npm run build` first.
+      - name: Build
+        run: npm run build
+
+      - name: Playwright e2e (${{ matrix.name }})
+        run: npm run test:e2e -- ${{ matrix.args }}
+
+  visual-evidence:
+    name: Visual evidence
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.EVIDENCE_SHA }}
+
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          browsers: "true"
+
+      # The evidence capture serves out/, which `npm run verify` produces with `npm run build` first.
+      - name: Build
+        run: npm run build
 
       - name: Capture portable visual evidence
         run: npm run evidence:visual
@@ -50,8 +116,45 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  lifeline-container:
+    name: Lifeline container
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.EVIDENCE_SHA }}
+
       - name: Build Lifeline container
         run: docker build --tag fawxzzyweb-ci:${{ env.EVIDENCE_SHA }} .
+
+  verify:
+    # Aggregating gate and the required check name (ruleset context `verify`). Passes only when every job that
+    # used to be a step of the single verify job succeeded. `if: always()` makes a failed, cancelled or skipped
+    # dependency fail this job instead of leaving the required check missing.
+    name: verify
+    runs-on: ubuntu-latest
+    needs:
+      - static-checks
+      - e2e
+      - visual-evidence
+      - lifeline-container
+    if: ${{ always() }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.EVIDENCE_SHA }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24.x"
+
+      - name: Require every verify job to succeed
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: echo "$NEEDS" | node .github/scripts/assert-verify-jobs.mjs
 
   playbook-verify:
     # Runs the real Playbook `verify` on every pull request. The Playbook runtime is acquired by
