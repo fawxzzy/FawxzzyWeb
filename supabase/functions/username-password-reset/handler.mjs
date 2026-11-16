@@ -10,9 +10,15 @@
 //   503 { code: "reset_unavailable" }   resolver missing or failing (same for every username)
 //   400 { code: "reset_invalid" }       malformed request (decided from the request alone)
 // The answer never carries an email, a masked email or a user id. The lookup that differs between
-// known and unknown usernames (account record, provider recovery call) runs as a background task
-// AFTER the answer is scheduled, and every answer is held to the same minimum duration, so neither
-// the body nor the timing tells a caller whether the username has an account.
+// known and unknown usernames (account record) runs as a background task AFTER the answer is
+// scheduled, and every answer is held to the same minimum duration, so neither the body nor the
+// timing tells a caller whether the username has an account.
+//
+// Every accepted request makes exactly ONE provider recovery call, carrying the caller's captcha
+// token: to the account's address when the username resolves to one that can receive mail, otherwise
+// to DECOY_RECIPIENT. So once provider CAPTCHA is on, the token is spent at the provider for known
+// and unknown usernames alike (a replayed token cannot tell them apart), and no real mailbox gets
+// mail for a miss.
 import { clientBucket } from "../username-password-signin/client-bucket.mjs";
 
 export const USERNAME = /^[A-Za-z0-9._-]{2,15}$/;
@@ -23,7 +29,28 @@ export const RESET_UNAVAILABLE_CODE = "reset_unavailable";
 export const RESET_INVALID_CODE = "reset_invalid";
 /** Every answer (except the CORS preflight) takes at least this long. */
 export const MINIMUM_RESPONSE_MS = 900;
-const MAX_BODY_BYTES = 4096;
+export const MAX_BODY_BYTES = 4096;
+/**
+ * Where a miss's provider recovery call goes. `.invalid` is reserved (RFC 2606 / RFC 6761): it never
+ * resolves, so nothing can be delivered there, and the provider answers a recover request for an
+ * address with no account without sending anything. Go-live check: no auth user has this address.
+ */
+export const DECOY_RECIPIENT = "username-reset-decoy@fawxzzy.invalid";
+/** The account id a miss looks up (same admin call as a hit). Fixed; go-live check: no account has it. */
+export const DECOY_USER_ID = "00000000-0000-4000-8000-000000000000";
+/**
+ * The client address used for rate limiting comes ONLY from headers the platform sets, never from a
+ * value the caller controls: Cloudflare's `cf-connecting-ip` (overwritten at Cloudflare's edge), else
+ * the RIGHTMOST `x-forwarded-for` hop (appended by the nearest proxy; any entries to its left can be
+ * forged by the caller). Which one the deployed runtime actually sets is a go-live proof step
+ * (docs/shared-account-portal-phase1.md): a request with a forged x-forwarded-for must land in the
+ * same bucket as one without it.
+ */
+export const CLIENT_ADDRESS_SOURCE = Object.freeze({
+  fallback: "x-forwarded-for",
+  fallbackHop: "rightmost",
+  primary: "cf-connecting-ip",
+});
 // RFC 7636 code challenge: S256 output is 43 base64url characters; allow the full verifier range.
 const CODE_CHALLENGE = /^[A-Za-z0-9_-]{43,128}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -103,13 +130,79 @@ export async function resetAttemptKeys(normalizedUsername, clientAddress, sha256
   };
 }
 
-/** Client address bucket, same precedence and IPv6 /64 grouping as username sign-in. */
+/** Client address bucket from the platform-set source only (CLIENT_ADDRESS_SOURCE); IPv6 grouped by /64. */
 export function resetClientAddress(headers) {
-  return clientBucket(
-    headers.get("cf-connecting-ip")
-      ?? headers.get("x-forwarded-for")?.split(",", 1)[0]
-      ?? "unknown",
-  );
+  const primary = headers.get(CLIENT_ADDRESS_SOURCE.primary)?.trim();
+  if (primary) return clientBucket(primary);
+  const hops = (headers.get(CLIENT_ADDRESS_SOURCE.fallback) ?? "")
+    .split(",")
+    .map((hop) => hop.trim())
+    .filter(Boolean);
+  return clientBucket(hops.length > 0 ? hops[hops.length - 1] : "unknown");
+}
+
+/**
+ * The provider's public (client) key: the new publishable key first (SUPABASE_PUBLISHABLE_KEYS, a JSON
+ * map or list; the "default" entry wins), else the legacy SUPABASE_ANON_KEY. `getEnv(name)` reads one
+ * environment variable.
+ */
+export function providerPublicKey(getEnv) {
+  try {
+    const configured = JSON.parse(getEnv("SUPABASE_PUBLISHABLE_KEYS") ?? "null");
+    if (Array.isArray(configured)) {
+      const first = configured.find((value) => typeof value === "string" && value);
+      if (first) return first;
+    } else if (configured && typeof configured === "object") {
+      if (typeof configured.default === "string" && configured.default) return configured.default;
+      const first = Object.values(configured).find((value) => typeof value === "string" && value);
+      if (first) return first;
+    }
+  } catch {
+    // A malformed key map falls back to the legacy key.
+  }
+  return getEnv("SUPABASE_ANON_KEY") || null;
+}
+
+/** Non-identifying outcome of the background provider call: the HTTP status class only. */
+export function sendOutcome(status) {
+  if (typeof status !== "number" || !Number.isInteger(status) || status < 100 || status > 599) return "not_sent";
+  return `${Math.floor(status / 100)}xx`;
+}
+
+/**
+ * Reads the request body as text, refusing (null) as soon as it passes `limit` bytes, so an oversize
+ * body is never buffered whole. Invalid UTF-8 is refused too.
+ */
+export async function readBodyLimited(request, limit = MAX_BODY_BYTES) {
+  if (!request.body) return null;
+  const reader = request.body.getReader();
+  const chunks = [];
+  let size = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > limit) {
+        await reader.cancel().catch(() => undefined);
+        return null;
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock?.();
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -148,6 +241,9 @@ export async function resolveUsernameResetRpc({ args, fetchImpl, serviceRole, ur
  * exchanged by the browser that asked (the code verifier never leaves it).
  */
 export function recoverRequest({ anonKey, captchaToken, codeChallenge, email, redirectTo, url }) {
+  // A legacy anon key is a JWT and also goes in Authorization (what supabase-js sends); a new
+  // publishable key (sb_publishable_...) is not a JWT and travels only as `apikey`.
+  const isJwt = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(anonKey);
   return [
     `${url}/auth/v1/recover?redirect_to=${encodeURIComponent(redirectTo)}`,
     {
@@ -159,7 +255,7 @@ export function recoverRequest({ anonKey, captchaToken, codeChallenge, email, re
       }),
       headers: {
         apikey: anonKey,
-        Authorization: `Bearer ${anonKey}`,
+        ...(isJwt ? { Authorization: `Bearer ${anonKey}` } : {}),
         "Content-Type": "application/json",
       },
       method: "POST",
@@ -173,8 +269,12 @@ export function recoverRequest({ anonKey, captchaToken, codeChallenge, email, re
  *   admitKey(requestKey)                      -> Promise<boolean>   public client key admission
  *   resolve({ normalized, clientKey, pairKey }) -> Promise<{ throttled, userId } | null>
  *   findRecipient(userId)                     -> Promise<string | null>  (background only)
- *   sendRecovery({ email, codeChallenge, redirectTo, captchaToken }) -> Promise<unknown> (background only)
+ *   sendRecovery({ email, codeChallenge, redirectTo, captchaToken }) -> Promise<number | null>
+ *                                             provider HTTP status, null when not configured (background only)
  *   background(promise)                       schedules work that must not delay the answer
+ *   log(entry)                                one non-identifying JSON-able line per background send:
+ *                                             { event: "username_reset_send", outcome: "2xx" | "4xx" | ... }
+ *                                             never a username, email, address, token or user id
  *   sha256(text)                              -> Promise<hex>
  *   now(), sleep(ms)                          clock (injectable for tests)
  */
@@ -182,6 +282,7 @@ export function createUsernameResetHandler({
   admitKey,
   background,
   findRecipient,
+  log = () => undefined,
   minimumResponseMs = MINIMUM_RESPONSE_MS,
   now = () => Date.now(),
   resolve,
@@ -189,18 +290,38 @@ export function createUsernameResetHandler({
   sha256,
   sleep = (ms) => new Promise((done) => setTimeout(done, ms)),
 }) {
-  async function deliver(userId, parsed) {
+  const record = (outcome) => {
     try {
-      const email = await findRecipient(userId);
-      if (!email) return;
-      await sendRecovery({
+      log({ event: "username_reset_send", outcome });
+    } catch {
+      // Logging must never change behaviour.
+    }
+  };
+
+  // Exactly one provider call per accepted request (see the header): the account's address when the
+  // username resolves to one that can receive mail, otherwise the decoy. A miss still makes the same
+  // account lookup (for DECOY_USER_ID, which no account has), so the provider call, and with it the
+  // moment the captcha token is spent, comes after the same kind of work on both paths: a caller
+  // racing a replay of its own token against this call gets no head start on one path.
+  async function deliver(userId, parsed) {
+    let email = null;
+    try {
+      email = await findRecipient(userId || DECOY_USER_ID);
+    } catch {
+      email = null;
+    }
+    if (!userId) email = null;
+    try {
+      const status = await sendRecovery({
         captchaToken: parsed.captchaToken,
         codeChallenge: parsed.codeChallenge,
-        email,
+        email: email || DECOY_RECIPIENT,
         redirectTo: parsed.redirectTo,
       });
+      record(sendOutcome(status));
     } catch {
       // Best effort and invisible to the caller by design: the answer was already the fixed one.
+      record("network_error");
     }
   }
 
@@ -225,8 +346,8 @@ export function createUsernameResetHandler({
 
     let parsed;
     try {
-      const text = await request.text();
-      if (text.length > MAX_BODY_BYTES) return invalid();
+      const text = await readBodyLimited(request, MAX_BODY_BYTES);
+      if (text === null) return invalid();
       parsed = parseResetBody(JSON.parse(text));
     } catch {
       return invalid();
@@ -243,12 +364,14 @@ export function createUsernameResetHandler({
     }
     if (!resolution) return respond(503, { code: RESET_UNAVAILABLE_CODE });
     if (resolution.throttled) return respond(429, { code: RESET_THROTTLED_CODE }, { "Retry-After": "900" });
-    if (resolution.userId) {
-      try {
-        background(deliver(resolution.userId, parsed));
-      } catch {
-        // A scheduler failure must not change the answer.
-      }
+    // Scheduled for EVERY accepted request (a miss goes to the decoy). The answer is still held to the
+    // floor, so in normal operation the provider has already seen (and spent) the captcha token by the
+    // time the caller gets the answer, for known and unknown usernames alike.
+    try {
+      background(deliver(resolution.userId, parsed));
+    } catch {
+      // A scheduler failure must not change the answer.
+      record("schedule_error");
     }
     return respond(200, RESET_ACCEPTED);
   };

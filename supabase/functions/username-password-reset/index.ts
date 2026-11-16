@@ -9,6 +9,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.109.0";
 import { createPublicKeyAdmission } from "../username-password-signin/public-key.mjs";
 import {
   createUsernameResetHandler,
+  providerPublicKey,
   recipientFrom,
   recoverRequest,
   resolveUsernameResetRpc,
@@ -83,10 +84,17 @@ const handle = createUsernameResetHandler({
   },
   async sendRecovery(input: { captchaToken?: string; codeChallenge: string; email: string; redirectTo: string }) {
     const url = Deno.env.get("SUPABASE_URL");
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    if (!url || !anonKey) return;
+    // New publishable key first, legacy anon key as the fallback.
+    const anonKey = providerPublicKey((name: string) => Deno.env.get(name));
+    if (!url || !anonKey) return null;
     const [target, init] = recoverRequest({ ...input, anonKey, url });
-    await fetch(target, init);
+    const response = await fetch(target, init);
+    await response.body?.cancel().catch(() => undefined);
+    return response.status;
+  },
+  // One non-identifying line per background send (status class only; see handler.mjs).
+  log(entry: Record<string, string>) {
+    console.log(JSON.stringify(entry));
   },
   sha256,
 });

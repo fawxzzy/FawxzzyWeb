@@ -7,14 +7,21 @@ import { createClient } from "@supabase/supabase-js";
 
 import {
   ALLOWED_ORIGINS,
+  CLIENT_ADDRESS_SOURCE,
   createUsernameResetHandler,
+  DECOY_RECIPIENT,
+  DECOY_USER_ID,
+  MAX_BODY_BYTES,
   MINIMUM_RESPONSE_MS,
+  providerPublicKey,
+  readBodyLimited,
   RECOVERY_REDIRECTS,
   recipientFrom,
   recoverRequest,
   resetAttemptKeys,
   resetClientAddress,
   resolveUsernameResetRpc,
+  sendOutcome,
 } from "../supabase/functions/username-password-reset/handler.mjs";
 import { loadPortalModule } from "./helpers/load-portal-ts.mjs";
 
@@ -49,13 +56,15 @@ const USERS = {
 };
 const usernames = [...Object.keys(USERS), "nobody", "ghost.user"];
 
-function harness({ minimumResponseMs = 150, resolve } = {}) {
+function harness({ minimumResponseMs = 150, resolve, sendStatus = 200, sendRecovery } = {}) {
   const sent = [];
   const scheduled = [];
   const resolveCalls = [];
+  const logs = [];
   const handle = createUsernameResetHandler({
     admitKey: async (key) => key === PUBLIC_KEY,
     background: (task) => scheduled.push(task),
+    log: (entry) => logs.push(entry),
     // The account lookup is deliberately slow and differs by account: it must never reach the answer.
     async findRecipient(userId) {
       await new Promise((done) => setTimeout(done, 120));
@@ -68,12 +77,13 @@ function harness({ minimumResponseMs = 150, resolve } = {}) {
       await new Promise((done) => setTimeout(done, 5));
       return { throttled: false, userId: USERS[input.normalized]?.id ?? null };
     }),
-    async sendRecovery(input) {
+    sendRecovery: sendRecovery ?? (async (input) => {
       sent.push(input);
-    },
+      return sendStatus;
+    }),
     sha256,
   });
-  return { handle, resolveCalls, scheduled, sent };
+  return { handle, logs, resolveCalls, scheduled, sent };
 }
 
 function resetRequest(body, { headers = {}, method = "POST" } = {}) {
@@ -117,10 +127,18 @@ test("every username gets the same answer: status, body and headers are identica
   // Case and surrounding spaces do not change the answer either.
   assert.deepEqual(await snapshot(await handle(resetRequest(validBody("  KNOWN ")))), answers[0]);
   await Promise.all(scheduled);
-  // Mail goes out only for an account that can receive it: known and unconfirmed (twice for KNOWN).
+  // Exactly one provider call per request. Mail goes out only for an account that can receive it
+  // (known twice, unconfirmed); every other username's call goes to the undeliverable decoy.
+  assert.equal(scheduled.length, usernames.length + 1);
+  assert.equal(sent.length, usernames.length + 1);
   assert.deepEqual(
     sent.map((entry) => entry.email).sort(),
-    ["known@example.test", "known@example.test", "unconfirmed@example.test"],
+    [
+      "known@example.test",
+      "known@example.test",
+      "unconfirmed@example.test",
+      ...Array(5).fill(DECOY_RECIPIENT),
+    ].sort(),
   );
   for (const entry of sent) {
     assert.deepEqual(Object.keys(entry).sort(), ["captchaToken", "codeChallenge", "email", "redirectTo"]);
@@ -282,8 +300,209 @@ test("counter keys: namespaced away from sign-in, per username and client, IPv6 
     resetClientAddress(headers({ "cf-connecting-ip": "2001:db8:1:2:aaaa::1" })),
     resetClientAddress(headers({ "cf-connecting-ip": "2001:db8:1:2:bbbb::9" })),
   );
-  assert.equal(resetClientAddress(headers({ "x-forwarded-for": "198.51.100.4, 10.0.0.1" })), "198.51.100.4");
+  // Only the platform-set source counts: cf-connecting-ip, else the RIGHTMOST x-forwarded-for hop.
+  assert.deepEqual(CLIENT_ADDRESS_SOURCE, { fallback: "x-forwarded-for", fallbackHop: "rightmost", primary: "cf-connecting-ip" });
+  assert.equal(resetClientAddress(headers({ "x-forwarded-for": "198.51.100.4, 10.0.0.1" })), "10.0.0.1");
+  assert.equal(resetClientAddress(headers({ "x-forwarded-for": " 203.0.113.7 " })), "203.0.113.7");
+  assert.equal(resetClientAddress(headers({ "x-forwarded-for": " , " })), "unknown");
   assert.equal(resetClientAddress(headers({})), "unknown");
+});
+
+test("client address: forged leftmost x-forwarded-for entries never change the bucket or the counter keys", async () => {
+  const headers = (entries) => new Headers(entries);
+  // Behind a proxy that appends the real peer (x-forwarded-for fallback).
+  const honest = resetClientAddress(headers({ "x-forwarded-for": "198.51.100.20" }));
+  for (const forged of ["1.2.3.4, 198.51.100.20", "9.9.9.9, 8.8.8.8, 198.51.100.20", "unknown, 198.51.100.20", "2001:db8::1, 198.51.100.20"]) {
+    assert.equal(resetClientAddress(headers({ "x-forwarded-for": forged })), honest, forged);
+  }
+  // Behind Cloudflare: cf-connecting-ip wins over anything in x-forwarded-for.
+  const cf = resetClientAddress(headers({ "cf-connecting-ip": "203.0.113.30" }));
+  assert.equal(resetClientAddress(headers({ "cf-connecting-ip": "203.0.113.30", "x-forwarded-for": "1.2.3.4, 5.6.7.8" })), cf);
+  // End to end: rotating forged leftmost entries from one client still fills ONE per-client counter.
+  const clientKeys = new Set();
+  const { handle } = harness({
+    minimumResponseMs: 0,
+    resolve: async (input) => {
+      clientKeys.add(input.clientKey);
+      return { throttled: false, userId: null };
+    },
+  });
+  for (let i = 0; i < 5; i += 1) {
+    const request = new Request("https://project.example.test/functions/v1/username-password-reset", {
+      body: JSON.stringify(validBody(`ghost${i}`)),
+      headers: { apikey: PUBLIC_KEY, "content-type": "application/json", origin: ORIGIN, "x-forwarded-for": `10.9.${i}.1, 198.51.100.20` },
+      method: "POST",
+    });
+    assert.equal((await handle(request)).status, 200);
+  }
+  assert.equal(clientKeys.size, 1);
+  assert.deepEqual([...clientKeys], [(await resetAttemptKeys("ghost0", "198.51.100.20", sha256)).clientKey]);
+});
+
+test("captcha: the token is spent at the provider for a miss exactly like a hit (one call, same shape)", async () => {
+  const { handle, scheduled, sent } = harness({ minimumResponseMs: 0 });
+  for (const name of ["known", "nobody", "banned", "noemail"]) {
+    await handle(resetRequest(validBody(name, { captchaToken: `token-${name}` })));
+  }
+  await Promise.all(scheduled);
+  // (A miss skips the slow account lookup, so its call may finish first; order is not the contract.)
+  sent.sort((left, right) => ["token-known", "token-nobody", "token-banned", "token-noemail"].indexOf(left.captchaToken)
+    - ["token-known", "token-nobody", "token-banned", "token-noemail"].indexOf(right.captchaToken));
+  assert.deepEqual(sent.map((entry) => [entry.captchaToken, entry.email]), [
+    ["token-known", "known@example.test"],
+    ["token-nobody", DECOY_RECIPIENT],
+    ["token-banned", DECOY_RECIPIENT],
+    ["token-noemail", DECOY_RECIPIENT],
+  ]);
+  // The provider request for a hit and a miss differ ONLY in the address.
+  const build = (entry) => recoverRequest({ ...entry, anonKey: "sb_publishable_fixture", url: "https://project.example.test" });
+  const [hitUrl, hitInit] = build(sent[0]);
+  const [missUrl, missInit] = build({ ...sent[1], captchaToken: sent[0].captchaToken });
+  assert.equal(missUrl, hitUrl);
+  assert.deepEqual(missInit.headers, hitInit.headers);
+  assert.deepEqual({ ...JSON.parse(missInit.body), email: null }, { ...JSON.parse(hitInit.body), email: null });
+  assert.equal(JSON.parse(hitInit.body).gotrue_meta_security.captcha_token, "token-known");
+  assert.match(DECOY_RECIPIENT, /^[a-z0-9.-]+@[a-z0-9-]+\.invalid$/);
+  // A miss makes the same account lookup as a hit (for an id no account has), so the provider call
+  // comes after the same work on both paths.
+  const lookups = [];
+  const timed = createUsernameResetHandler({
+    admitKey: async () => true,
+    background: (task) => scheduled.push(task),
+    findRecipient: async (userId) => { lookups.push(userId); return userId === USERS.known.id ? USERS.known.email : null; },
+    minimumResponseMs: 0,
+    resolve: async (input) => ({ throttled: false, userId: USERS[input.normalized]?.id ?? null }),
+    sendRecovery: async () => 200,
+    sha256,
+  });
+  await timed(resetRequest(validBody("known")));
+  await timed(resetRequest(validBody("nobody")));
+  await Promise.all(scheduled);
+  assert.deepEqual(lookups, [USERS.known.id, DECOY_USER_ID]);
+  assert.equal(recipientFrom(null, NOW), null);
+  // A failing account lookup still spends the token (decoy).
+  const scheduledBroken = [];
+  const sentBroken = [];
+  const handleBroken = createUsernameResetHandler({
+    admitKey: async () => true,
+    background: (task) => scheduledBroken.push(task),
+    findRecipient: async () => { throw new Error("admin api down"); },
+    minimumResponseMs: 0,
+    resolve: async () => ({ throttled: false, userId: USERS.known.id }),
+    sendRecovery: async (input) => { sentBroken.push(input); return 200; },
+    sha256,
+  });
+  assert.equal((await handleBroken(resetRequest(validBody("known", { captchaToken: "token-x" })))).status, 200);
+  await Promise.all(scheduledBroken);
+  assert.deepEqual(sentBroken.map((entry) => [entry.captchaToken, entry.email]), [["token-x", DECOY_RECIPIENT]]);
+});
+
+test("send outcome log: one line per background send, status class only, nothing identifying", async () => {
+  assert.equal(sendOutcome(200), "2xx");
+  assert.equal(sendOutcome(204), "2xx");
+  assert.equal(sendOutcome(422), "4xx");
+  assert.equal(sendOutcome(429), "4xx");
+  assert.equal(sendOutcome(503), "5xx");
+  for (const value of [null, undefined, 0, 99, 600, 200.5, "200"]) assert.equal(sendOutcome(value), "not_sent", String(value));
+  for (const [status, outcome] of [[200, "2xx"], [429, "4xx"], [500, "5xx"], [null, "not_sent"]]) {
+    const { handle, logs, scheduled } = harness({ minimumResponseMs: 0, sendStatus: status });
+    const headers = { "cf-connecting-ip": "203.0.113.77" };
+    await handle(resetRequest(validBody("known", { captchaToken: "secret-token" }), { headers }));
+    await handle(resetRequest(validBody("nobody", { captchaToken: "secret-token" }), { headers }));
+    await Promise.all(scheduled);
+    assert.deepEqual(logs, [{ event: "username_reset_send", outcome }, { event: "username_reset_send", outcome }]);
+    const text = JSON.stringify(logs);
+    for (const secret of ["known", "nobody", "example.test", "203.0.113", "secret-token", USERS.known.id, DECOY_RECIPIENT]) {
+      assert.ok(!text.includes(secret), secret);
+    }
+  }
+  const failing = harness({ minimumResponseMs: 0, sendRecovery: async () => { throw new Error("known@example.test 203.0.113.77"); } });
+  const response = await failing.handle(resetRequest(validBody("known")));
+  await Promise.all(failing.scheduled);
+  assert.equal(response.status, 200);
+  assert.deepEqual(failing.logs, [{ event: "username_reset_send", outcome: "network_error" }]);
+  // A throwing logger never changes the answer.
+  const loud = createUsernameResetHandler({
+    admitKey: async () => true,
+    background: () => undefined,
+    findRecipient: async () => "known@example.test",
+    log: () => { throw new Error("log sink down"); },
+    minimumResponseMs: 0,
+    resolve: async () => ({ throttled: false, userId: USERS.known.id }),
+    sendRecovery: async () => 200,
+    sha256,
+  });
+  assert.equal((await loud(resetRequest(validBody("known")))).status, 200);
+});
+
+test("body: read as a stream with a 4 KB cap; oversize and invalid UTF-8 are refused", async () => {
+  assert.equal(MAX_BODY_BYTES, 4096);
+  const target = "https://project.example.test/x";
+  const streamed = (chunks) => new Request(target, {
+    body: new ReadableStream({
+      pull(controller) {
+        const next = chunks.shift();
+        if (next === undefined) controller.close();
+        else controller.enqueue(next);
+      },
+    }),
+    duplex: "half",
+    method: "POST",
+  });
+  assert.equal(await readBodyLimited(new Request(target, { body: "x".repeat(4096), method: "POST" })), "x".repeat(4096));
+  assert.equal(await readBodyLimited(new Request(target, { body: "x".repeat(4097), method: "POST" })), null);
+  // An endless stream is cut off just past the limit instead of being buffered whole.
+  let pulled = 0;
+  const endless = new Request(target, {
+    body: new ReadableStream({
+      pull(controller) {
+        pulled += 1;
+        controller.enqueue(new Uint8Array(1024).fill(120));
+      },
+    }),
+    duplex: "half",
+    method: "POST",
+  });
+  assert.equal(await readBodyLimited(endless), null);
+  assert.ok(pulled <= 8, `pulled ${pulled} chunks`);
+  assert.equal(await readBodyLimited(streamed([new Uint8Array([0xff, 0xfe])])), null);
+  const encoder = new TextEncoder();
+  assert.equal(await readBodyLimited(streamed([encoder.encode('{"a":'), encoder.encode('"é"}')])), '{"a":"é"}');
+  assert.equal(await readBodyLimited(new Request(target, { method: "POST" })), null);
+  // Through the handler: an endless streamed body is the generic invalid answer and resolves nothing.
+  const { handle, resolveCalls } = harness({ minimumResponseMs: 0 });
+  const big = new Request("https://project.example.test/functions/v1/username-password-reset", {
+    body: new ReadableStream({
+      pull(controller) {
+        controller.enqueue(new Uint8Array(2048).fill(32));
+      },
+    }),
+    duplex: "half",
+    headers: { apikey: PUBLIC_KEY, "cf-connecting-ip": "203.0.113.9", "content-type": "application/json", origin: ORIGIN },
+    method: "POST",
+  });
+  assert.equal((await handle(big)).status, 400);
+  assert.equal(resolveCalls.length, 0);
+});
+
+test("provider key: the new publishable key first, the legacy anon key as the fallback", () => {
+  const envOf = (values) => (name) => values[name];
+  const jwt = "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiJ9.c2lnbmF0dXJl";
+  assert.equal(providerPublicKey(envOf({ SUPABASE_ANON_KEY: jwt, SUPABASE_PUBLISHABLE_KEYS: '{"default":"sb_publishable_new","other":"sb_publishable_x"}' })), "sb_publishable_new");
+  assert.equal(providerPublicKey(envOf({ SUPABASE_ANON_KEY: jwt, SUPABASE_PUBLISHABLE_KEYS: '{"web":"sb_publishable_web"}' })), "sb_publishable_web");
+  assert.equal(providerPublicKey(envOf({ SUPABASE_ANON_KEY: jwt, SUPABASE_PUBLISHABLE_KEYS: '["sb_publishable_list"]' })), "sb_publishable_list");
+  assert.equal(providerPublicKey(envOf({ SUPABASE_ANON_KEY: jwt, SUPABASE_PUBLISHABLE_KEYS: "not json" })), jwt);
+  assert.equal(providerPublicKey(envOf({ SUPABASE_ANON_KEY: jwt, SUPABASE_PUBLISHABLE_KEYS: "{}" })), jwt);
+  assert.equal(providerPublicKey(envOf({ SUPABASE_ANON_KEY: jwt })), jwt);
+  assert.equal(providerPublicKey(envOf({})), null);
+  // A publishable key is not a JWT: it goes only in apikey. A legacy JWT also goes in Authorization.
+  const base = { captchaToken: undefined, codeChallenge: challenge, email: "known@example.test", redirectTo: redirect, url: "https://project.example.test" };
+  const [, publishable] = recoverRequest({ ...base, anonKey: "sb_publishable_new" });
+  assert.equal(publishable.headers.apikey, "sb_publishable_new");
+  assert.equal(publishable.headers.Authorization, undefined);
+  const [, legacy] = recoverRequest({ ...base, anonKey: jwt });
+  assert.equal(legacy.headers.apikey, jwt);
+  assert.equal(legacy.headers.Authorization, `Bearer ${jwt}`);
 });
 
 test("the resolver call: service role, account_api profile, strict answer parsing, fails closed", async () => {
@@ -477,5 +696,9 @@ test("wiring: the live adapter posts a username and a challenge, never an email,
   const index = readFileSync("supabase/functions/username-password-reset/index.ts", "utf8");
   assert.ok(index.includes('from "./handler.mjs"'));
   assert.ok(index.includes("EdgeRuntime"));
-  assert.doesNotMatch(index, /console\.|Deno\.env\.get\("SUPABASE_SERVICE_ROLE_KEY"\)[^;]*Response/);
+  assert.doesNotMatch(index, /Deno\.env\.get\("SUPABASE_SERVICE_ROLE_KEY"\)[^;]*Response/);
+  // The only log line is the handler's non-identifying send outcome.
+  assert.deepEqual(index.match(/console\.[a-z]+\(/g), ["console.log("]);
+  assert.ok(index.includes("console.log(JSON.stringify(entry));"));
+  assert.ok(index.includes("providerPublicKey("));
 });
