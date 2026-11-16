@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { AccountExperienceContext, AccountExperienceContextId } from "@/config/account";
 import type { AuthNotice } from "@/lib/auth/copy-matrix";
+import { authThemes } from "../../../supabase/functions/_shared/auth-theme.mjs";
 
 /**
  * Auth Surface v2 pieces with no state and no copy of their own: app icon, head, notice slot, dock
@@ -9,11 +10,11 @@ import type { AuthNotice } from "@/lib/auth/copy-matrix";
  * the server and the error boundaries ship only this small module. Re-exported by `auth-surface`.
  */
 
-/** Branding files already shipped in public/ (no drawn shapes). */
+/** Branding files already shipped in public/ (no drawn shapes); the auth emails use the same artwork. */
 const APP_ICONS: Record<AccountExperienceContextId, string> = {
-  website: "/app/icon-192.png",
-  fitness: "/apps/fitness/storefront-icon.webp",
-  mazer: "/apps/mazer/storefront-icon.webp",
+  website: authThemes.website.iconPath,
+  fitness: authThemes.fitness.iconPath,
+  mazer: authThemes.mazer.iconPath,
 };
 
 /** What a status screen needs to know about its app. */
