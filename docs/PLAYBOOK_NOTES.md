@@ -226,6 +226,14 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - Failure Mode: a re-pin without this entry fails Playbook verify.
 - Scope: Source and generated data only; no provider, credential, database or alias effect.
 
+## 2026-11-19 - Fitness handoff allowlist adds 6de3c480
+
+- Type: Auth handoff allowlist
+- WHAT changed: `FITNESS_HANDOFF_ACTIVATION.fitnessConsumerMerges` adds Fitness main `6de3c480993ff2b75a460625db5b0191d2575633` (PR290: Next 16 upgrade), keeps `dcb1dfa8edf79c05bbd7e16603c6e1a08295ed3d` (live) as the rollback entry and `a68b9bc8456a36a3b84d16279dc08e0bdfa1ab2b`, and drops the oldest `d335131a8602206c5c7702ac7fd3399c26c43f35`; `docs/fitness-session-handoff.md` and `tests/e2e/fitness-handoff.spec.ts` match.
+- WHY it changed: the portal checks `readiness.sourceCommit` against this list before retrieving credentials, so the next Fitness release must be listed before it deploys.
+- Rule: the tuple stays 7 entries; new sha last, live sha kept as rollback, oldest dropped.
+- Scope: Source and local regression only; no provider, credential, database or deploy effect.
+
 ## 2026-11-19 Re-pin the Mazer owner export snapshot (298 cards)
 - WHAT changed: `planning/board-sources/mazer.project-board.owner-export.v1.json` is a byte copy of the Mazer owner export at Mazer main `f1787565` (298 cards, sha256 3cc5822c228ee45f6404a018861434c9acafd55fbd30ea92e1b6e303206768c9), and `src/server/projects/owner-board.generated.mjs` is regenerated from it with `npm run data:project-board-owner-snapshot`. No hand edits.
 - WHY it changed: the Projects page only updates on a Web build, and the snapshot predated the Mazer board fold (PR #652 there: 15 new cards for PRs 638-650 and four planning cards).
