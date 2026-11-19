@@ -253,3 +253,9 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHY it changed: the Mazer board fold (PR #664 there) applied 16 events (9 cards changed, 3 new, all headless-only); the Projects page only updates on a Web build.
 - Rule: re-pin by copying the export and regenerating; never hand-patch the generated file.
 - Scope: Source and generated data only; no provider, credential, database or alias effect.
+
+## 2026-11-19 Re-pin the Fitness owner export snapshot after the fold (42 cards)
+- WHAT changed: `planning/board-sources/fitness.project-board.owner-export.v1.json` is a byte copy of the Fitness owner export at Fitness main `fe226605` (42 cards, sha256 7711db5c9011ad18d18848f8d9e0e19900970d8f20ba2406bdc50651d26f9929) plus the regenerated `src/server/projects/owner-board.generated.mjs`.
+- WHY it changed: the Fitness board fold (PR #288 there) applied 7 events (5 cards changed, FF-QA-004 now fixed); the Projects page only updates on a Web build.
+- Rule: re-pin by copying the export and regenerating; never hand-patch the generated file.
+- Scope: Source and generated data only; no provider, credential, database or alias effect.
