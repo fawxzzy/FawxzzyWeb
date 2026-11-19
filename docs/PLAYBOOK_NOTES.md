@@ -232,3 +232,11 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - Rule: re-pin by copying the export and regenerating; never hand-patch the generated file.
 - Failure Mode: a re-pin without this entry fails Playbook verify.
 - Scope: Source and generated data only; no provider, credential, database or alias effect.
+
+## 2026-11-19 - Fitness handoff allowlist adds a68b9bc8
+
+- Type: Auth handoff allowlist
+- WHAT changed: `FITNESS_HANDOFF_ACTIVATION.fitnessConsumerMerges` adds Fitness main `a68b9bc8456a36a3b84d16279dc08e0bdfa1ab2b` (PR285-287: data export schema and settings, P2 cleanups, QA tests), keeps `02917bfb0612dce212d3aa55e0f338c0b0e6d57d` (live) as the rollback entry and drops the oldest `c48235cb31b1289faafa5b734848bf4d821ff3d1`; `docs/fitness-session-handoff.md` and `tests/e2e/fitness-handoff.spec.ts` match.
+- WHY it changed: the portal checks `readiness.sourceCommit` against this list before retrieving credentials, so the next Fitness release must be listed before it deploys.
+- Rule: the tuple stays 7 entries; new sha last, live sha kept as rollback, oldest dropped.
+- Scope: Source and local regression only; no provider, credential, database or deploy effect.
