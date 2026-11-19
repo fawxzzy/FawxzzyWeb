@@ -142,13 +142,14 @@ rendering alone cannot prove this: the portal checks `readiness.sourceCommit`
 before retrieving credentials. An unlisted candidate must block the release.
 
 The seven-source transition list includes the Fitness main commit
-`a68b9bc8456a36a3b84d16279dc08e0bdfa1ab2b` (PR285-287: data export schema and settings, P2 cleanups, QA tests) as the current source. It retains
-`02917bfb0612dce212d3aa55e0f338c0b0e6d57d` (PR283, the production build before this release) as the rollback source,
+`dcb1dfa8edf79c05bbd7e16603c6e1a08295ed3d` (PR289: Next 15 upgrade) as the current source. It retains
+`a68b9bc8456a36a3b84d16279dc08e0bdfa1ab2b` (PR285-287: data export schema and settings, P2 cleanups, QA tests, the production build before this release) as the rollback source,
+`02917bfb0612dce212d3aa55e0f338c0b0e6d57d` (PR283),
 `1ebbd945312b6d48bfbb46fad28c3134767b932c` (reviewed Fitness main after PR267-278 follow-ups),
 `b761e6527e72bbfe34386cfe49e49674610ccfec` (PR267-278: ScreenHeader lanes H0-H3, account screens on the portal with device-only sign out, Auth Surface v2 copy parity),
 `9979e22faa639d4fb60d915e4a02fefded823dc3` (PR258-270),
-`d335131a8602206c5c7702ac7fd3399c26c43f35` (PR258-266, reviewed but superseded before it shipped), `3db7fe30cb397b83042950f3ef642c930a8e0b8b` (PR256-257). The oldest sources
-`c48235cb31b1289faafa5b734848bf4d821ff3d1`, `d6a625c4b78786b56564b5d29497050fa96183ae`, `bca97957aea3b856caff87dde99ebc959cce6c43`, `529eb6c4b01706521bb4f1f2708c583030118fa7`, `76f04dfcd66c6ebbdbbb6a65a8d516accdd6b2e3`, `2a47cd4b6b1bfb70d6d2b5b913e9f917acc4716e`, `06db3f234ee0b90c00b32507351fe1d902661bdf`, `389d4d21aa79725ba6cd716dcc84d7aa917ada3e`, `5a9ba02e2b950285342fb189d680564ce5cdc489`,
+`d335131a8602206c5c7702ac7fd3399c26c43f35` (PR258-266, reviewed but superseded before it shipped). The oldest sources
+`3db7fe30cb397b83042950f3ef642c930a8e0b8b`, `c48235cb31b1289faafa5b734848bf4d821ff3d1`, `d6a625c4b78786b56564b5d29497050fa96183ae`, `bca97957aea3b856caff87dde99ebc959cce6c43`, `529eb6c4b01706521bb4f1f2708c583030118fa7`, `76f04dfcd66c6ebbdbbb6a65a8d516accdd6b2e3`, `2a47cd4b6b1bfb70d6d2b5b913e9f917acc4716e`, `06db3f234ee0b90c00b32507351fe1d902661bdf`, `389d4d21aa79725ba6cd716dcc84d7aa917ada3e`, `5a9ba02e2b950285342fb189d680564ce5cdc489`,
 `dbb63556d8b01b383dd61d326ce551635cb8b4d8`, `0467722373da14760779392d94a212e3f10aac92` and
 `c086111c4ca3374c6f0c6d57f5e090b22cb57063` were dropped.
 Fitness must also expose that exact 40-hex commit through
