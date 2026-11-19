@@ -1,20 +1,20 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_fitness_owner_registry_e411034d3599",
+  "export_id": "pbe_fitness_owner_registry_e7f24216ce5e",
   "project_id": "fitness",
   "board_id": "fitness:project-feedback:fitness-active",
   "owner": "fitness",
   "adapter_id": "fitness-owner-registry-v1",
-  "source_revision": "sha256:e411034d3599c0593fd9e5adab7536d4becb76d41b109c45cf312c222f67b27c",
-  "generated_at": "2026-11-16T16:05:51.000Z",
+  "source_revision": "sha256:e7f24216ce5e0701944b09f8af413526bab9061eb14c077ec60c78ea9ba239ec",
+  "generated_at": "2026-11-19T17:59:38.000Z",
   "sources": [
     {
       "source_id": "fitness-owner-work-registry",
       "kind": "json",
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json",
-      "revision": "sha256:1866391fdf8f92459536ca31e90121af8275da9dd42659b72c485b447bd02c77",
-      "observed_at": "2026-11-16T16:05:51.000Z"
+      "revision": "sha256:5025688bd12f1b2b61f3e347be710d77bd26cb79ef654698a093958eb8b6bf5e",
+      "observed_at": "2026-11-19T17:59:38.000Z"
     },
     {
       "source_id": "fitness-feedback-monetization-roadmap",
@@ -22,7 +22,7 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs",
       "revision": "sha256:78aa8b8300f0c21258144da0a5bdd6fdc4c9ff1337e265b2552094ebf3505ba6",
-      "observed_at": "2026-11-16T16:05:51.000Z"
+      "observed_at": "2026-11-19T17:59:38.000Z"
     },
     {
       "source_id": "fitness-session-timer-roadmap",
@@ -30,7 +30,7 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs",
       "revision": "sha256:58b1235add45e05d51712f433e2e67d4536b878f4edfad6ab6908d9402c55bcc",
-      "observed_at": "2026-11-16T16:05:51.000Z"
+      "observed_at": "2026-11-19T17:59:38.000Z"
     },
     {
       "source_id": "fitness-owner-export-adapter",
@@ -38,7 +38,7 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs",
       "revision": "sha256:e8485f9091fb27f574b2999d1ca4ad9acf94c3f28b0d5f462836bf43ba3ec562",
-      "observed_at": "2026-11-16T16:05:51.000Z"
+      "observed_at": "2026-11-19T17:59:38.000Z"
     }
   ],
   "cards": [
@@ -104,14 +104,14 @@
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Complete Self-Service Account Tools",
-        "description": "Finish the self-service account lifecycle: recovering a forgotten sign-in, changing your sign-in details, downloading your own data, and removing your account. Progress: changing sign-in details is merged and live, and saving a reset sign-in was fixed and is live, but neither has been exercised live yet. Recovery is not verified end to end. Data download and account removal are still planned. Not checked on a real phone.",
+        "description": "Finish the self-service account lifecycle: recovering a forgotten sign-in, changing your sign-in details, downloading your own data, and removing your account. Progress: changing sign-in details is merged and live, and saving a reset sign-in was fixed and is live, but neither has been exercised live yet. Recovery is not verified end to end. Data download and account removal are still planned. Not checked on a real phone. Board update 2026-11-19: Data download: the existing Settings export now writes a schema version and a settings block, is never cached, and has tests proving one person's export holds none of another's data. Merged, not deployed yet. Account removal and live recovery checks are still open. PR #285 merged (b2862af6). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-19: Data download is live in build a68b9bc8 with a schema version and settings block and tests that one person's export never holds another's data. Account removal is not built (needs the owner's decision) and live recovery is not verified end to end. Not checked on a real phone. PR #285 merged (b2862af6). Deployed: production build a68b9bc8. Checked only in headless Chromium, not on a real phone.",
         "card_type": "feature",
         "lifecycle": "planning",
         "priority": "medium",
         "owner": "fitness",
         "dependencies": [],
         "board_version": 1,
-        "updated_at": "2026-11-13T17:40:00.000Z",
+        "updated_at": "2026-11-19T15:52:32.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-ACCOUNT-003",
         "extensions": {
           "owner_status": "planning",
@@ -123,11 +123,11 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-ACCOUNT-003",
         "source_status": "current",
-        "source_updated_at": "2026-11-13T17:40:00.000Z"
+        "source_updated_at": "2026-11-19T15:52:32.000Z"
       },
       "content": {
-        "summary": "Finish the self-service account lifecycle: recovering a forgotten sign-in, changing your sign-in details, downloading your own data, and removing your account. Progress: changing sign-in details is merged and live, and saving a reset sign-in was fixed and is live, but neither has been exercised live yet. Recovery is not verified end to end. Data download and account removal are still planned. Not checked on a real phone.",
-        "objective": "Finish the self-service account lifecycle: recovering a forgotten sign-in, changing your sign-in details, downloading your own data, and removing your account. Progress: changing sign-in details is merged and live, and saving a reset sign-in was fixed and is live, but neither has been exercised live yet. Recovery is not verified end to end. Data download and account removal are still planned. Not checked on a real phone.",
+        "summary": "Finish the self-service account lifecycle: recovering a forgotten sign-in, changing your sign-in details, downloading your own data, and removing your account. Progress: changing sign-in details is merged and live, and saving a reset sign-in was fixed and is live, but neither has been exercised live yet. Recovery is not verified end to end. Data download and account removal are still planned. Not checked on a real phone. Board update 2026-11-19: Data download: the existing Settings export now writes a schema version and a settings block, is never cached, and has tests proving one person's export holds none of another's data. Merged, not deployed yet. Account removal and live recovery checks are still open. PR #285 merged (b2862af6). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-19: Data download is live in build a68b9bc8 with a schema version and settings block and tests that one person's export never holds another's data. Account removal is not built (needs the owner's decision) and live recovery is not verified end to end. Not checked on a real phone. PR #285 merged (b2862af6). Deployed: production build a68b9bc8. Checked only in headless Chromium, not on a real phone.",
+        "objective": "Finish the self-service account lifecycle: recovering a forgotten sign-in, changing your sign-in details, downloading your own data, and removing your account. Progress: changing sign-in details is merged and live, and saving a reset sign-in was fixed and is live, but neither has been exercised live yet. Recovery is not verified end to end. Data download and account removal are still planned. Not checked on a real phone. Board update 2026-11-19: Data download: the existing Settings export now writes a schema version and a settings block, is never cached, and has tests proving one person's export holds none of another's data. Merged, not deployed yet. Account removal and live recovery checks are still open. PR #285 merged (b2862af6). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-19: Data download is live in build a68b9bc8 with a schema version and settings block and tests that one person's export never holds another's data. Account removal is not built (needs the owner's decision) and live recovery is not verified end to end. Not checked on a real phone. PR #285 merged (b2862af6). Deployed: production build a68b9bc8. Checked only in headless Chromium, not on a real phone.",
         "acceptance_criteria": [
           "Forgotten-sign-in recovery is verified end to end (not yet verified).",
           "Changing sign-in details and saving a reset sign-in are exercised live (not yet done).",
@@ -157,7 +157,7 @@
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Finish Account Site Setup for the Fitness App",
-        "description": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it. Done and live as of 2026-11-13: starting sign-up from the account site, clearer sign-up feedback messages, one global sign-out that also signs people out of the app, and saving a changed username or contact address. Checked live only in headless Chromium with a standing test account (sign-in, account site handoff, sign-out then redirect to sign-in); not checked on a real phone. Still open: the recovery link needs an owner setup step on the account side and a live check, and a real-phone pass is pending. Board update 2026-11-16: Account portal integration live in b761e652 (Account row opens the account site, sign-out via host); phone check and where account changes live are open PR #275 merged (b761e652). Deployed: production build b761e652. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Sign-out follow-ups and cross-check fixes are live at 02917bfb; where account changes live and the global sign-out check are still open PR #279 merged (d37559cb). Deployed: production build 02917bfb. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Live check run: device sign-out returns to the login page, but an old copied session stays valid server-side (device-only sign out by design); decision on server-side revoke still open Deployed: production build 02917bfb. Checked only in headless Chromium, not on a real phone.",
+        "description": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it. Done and live as of 2026-11-13: starting sign-up from the account site, clearer sign-up feedback messages, one global sign-out that also signs people out of the app, and saving a changed username or contact address. Checked live only in headless Chromium with a standing test account (sign-in, account site handoff, sign-out then redirect to sign-in); not checked on a real phone. Still open: the recovery link needs an owner setup step on the account side and a live check, and a real-phone pass is pending. Board update 2026-11-16: Live check run: device sign-out returns to the login page, but an old copied session stays valid server-side (device-only sign out by design); decision on server-side revoke still open Deployed: production build 02917bfb. Checked only in headless Chromium, not on a real phone. Board update 2026-11-19: Signing out now cancels the session on the server: the code has been live since build 02917bfb (confirmed by independent code review), and a scripted replay with the test account showed an old copied sign-in is sent back to sign-in with no account data. The earlier note that it stayed valid was misread from the page status code. Merged cleanups for the settings screen in #286, not deployed yet. Not checked on a real phone. PR #286 merged (30f8c3e1). Checked only in headless Chromium, not on a real phone. Board update 2026-11-19: Settings screen cleanups from #286 are live in build a68b9bc8; signing out cancels the server session (live since 02917bfb). Real-phone sign-out check still open. PR #286 merged (30f8c3e1). Deployed: production build a68b9bc8. Checked only in headless Chromium, not on a real phone.",
         "card_type": "feature",
         "lifecycle": "in-progress",
         "priority": "high",
@@ -166,7 +166,7 @@
           "FF-AUTH-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-16T16:05:24.000Z",
+        "updated_at": "2026-11-19T15:52:38.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-ACCOUNT-004",
         "extensions": {
           "owner_status": "in_progress",
@@ -178,11 +178,11 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-ACCOUNT-004",
         "source_status": "current",
-        "source_updated_at": "2026-11-16T16:05:24.000Z"
+        "source_updated_at": "2026-11-19T15:52:38.000Z"
       },
       "content": {
-        "summary": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it. Done and live as of 2026-11-13: starting sign-up from the account site, clearer sign-up feedback messages, one global sign-out that also signs people out of the app, and saving a changed username or contact address. Checked live only in headless Chromium with a standing test account (sign-in, account site handoff, sign-out then redirect to sign-in); not checked on a real phone. Still open: the recovery link needs an owner setup step on the account side and a live check, and a real-phone pass is pending. Board update 2026-11-16: Account portal integration live in b761e652 (Account row opens the account site, sign-out via host); phone check and where account changes live are open PR #275 merged (b761e652). Deployed: production build b761e652. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Sign-out follow-ups and cross-check fixes are live at 02917bfb; where account changes live and the global sign-out check are still open PR #279 merged (d37559cb). Deployed: production build 02917bfb. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Live check run: device sign-out returns to the login page, but an old copied session stays valid server-side (device-only sign out by design); decision on server-side revoke still open Deployed: production build 02917bfb. Checked only in headless Chromium, not on a real phone.",
-        "objective": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it. Done and live as of 2026-11-13: starting sign-up from the account site, clearer sign-up feedback messages, one global sign-out that also signs people out of the app, and saving a changed username or contact address. Checked live only in headless Chromium with a standing test account (sign-in, account site handoff, sign-out then redirect to sign-in); not checked on a real phone. Still open: the recovery link needs an owner setup step on the account side and a live check, and a real-phone pass is pending. Board update 2026-11-16: Account portal integration live in b761e652 (Account row opens the account site, sign-out via host); phone check and where account changes live are open PR #275 merged (b761e652). Deployed: production build b761e652. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Sign-out follow-ups and cross-check fixes are live at 02917bfb; where account changes live and the global sign-out check are still open PR #279 merged (d37559cb). Deployed: production build 02917bfb. Checked only in headless Chromium, not on a real phone. Board update 2026-11-16: Live check run: device sign-out returns to the login page, but an old copied session stays valid server-side (device-only sign out by design); decision on server-side revoke still open Deployed: production build 02917bfb. Checked only in headless Chromium, not on a real phone.",
+        "summary": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it. Done and live as of 2026-11-13: starting sign-up from the account site, clearer sign-up feedback messages, one global sign-out that also signs people out of the app, and saving a changed username or contact address. Checked live only in headless Chromium with a standing test account (sign-in, account site handoff, sign-out then redirect to sign-in); not checked on a real phone. Still open: the recovery link needs an owner setup step on the account side and a live check, and a real-phone pass is pending. Board update 2026-11-16: Live check run: device sign-out returns to the login page, but an old copied session stays valid server-side (device-only sign out by design); decision on server-side revoke still open Deployed: production build 02917bfb. Checked only in headless Chromium, not on a real phone. Board update 2026-11-19: Signing out now cancels the session on the server: the code has been live since build 02917bfb (confirmed by independent code review), and a scripted replay with the test account showed an old copied sign-in is sent back to sign-in with no account data. The earlier note that it stayed valid was misread from the page status code. Merged cleanups for the settings screen in #286, not deployed yet. Not checked on a real phone. PR #286 merged (30f8c3e1). Checked only in headless Chromium, not on a real phone. Board update 2026-11-19: Settings screen cleanups from #286 are live in build a68b9bc8; signing out cancels the server session (live since 02917bfb). Real-phone sign-out check still open. PR #286 merged (30f8c3e1). Deployed: production build a68b9bc8. Checked only in headless Chromium, not on a real phone.",
+        "objective": "Complete the shared account site that Fitness relies on for sign-in, sign-out, forgotten-sign-in recovery and returning people to the app, so the account side is finished before more Fitness work builds on it. Done and live as of 2026-11-13: starting sign-up from the account site, clearer sign-up feedback messages, one global sign-out that also signs people out of the app, and saving a changed username or contact address. Checked live only in headless Chromium with a standing test account (sign-in, account site handoff, sign-out then redirect to sign-in); not checked on a real phone. Still open: the recovery link needs an owner setup step on the account side and a live check, and a real-phone pass is pending. Board update 2026-11-16: Live check run: device sign-out returns to the login page, but an old copied session stays valid server-side (device-only sign out by design); decision on server-side revoke still open Deployed: production build 02917bfb. Checked only in headless Chromium, not on a real phone. Board update 2026-11-19: Signing out now cancels the session on the server: the code has been live since build 02917bfb (confirmed by independent code review), and a scripted replay with the test account showed an old copied sign-in is sent back to sign-in with no account data. The earlier note that it stayed valid was misread from the page status code. Merged cleanups for the settings screen in #286, not deployed yet. Not checked on a real phone. PR #286 merged (30f8c3e1). Checked only in headless Chromium, not on a real phone. Board update 2026-11-19: Settings screen cleanups from #286 are live in build a68b9bc8; signing out cancels the server session (live since 02917bfb). Real-phone sign-out check still open. PR #286 merged (30f8c3e1). Deployed: production build a68b9bc8. Checked only in headless Chromium, not on a real phone.",
         "acceptance_criteria": [
           "Sign-up, sign-in, sign-out and forgotten-sign-in recovery all work from the account site and return people to the Fitness app.",
           "The account site and the app always agree on who is signed in.",
@@ -1274,17 +1274,17 @@
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Cover the app with real interaction tests",
-        "description": "Add a library for testing what people see and tap, sort out 13 stale tests that are currently left out of the all-tests job, and wire the QA scripts so they run together. Board update 2026-11-15: Session start/resume endpoints now answer 401 JSON and the client sends people to sign-in; session-expired and login messages use a fixed allow-list. Merged, not deployed; headless/source only, no live expired-session run. Interaction-test library and the 13 stale excluded tests are still open. PR #247 merged (37702680). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: DOM interaction test setup (jsdom + RTL) with 5 card-primitive tests; 8 stale tests triaged back into test:all; test/CI-only, no runtime surface; headless-only, not device-checked PR #249 merged (c6396fc0). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
+        "description": "Add a library for testing what people see and tap, sort out 13 stale tests that are currently left out of the all-tests job, and wire the QA scripts so they run together. Board update 2026-11-15: Session start/resume endpoints now answer 401 JSON and the client sends people to sign-in; session-expired and login messages use a fixed allow-list. Merged, not deployed; headless/source only, no live expired-session run. Interaction-test library and the 13 stale excluded tests are still open. PR #247 merged (37702680). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: DOM interaction test setup (jsdom + RTL) with 5 card-primitive tests; 8 stale tests triaged back into test:all; test/CI-only, no runtime surface; headless-only, not device-checked PR #249 merged (c6396fc0). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-19: The last 5 stale tests are back in the all-tests job, new tap-through tests cover starting a workout, logging sets and finishing, the routine form and sign-out, and one command runs the QA proofs together. Tests only; live in build a68b9bc8. PR #287 merged (a68b9bc8). Deployed: production build a68b9bc8. No device surface.",
         "card_type": "feature",
-        "lifecycle": "review",
+        "lifecycle": "completed",
         "priority": "medium",
         "owner": "fitness",
         "dependencies": [],
         "board_version": 1,
-        "updated_at": "2026-11-15T02:49:34.000Z",
+        "updated_at": "2026-11-19T15:52:26.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-QA-004",
         "extensions": {
-          "owner_status": "review",
+          "owner_status": "fixed",
           "public_safe": true,
           "visibility": "public"
         }
@@ -1293,11 +1293,11 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-QA-004",
         "source_status": "current",
-        "source_updated_at": "2026-11-15T02:49:34.000Z"
+        "source_updated_at": "2026-11-19T15:52:26.000Z"
       },
       "content": {
-        "summary": "Add a library for testing what people see and tap, sort out 13 stale tests that are currently left out of the all-tests job, and wire the QA scripts so they run together. Board update 2026-11-15: Session start/resume endpoints now answer 401 JSON and the client sends people to sign-in; session-expired and login messages use a fixed allow-list. Merged, not deployed; headless/source only, no live expired-session run. Interaction-test library and the 13 stale excluded tests are still open. PR #247 merged (37702680). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: DOM interaction test setup (jsdom + RTL) with 5 card-primitive tests; 8 stale tests triaged back into test:all; test/CI-only, no runtime surface; headless-only, not device-checked PR #249 merged (c6396fc0). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
-        "objective": "Add a library for testing what people see and tap, sort out 13 stale tests that are currently left out of the all-tests job, and wire the QA scripts so they run together. Board update 2026-11-15: Session start/resume endpoints now answer 401 JSON and the client sends people to sign-in; session-expired and login messages use a fixed allow-list. Merged, not deployed; headless/source only, no live expired-session run. Interaction-test library and the 13 stale excluded tests are still open. PR #247 merged (37702680). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: DOM interaction test setup (jsdom + RTL) with 5 card-primitive tests; 8 stale tests triaged back into test:all; test/CI-only, no runtime surface; headless-only, not device-checked PR #249 merged (c6396fc0). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
+        "summary": "Add a library for testing what people see and tap, sort out 13 stale tests that are currently left out of the all-tests job, and wire the QA scripts so they run together. Board update 2026-11-15: Session start/resume endpoints now answer 401 JSON and the client sends people to sign-in; session-expired and login messages use a fixed allow-list. Merged, not deployed; headless/source only, no live expired-session run. Interaction-test library and the 13 stale excluded tests are still open. PR #247 merged (37702680). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: DOM interaction test setup (jsdom + RTL) with 5 card-primitive tests; 8 stale tests triaged back into test:all; test/CI-only, no runtime surface; headless-only, not device-checked PR #249 merged (c6396fc0). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-19: The last 5 stale tests are back in the all-tests job, new tap-through tests cover starting a workout, logging sets and finishing, the routine form and sign-out, and one command runs the QA proofs together. Tests only; live in build a68b9bc8. PR #287 merged (a68b9bc8). Deployed: production build a68b9bc8. No device surface.",
+        "objective": "Add a library for testing what people see and tap, sort out 13 stale tests that are currently left out of the all-tests job, and wire the QA scripts so they run together. Board update 2026-11-15: Session start/resume endpoints now answer 401 JSON and the client sends people to sign-in; session-expired and login messages use a fixed allow-list. Merged, not deployed; headless/source only, no live expired-session run. Interaction-test library and the 13 stale excluded tests are still open. PR #247 merged (37702680). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: DOM interaction test setup (jsdom + RTL) with 5 card-primitive tests; 8 stale tests triaged back into test:all; test/CI-only, no runtime surface; headless-only, not device-checked PR #249 merged (c6396fc0). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-19: The last 5 stale tests are back in the all-tests job, new tap-through tests cover starting a workout, logging sets and finishing, the routine form and sign-out, and one command runs the QA proofs together. Tests only; live in build a68b9bc8. PR #287 merged (a68b9bc8). Deployed: production build a68b9bc8. No device surface.",
         "acceptance_criteria": [
           "A screen-level test library is added and used for key flows.",
           "The 13 stale tests are fixed or retired and included in the all-tests job.",
@@ -1336,7 +1336,7 @@
           "FF-RET-004"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-15T03:37:55.000Z",
+        "updated_at": "2026-11-19T14:54:14.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-RECAP-001",
         "extensions": {
           "owner_status": "review",
@@ -1347,7 +1347,7 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs#FF-RECAP-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-15T03:37:55.000Z"
+        "source_updated_at": "2026-11-19T14:54:14.000Z"
       },
       "content": {
         "summary": "Generate one deterministic workout recap artifact from completed session truth so users can review, share, or export a clean summary without building a social feed. The artifact should highlight workout summary, PR moments, and consistency signals when grounded in real data.",
@@ -1436,14 +1436,14 @@
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Lock Down Database Access for Signed-Out Visitors",
-        "description": "On 2026-11-10 signed-out visitors lost the ability to run 5 Fitness database functions and 5 internal tables became deny-by-default. The change was applied by approved hash and a rollback file is kept. Re-tested live afterward: sign-in, portal handoff, History and workout resume. Not verified: finishing a workout and reordering a routine were not clicked through.",
+        "description": "On 2026-11-10 signed-out visitors lost the ability to run 5 Fitness database functions and 5 internal tables became deny-by-default. The change was applied by approved hash and a rollback file is kept. Re-tested live afterward: sign-in, portal handoff, History and workout resume. Not verified: finishing a workout and reordering a routine were not clicked through. Board update 2026-11-19: Live re-check on build 02917bfb with the test account after the database lockdown: a new routine, a finished workout (5 sets saved) and day and exercise reordering all worked, and the order held after reload; no console errors. Database-only change with no code PR, so it stays in review. Not checked on a real phone. Deployed: production build 02917bfb. Checked only in headless Chromium, not on a real phone.",
         "card_type": "feature",
         "lifecycle": "review",
         "priority": "high",
         "owner": "fitness",
         "dependencies": [],
         "board_version": 1,
-        "updated_at": "2026-11-11T00:00:00.000Z",
+        "updated_at": "2026-11-19T17:59:38.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-RELIABILITY-002",
         "extensions": {
           "owner_status": "review",
@@ -1455,11 +1455,11 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-RELIABILITY-002",
         "source_status": "current",
-        "source_updated_at": "2026-11-11T00:00:00.000Z"
+        "source_updated_at": "2026-11-19T17:59:38.000Z"
       },
       "content": {
-        "summary": "On 2026-11-10 signed-out visitors lost the ability to run 5 Fitness database functions and 5 internal tables became deny-by-default. The change was applied by approved hash and a rollback file is kept. Re-tested live afterward: sign-in, portal handoff, History and workout resume. Not verified: finishing a workout and reordering a routine were not clicked through.",
-        "objective": "On 2026-11-10 signed-out visitors lost the ability to run 5 Fitness database functions and 5 internal tables became deny-by-default. The change was applied by approved hash and a rollback file is kept. Re-tested live afterward: sign-in, portal handoff, History and workout resume. Not verified: finishing a workout and reordering a routine were not clicked through.",
+        "summary": "On 2026-11-10 signed-out visitors lost the ability to run 5 Fitness database functions and 5 internal tables became deny-by-default. The change was applied by approved hash and a rollback file is kept. Re-tested live afterward: sign-in, portal handoff, History and workout resume. Not verified: finishing a workout and reordering a routine were not clicked through. Board update 2026-11-19: Live re-check on build 02917bfb with the test account after the database lockdown: a new routine, a finished workout (5 sets saved) and day and exercise reordering all worked, and the order held after reload; no console errors. Database-only change with no code PR, so it stays in review. Not checked on a real phone. Deployed: production build 02917bfb. Checked only in headless Chromium, not on a real phone.",
+        "objective": "On 2026-11-10 signed-out visitors lost the ability to run 5 Fitness database functions and 5 internal tables became deny-by-default. The change was applied by approved hash and a rollback file is kept. Re-tested live afterward: sign-in, portal handoff, History and workout resume. Not verified: finishing a workout and reordering a routine were not clicked through. Board update 2026-11-19: Live re-check on build 02917bfb with the test account after the database lockdown: a new routine, a finished workout (5 sets saved) and day and exercise reordering all worked, and the order held after reload; no console errors. Database-only change with no code PR, so it stays in review. Not checked on a real phone. Deployed: production build 02917bfb. Checked only in headless Chromium, not on a real phone.",
         "acceptance_criteria": [
           "Signed-out visitors cannot run the five affected Fitness functions.",
           "The five internal tables deny access by default and a rollback file is kept.",
@@ -2362,7 +2362,7 @@
   "extensions": {
     "source_work_item_count": 57,
     "exported_card_count": 42,
-    "exported_completed_card_count": 23,
+    "exported_completed_card_count": 24,
     "excluded_completed_card_count": 15,
     "selected_owner_snapshot_record_count": 55,
     "excluded_unstable_or_nonfitness_record_count": 18,
