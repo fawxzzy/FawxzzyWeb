@@ -37,7 +37,6 @@ const releaseNov16FitnessMerge = "1ebbd945312b6d48bfbb46fad28c3134767b932c";
 const releaseNov16bFitnessMerge = "02917bfb0612dce212d3aa55e0f338c0b0e6d57d";
 const releaseNov19FitnessMerge = "a68b9bc8456a36a3b84d16279dc08e0bdfa1ab2b";
 const releaseNov19bFitnessMerge = "dcb1dfa8edf79c05bbd7e16603c6e1a08295ed3d";
-const releaseNov19bFitnessMerge = "dcb1dfa8edf79c05bbd7e16603c6e1a08295ed3d";
 const acceptedFitnessMerges = [
   releaseNov15bFitnessMerge, releaseNov15cFitnessMerge, releaseNov15dFitnessMerge, releaseNov16FitnessMerge, releaseNov16bFitnessMerge, releaseNov19FitnessMerge, releaseNov19bFitnessMerge] as const;
 const legacyFitnessMerge = "f87f2dc7e0cc3cbead0eb3ea5ed7b9c592fdfa94";
