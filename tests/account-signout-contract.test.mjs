@@ -306,3 +306,19 @@ test("unavailable notices share one ending, and no retry label or 'can not' is l
     assert.notEqual(notice.action, "Retry", id);
   }
 });
+
+// MAZER-UI-100: Sign out and Reset progress for Mazer live only on the account page; both hand back
+// into Mazer with one closed-set key and never a token, code or user id.
+test("Mazer account actions hand back with one closed-set key on the Mazer origin", () => {
+  const actions = loadPortalModule("src/config/mazer-account-actions.ts");
+  assert.equal(actions.MAZER_ACCOUNT_ACTION_PARAM, "accountAction");
+  assert.deepEqual([...actions.MAZER_ACCOUNT_ACTIONS], ["signed-out", "reset-progress"]);
+  assert.equal(actions.mazerAccountActionUrl("signed-out"), "https://mazer.fawxzzy.com/?accountAction=signed-out");
+  assert.equal(actions.mazerAccountActionUrl("reset-progress"), "https://mazer.fawxzzy.com/?accountAction=reset-progress");
+  // The hand-back target is on the sign-out allowlist, so it can never point off the Mazer origin.
+  assert.equal(resolveTo(actions.mazerAccountActionUrl("signed-out")), "https://mazer.fawxzzy.com/?accountAction=signed-out");
+  const portal = read("src/components/account/account-portal.tsx");
+  assert.match(portal, /if \(context\.id === "mazer"\) destination\.searchParams\.set\(MAZER_ACCOUNT_ACTION_PARAM, "signed-out"\);/);
+  assert.match(portal, /mazerAccountActionUrl\("reset-progress", context\.destinationOrigin\)/);
+  assert.match(portal, /session && adapter && context\.id === "mazer" \? \(/, "the Reset progress row is Mazer-only");
+});

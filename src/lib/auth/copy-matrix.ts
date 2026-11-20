@@ -193,6 +193,8 @@ export const AUTH_COPY = {
     newEmail: "New email",
     deleteAccount: "Delete account",
     deleteAccountValue: "Removes your account",
+    resetProgress: "Reset progress",
+    resetProgressValue: "Confirm in Mazer",
     typeToConfirm: (text: string) => `Type ${text}`,
   },
   /**
@@ -218,6 +220,7 @@ export const AUTH_COPY = {
     changeUsername: "Change username",
     changeEmail: "Change email",
     deleteAccount: "Delete account",
+    resetProgress: "Reset Mazer progress",
   },
 } as const;
 

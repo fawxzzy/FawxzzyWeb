@@ -88,6 +88,7 @@ import {
 } from "@/lib/auth/account-delete";
 import { TurnstileField, type TurnstileFieldHandle } from "@/components/account/turnstile-field";
 import { resolveSignOutDestination, SIGNOUT_RETURN_PARAM } from "@/config/account-signout";
+import { MAZER_ACCOUNT_ACTION_PARAM, mazerAccountActionUrl } from "@/config/mazer-account-actions";
 import {
   authAccentStyle,
   AuthDock,
@@ -869,6 +870,8 @@ function AccountPanel({
       writeOwnerHint(false);
       const destination = new URL("/", context.destinationOrigin);
       if (context.id === "website") destination.searchParams.set("signedOut", "1");
+      // MAZER-UI-100: Mazer keeps its own session, so it is told to end it too (closed-set key, no secret).
+      if (context.id === "mazer") destination.searchParams.set(MAZER_ACCOUNT_ACTION_PARAM, "signed-out");
       if (isLocalTestOrigin()) {
         // Deterministic harness: record the real destination instead of leaving the test origin.
         document.documentElement.dataset.signOutDestination = destination.href;
@@ -957,6 +960,20 @@ function AccountPanel({
     setQueryNoticeDismissed(true);
     setConfirmingEverywhere(false);
     setChanging(field);
+  }
+
+  /**
+   * MAZER-UI-100: Reset progress (Mazer only). The reset itself and its confirmation stay in Mazer,
+   * which owns the progress on its own origin; this row only opens Mazer on that confirmation.
+   */
+  function resetMazerProgress() {
+    const destination = mazerAccountActionUrl("reset-progress", context.destinationOrigin);
+    if (isLocalTestOrigin()) {
+      // Deterministic harness: record the real destination instead of leaving the test origin.
+      document.documentElement.dataset.mazerAccountAction = destination;
+      return;
+    }
+    window.location.assign(destination);
   }
 
   function startDelete() {
@@ -1073,6 +1090,17 @@ function AccountPanel({
           type="email"
           value={session?.email ?? ""}
         />
+        {session && adapter && context.id === "mazer" ? (
+          <AuthField
+            action={{ disabled: busy, label: AUTH_COPY.aria.resetProgress, onClick: resetMazerProgress }}
+            danger
+            id="account-reset-progress-row"
+            label={AUTH_COPY.field.resetProgress}
+            locked
+            name="reset-progress"
+            value={AUTH_COPY.field.resetProgressValue}
+          />
+        ) : null}
         {session && adapter?.deleteAccountLive ? (
           <AuthField
             action={{ disabled: busy, label: AUTH_COPY.aria.deleteAccount, onClick: startDelete }}
