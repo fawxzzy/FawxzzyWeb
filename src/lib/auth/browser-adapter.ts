@@ -29,6 +29,13 @@ import {
   type UsernameChangeStatus,
 } from "@/lib/auth/account-change";
 import {
+  isMazerProfileMissing,
+  MAZER_ENSURE_PROFILE_RPC,
+  MAZER_PROFILE_TABLE,
+  MAZER_SCHEMA,
+  MAZER_SET_USERNAME_RPC,
+} from "@/lib/auth/mazer-name";
+import {
   deleteConfirmTarget,
   isAccountDeleteStatus,
   isAccountGone,
@@ -124,6 +131,18 @@ export type PortalAuthAdapter = {
   reauthenticate(password: string, captchaToken?: string): Promise<void>;
   /** Saves a new username at once (database function; rate limited there). */
   changeUsername(username: string): Promise<{ status: UsernameChangeStatus; session: PortalSession | null }>;
+  /**
+   * The signed-in account's Mazer leaderboard name (`mazer.mazer_profiles.username`), or null when
+   * the account has no Mazer profile yet. Throws on a provider or network failure.
+   */
+  readMazerName(): Promise<string | null>;
+  /**
+   * Renames the signed-in account's Mazer profile through `mazer.mazer_set_username` (auth-bound,
+   * own row only; the unique index decides a taken name). A missing profile is created once through
+   * `mazer.mazer_ensure_profile` and the rename retried once. Resolves with the saved name; throws
+   * with the provider's `code`/`status` otherwise.
+   */
+  saveMazerName(name: string): Promise<string>;
   /** Sends the change link to the NEW address; the change applies only when that link is opened. */
   requestEmailChange(email: string, contextId: AccountExperienceContextId): Promise<void>;
   /**
@@ -734,6 +753,55 @@ export function createSupabaseAdapter(
       const refreshed = await client.auth.refreshSession().catch(() => null);
       return { status: data, session: toPortalSession(refreshed?.data.session ?? null) };
     },
+    async readMazerName() {
+      const { data: current, error: sessionError } = await client.auth.getSession();
+      if (sessionError) throw sessionError;
+      const userId = current.session?.user.id;
+      if (!userId) return null;
+      const { data, error, status } = await client
+        .schema(MAZER_SCHEMA)
+        .from(MAZER_PROFILE_TABLE)
+        .select("username")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (error) {
+        throw Object.assign(new Error("Mazer name read failed."), { code: error.code, status });
+      }
+      const username = (data as { username?: unknown } | null)?.username;
+      return typeof username === "string" ? username : null;
+    },
+    async saveMazerName(name) {
+      const { data: current, error: sessionError } = await client.auth.getSession();
+      if (sessionError) throw sessionError;
+      const userId = current.session?.user.id;
+      if (!userId) throw Object.assign(new Error("Not signed in."), { status: 401 });
+      const mazer = client.schema(MAZER_SCHEMA);
+      const rename = () => mazer.rpc(MAZER_SET_USERNAME_RPC, { p_expected_user_id: userId, p_username: name });
+      let result = await rename();
+      if (result.error && isMazerProfileMissing(result.error)) {
+        // An account made on this site has no Mazer profile until Mazer (or this) creates one.
+        const ensured = await mazer.rpc(MAZER_ENSURE_PROFILE_RPC, {
+          p_display_name: null,
+          p_expected_user_id: userId,
+        });
+        if (ensured.error) {
+          throw Object.assign(new Error("Mazer profile could not be created."), {
+            code: ensured.error.code,
+            message: ensured.error.message,
+            status: ensured.status,
+          });
+        }
+        result = await rename();
+      }
+      if (result.error) {
+        throw Object.assign(new Error("Mazer name change failed."), {
+          code: result.error.code,
+          message: result.error.message,
+          status: result.status,
+        });
+      }
+      return typeof result.data === "string" ? result.data : name.trim();
+    },
     async requestEmailChange(email, contextId) {
       const { error } = await client.auth.updateUser(
         { email },
@@ -791,11 +859,15 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       "delete-support",
       "delete-blocked",
       "delete-off",
+      "mazer-name",
+      "mazer-name-missing",
+      "mazer-name-unavailable",
     ].includes(scenario)
       ? { displayName: "fawxzzy", email: "preview.user@example.test", userId: "preview-user" }
       : null;
   const listeners = new Set<(value: PortalSession | null) => void>();
   let deleteChecked = false;
+  let mazerName: string | null = null;
   let deleteExpiredOnce = false;
   const fail = () => {
     if (scenario === "error") throw new Error("Deterministic local test error");
@@ -1038,6 +1110,37 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
     async endAccountDelete() {
       deleteChecked = false;
     },
+    // Mazer name fixtures (MAZER-ACCT-047). `mazer-name` has the generated name "Mazer-123456";
+    // `mazer-name-missing` has no profile yet (the first rename answers MAZER_PROFILE_MISSING, the page
+    // creates it once and retries); `mazer-name-unavailable` behaves like the function is unreachable.
+    // Every other session fixture has no Mazer profile (no row unless `?app=mazer`). The name
+    // "taken-name" belongs to someone else. Harness markers record what the page sent.
+    async readMazerName() {
+      fail();
+      if (!session) return null;
+      if (scenario === "mazer-name" || scenario === "mazer-name-unavailable") return mazerName ?? "Mazer-123456";
+      return mazerName;
+    },
+    async saveMazerName(name) {
+      fail();
+      if (!session) throw Object.assign(new Error("Not signed in."), { status: 401 });
+      if (scenario === "mazer-name-unavailable") {
+        throw Object.assign(new Error("Could not find the function"), { code: "PGRST202", status: 404 });
+      }
+      const saves = Number(document.documentElement.dataset.mazerNameSaves ?? "0") + 1;
+      document.documentElement.dataset.mazerNameSaves = String(saves);
+      if (scenario === "mazer-name-missing" && mazerName === null) {
+        // First the rename finds no profile, then the page creates it and retries once.
+        document.documentElement.dataset.mazerProfileEnsured = "true";
+        mazerName = "Mazer-654321";
+      }
+      if (name.trim().toLowerCase() === "taken-name") {
+        throw Object.assign(new Error("duplicate key value violates unique constraint"), { code: "23505", status: 409 });
+      }
+      mazerName = name.trim();
+      document.documentElement.dataset.mazerName = mazerName;
+      return mazerName;
+    },
     async requestEmailChange(email, contextId) {
       fail();
       if (scenario === "change-unavailable") {
@@ -1150,6 +1253,9 @@ export function resolvePortalAuthAdapter(
       "delete-support",
       "delete-blocked",
       "delete-off",
+      "mazer-name",
+      "mazer-name-missing",
+      "mazer-name-unavailable",
       "confirm-pending",
       "reset-email-legacy",
       "reset-throttled",

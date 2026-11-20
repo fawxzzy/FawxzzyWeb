@@ -86,6 +86,7 @@ import {
   type DeleteProblem,
   type DeleteStep,
 } from "@/lib/auth/account-delete";
+import { mazerNameFailure, mazerNameProblem, showMazerNameRow } from "@/lib/auth/mazer-name";
 import { TurnstileField, type TurnstileFieldHandle } from "@/components/account/turnstile-field";
 import { resolveSignOutDestination, SIGNOUT_RETURN_PARAM } from "@/config/account-signout";
 import {
@@ -830,6 +831,10 @@ function AccountPanel({
   const [changing, setChanging] = useState<ChangeField | null>(null);
   // Delete account: true while the delete screen is open.
   const [deleting, setDeleting] = useState(false);
+  // Mazer name (MAZER-ACCT-047): the name other players see in Mazer, null when the account has no Mazer profile.
+  const [mazerName, setMazerName] = useState<string | null>(null);
+  const [renamingMazer, setRenamingMazer] = useState(false);
+  const sessionUserId = session?.userId ?? null;
   // Sign out everywhere: true while the notice box asks to confirm (step 1 of 2).
   const [confirmingEverywhere, setConfirmingEverywhere] = useState(false);
   // `/account?notice=` from an opened email-change link (allowlist).
@@ -846,6 +851,24 @@ function AccountPanel({
   useEffect(() => {
     if (session) hadSessionRef.current = true;
   }, [session]);
+
+  // Read the Mazer name once per signed-in account. A failed read hides the row (or leaves it empty
+  // when the person came from Mazer); it never blocks the account page.
+  useEffect(() => {
+    if (!adapter || !sessionUserId) return;
+    let active = true;
+    adapter
+      .readMazerName()
+      .then((name) => {
+        if (active) setMazerName(name);
+      })
+      .catch(() => {
+        if (active) setMazerName(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [adapter, sessionUserId]);
 
   useEffect(() => {
     if (adapter && loaded && !session && !error && !signingOutRef.current) {
@@ -959,6 +982,13 @@ function AccountPanel({
     setChanging(field);
   }
 
+  function startMazerRename() {
+    setNotice(null);
+    setQueryNoticeDismissed(true);
+    setConfirmingEverywhere(false);
+    setRenamingMazer(true);
+  }
+
   function startDelete() {
     setNotice(null);
     setQueryNoticeDismissed(true);
@@ -1006,6 +1036,22 @@ function AccountPanel({
           signingOutRef.current = true;
         }}
         session={session}
+      />
+    );
+  }
+
+  if (adapter && session && renamingMazer) {
+    return (
+      <MazerNamePanel
+        adapter={adapter}
+        context={context}
+        currentName={mazerName}
+        onCancel={() => setRenamingMazer(false)}
+        onSaved={(next) => {
+          setMazerName(next);
+          setNotice(authNotice("mazer.namedone"));
+          setRenamingMazer(false);
+        }}
       />
     );
   }
@@ -1064,6 +1110,16 @@ function AccountPanel({
           name="username"
           value={currentUsername}
         />
+        {session && adapter && showMazerNameRow(context.id, mazerName) ? (
+          <AuthField
+            action={{ disabled: busy, label: AUTH_COPY.aria.changeMazerName, onClick: startMazerRename }}
+            id="account-mazer-name"
+            label={AUTH_COPY.field.mazerName}
+            locked
+            name="mazer-name"
+            value={mazerName ?? ""}
+          />
+        ) : null}
         <AuthField
           action={changeAction("email")}
           id="account-current-email"
@@ -1370,6 +1426,205 @@ function AccountChangePanel({
       </AuthLinks>
       <AuthLegal context={context} />
       <AuthDock busy={busy} disabled={cooldown.remaining > 0} form="account-change-form">
+        {dockLabel}
+      </AuthDock>
+    </section>
+  );
+}
+
+const MAZER_NAME_FIELD_IDS = {
+  name: "account-change-mazer-name",
+  password: "account-mazer-name-password",
+} as const;
+
+/**
+ * Change Mazer name (MAZER-ACCT-047). Two steps, the same security check as Change username:
+ * step 1 re-enters the current password (checked against the signed-in account with the sign-in
+ * security check); step 2 takes the new Mazer name and saves it at once through
+ * `mazer.mazer_set_username`, which renames only the signed-in account's own Mazer profile. The
+ * database decides a taken name; this page only maps the answer to a matrix line.
+ */
+function MazerNamePanel({
+  adapter,
+  context,
+  currentName,
+  onCancel,
+  onSaved,
+}: {
+  adapter: PortalAuthAdapter;
+  context: AccountExperienceContext;
+  currentName: string | null;
+  onCancel: () => void;
+  onSaved: (next: string) => void;
+}) {
+  const [step, setStep] = useState<"password" | "value">("password");
+  const [value, setValue] = useState("");
+  const [busy, setBusy] = useState(false);
+  const form = useFormNotice();
+  const captchaRef = useRef<TurnstileFieldHandle>(null);
+  const [captchaKey, setCaptchaKey] = useState(0);
+  const [captchaBroken, setCaptchaBroken] = useState(false);
+  const pendingFocus = useRef<string | undefined>(MAZER_NAME_FIELD_IDS.password);
+
+  const notice: AuthNotice | null =
+    form.notice ?? (step === "password" && captchaBroken ? authNotice("captcha.load") : null);
+
+  function show(id: AuthMessageId) {
+    if (id === "change.pwempty" || id === "change.pwwrong") {
+      form.problem({ id, fields: ["password"] });
+      pendingFocus.current = MAZER_NAME_FIELD_IDS.password;
+      return;
+    }
+    const outlined = id === "signup.taken" || id === "signup.userinvalid" || id === "mazer.namesame";
+    form.problem({ id, fields: outlined ? ["username"] : [] });
+    pendingFocus.current = outlined ? MAZER_NAME_FIELD_IDS.name : undefined;
+  }
+
+  function showNow(id: AuthMessageId) {
+    show(id);
+    focusField(pendingFocus.current);
+    pendingFocus.current = undefined;
+  }
+
+  function noticeAction() {
+    if (notice?.id === "captcha.load") {
+      setCaptchaBroken(false);
+      setCaptchaKey((key) => key + 1);
+      form.clear();
+    } else if (notice?.id === "captcha.fail") {
+      captchaRef.current?.reset();
+      form.clear();
+    }
+  }
+
+  async function confirmPassword(password: string) {
+    const problem = reauthProblem(password);
+    if (problem) {
+      showNow(problem.id);
+      return;
+    }
+    setBusy(true);
+    form.clear();
+    try {
+      const captchaToken = await captchaRef.current?.getToken();
+      await adapter.reauthenticate(password, captchaToken);
+      setStep("value");
+      pendingFocus.current = MAZER_NAME_FIELD_IDS.name;
+    } catch (error) {
+      show(reauthFailure(error));
+    } finally {
+      captchaRef.current?.reset();
+      setBusy(false);
+    }
+  }
+
+  async function saveName() {
+    const next = value.trim();
+    const problem = mazerNameProblem(next, currentName);
+    if (problem) {
+      showNow(problem.id);
+      return;
+    }
+    setBusy(true);
+    form.clear();
+    try {
+      const saved = await adapter.saveMazerName(next);
+      onSaved(saved);
+      return;
+    } catch (error) {
+      show(mazerNameFailure(error));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy) return;
+    if (step === "password") {
+      await confirmPassword(String(new FormData(event.currentTarget).get("password") ?? ""));
+    } else {
+      await saveName();
+    }
+  }
+
+  useEffect(() => {
+    if (busy || !pendingFocus.current) return;
+    focusField(pendingFocus.current);
+    pendingFocus.current = undefined;
+  }, [busy, step]);
+
+  const passwordInvalid = form.fields.has("password");
+  const nameInvalid = form.fields.has("username");
+  const dockLabel = step === "password"
+    ? busy ? AUTH_COPY.working.checking : AUTH_COPY.button.continue
+    : busy ? AUTH_COPY.working.saving : AUTH_COPY.button.saveName;
+
+  return (
+    <section
+      aria-labelledby="account-mazer-name-title"
+      className="auth-surface"
+      data-auth-product={context.id}
+      data-auth-surface="account-mazer-name"
+      data-change-step={step}
+      style={authAccentStyle(context)}
+    >
+      <RuntimeNote />
+      <AuthHead
+        context={context}
+        lead={step === "password" ? AUTH_COPY.lead.changeConfirm : AUTH_COPY.lead.changeMazerName}
+        title={AUTH_COPY.title.changeMazerName}
+        titleId="account-mazer-name-title"
+      />
+      <form className="auth-body" id="account-mazer-name-form" noValidate onSubmit={submit}>
+        <AuthField
+          id="account-mazer-name-current"
+          label={AUTH_COPY.field.mazerName}
+          locked
+          name="current-mazer-name"
+          value={currentName ?? ""}
+        />
+        {step === "password" ? (
+          <>
+            <AuthField
+              autoComplete="current-password"
+              describedBy={passwordInvalid ? "auth-notice" : undefined}
+              disabled={busy}
+              id={MAZER_NAME_FIELD_IDS.password}
+              invalid={passwordInvalid}
+              label={AUTH_COPY.field.password}
+              name="password"
+              onChange={() => form.edited("password")}
+              secret
+            />
+            <TurnstileField key={captchaKey} onUnavailable={() => setCaptchaBroken(true)} ref={captchaRef} />
+          </>
+        ) : (
+          <AuthField
+            autoComplete="off"
+            describedBy={nameInvalid ? "auth-notice" : undefined}
+            disabled={busy}
+            id={MAZER_NAME_FIELD_IDS.name}
+            invalid={nameInvalid}
+            label={AUTH_COPY.field.newMazerName}
+            maxLength={15}
+            name="mazer-name"
+            onChange={(next) => {
+              setValue(next);
+              form.edited("username");
+            }}
+            value={value}
+          />
+        )}
+        <AuthNoticeSlot notice={notice} onAction={noticeAction} />
+      </form>
+      <AuthLinks>
+        <button disabled={busy} onClick={onCancel} type="button">
+          {AUTH_COPY.link.cancel}
+        </button>
+      </AuthLinks>
+      <AuthLegal context={context} />
+      <AuthDock busy={busy} form="account-mazer-name-form">
         {dockLabel}
       </AuthDock>
     </section>
