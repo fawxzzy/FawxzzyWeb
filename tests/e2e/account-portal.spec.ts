@@ -1980,13 +1980,35 @@ test("account status copies the compact Mazer hierarchy without unfinished servi
 test("account sign-out from Mazer heads for Mazer, never the login page", async ({ page }) => {
   await page.goto("/account?auth_test=session&app=mazer");
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  // MAZER-UI-100: Mazer is told to end its own session too (closed-set key, no secret).
   await expect(page.locator("html")).toHaveAttribute(
     "data-sign-out-destination",
-    `${accountContract.productOrigins.mazer}/`,
+    `${accountContract.productOrigins.mazer}/?accountAction=signed-out`,
   );
   await page.waitForTimeout(600);
   await expect(page).toHaveURL(/\/account\?auth_test=session&app=mazer$/);
   await expect(page.locator("html")).not.toHaveAttribute("data-session-lost-redirect", /.+/);
+});
+
+// MAZER-UI-100: Reset progress is on the account page, Mazer context only; the confirmation stays in Mazer.
+test("Reset progress shows only for Mazer and opens Mazer on its confirmation", async ({ page }) => {
+  await page.goto("/account?auth_test=session&app=mazer");
+  const row = page.locator(".auth-field").filter({ hasText: AUTH_COPY.field.resetProgress });
+  await expect(row).toHaveCount(1);
+  await expect(row.locator("input")).toHaveValue(AUTH_COPY.field.resetProgressValue);
+  await page.getByRole("button", { name: AUTH_COPY.aria.resetProgress }).click();
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-mazer-account-action",
+    `${accountContract.productOrigins.mazer}/?accountAction=reset-progress`,
+  );
+  // Nothing was signed out or reset here.
+  await expect(page.locator("html")).not.toHaveAttribute("data-sign-out-destination", /.+/);
+
+  for (const app of ["", "&app=fitness"]) {
+    await page.goto(`/account?auth_test=session${app}`);
+    await expect(page.getByRole("heading", { name: "Account" })).toBeVisible();
+    await expect(page.getByRole("button", { name: AUTH_COPY.aria.resetProgress })).toHaveCount(0);
+  }
 });
 
 test("the account page dock signs out this device only, the recovery session only itself", async ({ browserName, page }) => {
