@@ -151,7 +151,7 @@ redirects must be admitted individually in a future packet; do not add a broad p
     sign-up "That username is taken. Try another." line). The live `account_guard_username_claim` trigger stays
     the authority; `sync_username_signin_index` moves username sign-in to the new name in the same
     transaction. The session is refreshed so the page shows the new name, and a remembered sign-in
-    name that was the old username follows it. Mazer profile names are not changed.
+    name that was the old username follows it. Mazer profile names are not changed (see Mazer name).
     The SQL is owner-gated and lives in `supabase/proposed/` (not `migrations/`, so nothing applies
     it on merge) with its rollback and a pglite scratch test
     (`account_change_username_v1.scratch-test.mjs`). Until it is applied the call fails with
@@ -165,6 +165,21 @@ redirects must be admitted individually in a future packet; do not add a broad p
     relies on the provider's "Email changed" notification being enabled and on the Send Email hook
     sending `email_changed_notification` to `email_data.old_email` (falls back to the account
     address when the payload has no valid `old_email`).
+- Mazer name (MAZER-ACCT-047, 2026-11-19). Mazer's leaderboard shows `mazer.mazer_profiles.username`,
+  a separate store from the sign-in username, and Mazer no longer lets a player edit it in the game.
+  A "Mazer name" row (read through `mazer_profiles` RLS, own row only) appears under Username for
+  accounts that have a Mazer profile or arrived with `app=mazer`; Fitness-only accounts never see it.
+  Its pencil opens the same two steps as Change username: step 1 is the password re-check (the same
+  `reauthenticate` call, Turnstile and `reauthFailure` copy); step 2 takes the new name, checked locally
+  first (2-15 letters, numbers, dot, underscore or hyphen), then saved through
+  `mazer.mazer_set_username(p_expected_user_id, p_username)`. A missing profile (P0002 /
+  MAZER_PROFILE_MISSING) runs `mazer_ensure_profile` once and retries once. Errors map to plain
+  lines: taken (23505) uses the sign-up "That username is taken. Try another." line, invalid (22023)
+  the rules line, mismatch (28000) or an expired session the sign-in-again line, offline the offline
+  line, 42501/403 or a missing backend "Changes are unavailable right now.", 429 the rate line, and
+  anything else the save-failed line. No SQL or database change. Known gaps (owner-gated, need SQL): the
+  password re-check is a client step, the database function does not demand it, and
+  `mazer_set_username` has no server throttle (unlike `account_change_username`).
 - Signup, reset, and change-password require at least 10 characters. The application has no
   restrictive maximum and never trims or truncates passwords; 128+ character values remain
   accepted. Login accepts existing shorter passwords for migration compatibility.
