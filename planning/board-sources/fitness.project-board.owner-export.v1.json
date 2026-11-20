@@ -1,20 +1,20 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_fitness_owner_registry_e7f24216ce5e",
+  "export_id": "pbe_fitness_owner_registry_35d61d8eecde",
   "project_id": "fitness",
   "board_id": "fitness:project-feedback:fitness-active",
   "owner": "fitness",
   "adapter_id": "fitness-owner-registry-v1",
-  "source_revision": "sha256:e7f24216ce5e0701944b09f8af413526bab9061eb14c077ec60c78ea9ba239ec",
-  "generated_at": "2026-11-19T17:59:38.000Z",
+  "source_revision": "sha256:35d61d8eecde9e9a2ae58eac93e7697d8b503eb1c994397f96493d6eba9bba5f",
+  "generated_at": "2026-11-20T08:08:14.000Z",
   "sources": [
     {
       "source_id": "fitness-owner-work-registry",
       "kind": "json",
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json",
-      "revision": "sha256:5025688bd12f1b2b61f3e347be710d77bd26cb79ef654698a093958eb8b6bf5e",
-      "observed_at": "2026-11-19T17:59:38.000Z"
+      "revision": "sha256:d8ea3dd2b35b37ee3b598d066420f5d29829d4f18349138a87c375fa9f03671b",
+      "observed_at": "2026-11-20T08:08:14.000Z"
     },
     {
       "source_id": "fitness-feedback-monetization-roadmap",
@@ -22,7 +22,7 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs",
       "revision": "sha256:78aa8b8300f0c21258144da0a5bdd6fdc4c9ff1337e265b2552094ebf3505ba6",
-      "observed_at": "2026-11-19T17:59:38.000Z"
+      "observed_at": "2026-11-20T08:08:14.000Z"
     },
     {
       "source_id": "fitness-session-timer-roadmap",
@@ -30,7 +30,7 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs",
       "revision": "sha256:58b1235add45e05d51712f433e2e67d4536b878f4edfad6ab6908d9402c55bcc",
-      "observed_at": "2026-11-19T17:59:38.000Z"
+      "observed_at": "2026-11-20T08:08:14.000Z"
     },
     {
       "source_id": "fitness-owner-export-adapter",
@@ -38,7 +38,7 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs",
       "revision": "sha256:e8485f9091fb27f574b2999d1ca4ad9acf94c3f28b0d5f462836bf43ba3ec562",
-      "observed_at": "2026-11-19T17:59:38.000Z"
+      "observed_at": "2026-11-20T08:08:14.000Z"
     }
   ],
   "cards": [
@@ -424,6 +424,58 @@
       }
     },
     {
+      "idempotency_key": "pbk_fitness_ff-auth-003_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-AUTH-003",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Reject unsafe redirect targets after sign-in",
+        "description": "Return paths after sign-in, account confirmation links, the legacy host redirect and the dev bootstrap are checked so only in-app paths are followed. Board update 2026-11-20: Shipped with tests for the known bypass shapes. A route-level confirm test and one QA script copy of the old check are follow-ups. PR #296 merged (77b88706). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-11-20T08:08:14.000Z",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-AUTH-003",
+        "extensions": {
+          "owner_status": "review",
+          "public_safe": true,
+          "visibility": "public"
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-AUTH-003",
+        "source_status": "current",
+        "source_updated_at": "2026-11-20T08:08:14.000Z"
+      },
+      "content": {
+        "summary": "Return paths after sign-in, account confirmation links, the legacy host redirect and the dev bootstrap are checked so only in-app paths are followed. Board update 2026-11-20: Shipped with tests for the known bypass shapes. A route-level confirm test and one QA script copy of the old check are follow-ups. PR #296 merged (77b88706). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone.",
+        "objective": "Return paths after sign-in, account confirmation links, the legacy host redirect and the dev bootstrap are checked so only in-app paths are followed. Board update 2026-11-20: Shipped with tests for the known bypass shapes. A route-level confirm test and one QA script copy of the old check are follow-ups. PR #296 merged (77b88706). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone.",
+        "acceptance_criteria": [
+          "Only in-app return paths are followed after sign-in and account confirmation.",
+          "The legacy host redirect rejects unsafe targets.",
+          "The dev bootstrap escapes the path it embeds."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
       "idempotency_key": "pbk_fitness_ff-beta-001_v1",
       "record_kind": "project-work",
       "record_status": "candidate",
@@ -695,6 +747,58 @@
         "blockers": [],
         "evidence": [
           "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-design-005_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-DESIGN-005",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Move app navigation into a top-right menu with green header titles",
+        "description": "Top nav buttons move into a Mazer-style dropdown anchored top right, header titles sit top left in the app green, and error notices anchor just below the menu button. Board update 2026-11-20: Menu header live on the screens that use it. Headless only; the rest of the screens and a phone check are still open. PR #293 merged (41dd099a), PR #294 merged (f529c270). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-11-20T08:07:55.000Z",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-DESIGN-005",
+        "extensions": {
+          "owner_status": "review",
+          "public_safe": true,
+          "visibility": "public"
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-DESIGN-005",
+        "source_status": "current",
+        "source_updated_at": "2026-11-20T08:07:55.000Z"
+      },
+      "content": {
+        "summary": "Top nav buttons move into a Mazer-style dropdown anchored top right, header titles sit top left in the app green, and error notices anchor just below the menu button. Board update 2026-11-20: Menu header live on the screens that use it. Headless only; the rest of the screens and a phone check are still open. PR #293 merged (41dd099a), PR #294 merged (f529c270). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone.",
+        "objective": "Top nav buttons move into a Mazer-style dropdown anchored top right, header titles sit top left in the app green, and error notices anchor just below the menu button. Board update 2026-11-20: Menu header live on the screens that use it. Headless only; the rest of the screens and a phone check are still open. PR #293 merged (41dd099a), PR #294 merged (f529c270). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone.",
+        "acceptance_criteria": [
+          "Navigation lives in a top-right dropdown on the screens that use the app header.",
+          "Header titles use the shared app green from the color scheme.",
+          "Error notices anchor just below the menu button and use the available width."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json"
         ]
       },
       "relationships": {
@@ -1060,7 +1164,7 @@
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Move to a supported framework version",
-        "description": "The web framework the app is built on (Next 14) is past end of support. The latest patch release (14.2.35) is live, but remaining fixes only ship in newer major versions, so a framework upgrade to Next 15.5 or 16 together with React 19 is planned. Board update 2026-11-15: Migration-readiness audit note added (docs only); Excel export library swap skipped pending owner decision; Next/React migration not started PR #250 merged (676be263). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Excel export now uses a maintained writer (vulnerable xlsx removed) with a cell-by-cell round-trip test; merged, not deployed; no real Excel or phone open checked; Next/React migration not started PR #257 merged (3db7fe30). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: PR 259 merged: xlsx export round-trip test covers empty string, boolean and date cells; test-only, no export bug found PR #259 merged (6da36e05). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
+        "description": "The web framework the app is built on (Next 14) is past end of support. The latest patch release (14.2.35) is live, but remaining fixes only ship in newer major versions, so a framework upgrade to Next 15.5 or 16 together with React 19 is planned. Board update 2026-11-15: PR 259 merged: xlsx export round-trip test covers empty string, boolean and date cells; test-only, no export bug found PR #259 merged (6da36e05). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-19: Next 15.5 and React 19 are live in build dcb1dfa8. Headless live checks passed: sign-in, portal handoff, Resume Workout, the four main screens, data export, sign-out, dev pages closed. Not checked on a real phone. Next 15 support ends 2027-01-31, so a move to Next 16 is still needed. PR #289 merged (dcb1dfa8). Deployed: production build dcb1dfa8. Checked only in headless Chromium, not on a real phone. Board update 2026-11-20: Next 16 shipped to production and the signed-in headless checks passed (sign-in, session persistence, sign-out, portal handoff). Real phone check still open. PR #290 merged (6de3c480). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone.",
         "card_type": "feature",
         "lifecycle": "review",
         "priority": "medium",
@@ -1069,7 +1173,7 @@
           "FF-QA-004"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-15T05:10:16.000Z",
+        "updated_at": "2026-11-20T08:07:45.000Z",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-PLATFORM-001",
         "extensions": {
           "owner_status": "review",
@@ -1081,11 +1185,11 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs#FF-PLATFORM-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-15T05:10:16.000Z"
+        "source_updated_at": "2026-11-20T08:07:45.000Z"
       },
       "content": {
-        "summary": "The web framework the app is built on (Next 14) is past end of support. The latest patch release (14.2.35) is live, but remaining fixes only ship in newer major versions, so a framework upgrade to Next 15.5 or 16 together with React 19 is planned. Board update 2026-11-15: Migration-readiness audit note added (docs only); Excel export library swap skipped pending owner decision; Next/React migration not started PR #250 merged (676be263). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Excel export now uses a maintained writer (vulnerable xlsx removed) with a cell-by-cell round-trip test; merged, not deployed; no real Excel or phone open checked; Next/React migration not started PR #257 merged (3db7fe30). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: PR 259 merged: xlsx export round-trip test covers empty string, boolean and date cells; test-only, no export bug found PR #259 merged (6da36e05). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
-        "objective": "The web framework the app is built on (Next 14) is past end of support. The latest patch release (14.2.35) is live, but remaining fixes only ship in newer major versions, so a framework upgrade to Next 15.5 or 16 together with React 19 is planned. Board update 2026-11-15: Migration-readiness audit note added (docs only); Excel export library swap skipped pending owner decision; Next/React migration not started PR #250 merged (676be263). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: Excel export now uses a maintained writer (vulnerable xlsx removed) with a cell-by-cell round-trip test; merged, not deployed; no real Excel or phone open checked; Next/React migration not started PR #257 merged (3db7fe30). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-15: PR 259 merged: xlsx export round-trip test covers empty string, boolean and date cells; test-only, no export bug found PR #259 merged (6da36e05). Merged, not deployed. Checked only in headless Chromium, not on a real phone.",
+        "summary": "The web framework the app is built on (Next 14) is past end of support. The latest patch release (14.2.35) is live, but remaining fixes only ship in newer major versions, so a framework upgrade to Next 15.5 or 16 together with React 19 is planned. Board update 2026-11-15: PR 259 merged: xlsx export round-trip test covers empty string, boolean and date cells; test-only, no export bug found PR #259 merged (6da36e05). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-19: Next 15.5 and React 19 are live in build dcb1dfa8. Headless live checks passed: sign-in, portal handoff, Resume Workout, the four main screens, data export, sign-out, dev pages closed. Not checked on a real phone. Next 15 support ends 2027-01-31, so a move to Next 16 is still needed. PR #289 merged (dcb1dfa8). Deployed: production build dcb1dfa8. Checked only in headless Chromium, not on a real phone. Board update 2026-11-20: Next 16 shipped to production and the signed-in headless checks passed (sign-in, session persistence, sign-out, portal handoff). Real phone check still open. PR #290 merged (6de3c480). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone.",
+        "objective": "The web framework the app is built on (Next 14) is past end of support. The latest patch release (14.2.35) is live, but remaining fixes only ship in newer major versions, so a framework upgrade to Next 15.5 or 16 together with React 19 is planned. Board update 2026-11-15: PR 259 merged: xlsx export round-trip test covers empty string, boolean and date cells; test-only, no export bug found PR #259 merged (6da36e05). Merged, not deployed. Checked only in headless Chromium, not on a real phone. Board update 2026-11-19: Next 15.5 and React 19 are live in build dcb1dfa8. Headless live checks passed: sign-in, portal handoff, Resume Workout, the four main screens, data export, sign-out, dev pages closed. Not checked on a real phone. Next 15 support ends 2027-01-31, so a move to Next 16 is still needed. PR #289 merged (dcb1dfa8). Deployed: production build dcb1dfa8. Checked only in headless Chromium, not on a real phone. Board update 2026-11-20: Next 16 shipped to production and the signed-in headless checks passed (sign-in, session persistence, sign-out, portal handoff). Real phone check still open. PR #290 merged (6de3c480). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone.",
         "acceptance_criteria": [
           "The app runs on a supported framework version.",
           "The framework upgrade is tested before release and rolled out without breaking sign-in or workouts.",
@@ -2357,11 +2461,115 @@
         "duplicate_of": null,
         "superseded_by": null
       }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-today-005_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-TODAY-005",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Redesign Today exercise cards with manual Promote",
+        "description": "Cleaner exercise cards (image top right, info bottom right, left-anchored progression bar, no Target wording, clearer goal) and a Promote button that appears on the bar at 100% and raises the goal, with Revert. Board update 2026-11-20: Cards and manual Promote are live. Headless checks only: no signed-in Promote on a real account yet, no phone check, and the bar reset after a promote is unproven live. PR #291 merged (ee1e3cc1), PR #292 merged (aa3e78be). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-11-20T08:07:49.000Z",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-TODAY-005",
+        "extensions": {
+          "owner_status": "review",
+          "public_safe": true,
+          "visibility": "public"
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-TODAY-005",
+        "source_status": "current",
+        "source_updated_at": "2026-11-20T08:07:49.000Z"
+      },
+      "content": {
+        "summary": "Cleaner exercise cards (image top right, info bottom right, left-anchored progression bar, no Target wording, clearer goal) and a Promote button that appears on the bar at 100% and raises the goal, with Revert. Board update 2026-11-20: Cards and manual Promote are live. Headless checks only: no signed-in Promote on a real account yet, no phone check, and the bar reset after a promote is unproven live. PR #291 merged (ee1e3cc1), PR #292 merged (aa3e78be). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone.",
+        "objective": "Cleaner exercise cards (image top right, info bottom right, left-anchored progression bar, no Target wording, clearer goal) and a Promote button that appears on the bar at 100% and raises the goal, with Revert. Board update 2026-11-20: Cards and manual Promote are live. Headless checks only: no signed-in Promote on a real account yet, no phone check, and the bar reset after a promote is unproven live. PR #291 merged (ee1e3cc1), PR #292 merged (aa3e78be). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone.",
+        "acceptance_criteria": [
+          "Exercise cards show the image top right, info bottom right and a left-anchored progression bar with no Target wording.",
+          "Promote appears only at a full bar and raises the goal as designed.",
+          "After a promote the bar resets and Revert is offered."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-today-006_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-TODAY-006",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Switch Day and empty or rest day cards on Today",
+        "description": "Switch Day cards show an exercise snapshot with smaller Rest day cards, and empty or rest days show a centred title with an Edit day button. Board update 2026-11-20: Live. Headless only; the Switch Day sheet was not seen live because the QA account has an active workout. Phone check open. PR #295 merged (8d65c33e). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-11-20T08:08:01.000Z",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-TODAY-006",
+        "extensions": {
+          "owner_status": "review",
+          "public_safe": true,
+          "visibility": "public"
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-TODAY-006",
+        "source_status": "current",
+        "source_updated_at": "2026-11-20T08:08:01.000Z"
+      },
+      "content": {
+        "summary": "Switch Day cards show an exercise snapshot with smaller Rest day cards, and empty or rest days show a centred title with an Edit day button. Board update 2026-11-20: Live. Headless only; the Switch Day sheet was not seen live because the QA account has an active workout. Phone check open. PR #295 merged (8d65c33e). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone.",
+        "objective": "Switch Day cards show an exercise snapshot with smaller Rest day cards, and empty or rest days show a centred title with an Edit day button. Board update 2026-11-20: Live. Headless only; the Switch Day sheet was not seen live because the QA account has an active workout. Phone check open. PR #295 merged (8d65c33e). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone.",
+        "acceptance_criteria": [
+          "Switch Day shows an exercise snapshot per day.",
+          "Rest days show as small Rest day cards.",
+          "Empty and rest days show a centred title with an Edit day button and no second line."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
     }
   ],
   "extensions": {
-    "source_work_item_count": 57,
-    "exported_card_count": 42,
+    "source_work_item_count": 61,
+    "exported_card_count": 46,
     "exported_completed_card_count": 24,
     "excluded_completed_card_count": 15,
     "selected_owner_snapshot_record_count": 55,

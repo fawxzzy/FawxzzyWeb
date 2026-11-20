@@ -294,3 +294,10 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHY it changed: the portal checks `readiness.sourceCommit` against this list before retrieving credentials, so the next Fitness release must be listed before it deploys.
 - Rule: the tuple stays 7 entries; new sha last, live sha kept as rollback, oldest dropped.
 - Scope: Handoff allowlist only, no behavior change; no provider, credential, database or deploy effect.
+
+## 2026-11-20 Fitness owner board re-pin (46 cards)
+- WHAT changed: `planning/board-sources/fitness.project-board.owner-export.v1.json` is a byte copy of the Fitness owner export at Fitness main `f1878b13` (46 cards, sha256 5ead6a75b794c357eca0689c0e2b28b8a54300b3de7d0759fe5f4dc2fdd6ccda), and `src/server/projects/owner-board.generated.mjs` is regenerated from it with `npm run data:project-board-owner-snapshot`. No hand edits.
+- WHY it changed: the Fitness board fold (PR #297 there) applied 10 events (1 text change, 4 new review cards); the Projects page only updates on a Web build.
+- Rule: re-pin by copying the export and regenerating; never hand-patch the generated file.
+- Failure Mode: a re-pin without this entry fails Playbook verify.
+- Scope: Source and generated data only; no provider, credential, database or alias effect.
