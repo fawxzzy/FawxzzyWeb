@@ -274,3 +274,10 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - Rule: re-pin by copying the export and regenerating; never hand-patch the generated file.
 - Failure Mode: a re-pin without this entry fails Playbook verify.
 - Scope: Source and generated data only; no provider, credential, database or alias effect.
+
+## 2026-11-19 MAZER-ACCT-047: Mazer name editor on the account page
+- WHAT changed: `/account` shows a "Mazer name" row for Mazer players with a pencil that opens a two-step editor (password re-check, then the new name) saving through the existing `mazer.mazer_set_username` function, with one profile ensure and one retry when the profile is missing. New `src/lib/auth/mazer-name.ts` (rules, error mapping, row visibility), adapter `readMazerName`/`saveMazerName`, copy-matrix entries, unit tests (`tests/account-mazer-name.test.mjs`) and e2e (`tests/e2e/account-mazer-name.spec.ts`).
+- WHY it changed: the owner decided the Mazer leaderboard must not edit names ("this was decided awhile back"); the account site owns renames behind its security check, and until now it had no way to change the Mazer name at all.
+- Rule: renames live on the account site behind the password re-check; game clients show the name read-only.
+- Failure Mode: the sign-in username and the Mazer leaderboard name are two stores; Change username never changes the Mazer name.
+- Scope: Source only; no SQL, provider, credential, database or alias effect. Server-side throttle and re-check for `mazer_set_username` stay owner-gated follow-ups.
