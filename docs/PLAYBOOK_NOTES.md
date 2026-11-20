@@ -274,3 +274,9 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - Rule: re-pin by copying the export and regenerating; never hand-patch the generated file.
 - Failure Mode: a re-pin without this entry fails Playbook verify.
 - Scope: Source and generated data only; no provider, credential, database or alias effect.
+
+## 2026-11-20 Mazer Sign out and Reset progress hand back into Mazer (MAZER-UI-100)
+- WHAT changed: on the account page in Mazer context, Sign out now returns to Mazer with `?accountAction=signed-out`, and a new Mazer-only "Reset progress" row opens `https://mazer.fawxzzy.com/?accountAction=reset-progress`. The closed key set lives in `src/config/mazer-account-actions.ts`; copy in `src/lib/auth/copy-matrix.ts`; tests in `tests/account-signout-contract.test.mjs` and `tests/e2e/account-portal.spec.ts`.
+- WHY it changed: owner decision (Zac, 2026-11-19): Sign out and Reset progress live only on the account page. Mazer keeps its own session and its own progress on its origin, so the account page hands back and Mazer runs its existing local sign-out or opens its existing reset confirmation (same copy, same server reset).
+- Rule: an action that must run on the product origin is launched as a closed-set query key on an allowlisted product origin; never a token, code or user id, never an auto-run destructive action (Mazer re-confirms; it honours `signed-out` only with this site as referrer).
+- Scope: UI and copy only; no provider, credential, database or alias effect. Deploy before or with Mazer PR #673, which removes the rows from Mazer Settings.
