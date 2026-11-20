@@ -11,8 +11,6 @@ export const FITNESS_HANDOFF_MASTER_PROJECT_REF = "bxtcuhkotumitoqtrcej";
 
 export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
   fitnessConsumerMerges: [
-    // Reviewed Fitness main after PR258-266 (sign-out session revocation, Auth Surface v2 PR-A, copy and floors; reviewed, superseded before it shipped).
-    "d335131a8602206c5c7702ac7fd3399c26c43f35",
     // Reviewed Fitness main after PR258-270 (adds status screens and Lane C: duration clamp, completion helper, Finish confirm; live until the PR267-278 release; the rollback after it).
     "9979e22faa639d4fb60d915e4a02fefded823dc3",
     // Reviewed Fitness main after PR267-278 (ScreenHeader lanes H0-H3, account screens on the portal with device-only sign out, Auth Surface v2 copy parity; live; the rollback after the PR279+ release).
@@ -23,8 +21,10 @@ export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
     "02917bfb0612dce212d3aa55e0f338c0b0e6d57d",
     // Reviewed Fitness main a68b9bc8 (PR285-287: data export schema and settings, P2 cleanups, QA tests; live; the rollback after the PR289 release).
     "a68b9bc8456a36a3b84d16279dc08e0bdfa1ab2b",
-    // Reviewed Fitness main dcb1dfa8 (PR289: Next 15 upgrade; current source; a68b9bc8 above is the live rollback).
+    // Reviewed Fitness main dcb1dfa8 (PR289: Next 15 upgrade; live; the rollback after the aa3e78be release).
     "dcb1dfa8edf79c05bbd7e16603c6e1a08295ed3d",
+    // Reviewed Fitness main aa3e78be (current source; dcb1dfa8 above is the live rollback).
+    "aa3e78be7c38cf2de192d464f9e5eefe568ebd62",
   ],
   state: "active",
 } as const satisfies FitnessHandoffActivation);

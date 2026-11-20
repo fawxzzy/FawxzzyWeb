@@ -286,3 +286,11 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - Rule: renames live on the account site behind the password re-check; game clients show the name read-only.
 - Failure Mode: the sign-in username and the Mazer leaderboard name are two stores; Change username never changes the Mazer name.
 - Scope: Source only; no SQL, provider, credential, database or alias effect. Server-side throttle and re-check for `mazer_set_username` stay owner-gated follow-ups.
+
+## 2026-11-20 - Fitness handoff allowlist adds aa3e78be
+
+- Type: Auth handoff allowlist
+- WHAT changed: `FITNESS_HANDOFF_ACTIVATION.fitnessConsumerMerges` adds Fitness main `aa3e78be7c38cf2de192d464f9e5eefe568ebd62`, keeps `dcb1dfa8edf79c05bbd7e16603c6e1a08295ed3d` (live) as the rollback entry and drops the oldest `d335131a8602206c5c7702ac7fd3399c26c43f35`; `docs/fitness-session-handoff.md` and `tests/e2e/fitness-handoff.spec.ts` match.
+- WHY it changed: the portal checks `readiness.sourceCommit` against this list before retrieving credentials, so the next Fitness release must be listed before it deploys.
+- Rule: the tuple stays 7 entries; new sha last, live sha kept as rollback, oldest dropped.
+- Scope: Handoff allowlist only, no behavior change; no provider, credential, database or deploy effect.
