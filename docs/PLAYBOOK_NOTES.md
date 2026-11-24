@@ -335,3 +335,9 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - Rule: re-pin by copying the export and regenerating; never hand-patch the generated file.
 - Failure Mode: a re-pin without this entry fails Playbook verify.
 - Scope: Source and generated data only; no provider, credential, database or alias effect.
+## 2026-11-24 Mazer owner board re-pin (332 cards)
+- WHAT changed: `planning/board-sources/mazer.project-board.owner-export.v1.json` is a byte copy of the Mazer owner export at Mazer main `71757912` (332 cards, sha256 92f50adb0f296d88ee38e30f749acd2d4e7c22061169fc425cca597f8daf510a), and `src/server/projects/owner-board.generated.mjs` is regenerated from it.
+- WHY it changed: the Mazer board fold (PR #699 there) applied MODE-002 and FB-001 as new cards plus UI-090 and ACCT-047 review updates; the Projects page only updates on a Web build.
+- Rule: re-pin by copying the export and regenerating; never hand-patch the generated file.
+- Failure Mode: a re-pin without this entry fails Playbook verify.
+- Scope: Source and generated data only; no provider, credential, database or alias effect.
