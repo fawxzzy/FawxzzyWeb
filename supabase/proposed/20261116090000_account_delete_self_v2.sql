@@ -2,6 +2,12 @@
 -- migration runner or Git integration can apply it on merge. Apply only after the owner approves this
 -- file by sha256 (see docs/shared-account-portal-phase1.md, "Delete account v2").
 --
+-- 2026-11-24 source-consistency edit (NOT a re-apply): `mazer.mazer_feedback.user_id` (cascade, optional until the
+-- Mazer feedback SQL v2 is applied) is listed in `fk_effects` so a future re-apply of this file does not
+-- abort on an unlisted foreign key to auth.users. The live function body is unchanged by this edit (live
+-- inner md5 e6569397d035916a3c5d1b7b6bd93148 is the pre-edit text); the live call already deletes the
+-- feedback rows through the cascade.
+--
 -- Delete account v2 (account portal). SUPERSEDES 20261115200000_account_delete_self_v1.sql, which was
 -- never applied: its preflight refused the live database (2026-11-16 preimage: 37 unlisted columns, 2
 -- unlisted foreign key effects, 2 DELETE triggers). v2 keeps v1's contract and checks and adds what the
@@ -133,8 +139,11 @@ declare
   -- Foreign keys to auth.users(id) whose effect is expected: column : confdeltype (c cascade, n set null).
   fk_effects text[] := array[
     'account_private.username_signin_candidates.user_id:c',
-    'platform.identity_map.auth_user_id:n'
+    'platform.identity_map.auth_user_id:n',
+    'mazer.mazer_feedback.user_id:c'
   ];
+  -- fk_effects entries (column only) that may be absent: the table comes from an owner-gated Mazer file.
+  optional_fk_effects text[] := array['mazer.mazer_feedback.user_id'];
   -- KEPT ON PURPOSE (owner decision 2026-11-16, "Delete live data, keep archives"). Each column may name
   -- a live account; the call does not touch it. Absent tables are fine; a new unlisted one is not.
   retained text[] := array[
@@ -274,6 +283,7 @@ begin
   foreach item in array fk_effects loop
     parts := string_to_array(split_part(item, ':', 1), '.');
     if to_regclass(format('%I.%I', parts[1], parts[2])) is null then
+      continue when split_part(item, ':', 1) = any (optional_fk_effects);
       raise exception 'DELETE_ACCOUNT_PREFLIGHT_EXPECTED_FK_EFFECT_MISSING: %', item;
     end if;
     select k.oid into fk_oid
@@ -385,7 +395,8 @@ begin
   join pg_proc p on p.oid = t.tgfoid
   join pg_namespace pn on pn.oid = p.pronamespace
   where not t.tgisinternal
-    and (((t.tgtype & 8) <> 0 and t.tgrelid = any (delete_rels || 'auth.users'::regclass || 'account_private.username_signin_candidates'::regclass))
+    and (((t.tgtype & 8) <> 0 and t.tgrelid = any (delete_rels || 'auth.users'::regclass || 'account_private.username_signin_candidates'::regclass
+                                                   || coalesce(to_regclass('mazer.mazer_feedback'), 'account_private.username_signin_candidates'::regclass)))
       or ((t.tgtype & 16) <> 0 and t.tgrelid = any (update_rels)))
     and format('%s.%s|%s|%s.%s|%s|%s', n.nspname, c.relname, t.tgname, pn.nspname, p.proname, md5(p.prosrc), t.tgtype)
         <> all (reviewed_triggers);
@@ -545,7 +556,8 @@ declare
   -- Removed or unlinked by the auth.users delete itself (foreign keys checked by the preflight).
   fk_effects constant text[] := array[
     'account_private.username_signin_candidates.user_id:cascade',
-    'platform.identity_map.auth_user_id:unlinked'
+    'platform.identity_map.auth_user_id:unlinked',
+    'mazer.mazer_feedback.user_id:cascade'
   ];
   reviewed_triggers constant text[] := array[
     'auth.users|sync_username_signin_index|account_private.sync_username_signin_index|b9b39b13b97ce3ac15daabe487600ff7|29',
@@ -639,7 +651,7 @@ begin
   join pg_catalog.pg_namespace pn on pn.oid = p.pronamespace
   where not t.tgisinternal
     and (
-      ((t.tgtype & 8) <> 0 and (format('%s.%s', n2.nspname, c.relname) in ('auth.users', 'account_private.username_signin_candidates')
+      ((t.tgtype & 8) <> 0 and (format('%s.%s', n2.nspname, c.relname) in ('auth.users', 'account_private.username_signin_candidates', 'mazer.mazer_feedback')
         or format('%s.%s', n2.nspname, c.relname) in (
           select split_part(split_part(s, ':', 2), '.', 1) || '.' || split_part(split_part(s, ':', 2), '.', 2)
           from unnest(steps) s where split_part(s, ':', 1) = 'delete')))

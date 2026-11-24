@@ -266,7 +266,7 @@ test("v2: retained allow-list, trigger pins and key effects are the same in the 
     assert.equal(createHash("md5").update(entry.src, "utf8").digest("hex"), hash, `${fn} fixture body hashes to the pin`);
   }
   // The two deliberate key effects (cascade and set null), checked in both files.
-  for (const effect of ["account_private.username_signin_candidates.user_id:c", "platform.identity_map.auth_user_id:n"]) {
+  for (const effect of ["account_private.username_signin_candidates.user_id:c", "platform.identity_map.auth_user_id:n", "mazer.mazer_feedback.user_id:c"]) {
     assert.ok(SQL.includes(`'${effect}'`), `apply expects ${effect}`);
     assert.ok(PREIMAGE.includes(effect.replace(/:([cn])$/, "")), `preimage reports ${effect}`);
   }

@@ -324,6 +324,11 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - Failure Mode: a re-pin without this entry fails Playbook verify.
 - Scope: Source and generated data only; no provider, credential, database or alias effect.
 
+## 2026-11-24 Delete-account v2 source lists the Mazer feedback key
+- WHAT changed: `supabase/proposed/20261116090000_account_delete_self_v2.sql` (with its preimage, scratch test, `tests/account-delete.test.mjs` and the phase 1 doc) lists `mazer.mazer_feedback.user_id:c` in `fk_effects` as an optional entry (skipped only while the table is absent) and in the call-time `fk_effects`. Proposal file only; nothing applied.
+- WHY it changed: the Mazer feedback SQL v2 adds a cascade key to `auth.users`; without a manifest entry a future re-apply of this file aborts on `UNKNOWN_ACCOUNT_COLUMNS`. The live function (inner md5 e6569397d035916a3c5d1b7b6bd93148) already deletes the rows through the cascade and is not changed.
+- Rule: every new foreign key to `auth.users` is added to this manifest in the same change set.
+- Scope: source files only; no provider, credential, database or deploy effect.
 ## 2026-11-24 Mazer owner board re-pin (330 cards)
 - WHAT changed: `planning/board-sources/mazer.project-board.owner-export.v1.json` is a byte copy of the Mazer owner export at Mazer main `10464c39` (330 cards, sha256 7a20d92a585fbc6644f944b9ab6dba5b4480b7dcfeaa6bf6a83a4983d46db4a3), and `src/server/projects/owner-board.generated.mjs` is regenerated from it.
 - WHY it changed: the Mazer board fold (PR #694 there) applied HAZ-002 completed, GEN-031 review, GEN-032 and GEN-033 planning; the Projects page only updates on a Web build.

@@ -516,6 +516,13 @@ this subsection still holds, with `delete_account_v2` in place of `delete_accoun
   as `platform.work_projects`, stays). The apply refuses if either key is missing, has another action or
   is itself referenced; the call raises `ACCOUNT_DELETE_FK_EFFECT_INCOMPLETE` if a row still names the
   account afterwards.
+- Also cascaded (2026-11-24 source edit, optional until the Mazer feedback SQL v2 is applied):
+  `mazer.mazer_feedback.user_id` (`NOT NULL`, `ON DELETE CASCADE`; the in-game feedback table, source in
+  the Mazer repo at `docs/ops/sql-proposals/mazer-feedback-20261124-v2/`). It is listed in `fk_effects`
+  so a re-apply of this file does not abort on an unlisted key to `auth.users`; the preflight skips it
+  only while the table does not exist. The live function body is not changed by this edit: the live
+  call already removes those rows through the cascade, and a re-apply would also count them in the
+  audit row as `mazer.mazer_feedback(cascade)`.
 - Reviewed triggers, pinned by table, trigger, function, md5 of the live body and trigger type (bodies
   in `account_delete_self_v2.live-bodies.json`, read-only from the live database): the Fitness position
   repack triggers on `routine_day_exercises` and `session_exercises` (AFTER DELETE FOR EACH ROW, not

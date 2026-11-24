@@ -34,7 +34,11 @@ parsed as (
   from manifest
 ),
 fk_effects(item, action) as (
-  values ('account_private.username_signin_candidates.user_id', 'c'), ('platform.identity_map.auth_user_id', 'n')
+  values ('account_private.username_signin_candidates.user_id', 'c'), ('platform.identity_map.auth_user_id', 'n'),
+         ('mazer.mazer_feedback.user_id', 'c')
+),
+fk_effects_optional(item) as (
+  values ('mazer.mazer_feedback.user_id')
 ),
 retained(item) as (
   values
@@ -105,6 +109,8 @@ fk_effect_found as (
             and k.confrelid = to_regclass(format('%I.%I', split_part(e.item, '.', 1), split_part(e.item, '.', 2)))
             and (e.action = 'c' or a.attname = split_part(e.item, '.', 3))) as referenced_by
   from fk_effects e
+  where to_regclass(format('%I.%I', split_part(e.item, '.', 1), split_part(e.item, '.', 2))) is not null
+     or e.item not in (select item from fk_effects_optional)
 ),
 unexpected_cascades as (
   select format('%s -> %s (%s) ondel=%s', k.conrelid::regclass, k.confrelid::regclass, k.conname, k.confdeltype) fk
@@ -126,7 +132,8 @@ firing_triggers as (
   join pg_proc p on p.oid = t.tgfoid join pg_namespace pn on pn.oid = p.pronamespace
   where not t.tgisinternal
     and (((t.tgtype & 8) <> 0 and (t.tgrelid in (select rel from delete_rels)
-                                   or t.tgrelid in ('auth.users'::regclass, 'account_private.username_signin_candidates'::regclass)))
+                                   or t.tgrelid in ('auth.users'::regclass, 'account_private.username_signin_candidates'::regclass,
+                                                     to_regclass('mazer.mazer_feedback'))))
       or ((t.tgtype & 16) <> 0 and (t.tgrelid in (select rel from parsed where kind like 'unlink%')
                                     or t.tgrelid = 'platform.identity_map'::regclass)))
 ),

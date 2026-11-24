@@ -149,6 +149,8 @@ create table mazer.mazer_progression_states (user_id uuid primary key references
 create table mazer.mazer_ai_progression_states (user_id uuid primary key references auth.users(id) on delete cascade, level int);
 create table mazer.mazer_cycle_receipts (id uuid primary key, user_id uuid not null references auth.users(id) on delete cascade, cycle int);
 create table mazer.mazer_register_failures (id bigint generated always as identity primary key, user_id uuid, sqlstate text, message text, failed_at timestamptz);
+-- Mazer feedback SQL v2 shape (docs/ops/sql-proposals/mazer-feedback-20261124-v2 in the Mazer repo): NOT NULL key, cascade.
+create table mazer.mazer_feedback (id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade, rating smallint not null, comment text, created_at timestamptz not null default now());
 create schema fawxzzy_analytics;
 create table fawxzzy_analytics.events (id bigint generated always as identity primary key, name text, path text);
 `;
@@ -314,6 +316,7 @@ insert into mazer.mazer_progression_states (user_id, level) values ('${user}', 7
 insert into mazer.mazer_ai_progression_states (user_id, level) values ('${user}', 3);
 insert into mazer.mazer_cycle_receipts (id, user_id, cycle) values ('${id()}', '${user}', 1), ('${id()}', '${user}', 2);
 insert into mazer.mazer_register_failures (user_id, sqlstate, message, failed_at) values ('${user}', '23505', 'setup failed', '2026-01-01T00:00:00Z');
+insert into mazer.mazer_feedback (user_id, rating, comment) values ('${user}', 4, 'feedback from ${tag}'), ('${user}', 2, null);
 insert into storage.objects (bucket_id, owner, name) values ('public-assets', null, '${tag}.png');
 insert into platform.identity_map (identity_id, source_system, source_subject, mapping_status, created_at, auth_user_id)
   values ('${IDENT[key]}', 'fitness', 'subject ${tag}', 'mapped', '2026-01-01T00:00:00Z', '${user}');
@@ -428,7 +431,7 @@ const TABLES = [
   "fitness.discord_moderation_cases", "fitness.billing_customers", "fitness.billing_purchases", "fitness.user_entitlements",
   "fitness.discord_spotify_connections", "fitness.auth_handoffs",
   "mazer.mazer_profiles", "mazer.mazer_progression_states", "mazer.mazer_ai_progression_states", "mazer.mazer_cycle_receipts",
-  "mazer.mazer_register_failures",
+  "mazer.mazer_register_failures", "mazer.mazer_feedback",
   "account_private.username_signin_index", "account_private.username_signin_candidates",
   "platform.identity_map", "platform.work_projects", "discordos.discord_feedback_reports",
   "fawxzzy_analytics.events", "storage.objects",
@@ -496,8 +499,8 @@ const repoSyncFunction = () => {
   check("preimage: no unknown account columns", same(pre?.unknown_account_columns, []), JSON.stringify(pre?.unknown_account_columns));
   check("preimage: no unreviewed trigger, no unexpected cascade", same(pre?.unreviewed_triggers, []) && same(pre?.unexpected_cascades, []),
     JSON.stringify([pre?.unreviewed_triggers, pre?.unexpected_cascades]));
-  check("preimage: both expected key effects found once, nothing references them",
-    pre?.expected_fk_effects?.length === 2 && pre.expected_fk_effects.every((e) => Number(e.matching_keys) === 1 && e.referenced_by.length === 0),
+  check("preimage: the three expected key effects (candidates, identity_map, feedback) found once, nothing references them",
+    pre?.expected_fk_effects?.length === 3 && pre.expected_fk_effects.every((e) => Number(e.matching_keys) === 1 && e.referenced_by.length === 0),
     JSON.stringify(pre?.expected_fk_effects));
   check("preimage: retained columns counted, rows naming live accounts shown",
     pre?.known_retained?.find((r) => r.item === "atlas_identity_migration.packet_rollback.user_id")?.rows_naming_live_accounts === 5
@@ -557,6 +560,12 @@ create trigger zz_audit after delete on mazer.mazer_register_failures for each r
   check("call-time: a delete trigger added after the apply stops the call", /ACCOUNT_DELETE_UNREVIEWED_TRIGGER.*mazer\.mazer_register_failures\.zz_audit/.test(outcome), outcome);
   check("call-time (new trigger): nothing deleted", same(await snapshot(db), beforeCall));
   await db.exec("drop trigger zz_audit on mazer.mazer_register_failures");
+  await db.exec("create trigger zz_feedback_audit after delete on mazer.mazer_feedback for each row execute function public.noop_trigger();");
+  outcome = await del(db, claimsFor("BOB"), "bob");
+  check("call-time: a delete trigger added to the cascaded feedback table stops the call",
+    /ACCOUNT_DELETE_UNREVIEWED_TRIGGER.*mazer\.mazer_feedback\.zz_feedback_audit/.test(outcome), outcome);
+  check("call-time (feedback trigger): nothing deleted", same(await snapshot(db), beforeCall));
+  await db.exec("drop trigger zz_feedback_audit on mazer.mazer_feedback");
   await db.exec(`create or replace function fitness.repack_session_exercise_positions_after_delete() returns trigger language plpgsql
 set search_path = fitness, pg_temp as $$ begin return old; end $$;`);
   outcome = await del(db, claimsFor("BOB"), "bob");
@@ -602,6 +611,9 @@ set search_path = fitness, pg_temp as $$ begin return old; end $$;`);
   check("unlinked: platform.identity_map row stays, auth_user_id set null by the key", im && im.auth_user_id === null, JSON.stringify(im));
   check("deleted: candidates projection row gone (cascade + live sync trigger)",
     Number((await db.query(`select count(*) c from account_private.username_signin_candidates where user_id = '${ALICE}'`)).rows[0].c) === 0);
+  check("deleted: alice's feedback rows gone through the cascade (this edited body only counts them in its fk_effects audit; the unchanged live body walks no feedback table and the cascade removes the rows the same way), other accounts' feedback kept",
+    Number((await db.query(`select count(*) c from mazer.mazer_feedback where user_id = '${ALICE}'`)).rows[0].c) === 0
+    && Number((await db.query(`select count(*) c from mazer.mazer_feedback where user_id = '${BOB}'`)).rows[0].c) === 2);
   check("deleted: Mazer sign-up failure rows gone",
     Number((await db.query(`select count(*) c from mazer.mazer_register_failures where user_id = '${ALICE}'`)).rows[0].c) === 0);
   const positions = (await db.query("select string_agg(position::text, ',' order by user_id, position) p from fitness.session_exercises")).rows[0].p;
@@ -614,7 +626,8 @@ set search_path = fitness, pg_temp as $$ begin return old; end $$;`);
   check("audit: counts per table, unlinks and key effects", rc["fitness.sets"] === 2 && rc["fitness.session_exercises"] === 2
     && rc["fitness.routine_day_exercises"] === 2 && rc["mazer.mazer_register_failures"] === 1
     && rc["discordos.discord_feedback_reports(unlinked)"] === 1 && rc["fitness.discord_feedback_reports(unlinked)"] === 1
-    && rc["account_private.username_signin_candidates(cascade)"] === 1 && rc["platform.identity_map(unlinked)"] === 1, JSON.stringify(rc));
+    && rc["account_private.username_signin_candidates(cascade)"] === 1 && rc["platform.identity_map(unlinked)"] === 1
+    && rc["mazer.mazer_feedback(cascade)"] === 2, JSON.stringify(rc));
   check("gone: a second call answers gone", (await del(db, claimsFor("ALICE"), "alice")) === "gone");
   check("confirm: an account without a username types its email", (await del(db, claimsFor("NONAME"), "noname@example.TEST")) === "deleted");
   check("deleted (no username): identity unlinked, no candidates row existed",
@@ -744,6 +757,14 @@ alter function account_api.account_delete_self(text) owner to sim_owner;
     ["a TEXT column named like an account id", "create table public.discord_log (id bigint, reporter_fitness_user_id text);", /UNKNOWN_ACCOUNT_COLUMNS: public\.discord_log\.reporter_fitness_user_id/],
     ["an unknown foreign key to auth.users", "create table public.things (id uuid primary key, who uuid references auth.users(id));", /UNKNOWN_ACCOUNT_COLUMNS: public\.things\.who/],
     ["a new archive table (the allow-list is per column, not per schema)", "create table fitness_archive.mazer_profiles (user_id uuid);", /UNKNOWN_ACCOUNT_COLUMNS: fitness_archive\.mazer_profiles\.user_id/],
+    ["the feedback key no longer cascading",
+      "alter table mazer.mazer_feedback drop constraint mazer_feedback_user_id_fkey, add foreign key (user_id) references auth.users(id) on delete no action;",
+      /EXPECTED_FK_EFFECT_MISSING: mazer\.mazer_feedback/],
+    ["a table referencing the cascaded feedback table",
+      "create table public.feedback_ref (id int, fb uuid references mazer.mazer_feedback(id));",
+      /EXPECTED_FK_EFFECT_IS_REFERENCED: mazer\.mazer_feedback/],
+    ["a DELETE trigger on the cascaded feedback table", `${fn} create trigger feedback_audit after delete on mazer.mazer_feedback for each row execute function public.noop();`,
+      /UNREVIEWED_TRIGGER: mazer\.mazer_feedback\.feedback_audit/],
     ["a listed table that is missing", "drop table mazer.mazer_register_failures;", /LISTED_TABLE_MISSING: mazer\.mazer_register_failures/],
     ["the discordos link that is no longer text",
       "alter table discordos.discord_feedback_reports alter column reporter_fitness_user_id type uuid using reporter_fitness_user_id::uuid;",
@@ -796,6 +817,13 @@ alter function account_api.account_delete_self(text) owner to sim_owner;
         .every((r) => r.f === null && r.t === null));
     await db.close();
   }
+
+  db = await fresh({ extra: "drop table mazer.mazer_feedback;" });
+  error = await tryExec(db, APPLY);
+  check("preflight: applies when mazer.mazer_feedback is absent (optional until the Mazer feedback SQL is applied)", error === null, error?.message);
+  const absentReport = await tryExec(db, PREIMAGE);
+  check("preimage: runs when mazer.mazer_feedback is absent", absentReport === null, absentReport?.message);
+  await db.close();
 
   db = await fresh({ extra: "grant usage on schema account_api to authenticated;" });
   error = await tryExec(db, APPLY);
