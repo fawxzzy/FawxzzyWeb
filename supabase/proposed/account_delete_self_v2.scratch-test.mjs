@@ -560,6 +560,12 @@ create trigger zz_audit after delete on mazer.mazer_register_failures for each r
   check("call-time: a delete trigger added after the apply stops the call", /ACCOUNT_DELETE_UNREVIEWED_TRIGGER.*mazer\.mazer_register_failures\.zz_audit/.test(outcome), outcome);
   check("call-time (new trigger): nothing deleted", same(await snapshot(db), beforeCall));
   await db.exec("drop trigger zz_audit on mazer.mazer_register_failures");
+  await db.exec("create trigger zz_feedback_audit after delete on mazer.mazer_feedback for each row execute function public.noop_trigger();");
+  outcome = await del(db, claimsFor("BOB"), "bob");
+  check("call-time: a delete trigger added to the cascaded feedback table stops the call",
+    /ACCOUNT_DELETE_UNREVIEWED_TRIGGER.*mazer\.mazer_feedback\.zz_feedback_audit/.test(outcome), outcome);
+  check("call-time (feedback trigger): nothing deleted", same(await snapshot(db), beforeCall));
+  await db.exec("drop trigger zz_feedback_audit on mazer.mazer_feedback");
   await db.exec(`create or replace function fitness.repack_session_exercise_positions_after_delete() returns trigger language plpgsql
 set search_path = fitness, pg_temp as $$ begin return old; end $$;`);
   outcome = await del(db, claimsFor("BOB"), "bob");
@@ -605,7 +611,7 @@ set search_path = fitness, pg_temp as $$ begin return old; end $$;`);
   check("unlinked: platform.identity_map row stays, auth_user_id set null by the key", im && im.auth_user_id === null, JSON.stringify(im));
   check("deleted: candidates projection row gone (cascade + live sync trigger)",
     Number((await db.query(`select count(*) c from account_private.username_signin_candidates where user_id = '${ALICE}'`)).rows[0].c) === 0);
-  check("deleted: alice's feedback rows gone through the cascade (the live function walks no feedback table), other accounts' feedback kept",
+  check("deleted: alice's feedback rows gone through the cascade (this edited body only counts them in its fk_effects audit; the unchanged live body walks no feedback table and the cascade removes the rows the same way), other accounts' feedback kept",
     Number((await db.query(`select count(*) c from mazer.mazer_feedback where user_id = '${ALICE}'`)).rows[0].c) === 0
     && Number((await db.query(`select count(*) c from mazer.mazer_feedback where user_id = '${BOB}'`)).rows[0].c) === 2);
   check("deleted: Mazer sign-up failure rows gone",

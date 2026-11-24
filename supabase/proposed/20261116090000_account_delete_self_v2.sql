@@ -651,7 +651,7 @@ begin
   join pg_catalog.pg_namespace pn on pn.oid = p.pronamespace
   where not t.tgisinternal
     and (
-      ((t.tgtype & 8) <> 0 and (format('%s.%s', n2.nspname, c.relname) in ('auth.users', 'account_private.username_signin_candidates')
+      ((t.tgtype & 8) <> 0 and (format('%s.%s', n2.nspname, c.relname) in ('auth.users', 'account_private.username_signin_candidates', 'mazer.mazer_feedback')
         or format('%s.%s', n2.nspname, c.relname) in (
           select split_part(split_part(s, ':', 2), '.', 1) || '.' || split_part(split_part(s, ':', 2), '.', 2)
           from unnest(steps) s where split_part(s, ':', 1) = 'delete')))
