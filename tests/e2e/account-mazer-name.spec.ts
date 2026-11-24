@@ -13,7 +13,7 @@ const dock = (page: Page) => page.locator(".auth-dock__button");
 const html = (page: Page) => page.locator("html");
 const row = (page: Page) => page.locator('[data-auth-field="mazer-name"]');
 
-async function open(page: Page, scenario = "mazer-name", app = "mazer") {
+async function open(page: Page, scenario = "mazer-name", app = "website") {
   await page.goto(`/account?auth_test=${scenario}${app ? `&app=${app}` : ""}`);
   await expect(page.getByRole("heading", { name: AUTH_COPY.title.account })).toBeVisible();
 }
@@ -22,8 +22,8 @@ const PASSWORD = "correct horse battery 1";
 const passwordBox = (page: Page) => page.locator("#account-mazer-name-password");
 
 /** Opens Change Mazer name and passes the password step (the same check as Change username). */
-async function startRename(page: Page) {
-  await page.getByRole("button", { name: AUTH_COPY.aria.changeMazerName }).click();
+async function startRename(page: Page, buttonName: string = AUTH_COPY.aria.changeMazerName) {
+  await page.getByRole("button", { name: buttonName }).click();
   await expect(surface(page)).toHaveAttribute("data-change-step", "password");
   await passwordBox(page).fill(PASSWORD);
   await dock(page).click();
@@ -126,22 +126,43 @@ test("cancel returns to the account page and changes nothing", async ({ page }) 
 });
 
 test("from Mazer with no profile yet: the row is empty and the save creates the profile once", async ({ page }) => {
-  await open(page, "mazer-name-missing");
-  await expect(page.getByLabel(AUTH_COPY.field.mazerName, { exact: true })).toHaveValue("");
-  await startRename(page);
-  await page.getByLabel(AUTH_COPY.field.newMazerName, { exact: true }).fill("first.name");
+  await open(page, "mazer-name-missing", "mazer");
+  // In Mazer the Mazer name is the one name, labelled Username.
+  await expect(page.getByLabel(AUTH_COPY.field.username, { exact: true })).toHaveValue("");
+  await startRename(page, AUTH_COPY.aria.changeUsername);
+  await page.getByLabel(AUTH_COPY.field.newUsername, { exact: true }).fill("first.name");
   await dock(page).click();
   await expect(html(page)).toHaveAttribute("data-mazer-profile-ensured", "true");
   await expect(html(page)).toHaveAttribute("data-mazer-name-saves", "1");
-  await expect(page.getByLabel(AUTH_COPY.field.mazerName, { exact: true })).toHaveValue("first.name");
+  await expect(page.getByLabel(AUTH_COPY.field.username, { exact: true })).toHaveValue("first.name");
   await expect(noticeOf(page, "mazer.namedone")).toBeVisible();
 });
 
 test("an unreachable database function reads as unavailable and keeps the editor open", async ({ page }) => {
-  await open(page, "mazer-name-unavailable");
-  await startRename(page);
-  await page.getByLabel(AUTH_COPY.field.newMazerName, { exact: true }).fill("star.runner");
+  await open(page, "mazer-name-unavailable", "mazer");
+  await startRename(page, AUTH_COPY.aria.changeUsername);
+  await page.getByLabel(AUTH_COPY.field.newUsername, { exact: true }).fill("star.runner");
   await dock(page).click();
   await expect(noticeOf(page, "change.unavailable")).toBeVisible();
   await expect(surface(page)).toBeVisible();
+});
+
+test("in Mazer there is ONE name row: the Mazer name, labelled Username, with no sign-in row", async ({ page }) => {
+  await open(page, "mazer-name", "mazer");
+  await expect(page.getByLabel(AUTH_COPY.field.username, { exact: true })).toHaveCount(1);
+  await expect(page.getByLabel(AUTH_COPY.field.username, { exact: true })).toHaveValue("Mazer-123456");
+  await expect(page.getByLabel(AUTH_COPY.field.mazerName, { exact: true })).toHaveCount(0);
+  await expect(page.locator("#account-current-username")).toHaveCount(0);
+  await startRename(page, AUTH_COPY.aria.changeUsername);
+  await expect(page.getByLabel(AUTH_COPY.field.newMazerName, { exact: true })).toHaveCount(0);
+  await page.getByLabel(AUTH_COPY.field.newUsername, { exact: true }).fill("star.runner");
+  await dock(page).click();
+  await expect(noticeOf(page, "mazer.namedone")).toBeVisible();
+  await expect(page.getByLabel(AUTH_COPY.field.username, { exact: true })).toHaveValue("star.runner");
+});
+
+test("outside Mazer both rows stay: sign-in username and Mazer name", async ({ page }) => {
+  await open(page, "mazer-name", "website");
+  await expect(page.getByLabel(AUTH_COPY.field.username, { exact: true })).toHaveValue("fawxzzy");
+  await expect(page.getByLabel(AUTH_COPY.field.mazerName, { exact: true })).toHaveValue("Mazer-123456");
 });

@@ -169,6 +169,10 @@ redirects must be admitted individually in a future packet; do not add a broad p
   a separate store from the sign-in username, and Mazer no longer lets a player edit it in the game.
   A "Mazer name" row (read through `mazer_profiles` RLS, own row only) appears under Username for
   accounts that have a Mazer profile or arrived with `app=mazer`; Fitness-only accounts never see it.
+  In the Mazer context (`app=mazer`) the page shows ONE name row instead: the Mazer name, labelled
+  "Username" (pencil, panel title and field labels also say username), and the sign-in username row is
+  hidden; the two stores stay separate and the rename wiring is unchanged (display only, 2026-11-23).
+  Every other context keeps both rows.
   Its pencil opens the same two steps as Change username: step 1 is the password re-check (the same
   `reauthenticate` call, Turnstile and `reauthFailure` copy); step 2 takes the new name, checked locally
   first (2-15 letters, numbers, dot, underscore or hyphen), then saved through
