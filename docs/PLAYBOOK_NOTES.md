@@ -308,3 +308,11 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - Rule: re-pin by copying the export and regenerating; never hand-patch the generated file.
 - Failure Mode: a re-pin without this entry fails Playbook verify.
 - Scope: Source and generated data only; no provider, credential, database or alias effect.
+
+## 2026-11-23 - Fitness handoff allowlist adds aea49e1c
+
+- Type: Auth handoff allowlist
+- WHAT changed: `FITNESS_HANDOFF_ACTIVATION.fitnessConsumerMerges` adds Fitness main `aea49e1cd44b44debcc4070c46eb771d5325dbc1` (PR298), keeps `aa3e78be7c38cf2de192d464f9e5eefe568ebd62` (live) as the rollback entry and drops the oldest `9979e22faa639d4fb60d915e4a02fefded823dc3`; `docs/fitness-session-handoff.md` and `tests/e2e/fitness-handoff.spec.ts` match.
+- WHY it changed: the portal checks `readiness.sourceCommit` against this list before retrieving credentials, so the next Fitness release must be listed before it deploys.
+- Rule: the tuple stays 7 entries; new sha last, live sha kept as rollback, oldest dropped.
+- Scope: Handoff allowlist only, no behavior change; no provider, credential, database or deploy effect.
