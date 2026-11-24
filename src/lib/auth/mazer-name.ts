@@ -67,6 +67,15 @@ export function showMazerNameRow(contextId: string, current: string | null) {
   return current !== null || contextId === "mazer";
 }
 
+/**
+ * In Mazer the account page shows ONE name: the Mazer name, labelled "Username". The sign-in
+ * username row is hidden there (the two stores stay separate; only the display collapses). Every
+ * other context keeps both rows. Pure, display only.
+ */
+export function mazerNameIsSoleUsername(contextId: string, rowShown: boolean) {
+  return rowShown && contextId === "mazer";
+}
+
 /** One copy-matrix line for a failed rename. */
 export function mazerNameFailure(error: unknown): AuthMessageId {
   const value = code(error);

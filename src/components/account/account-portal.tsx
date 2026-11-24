@@ -86,7 +86,7 @@ import {
   type DeleteProblem,
   type DeleteStep,
 } from "@/lib/auth/account-delete";
-import { mazerNameFailure, mazerNameProblem, showMazerNameRow } from "@/lib/auth/mazer-name";
+import { mazerNameFailure, mazerNameIsSoleUsername, mazerNameProblem, showMazerNameRow } from "@/lib/auth/mazer-name";
 import { TurnstileField, type TurnstileFieldHandle } from "@/components/account/turnstile-field";
 import { resolveSignOutDestination, SIGNOUT_RETURN_PARAM } from "@/config/account-signout";
 import { MAZER_ACCOUNT_ACTION_PARAM, mazerAccountActionUrl } from "@/config/mazer-account-actions";
@@ -1063,6 +1063,7 @@ function AccountPanel({
         adapter={adapter}
         context={context}
         currentName={mazerName}
+        solo={mazerNameIsSoleUsername(context.id, true)}
         onCancel={() => setRenamingMazer(false)}
         onSaved={(next) => {
           setMazerName(next);
@@ -1102,6 +1103,10 @@ function AccountPanel({
         }
       : undefined;
 
+  // In Mazer the Mazer name is the one name shown, labelled "Username" (sign-in username row hidden).
+  const mazerRowShown = Boolean(session && adapter && showMazerNameRow(context.id, mazerName));
+  const mazerSole = mazerNameIsSoleUsername(context.id, mazerRowShown);
+
   return (
     <section
       aria-labelledby="account-status-title"
@@ -1119,19 +1124,25 @@ function AccountPanel({
         titleId="account-status-title"
       />
       <div className="auth-body">
-        <AuthField
-          action={changeAction("username")}
-          id="account-current-username"
-          label={AUTH_COPY.field.username}
-          locked
-          name="username"
-          value={currentUsername}
-        />
-        {session && adapter && showMazerNameRow(context.id, mazerName) ? (
+        {mazerSole ? null : (
           <AuthField
-            action={{ disabled: busy, label: AUTH_COPY.aria.changeMazerName, onClick: startMazerRename }}
+            action={changeAction("username")}
+            id="account-current-username"
+            label={AUTH_COPY.field.username}
+            locked
+            name="username"
+            value={currentUsername}
+          />
+        )}
+        {mazerRowShown ? (
+          <AuthField
+            action={{
+              disabled: busy,
+              label: mazerSole ? AUTH_COPY.aria.changeUsername : AUTH_COPY.aria.changeMazerName,
+              onClick: startMazerRename,
+            }}
             id="account-mazer-name"
-            label={AUTH_COPY.field.mazerName}
+            label={mazerSole ? AUTH_COPY.field.username : AUTH_COPY.field.mazerName}
             locked
             name="mazer-name"
             value={mazerName ?? ""}
@@ -1476,12 +1487,15 @@ function MazerNamePanel({
   adapter,
   context,
   currentName,
+  solo,
   onCancel,
   onSaved,
 }: {
   adapter: PortalAuthAdapter;
   context: AccountExperienceContext;
   currentName: string | null;
+  /** True in Mazer: the Mazer name is the only name shown, labelled Username. */
+  solo: boolean;
   onCancel: () => void;
   onSaved: (next: string) => void;
 }) {
@@ -1601,13 +1615,13 @@ function MazerNamePanel({
       <AuthHead
         context={context}
         lead={step === "password" ? AUTH_COPY.lead.changeConfirm : AUTH_COPY.lead.changeMazerName}
-        title={AUTH_COPY.title.changeMazerName}
+        title={solo ? AUTH_COPY.title.changeUsername : AUTH_COPY.title.changeMazerName}
         titleId="account-mazer-name-title"
       />
       <form className="auth-body" id="account-mazer-name-form" noValidate onSubmit={submit}>
         <AuthField
           id="account-mazer-name-current"
-          label={AUTH_COPY.field.mazerName}
+          label={solo ? AUTH_COPY.field.username : AUTH_COPY.field.mazerName}
           locked
           name="current-mazer-name"
           value={currentName ?? ""}
@@ -1634,7 +1648,7 @@ function MazerNamePanel({
             disabled={busy}
             id={MAZER_NAME_FIELD_IDS.name}
             invalid={nameInvalid}
-            label={AUTH_COPY.field.newMazerName}
+            label={solo ? AUTH_COPY.field.newUsername : AUTH_COPY.field.newMazerName}
             maxLength={15}
             name="mazer-name"
             onChange={(next) => {

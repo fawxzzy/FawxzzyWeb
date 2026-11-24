@@ -76,6 +76,13 @@ test("the row shows for a Mazer profile or a visit from Mazer, never for a Fitne
   assert.equal(mazer.showMazerNameRow("website", null), false);
 });
 
+test("only Mazer collapses to one name, labelled Username; every other context keeps both rows", () => {
+  assert.equal(mazer.mazerNameIsSoleUsername("mazer", true), true);
+  assert.equal(mazer.mazerNameIsSoleUsername("mazer", false), false);
+  assert.equal(mazer.mazerNameIsSoleUsername("website", true), false);
+  assert.equal(mazer.mazerNameIsSoleUsername("fitness", true), false);
+});
+
 test("the live adapter uses the existing auth-bound Mazer functions, bound to the signed-in id", () => {
   assert.equal(mazer.MAZER_SCHEMA, "mazer");
   assert.equal(mazer.MAZER_SET_USERNAME_RPC, "mazer_set_username");
