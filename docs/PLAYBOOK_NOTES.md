@@ -343,3 +343,8 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - Scope: Source and generated data only; no provider, credential, database or alias effect.
 ## 2026-11-24 Mazer owner board re-pin (333 cards)
 - WHAT changed: the Mazer owner export snapshot (333 cards, sha256 fe3862d4117b23d2745f9b7cff930d319bc494659ab2239e4ac606541e4e80ca) at Mazer main 2ef4dfcb is copied byte for byte into planning/board-sources/mazer.project-board.owner-export.v1.json and owner-board.generated.mjs is regenerated from it.
+## 2026-11-25 Mazer owner board re-pin (333 cards)
+- WHAT changed: the Mazer owner export snapshot (333 cards, sha256 e9d260f28c878dcc165641ebfd36c8665c285321d059c181461ffcf0a147ee05) at Mazer main f4dca712 is copied byte for byte into planning/board-sources and the generated owner-board module is regenerated.
+- WHY it changed: the Mazer board fold (PR #709 there) recorded six cards (PERF-017, GEN-033, VIS-061, VIS-062, UI-093, FLOW-019) as deployed in main-CB24t84j; the Projects page only updates on a Web build.
+- Rule: re-pin by copying the export and regenerating; never hand-patch the generated file.
+- Scope: Source and generated data only; no provider, credential, database or alias effect.
