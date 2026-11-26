@@ -380,3 +380,11 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHY it changed: the Fitness board fold (PR #318 there) registered FF-FIX-001 for the PR313-317 fix round, live as build 2eaa14a8 and checked only in headless Chromium; the Projects page only updates on a Web build.
 - Rule: re-pin by copying the export and regenerating; never hand-patch the generated file.
 - Scope: Source and generated data only; no provider, credential, database or alias effect.
+
+## 2026-11-26 - Fitness handoff allowlist adds e25e953a
+
+- Type: Auth handoff allowlist
+- WHAT changed: `FITNESS_HANDOFF_ACTIVATION.fitnessConsumerMerges` adds Fitness main `e25e953ac40b68fe969dde6f167b397d82373e5d` (PR320-324 wave 2), keeps `2eaa14a8ba442d84075adf96a02f74cf304c2a90` (live) as the rollback entry and drops the oldest `02917bfb0612dce212d3aa55e0f338c0b0e6d57d`; `docs/fitness-session-handoff.md` and `tests/e2e/fitness-handoff.spec.ts` match.
+- WHY it changed: the portal checks `readiness.sourceCommit` against this list before retrieving credentials, so the next Fitness release must be listed before it deploys.
+- Rule: the tuple stays 7 entries; new sha last, live sha kept as rollback, oldest dropped.
+- Scope: Handoff allowlist only, no behavior change; no provider, credential, database or deploy effect.
