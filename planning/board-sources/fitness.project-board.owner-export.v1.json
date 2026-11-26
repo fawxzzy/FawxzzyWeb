@@ -1,20 +1,20 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_fitness_owner_registry_0f5675bd7a36",
+  "export_id": "pbe_fitness_owner_registry_160e30d70cc3",
   "project_id": "fitness",
   "board_id": "fitness:project-feedback:fitness-active",
   "owner": "fitness",
   "adapter_id": "fitness-owner-registry-v1",
-  "source_revision": "sha256:0f5675bd7a36b2301ce44f30639fb06903093b0fa7358fced2a967c093ec9009",
-  "generated_at": "2026-11-26T11:46:39.000Z",
+  "source_revision": "sha256:160e30d70cc36ae1c933fcda73104de2e1084c29f1a1694b1b853f726086edc2",
+  "generated_at": "2026-11-26T21:19:54.000Z",
   "sources": [
     {
       "source_id": "fitness-owner-work-registry",
       "kind": "json",
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json",
-      "revision": "sha256:c701098e2029004a5b86cb7a84f03657b2e2ab5128d5e0d5a02553857cf4d47b",
-      "observed_at": "2026-11-26T11:46:39.000Z"
+      "revision": "sha256:064ab3d72af38dc1849de28f318fd980e55901c17d0d1cd19d1cc4e3d00bae6e",
+      "observed_at": "2026-11-26T21:19:54.000Z"
     },
     {
       "source_id": "fitness-feedback-monetization-roadmap",
@@ -22,7 +22,7 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs",
       "revision": "sha256:78aa8b8300f0c21258144da0a5bdd6fdc4c9ff1337e265b2552094ebf3505ba6",
-      "observed_at": "2026-11-26T11:46:39.000Z"
+      "observed_at": "2026-11-26T21:19:54.000Z"
     },
     {
       "source_id": "fitness-session-timer-roadmap",
@@ -30,7 +30,7 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs",
       "revision": "sha256:58b1235add45e05d51712f433e2e67d4536b878f4edfad6ab6908d9402c55bcc",
-      "observed_at": "2026-11-26T11:46:39.000Z"
+      "observed_at": "2026-11-26T21:19:54.000Z"
     },
     {
       "source_id": "fitness-owner-export-adapter",
@@ -38,7 +38,7 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs",
       "revision": "sha256:e8485f9091fb27f574b2999d1ca4ad9acf94c3f28b0d5f462836bf43ba3ec562",
-      "observed_at": "2026-11-26T11:46:39.000Z"
+      "observed_at": "2026-11-26T21:19:54.000Z"
     }
   ],
   "cards": [
@@ -869,14 +869,14 @@
         "project_id": "fitness",
         "board_id": "fitness:project-feedback:fitness-active",
         "title": "Move app navigation into a top-right menu with green header titles",
-        "description": "Top nav buttons move into a Mazer-style dropdown anchored top right, header titles sit top left in the app green, and error notices anchor just below the menu button. Board update 2026-11-20: Menu header live on the screens that use it. Headless only; the rest of the screens and a phone check are still open. PR #293 merged (41dd099a), PR #294 merged (f529c270). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone. Board update 2026-11-24: Shared in-flow notice and header-slot design carried into production with the Today polish release; headless checks only, no device check yet. PR #298 merged (aea49e1c). Deployed: production build aea49e1c. Checked only in headless Chromium, not on a real phone.",
+        "description": "Top nav buttons move into a Mazer-style dropdown anchored top right, header titles sit top left in the app green, and error notices anchor just below the menu button. Board update 2026-11-20: Menu header live on the screens that use it. Headless only; the rest of the screens and a phone check are still open. PR #293 merged (41dd099a), PR #294 merged (f529c270). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone. Board update 2026-11-24: Shared in-flow notice and header-slot design carried into production with the Today polish release; headless checks only, no device check yet. PR #298 merged (aea49e1c). Deployed: production build aea49e1c. Checked only in headless Chromium, not on a real phone. Board update 2026-11-26: The top-right menu was replaced by the bottom tab bar (see FF-NAV-001), live in production build e25e953a. Checked only in headless Chromium, not on a real phone. PR #321 merged (a4922e3a). Deployed: production build e25e953a. Checked only in headless Chromium, not on a real phone.",
         "card_type": "feature",
         "lifecycle": "review",
         "priority": "medium",
         "owner": "fitness",
         "dependencies": [],
         "board_version": 1,
-        "updated_at": "2026-11-24T02:04:11.000Z",
+        "updated_at": "2026-11-26T21:19:54.000Z",
         "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-DESIGN-005",
         "extensions": {
           "owner_status": "review",
@@ -888,11 +888,11 @@
         "source_id": "fitness-owner-work-registry",
         "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-DESIGN-005",
         "source_status": "current",
-        "source_updated_at": "2026-11-24T02:04:11.000Z"
+        "source_updated_at": "2026-11-26T21:19:54.000Z"
       },
       "content": {
-        "summary": "Top nav buttons move into a Mazer-style dropdown anchored top right, header titles sit top left in the app green, and error notices anchor just below the menu button. Board update 2026-11-20: Menu header live on the screens that use it. Headless only; the rest of the screens and a phone check are still open. PR #293 merged (41dd099a), PR #294 merged (f529c270). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone. Board update 2026-11-24: Shared in-flow notice and header-slot design carried into production with the Today polish release; headless checks only, no device check yet. PR #298 merged (aea49e1c). Deployed: production build aea49e1c. Checked only in headless Chromium, not on a real phone.",
-        "objective": "Top nav buttons move into a Mazer-style dropdown anchored top right, header titles sit top left in the app green, and error notices anchor just below the menu button. Board update 2026-11-20: Menu header live on the screens that use it. Headless only; the rest of the screens and a phone check are still open. PR #293 merged (41dd099a), PR #294 merged (f529c270). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone. Board update 2026-11-24: Shared in-flow notice and header-slot design carried into production with the Today polish release; headless checks only, no device check yet. PR #298 merged (aea49e1c). Deployed: production build aea49e1c. Checked only in headless Chromium, not on a real phone.",
+        "summary": "Top nav buttons move into a Mazer-style dropdown anchored top right, header titles sit top left in the app green, and error notices anchor just below the menu button. Board update 2026-11-20: Menu header live on the screens that use it. Headless only; the rest of the screens and a phone check are still open. PR #293 merged (41dd099a), PR #294 merged (f529c270). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone. Board update 2026-11-24: Shared in-flow notice and header-slot design carried into production with the Today polish release; headless checks only, no device check yet. PR #298 merged (aea49e1c). Deployed: production build aea49e1c. Checked only in headless Chromium, not on a real phone. Board update 2026-11-26: The top-right menu was replaced by the bottom tab bar (see FF-NAV-001), live in production build e25e953a. Checked only in headless Chromium, not on a real phone. PR #321 merged (a4922e3a). Deployed: production build e25e953a. Checked only in headless Chromium, not on a real phone.",
+        "objective": "Top nav buttons move into a Mazer-style dropdown anchored top right, header titles sit top left in the app green, and error notices anchor just below the menu button. Board update 2026-11-20: Menu header live on the screens that use it. Headless only; the rest of the screens and a phone check are still open. PR #293 merged (41dd099a), PR #294 merged (f529c270). Deployed: production build aa3e78be. Checked only in headless Chromium, not on a real phone. Board update 2026-11-24: Shared in-flow notice and header-slot design carried into production with the Today polish release; headless checks only, no device check yet. PR #298 merged (aea49e1c). Deployed: production build aea49e1c. Checked only in headless Chromium, not on a real phone. Board update 2026-11-26: The top-right menu was replaced by the bottom tab bar (see FF-NAV-001), live in production build e25e953a. Checked only in headless Chromium, not on a real phone. PR #321 merged (a4922e3a). Deployed: production build e25e953a. Checked only in headless Chromium, not on a real phone.",
         "acceptance_criteria": [
           "Navigation lives in a top-right dropdown on the screens that use the app header.",
           "Header titles use the shared app green from the color scheme.",
@@ -1399,6 +1399,58 @@
         "blockers": [],
         "evidence": [
           "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-nav-001_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-NAV-001",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Bottom tab bar for Today, Routines, History and Settings",
+        "description": "A bottom tab bar with Today, Routines, History and Settings replaces the top-right menu, and is hidden during a live workout.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-11-26T21:19:54.000Z",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-NAV-001",
+        "extensions": {
+          "owner_status": "review",
+          "public_safe": true,
+          "visibility": "public"
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-NAV-001",
+        "source_status": "current",
+        "source_updated_at": "2026-11-26T21:19:54.000Z"
+      },
+      "content": {
+        "summary": "A bottom tab bar with Today, Routines, History and Settings replaces the top-right menu, and is hidden during a live workout.",
+        "objective": "A bottom tab bar with Today, Routines, History and Settings replaces the top-right menu, and is hidden during a live workout.",
+        "acceptance_criteria": [
+          "The tab bar shows Today, Routines, History and Settings.",
+          "The tab bar is hidden while a workout is in progress.",
+          "The top-right menu is gone."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json"
         ]
       },
       "relationships": {
@@ -2384,6 +2436,110 @@
       }
     },
     {
+      "idempotency_key": "pbk_fitness_ff-routine-003_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-ROUTINE-003",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Archive routines instead of deleting them",
+        "description": "Removing a routine archives it so it can be restored later, instead of deleting it for good.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-11-26T21:19:54.000Z",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-ROUTINE-003",
+        "extensions": {
+          "owner_status": "review",
+          "public_safe": true,
+          "visibility": "public"
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-ROUTINE-003",
+        "source_status": "current",
+        "source_updated_at": "2026-11-26T21:19:54.000Z"
+      },
+      "content": {
+        "summary": "Removing a routine archives it so it can be restored later, instead of deleting it for good.",
+        "objective": "Removing a routine archives it so it can be restored later, instead of deleting it for good.",
+        "acceptance_criteria": [
+          "Removing a routine archives it instead of deleting it.",
+          "An archived routine can be restored from the routines screen.",
+          "Archived routines no longer show on Today."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-routine-004_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-ROUTINE-004",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Simpler set-up flows for exercises and routines",
+        "description": "Adding an exercise asks for a goal, a new routine needs only a name and weekday chips, routine settings use plain words, and adding a day uses a sheet.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-11-26T21:19:54.000Z",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-ROUTINE-004",
+        "extensions": {
+          "owner_status": "review",
+          "public_safe": true,
+          "visibility": "public"
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-ROUTINE-004",
+        "source_status": "current",
+        "source_updated_at": "2026-11-26T21:19:54.000Z"
+      },
+      "content": {
+        "summary": "Adding an exercise asks for a goal, a new routine needs only a name and weekday chips, routine settings use plain words, and adding a day uses a sheet.",
+        "objective": "Adding an exercise asks for a goal, a new routine needs only a name and weekday chips, routine settings use plain words, and adding a day uses a sheet.",
+        "acceptance_criteria": [
+          "Add exercise uses a short goal form.",
+          "A new routine needs only a name and weekday chips.",
+          "Routine settings and add a day use plain words and a sheet."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
       "idempotency_key": "pbk_fitness_ff-session-001_v1",
       "record_kind": "project-work",
       "record_status": "active",
@@ -2717,6 +2873,58 @@
       }
     },
     {
+      "idempotency_key": "pbk_fitness_ff-session-007_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-SESSION-007",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Simpler workout logging",
+        "description": "The workout logger shows a Last time line and one Log set button, with Warm-up and Failure chips. History gets a This week strip and Progress lists the lifts that went up.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-11-26T21:19:54.000Z",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-SESSION-007",
+        "extensions": {
+          "owner_status": "review",
+          "public_safe": true,
+          "visibility": "public"
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-SESSION-007",
+        "source_status": "current",
+        "source_updated_at": "2026-11-26T21:19:54.000Z"
+      },
+      "content": {
+        "summary": "The workout logger shows a Last time line and one Log set button, with Warm-up and Failure chips. History gets a This week strip and Progress lists the lifts that went up.",
+        "objective": "The workout logger shows a Last time line and one Log set button, with Warm-up and Failure chips. History gets a This week strip and Progress lists the lifts that went up.",
+        "acceptance_criteria": [
+          "Each exercise shows a Last time line and one Log set button.",
+          "Warm-up and Failure are chips on a set.",
+          "History shows a This week strip and Progress lists lifts that went up."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
       "idempotency_key": "pbk_fitness_ff-soc-001_v1",
       "record_kind": "project-work",
       "record_status": "active",
@@ -2983,6 +3191,58 @@
       }
     },
     {
+      "idempotency_key": "pbk_fitness_ff-today-007_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-TODAY-007",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Starter plans and a calm Today",
+        "description": "A first run offers 3 starter plans, Today shows one clear next action, and Settings has Units and time zone. The Achievements row is removed from Settings.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-11-26T21:19:54.000Z",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-TODAY-007",
+        "extensions": {
+          "owner_status": "review",
+          "public_safe": true,
+          "visibility": "public"
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-TODAY-007",
+        "source_status": "current",
+        "source_updated_at": "2026-11-26T21:19:54.000Z"
+      },
+      "content": {
+        "summary": "A first run offers 3 starter plans, Today shows one clear next action, and Settings has Units and time zone. The Achievements row is removed from Settings.",
+        "objective": "A first run offers 3 starter plans, Today shows one clear next action, and Settings has Units and time zone. The Achievements row is removed from Settings.",
+        "acceptance_criteria": [
+          "A first run offers 3 starter plans.",
+          "Today shows one clear next action.",
+          "Settings has a Units and time zone section."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
       "idempotency_key": "pbk_fitness_ff-workout-001_v1",
       "record_kind": "project-work",
       "record_status": "active",
@@ -3036,8 +3296,8 @@
     }
   ],
   "extensions": {
-    "source_work_item_count": 70,
-    "exported_card_count": 55,
+    "source_work_item_count": 75,
+    "exported_card_count": 60,
     "exported_completed_card_count": 24,
     "excluded_completed_card_count": 15,
     "selected_owner_snapshot_record_count": 55,
