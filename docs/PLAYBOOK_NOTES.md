@@ -364,3 +364,11 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHY it changed: the portal checks `readiness.sourceCommit` against this list before retrieving credentials, so the next Fitness release must be listed before it deploys.
 - Rule: the tuple stays 7 entries; new sha last, live sha kept as rollback, oldest dropped.
 - Scope: Handoff allowlist only, no behavior change; no provider, credential, database or deploy effect.
+
+## 2026-11-26 - Fitness handoff allowlist adds 2eaa14a8
+
+- Type: Auth handoff allowlist
+- WHAT changed: `FITNESS_HANDOFF_ACTIVATION.fitnessConsumerMerges` adds Fitness main `2eaa14a8ba442d84075adf96a02f74cf304c2a90` (PR313-317 fix round), keeps `8a2694592012bbc92803b3e99dedc208e2f493a1` (live) as the rollback entry and drops the oldest `1ebbd945312b6d48bfbb46fad28c3134767b932c`; `docs/fitness-session-handoff.md` and `tests/e2e/fitness-handoff.spec.ts` match.
+- WHY it changed: the portal checks `readiness.sourceCommit` against this list before retrieving credentials, so the next Fitness release must be listed before it deploys.
+- Rule: the tuple stays 7 entries; new sha last, live sha kept as rollback, oldest dropped.
+- Scope: Handoff allowlist only, no behavior change; no provider, credential, database or deploy effect.
