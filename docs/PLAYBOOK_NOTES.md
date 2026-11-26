@@ -348,3 +348,11 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHY it changed: the Mazer board fold (PR #709 there) recorded six cards (PERF-017, GEN-033, VIS-061, VIS-062, UI-093, FLOW-019) as deployed in main-CB24t84j; the Projects page only updates on a Web build.
 - Rule: re-pin by copying the export and regenerating; never hand-patch the generated file.
 - Scope: Source and generated data only; no provider, credential, database or alias effect.
+
+## 2026-11-25 - Fitness handoff allowlist adds 8a269459
+
+- Type: Auth handoff allowlist
+- WHAT changed: `FITNESS_HANDOFF_ACTIVATION.fitnessConsumerMerges` adds Fitness main `8a2694592012bbc92803b3e99dedc208e2f493a1`, keeps `aea49e1cd44b44debcc4070c46eb771d5325dbc1` (live) as the rollback entry and drops the oldest `b761e6527e72bbfe34386cfe49e49674610ccfec`; `docs/fitness-session-handoff.md` and `tests/e2e/fitness-handoff.spec.ts` match.
+- WHY it changed: the portal checks `readiness.sourceCommit` against this list before retrieving credentials, so the next Fitness release must be listed before it deploys.
+- Rule: the tuple stays 7 entries; new sha last, live sha kept as rollback, oldest dropped.
+- Scope: Handoff allowlist only, no behavior change; no provider, credential, database or deploy effect.
