@@ -1,5 +1,13 @@
 This file is a project-local inbox for repo-specific Playbook notes that may later be promoted upstream.
 
+## 2026-11-25 - Fitness board re-pin: full-app redesign release folded
+
+- Type: Board data only
+- WHAT changed: `planning/board-sources/fitness.project-board.owner-export.v1.json` is re-pinned to Fitness `main` at `20e895f9` (PR #311, 54 cards, 8 new redesign cards in review), and the generated owner snapshot `src/server/projects/owner-board.generated.mjs` is rebuilt from it.
+- WHY it changed: The Fitness full-app redesign (PRs 299-310) is live in build `8a269459`; the owner board now lists each lane as review, headless-checked only, not checked on a real phone.
+- Rule: Re-pin copies the Fitness export and rebuilds the snapshot with `npm run data:project-board-owner-snapshot`, never by hand; a PR touching the snapshot needs a notes entry.
+- Scope: Source and local regression only. The Projects page changes only after the next production build; no deployment, provider, credential or database effect.
+
 ## 2026-11-16 - Delete account goes live (flag on)
 
 - Type: Config flip + test/doc update; `DELETE_ACCOUNT_LIVE = true`
