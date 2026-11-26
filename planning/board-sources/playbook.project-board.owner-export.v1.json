@@ -1,101 +1,23 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_playbook_roadmap_7194e905caa3",
+  "export_id": "pbe_playbook_roadmap_62292209aa54",
   "project_id": "playbook",
   "board_id": "discordos:project-feedback:playbook",
   "owner": "playbook",
   "adapter_id": "playbook-roadmap-v1",
-  "source_revision": "sha256:7194e905caa30ec5d1317b3d4d5da14f3799b9a0d3836ead4ad2333a2c094330",
-  "generated_at": "2026-11-14T00:00:00.000Z",
+  "source_revision": "sha256:62292209aa54f9b1266b4a3d1bfb3fca65f35fa1670c5ca803f4e64192bf5d30",
+  "generated_at": "2026-11-15T00:00:00.000Z",
   "sources": [
     {
       "source_id": "playbook-roadmap",
       "kind": "json",
       "repository": "playbook",
       "path": "repos/playbook/docs/roadmap/ROADMAP.json",
-      "revision": "sha256:7194e905caa30ec5d1317b3d4d5da14f3799b9a0d3836ead4ad2333a2c094330",
-      "observed_at": "2026-11-14T00:00:00.000Z"
+      "revision": "sha256:62292209aa54f9b1266b4a3d1bfb3fca65f35fa1670c5ca803f4e64192bf5d30",
+      "observed_at": "2026-11-15T00:00:00.000Z"
     }
   ],
   "cards": [
-    {
-      "idempotency_key": "pbk_playbook_pb-v06-failure-taxonomy-001_v1",
-      "record_kind": "project-work",
-      "record_status": "active",
-      "record": {
-        "contract_version": "atlas.card-record.v2",
-        "card_id": "PB-V06-FAILURE-TAXONOMY-001",
-        "project_id": "playbook",
-        "board_id": "discordos:project-feedback:playbook",
-        "title": "General failure taxonomy, ingest and prevention mapping",
-        "description": "Capture failures from any source as structured intelligence with a stable taxonomy and deterministically map them into rules, tests, docs and remediation scaffolds.",
-        "card_type": "feature",
-        "lifecycle": "planning",
-        "priority": null,
-        "owner": "playbook",
-        "dependencies": [
-          "PB-V06-FAILURE-INTELLIGENCE-001"
-        ],
-        "board_version": 1,
-        "updated_at": "2026-11-14T00:00:00.000Z",
-        "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V06-FAILURE-TAXONOMY-001",
-        "extensions": {
-          "roadmap_status": "planned",
-          "roadmap_version": "v0.6"
-        }
-      },
-      "source": {
-        "source_id": "playbook-roadmap",
-        "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V06-FAILURE-TAXONOMY-001",
-        "source_status": "current",
-        "source_updated_at": "2026-11-14T00:00:00.000Z"
-      },
-      "content": {
-        "summary": "Capture failures from any source as structured intelligence with a stable taxonomy and deterministically map them into rules, tests, docs and remediation scaffolds.",
-        "objective": "Capture failures from any source as structured intelligence with a stable taxonomy and deterministically map them into rules, tests, docs and remediation scaffolds.",
-        "acceptance_criteria": [
-          "Run: pnpm playbook failure ingest --json --input .playbook/failures/sample.json",
-          "Run: pnpm playbook failure suggest --json",
-          "Run: pnpm test -- failure-intelligence"
-        ],
-        "discoveries": [],
-        "next_actions": [
-          "pnpm playbook failure ingest --json --input .playbook/failures/sample.json",
-          "pnpm playbook failure suggest --json",
-          "pnpm test -- failure-intelligence"
-        ],
-        "blockers": [],
-        "evidence": [
-          "repos/playbook/docs/commands/failure.md",
-          "repos/playbook/docs/contracts/COMMAND_CONTRACTS_V1.md",
-          "repos/playbook/docs/contracts/FAILURE_INTELLIGENCE_CONTRACT.md",
-          "repos/playbook/docs/contracts/FAILURE_TAXONOMY_SCHEMA.json",
-          "repos/playbook/docs/PLAYBOOK_DEV_WORKFLOW.md",
-          "repos/playbook/docs/PLAYBOOK_PRODUCT_ROADMAP.md",
-          "repos/playbook/tests/contracts/failure-intelligence.contract.test.ts",
-          "repos/playbook/tests/unit/failure-taxonomy-classifier.test.ts"
-        ]
-      },
-      "relationships": {
-        "parent_card_id": null,
-        "duplicate_of": null,
-        "superseded_by": null
-      },
-      "extensions": {
-        "commands": [
-          "apply",
-          "doctor",
-          "failure",
-          "plan",
-          "verify"
-        ],
-        "package_ownership": [
-          "@fawxzzy/playbook",
-          "@zachariahredfield/playbook-core",
-          "@zachariahredfield/playbook-engine"
-        ]
-      }
-    },
     {
       "idempotency_key": "pbk_playbook_pb-v07-arch-intelligence-graph-001_v1",
       "record_kind": "project-work",
@@ -116,7 +38,7 @@
           "PB-V05-PACKAGE-BOUNDARIES-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-14T00:00:00.000Z",
+        "updated_at": "2026-11-15T00:00:00.000Z",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V07-ARCH-INTELLIGENCE-GRAPH-001",
         "extensions": {
           "roadmap_status": "in-progress",
@@ -127,7 +49,7 @@
         "source_id": "playbook-roadmap",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V07-ARCH-INTELLIGENCE-GRAPH-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-14T00:00:00.000Z"
+        "source_updated_at": "2026-11-15T00:00:00.000Z"
       },
       "content": {
         "summary": "Evolve repository graph artifacts into a semantic architecture graph that powers explain/query/analyze-pr impact and risk reasoning.",
@@ -196,7 +118,7 @@
           "PB-V08-REPLAY-PROMOTION-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-14T00:00:00.000Z",
+        "updated_at": "2026-11-15T00:00:00.000Z",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V08-GRAPH-MEMORY-001",
         "extensions": {
           "roadmap_status": "architecture-defined",
@@ -207,7 +129,7 @@
         "source_id": "playbook-roadmap",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V08-GRAPH-MEMORY-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-14T00:00:00.000Z"
+        "source_updated_at": "2026-11-15T00:00:00.000Z"
       },
       "content": {
         "summary": "Define graph-memory composition between architecture intelligence and memory workflows for deterministic retrieval and explainability.",
@@ -276,7 +198,7 @@
           "PB-V09-INTERFACE-SURFACES-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-14T00:00:00.000Z",
+        "updated_at": "2026-11-15T00:00:00.000Z",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-CAPABILITY-ROUTING-001",
         "extensions": {
           "roadmap_status": "directional",
@@ -287,7 +209,7 @@
         "source_id": "playbook-roadmap",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-CAPABILITY-ROUTING-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-14T00:00:00.000Z"
+        "source_updated_at": "2026-11-15T00:00:00.000Z"
       },
       "content": {
         "summary": "Define explicit capability-routing and any future bounded model-routing policy only after interface surfaces are grounded on the deterministic platform runtime.",
@@ -345,7 +267,7 @@
           "PB-V09-PR-REVIEW-LOOP-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-14T00:00:00.000Z",
+        "updated_at": "2026-11-15T00:00:00.000Z",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-EXECUTION-ORCHESTRATION-001",
         "extensions": {
           "roadmap_status": "in-progress",
@@ -356,7 +278,7 @@
         "source_id": "playbook-roadmap",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-EXECUTION-ORCHESTRATION-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-14T00:00:00.000Z"
+        "source_updated_at": "2026-11-15T00:00:00.000Z"
       },
       "content": {
         "summary": "Extend the current verify/plan/apply runtime into broader policy-gated orchestration only after control-plane foundations exist, without broadening the current 4-week implementation scope.",
@@ -428,7 +350,7 @@
           "PB-V09-MULTI-REPO-TRANSFER-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-14T00:00:00.000Z",
+        "updated_at": "2026-11-15T00:00:00.000Z",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-GOVERNED-INTERFACE-API-001",
         "extensions": {
           "roadmap_status": "in-progress",
@@ -439,7 +361,7 @@
         "source_id": "playbook-roadmap",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-GOVERNED-INTERFACE-API-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-14T00:00:00.000Z"
+        "source_updated_at": "2026-11-15T00:00:00.000Z"
       },
       "content": {
         "summary": "Define optional, policy-aware server/API interface surfaces that coordinate many Playbook-enabled repositories over one deterministic runtime without collapsing per-repo boundaries.",
@@ -506,7 +428,7 @@
           "PB-V1-PRODUCT-TRUTH-PACKAGING-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-14T00:00:00.000Z",
+        "updated_at": "2026-11-15T00:00:00.000Z",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-INTERFACE-SURFACES-001",
         "extensions": {
           "roadmap_status": "directional",
@@ -517,7 +439,7 @@
         "source_id": "playbook-roadmap",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-INTERFACE-SURFACES-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-14T00:00:00.000Z"
+        "source_updated_at": "2026-11-15T00:00:00.000Z"
       },
       "content": {
         "summary": "Sequence broader interface surfaces over the deterministic runtime after multi-repo transfer and core control layers are defined, without treating those surfaces as present commitments.",
@@ -575,7 +497,7 @@
           "PB-V09-PLATFORM-OBSERVATION-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-14T00:00:00.000Z",
+        "updated_at": "2026-11-15T00:00:00.000Z",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-KNOWLEDGE-PERSISTENCE-001",
         "extensions": {
           "roadmap_status": "architecture-defined",
@@ -586,7 +508,7 @@
         "source_id": "playbook-roadmap",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-KNOWLEDGE-PERSISTENCE-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-14T00:00:00.000Z"
+        "source_updated_at": "2026-11-15T00:00:00.000Z"
       },
       "content": {
         "summary": "Define the post-observation persistence layer that retains deterministic evidence and knowledge artifacts with explicit lifecycle boundaries before broader platform scheduling.",
@@ -644,7 +566,7 @@
           "PB-V09-SESSION-EVIDENCE-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-14T00:00:00.000Z",
+        "updated_at": "2026-11-15T00:00:00.000Z",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-METRICS-ROI-PROOF-OF-VALUE-001",
         "extensions": {
           "roadmap_status": "architecture-defined",
@@ -655,7 +577,7 @@
         "source_id": "playbook-roadmap",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-METRICS-ROI-PROOF-OF-VALUE-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-14T00:00:00.000Z"
+        "source_updated_at": "2026-11-15T00:00:00.000Z"
       },
       "content": {
         "summary": "Define canonical value measurement architecture grounded in deterministic repository outcomes, trust, governance impact, and evidence-linked attribution across Open Core, Team, and Enterprise without cloud-required instrumentation.",
@@ -715,7 +637,7 @@
           "PB-V09-OUTCOME-FEEDBACK-LEARNING-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-14T00:00:00.000Z",
+        "updated_at": "2026-11-15T00:00:00.000Z",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-MULTI-REPO-TRANSFER-001",
         "extensions": {
           "roadmap_status": "in-progress",
@@ -726,7 +648,7 @@
         "source_id": "playbook-roadmap",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-MULTI-REPO-TRANSFER-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-14T00:00:00.000Z"
+        "source_updated_at": "2026-11-15T00:00:00.000Z"
       },
       "content": {
         "summary": "Promote proven, governed patterns across repositories only after local promotion and outcome evidence validate transfer readiness.",
@@ -790,7 +712,7 @@
           "PB-V09-WORKSPACE-TENANT-GOVERNANCE-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-14T00:00:00.000Z",
+        "updated_at": "2026-11-15T00:00:00.000Z",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-PACKAGING-SKU-ARCHITECTURE-001",
         "extensions": {
           "roadmap_status": "architecture-defined",
@@ -801,7 +723,7 @@
         "source_id": "playbook-roadmap",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-PACKAGING-SKU-ARCHITECTURE-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-14T00:00:00.000Z"
+        "source_updated_at": "2026-11-15T00:00:00.000Z"
       },
       "content": {
         "summary": "Define a canonical SKU architecture where Open Core, Team, and Enterprise package coordination/governance/deployment surfaces over one deterministic runtime without introducing cloud-required or SKU-specific engine semantics.",
@@ -860,7 +782,7 @@
           "PB-V09-METRICS-ROI-PROOF-OF-VALUE-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-14T00:00:00.000Z",
+        "updated_at": "2026-11-15T00:00:00.000Z",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-PILOT-DESIGN-PARTNER-ROLLOUT-001",
         "extensions": {
           "roadmap_status": "architecture-defined",
@@ -871,7 +793,7 @@
         "source_id": "playbook-roadmap",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-PILOT-DESIGN-PARTNER-ROLLOUT-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-14T00:00:00.000Z"
+        "source_updated_at": "2026-11-15T00:00:00.000Z"
       },
       "content": {
         "summary": "Define canonical staged adoption from local read-only proof through team/workspace and enterprise governance readiness so rollout is evidence-driven, trust-gated, and aligned to deterministic runtime/control-plane maturity.",
@@ -932,7 +854,7 @@
           "PB-V07-ARCH-INTELLIGENCE-GRAPH-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-14T00:00:00.000Z",
+        "updated_at": "2026-11-15T00:00:00.000Z",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-PLATFORM-OBSERVATION-001",
         "extensions": {
           "roadmap_status": "directional",
@@ -943,7 +865,7 @@
         "source_id": "playbook-roadmap",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-PLATFORM-OBSERVATION-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-14T00:00:00.000Z"
+        "source_updated_at": "2026-11-15T00:00:00.000Z"
       },
       "content": {
         "summary": "Extend the existing deterministic repo-intelligence and governance observation substrate into a broader platform observation layer without expanding the current 4-week delivery scope.",
@@ -1000,7 +922,7 @@
           "PB-V09-SESSION-EVIDENCE-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-14T00:00:00.000Z",
+        "updated_at": "2026-11-15T00:00:00.000Z",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-TRUST-EVIDENCE-001",
         "extensions": {
           "roadmap_status": "planned-later",
@@ -1011,7 +933,7 @@
         "source_id": "playbook-roadmap",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-TRUST-EVIDENCE-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-14T00:00:00.000Z"
+        "source_updated_at": "2026-11-15T00:00:00.000Z"
       },
       "content": {
         "summary": "Evolve current evidence-linked remediation and private-first trust boundaries into a broader platform trust model after persistence and longitudinal state foundations exist.",
@@ -1068,7 +990,7 @@
           "PB-V09-GOVERNED-INTERFACE-API-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-14T00:00:00.000Z",
+        "updated_at": "2026-11-15T00:00:00.000Z",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-WORKSPACE-TENANT-GOVERNANCE-001",
         "extensions": {
           "roadmap_status": "in-progress",
@@ -1079,7 +1001,7 @@
         "source_id": "playbook-roadmap",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V09-WORKSPACE-TENANT-GOVERNANCE-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-14T00:00:00.000Z"
+        "source_updated_at": "2026-11-15T00:00:00.000Z"
       },
       "content": {
         "summary": "Define explicit workspace/tenant policy boundaries and optional hosted/self-hosted control-plane packaging over one deterministic runtime without weakening CLI-first, offline-capable, private-first guarantees.",
@@ -1126,26 +1048,26 @@
     {
       "idempotency_key": "pbk_playbook_pb-v1-demo-refresh-001_v1",
       "record_kind": "project-work",
-      "record_status": "active",
+      "record_status": "candidate",
       "record": {
         "contract_version": "atlas.card-record.v2",
         "card_id": "PB-V1-DEMO-REFRESH-001",
         "project_id": "playbook",
         "board_id": "discordos:project-feedback:playbook",
         "title": "PR-based playbook-demo refresh automation",
-        "description": "Refresh committed playbook-demo artifacts/docs with branch-accurate local CLI builds through dedicated maintenance workflows and PR-based delivery.",
+        "description": "Deferred (owner decision 2026-11-14): the PR-based demo refresh is dropped from the v1 scope and planned for later, so it needs no refresh credential now. Original scope: refresh committed playbook-demo artifacts and docs with branch-accurate local CLI builds through dedicated maintenance workflows and PR-based delivery.",
         "card_type": "feature",
-        "lifecycle": "in-progress",
+        "lifecycle": "intake",
         "priority": null,
         "owner": "playbook",
         "dependencies": [
           "PB-V1-DELIVERY-SYSTEM-001"
         ],
         "board_version": 1,
-        "updated_at": "2026-11-14T00:00:00.000Z",
+        "updated_at": "2026-11-15T00:00:00.000Z",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V1-DEMO-REFRESH-001",
         "extensions": {
-          "roadmap_status": "in-progress",
+          "roadmap_status": "planned-later",
           "roadmap_version": "v1.0"
         }
       },
@@ -1153,11 +1075,11 @@
         "source_id": "playbook-roadmap",
         "source_ref": "repos/playbook/docs/roadmap/ROADMAP.json#PB-V1-DEMO-REFRESH-001",
         "source_status": "current",
-        "source_updated_at": "2026-11-14T00:00:00.000Z"
+        "source_updated_at": "2026-11-15T00:00:00.000Z"
       },
       "content": {
-        "summary": "Refresh committed playbook-demo artifacts/docs with branch-accurate local CLI builds through dedicated maintenance workflows and PR-based delivery.",
-        "objective": "Refresh committed playbook-demo artifacts/docs with branch-accurate local CLI builds through dedicated maintenance workflows and PR-based delivery.",
+        "summary": "Deferred (owner decision 2026-11-14): the PR-based demo refresh is dropped from the v1 scope and planned for later, so it needs no refresh credential now. Original scope: refresh committed playbook-demo artifacts and docs with branch-accurate local CLI builds through dedicated maintenance workflows and PR-based delivery.",
+        "objective": "Deferred (owner decision 2026-11-14): the PR-based demo refresh is dropped from the v1 scope and planned for later, so it needs no refresh credential now. Original scope: refresh committed playbook-demo artifacts and docs with branch-accurate local CLI builds through dedicated maintenance workflows and PR-based delivery.",
         "acceptance_criteria": [
           "Run: node scripts/demo-validate.mjs",
           "Run: node scripts/demo-refresh.mjs --dry-run --feature-id PB-V1-DEMO-REFRESH-001"
@@ -1191,9 +1113,9 @@
     }
   ],
   "extensions": {
-    "source_digest": "sha256:7194e905caa30ec5d1317b3d4d5da14f3799b9a0d3836ead4ad2333a2c094330",
+    "source_digest": "sha256:62292209aa54f9b1266b4a3d1bfb3fca65f35fa1670c5ca803f4e64192bf5d30",
     "source_feature_count": 64,
-    "exported_card_count": 16,
+    "exported_card_count": 15,
     "excluded_completed_statuses": [
       "complete",
       "completed",
