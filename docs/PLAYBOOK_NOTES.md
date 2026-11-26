@@ -372,3 +372,11 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHY it changed: the portal checks `readiness.sourceCommit` against this list before retrieving credentials, so the next Fitness release must be listed before it deploys.
 - Rule: the tuple stays 7 entries; new sha last, live sha kept as rollback, oldest dropped.
 - Scope: Handoff allowlist only, no behavior change; no provider, credential, database or deploy effect.
+
+## 2026-11-26 - Fitness board re-pin (FF-FIX-001, 55 cards)
+
+- Type: Board source re-pin
+- WHAT changed: the Fitness owner export (55 cards, sha256 2eb968c5978828e8b64cd72cdaf2e4c3e2cf0dd1f9265b6bba01c849530e34ed) at Fitness main 0d30a906 is copied byte for byte into planning/board-sources and the generated owner-board module is regenerated.
+- WHY it changed: the Fitness board fold (PR #318 there) registered FF-FIX-001 for the PR313-317 fix round, live as build 2eaa14a8 and checked only in headless Chromium; the Projects page only updates on a Web build.
+- Rule: re-pin by copying the export and regenerating; never hand-patch the generated file.
+- Scope: Source and generated data only; no provider, credential, database or alias effect.
