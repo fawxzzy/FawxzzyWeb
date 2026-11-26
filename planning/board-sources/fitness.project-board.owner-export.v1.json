@@ -1,20 +1,20 @@
 {
   "contract_version": "atlas.project-board.owner-export.v1",
-  "export_id": "pbe_fitness_owner_registry_349f964cdc33",
+  "export_id": "pbe_fitness_owner_registry_0f5675bd7a36",
   "project_id": "fitness",
   "board_id": "fitness:project-feedback:fitness-active",
   "owner": "fitness",
   "adapter_id": "fitness-owner-registry-v1",
-  "source_revision": "sha256:349f964cdc335e324b6544d4e74cb193b9e81c0587553484a335d2ae2acb6ca7",
-  "generated_at": "2026-11-26T02:32:42.757Z",
+  "source_revision": "sha256:0f5675bd7a36b2301ce44f30639fb06903093b0fa7358fced2a967c093ec9009",
+  "generated_at": "2026-11-26T11:46:39.000Z",
   "sources": [
     {
       "source_id": "fitness-owner-work-registry",
       "kind": "json",
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json",
-      "revision": "sha256:6f7501767a29648a7624f1585f575d671f3a087aacf3193aa77793f51cb9b6e3",
-      "observed_at": "2026-11-26T02:32:42.757Z"
+      "revision": "sha256:c701098e2029004a5b86cb7a84f03657b2e2ab5128d5e0d5a02553857cf4d47b",
+      "observed_at": "2026-11-26T11:46:39.000Z"
     },
     {
       "source_id": "fitness-feedback-monetization-roadmap",
@@ -22,7 +22,7 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs",
       "revision": "sha256:78aa8b8300f0c21258144da0a5bdd6fdc4c9ff1337e265b2552094ebf3505ba6",
-      "observed_at": "2026-11-26T02:32:42.757Z"
+      "observed_at": "2026-11-26T11:46:39.000Z"
     },
     {
       "source_id": "fitness-session-timer-roadmap",
@@ -30,7 +30,7 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/feedback-session-exercise-timer-cards.mjs",
       "revision": "sha256:58b1235add45e05d51712f433e2e67d4536b878f4edfad6ab6908d9402c55bcc",
-      "observed_at": "2026-11-26T02:32:42.757Z"
+      "observed_at": "2026-11-26T11:46:39.000Z"
     },
     {
       "source_id": "fitness-owner-export-adapter",
@@ -38,7 +38,7 @@
       "repository": "fawxzzy-fitness",
       "path": "repos/fawxzzy-fitness/scripts/export-project-board-owner.mjs",
       "revision": "sha256:e8485f9091fb27f574b2999d1ca4ad9acf94c3f28b0d5f462836bf43ba3ec562",
-      "observed_at": "2026-11-26T02:32:42.757Z"
+      "observed_at": "2026-11-26T11:46:39.000Z"
     }
   ],
   "cards": [
@@ -1125,6 +1125,58 @@
         "blockers": [],
         "evidence": [
           "repos/fawxzzy-fitness/scripts/feedback-monetization-roadmap.mjs"
+        ]
+      },
+      "relationships": {
+        "parent_card_id": null,
+        "duplicate_of": null,
+        "superseded_by": null
+      }
+    },
+    {
+      "idempotency_key": "pbk_fitness_ff-fix-001_v1",
+      "record_kind": "project-work",
+      "record_status": "active",
+      "record": {
+        "contract_version": "atlas.card-record.v2",
+        "card_id": "FF-FIX-001",
+        "project_id": "fitness",
+        "board_id": "fitness:project-feedback:fitness-active",
+        "title": "Full-app audit fixes: add exercise, summary, rest timer, routines",
+        "description": "A full-app audit fix round: adding an exercise mid-workout works again, the workout summary, clock and rest timer are clearer, Today shows what is next, and routines, History and the exercise picker are tidier.",
+        "card_type": "feature",
+        "lifecycle": "review",
+        "priority": "medium",
+        "owner": "fitness",
+        "dependencies": [],
+        "board_version": 1,
+        "updated_at": "2026-11-26T11:46:39.000Z",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-FIX-001",
+        "extensions": {
+          "owner_status": "review",
+          "public_safe": true,
+          "visibility": "public"
+        }
+      },
+      "source": {
+        "source_id": "fitness-owner-work-registry",
+        "source_ref": "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json#FF-FIX-001",
+        "source_status": "current",
+        "source_updated_at": "2026-11-26T11:46:39.000Z"
+      },
+      "content": {
+        "summary": "A full-app audit fix round: adding an exercise mid-workout works again, the workout summary, clock and rest timer are clearer, Today shows what is next, and routines, History and the exercise picker are tidier.",
+        "objective": "A full-app audit fix round: adding an exercise mid-workout works again, the workout summary, clock and rest timer are clearer, Today shows what is next, and routines, History and the exercise picker are tidier.",
+        "acceptance_criteria": [
+          "Adding an exercise in the middle of a workout works.",
+          "Workout summary, clock and rest timer show clear plain-language information.",
+          "Routines menu, History list and exercise picker work with comma decimals and no double-tap on Finish."
+        ],
+        "discoveries": [],
+        "next_actions": [],
+        "blockers": [],
+        "evidence": [
+          "repos/fawxzzy-fitness/config/fitness-owner-work-registry.json"
         ]
       },
       "relationships": {
@@ -2984,8 +3036,8 @@
     }
   ],
   "extensions": {
-    "source_work_item_count": 69,
-    "exported_card_count": 54,
+    "source_work_item_count": 70,
+    "exported_card_count": 55,
     "exported_completed_card_count": 24,
     "excluded_completed_card_count": 15,
     "selected_owner_snapshot_record_count": 55,
