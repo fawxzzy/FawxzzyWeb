@@ -11,9 +11,7 @@ export const FITNESS_HANDOFF_MASTER_PROJECT_REF = "bxtcuhkotumitoqtrcej";
 
 export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
   fitnessConsumerMerges: [
-    // Reviewed Fitness main 1ebbd945 (reviewed Fitness main after PR267-278 follow-ups).
-    "1ebbd945312b6d48bfbb46fad28c3134767b932c",
-    // Reviewed Fitness main 02917bfb (PR283).
+    // Reviewed Fitness main 02917bfb (PR283; reviewed Fitness main after PR267-278 follow-ups precedes it).
     "02917bfb0612dce212d3aa55e0f338c0b0e6d57d",
     // Reviewed Fitness main a68b9bc8 (PR285-287: data export schema and settings, P2 cleanups, QA tests; live; the rollback after the PR289 release).
     "a68b9bc8456a36a3b84d16279dc08e0bdfa1ab2b",
@@ -21,10 +19,12 @@ export const FITNESS_HANDOFF_ACTIVATION = Object.freeze({
     "dcb1dfa8edf79c05bbd7e16603c6e1a08295ed3d",
     // Reviewed Fitness main aa3e78be (live; the rollback after the aea49e1c release).
     "aa3e78be7c38cf2de192d464f9e5eefe568ebd62",
-    // Reviewed Fitness main aea49e1c (PR298; live; the rollback after the 8a269459 release).
+    // Reviewed Fitness main aea49e1c (PR298; the production build before the 8a269459 release).
     "aea49e1cd44b44debcc4070c46eb771d5325dbc1",
-    // Reviewed Fitness main 8a269459 (current source; aea49e1c above is the live rollback).
+    // Reviewed Fitness main 8a269459 (live; the rollback after the 2eaa14a8 release).
     "8a2694592012bbc92803b3e99dedc208e2f493a1",
+    // Reviewed Fitness main 2eaa14a8 (PR313-317 fix round); 8a269459 above is the live rollback.
+    "2eaa14a8ba442d84075adf96a02f74cf304c2a90",
   ],
   state: "active",
 } as const satisfies FitnessHandoffActivation);
