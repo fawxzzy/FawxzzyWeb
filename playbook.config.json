@@ -13,6 +13,11 @@
           "registries": ["package.json", ".github/workflows"],
           "covered": ["tests/e2e/**"]
         }
+      ],
+      "migrationsAppendOnly": [
+        {
+          "globs": ["supabase/migrations/**/*.sql"]
+        }
       ]
     }
   }
