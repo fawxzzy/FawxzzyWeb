@@ -19,7 +19,9 @@ async function openedDestinations(page: Page, route: string) {
   page.on("framenavigated", (frame) => {
     if (frame === page.mainFrame()) urls.push(frame.url());
   });
-  await page.goto(route);
+  // The confirm page moves on as soon as the provider answers, often before `load`; waiting only
+  // for the commit keeps that hand-off from reading as an interrupted navigation.
+  await page.goto(route, { waitUntil: "commit" });
   return urls;
 }
 
