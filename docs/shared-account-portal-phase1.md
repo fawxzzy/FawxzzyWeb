@@ -463,6 +463,54 @@ existing account, or treat a client-side value as authoritative.
   Rollback: set the flag back to false (the email form returns), then delete the function and run
   the rollback SQL.
 
+### v2: per-account send window (2026-11-26, PROPOSED, owner-gated, not applied)
+
+- Problem: the provider sends at most one recovery email per account per minute and refuses
+  silently inside it. The only guard against a repeat was client-side (`RESET_SENT_AT_KEY`, one
+  browser), so a repeat from ANOTHER browser inside the minute got the "sent" answer with no mail.
+- Fix: `account_api.account_resolve_username_reset_v2` (proposal
+  `supabase/proposed/20261126190000_account_username_reset_v2.sql`) returns
+  `(resolved_user_id, throttled, wait_seconds)`. A 60 s send window per account lives in
+  `account_private.username_signin_attempts` (the lockout v4 table and privilege model: service_role
+  only, `search_path = ''`, rows deleted after 15 minutes by every resolver call). The key is
+  `sha256('username-reset-send-v2:account:<account id>')`, or `...:name:<username>` when the name has
+  no account, so nothing readable is stored and the steps are identical for known and unknown names.
+- The window is anchored at the request that claimed it and is NOT extended by requests it turns
+  away, so hammering cannot keep the owner waiting. A turned-away request is not counted in the
+  per-(username, client) counter (waiting never uses up the "request plus one resend" cap of v1); it
+  still counts toward the per-client limit (20 per 15 minutes). The claim is one atomic
+  `INSERT ... ON CONFLICT DO UPDATE ... WHERE window expired`, so two simultaneous requests cannot
+  both win.
+- Answer: 429 `{"code":"reset_wait"}` with `Retry-After: <seconds, 1-60>`, no provider call, the same
+  900 ms floor. Known, unknown, banned and unconfirmed usernames get byte-identical answers (the
+  wait seconds depend only on the clock of the first request). The browser shows `reset.wait`
+  ("no email went out, wait a minute") and starts the same 60 s resend countdown as the email path.
+  The limit answer stays 429 `reset_throttled` (Retry-After 900), a different code.
+- Additive: v1 stays in place, so the deployed function keeps working until the new one ships.
+- Order: apply SQL, THEN deploy the function (the new function calls v2; deployed first it answers
+  503 `reset_unavailable` for every username). Rollback: redeploy the previous function FIRST, then run
+  `supabase/proposed/20261126190000_account_username_reset_v2.rollback.sql` (drops only the two v2
+  functions).
+- sha256: SQL `bd46a394bf5bae84a1f92f37a89bf394e33892e98804f90e90d18566cbf86a84`, rollback
+  `a83e4a4fd97330bb6024132c80c4aa98972a9a9d3687452da0bbcd228062d869`.
+- Preimage (read-only, live, 2026-11-27): `supabase/proposed/20261126190000_account_username_reset_v2.preimage.json`
+  (query `.preimage.sql`): Postgres 17.6, both v1 functions present with body md5s equal to the repo
+  v1 file, service_role only, v2 absent, nothing blocking. Re-run it before applying.
+- Tests: `tests/username-password-reset.test.mjs` (contract: identical `reset_wait` for known and
+  unknown, rate limit beats wait, wait clamping, timing floor, outcome mapping, v2 file shape),
+  `tests/e2e/account-reset-anybrowser.spec.ts` (adapter scenario `reset-username-wait`), and the
+  pglite scratch test `supabase/proposed/account_username_reset_v2.scratch-test.mjs` (75 checks:
+  real v1 then v2, privileges, identical shape, window expiry, no window extension, key hashes,
+  v1 limits unchanged, the real handler on the database, rollback and re-apply, preflights, the
+  prod-vs-repo md5 check). NOT covered: true concurrent requests (pglite is one connection; the
+  race is argued from ON CONFLICT semantics) and the real provider.
+- Go-live verify: after apply and function deploy, two requests for a test username from two
+  different networks within a minute: the first 200, the second 429 `reset_wait`; a third a minute
+  later 200 again. Same for an unknown username (same 429 and same Retry-After range).
+- Trade-off: anyone who knows a username can still make the owner wait a minute after each real
+  send (the provider imposes the same minute anyway), and the owner on another network sees "wait"
+  rather than a silent no-mail. The window never blocks beyond 60 s from the last real send.
+
 ## Turnstile CAPTCHA (FW-CAPTCHA-001)
 
 - Sign-in, sign-up and the password-reset request form carry a Cloudflare Turnstile widget. The public site key is in `src/config/turnstile.ts`; the secret is never in the repo.
