@@ -463,6 +463,120 @@ existing account, or treat a client-side value as authoritative.
   Rollback: set the flag back to false (the email form returns), then delete the function and run
   the rollback SQL.
 
+### v2: per-account send window (2026-11-26, revised after review, PROPOSED, owner-gated, not applied)
+
+- Problem: the provider sends at most one recovery email per account per minute and refuses
+  silently inside it. The only guard against a repeat was client-side (`RESET_SENT_AT_KEY`, one
+  browser), so a repeat from ANOTHER browser inside the minute got the "sent" answer with no mail.
+- Fix: `account_api.account_resolve_username_reset_v2` (proposal
+  `supabase/proposed/20261126190000_account_username_reset_v2.sql`) returns
+  `(resolved_user_id, throttled, wait_seconds, claimed_at)`. A send window per account lives in
+  `account_private.username_signin_attempts` (the lockout v4 table and privilege model: service_role
+  only, `search_path = ''`, rows deleted after 15 minutes by every resolver call). The key is
+  `sha256('username-reset-send-v2:account:<account id>')`, or `...:name:<username>` when the name has
+  no account, so nothing readable is stored and the steps are identical for known and unknown names.
+- The window is 65 s, not 60: the provider's minute starts at ITS send, a little after our claim.
+  `send_window` (SQL), `SEND_WINDOW_SECONDS` (handler) and `RESET_USERNAME_RESEND_SECONDS` (portal) are
+  pinned equal by tests. A wait answer is clamped to 1..65 in the SQL (`least(65, ...)`) and again in
+  the handler: a request that started later than the claim but committed first computes the window
+  plus its own head start (review P2: it used to be 61 and the handler turned it into a 503).
+- The window is a RESERVATION, not a lock (review P1). It is claimed by a real send only: step 6
+  (past the v1 send cap, so the request is a decoy and no email goes out) answers before the claim and
+  claims nothing. The claim happens before the provider call, so two simultaneous requests cannot both
+  send; and when the provider then refuses the call for a reason that does NOT depend on the recipient
+  (a captcha failure, i.e. a 400 with `error_code: captcha_failed`, which the provider decides before it
+  looks at the address; a network error; no provider configured) the background task calls
+  `account_api.account_release_username_reset_v2(username, claimed_at)`, which deletes that exact claim
+  (a window another request has since taken over has a different start and is left alone; counters are
+  never touched). EVERY other provider answer keeps the window: 2xx, 429, every other 4xx (a 400 with
+  another or no error code included) and every 5xx. Reason (review P2-b): those answers can differ by
+  recipient. A real address can fail at SMTP (for example `email_address_not_authorized`, a 4xx or 5xx)
+  while the unknown-address decoy never reaches SMTP and is answered 2xx (proven at go-live 2026-11-15,
+  step 5), so releasing on them would let a second request from another IP tell a known username (window
+  released, goes through) from an unknown one (window kept, 429 wait), for free. The provider also
+  answers 429 only for accounts that exist, so releasing on 429 would be the same oracle. Only the
+  captcha code is in the release list (`RELEASING_ERROR_CODES` in the handler); the handler reads a
+  400's `error_code` (4 KB cap, code-shaped strings only) and nothing else of the body. No client-side
+  timeout was added to the provider call, on purpose: a timeout on a real address's slow SMTP send would
+  be recipient-dependent and would have to keep the window too; a thrown network error (provider not
+  reached) releases.
+- CAPTCHA PRECONDITION (review P2-a). The protection against a caller who cannot pass the captcha holds
+  only once provider CAPTCHA is ENFORCED. CURRENT STATE: it is not enforced in production (board card
+  FW-CAPTCHA-001, blocked). While it is off, the provider ignores the token, so a request without a
+  valid captcha is a real send: 2xx, the window is kept, the owner gets an email, no release. INTERIM
+  RISK, stated plainly: a script rotating about 7 source addresses (each address gets about two sends per
+  username per 15 minutes from the per-(username, client) counter, and one send every 65 s is needed to
+  hold the window, so roughly 14 sends per 15 minutes) can keep the owner of a username on "wait" for as long as it keeps sending, and the
+  owner gets an email for each send. That is the same exposure as v1's silent provider minute (which
+  also let one caller block a second reset for a minute), so v2 is not a regression, and it makes the
+  block visible instead of silent. The release path becomes live protection when FW-CAPTCHA-001 turns
+  enforcement on.
+- A turned-away request does not move the window and is not counted in the per-(username, client)
+  counter (waiting never uses up the "request plus one resend" cap of v1); it still counts toward the
+  per-client limit (20 per 15 minutes). The claim is one atomic
+  `INSERT ... ON CONFLICT DO UPDATE ... WHERE window expired`.
+- Answer: 429 `{"code":"reset_wait"}` with `Retry-After: <seconds, 1-65>` (exposed to the browser through
+  `Access-Control-Expose-Headers: Retry-After`), no provider call, the same 900 ms floor. Known, unknown,
+  banned and unconfirmed usernames get byte-identical answers. The release runs after the answer, so a
+  real send and a decoy, a provider success and a provider refusal look identical to the caller (status,
+  body, headers, floor). The browser shows `reset.wait` and counts down the server's Retry-After (falling
+  back to the full window); after a successful username send it counts down 65 s (`m:ss`, e.g. `1:05`).
+  The limit answer stays 429 `reset_throttled` (Retry-After 900), a different code.
+- Additive: v1 stays in place, so the deployed function keeps working until the new one ships.
+- Order: apply SQL, THEN deploy the function (the new function calls v2; deployed first it answers
+  503 `reset_unavailable` for every username). Rollback: redeploy the previous function FIRST, then run
+  `supabase/proposed/20261126190000_account_username_reset_v2.rollback.sql` (drops the four v2
+  functions: resolver and release, each in `account_private` and `account_api`).
+- sha256: SQL `274bfe0b71f9402606d048865ce6e2eedb508d8369fdd4e69d880e782874a724`, rollback
+  `56f60b81e1a5410d7b6f51a70710a747587eff55eb9b6c3b34a1b9a0c3fe5137`, preimage JSON
+  `3bb3bb88bdc6a9f19ca27f1cd578af2e146b08b0a468c14338b6a7b2c83c9bd2` (query `.preimage.sql`
+  `bf9f140a05e56089ff9ec18ac151f0245df3681cd5961cac6c38b10f60a1e136`). Superseded (do not approve): SQL
+  `bd46a394...86a84`, rollback `a83e4a4f...2d869`.
+- Preimage (read-only, live, `captured_at` 2026-11-27 02:33:50 UTC, run through `sb-query.ps1` without
+  `-Write`, `mode=read exit=0` in the query log): Postgres 17.6, both v1 functions present with body md5s
+  equal to the repo v1 file, service_role only, no v2 resolver or release function, nothing blocking.
+  Re-run it immediately before applying.
+- Tests: `tests/username-password-reset.test.mjs` (35: identical `reset_wait` for known and unknown, rate
+  limit beats wait, clamp 1..65 incl. 61/66/999, release only on captcha_failed, a network error/throw
+  and a missing provider, KEEP on 2xx/429, every other 4xx and every 5xx (a known address's SMTP 4xx/5xx
+  and the decoy's 2xx answer identically), the `released` log field, `readRecoverResponse`, none for a
+  decoy, a failing release changes nothing, RPC wire functions,
+  CORS expose header, constants pinned equal, file shape), `tests/e2e/account-reset-anybrowser.spec.ts`
+  (adapter scenario `reset-username-wait` carries Retry-After 37; countdown `0:2x`/`0:3x`), and the
+  pglite scratch test `supabase/proposed/account_username_reset_v2.scratch-test.mjs` (122 checks: real v1
+  then v2, privileges for all four functions, identical shape, window expiry at 65 s, no window
+  extension, key hashes, v1 limits unchanged, the real handler on the database through its own RPC
+  functions, the attacker scenario (12 requests refused by the provider with captcha_failed, from 12 IPs,
+  leave nothing held and the owner goes through), provider 2xx/429/5xx/other 4xx keep the window for
+  known and unknown, the oracle case (known address 422 at SMTP vs decoy 2xx: both kept, a second-IP
+  probe sees the same 429), a network error releases both, decoy claims nothing, late clock
+  clamps to 65 directly and through the handler, release only deletes its exact claim, rollback and
+  re-apply, preflights, the prod-vs-repo md5 check). NOT covered: true concurrent requests (pglite is
+  one connection; the race is argued from ON CONFLICT semantics) and the real provider.
+- Go-live verify: after apply and function deploy, with a valid captcha: two requests for a test
+  username from two different networks within a minute: the first 200, the second 429 `reset_wait`
+  (Retry-After 1-65); a third a minute later 200 again. Same for an unknown username (same 429 and the
+  same Retry-After range, so an unknown name holds its window like a known one).
+  THE NEXT STEP APPLIES ONLY WHEN PROVIDER CAPTCHA IS ENFORCED (FW-CAPTCHA-001; today it is NOT, so skip
+  it and do not roll back for its absence): with enforcement on, a request WITHOUT a valid captcha (the
+  provider answers 400 `captcha_failed`) must NOT leave a held window (the next request with a valid
+  captcha goes out, no 429; the function log line shows `outcome: "4xx", released: true`). If a refused
+  call then leaves a window, the release path is not working: roll back. With CAPTCHA off, the
+  equivalent check is the opposite and expected: a captcha-less request is a real send, the window is
+  kept (`released: false`) and the next request gets 429 `reset_wait`; that is correct, not a failure.
+  Re-run the read-only preimage (`.preimage.sql`) immediately before applying: the saved JSON is a
+  snapshot from 2026-11-27 02:33:50 UTC, and the SQL file itself is unchanged by this revision.
+- Trade-off left: a real send blocks the next one for at most 65 s (the provider imposes its minute
+  anyway), and anyone who passes the captcha (or, while CAPTCHA is off, anyone at all, from about 7
+  addresses) can still hold the window by actually sending the owner a reset email. With CAPTCHA
+  enforced that costs them a solved captcha per send and sends the owner one email; today it costs them
+  nothing but sends the owner an email each time. The owner on another network sees "wait" rather than
+  a silent no-mail. Release on a captcha failure relies on the provider deciding the captcha before the
+  recipient (its own order: captcha, then recover; UNVERIFIED against the live provider until the
+  go-live step above), and the keep-on-everything-else rule relies on nothing about the decoy at all.
+  The release runs in the background after the answer and a release call takes a moment, so the owner's
+  request in that gap (a second or so) can still see 429 `reset_wait` once; that is accepted.
+
 ## Turnstile CAPTCHA (FW-CAPTCHA-001)
 
 - Sign-in, sign-up and the password-reset request form carry a Cloudflare Turnstile widget. The public site key is in `src/config/turnstile.ts`; the secret is never in the repo.

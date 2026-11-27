@@ -2420,7 +2420,7 @@ test("recovery exchanges PKCE before exposing the password form", async ({ brows
     authNotice("reset.sentuser").text,
   );
   await expect(page.locator("body")).not.toContainText("@");
-  await expect(dockButton(page)).toHaveText(/^Resend in 0:\d\d$/);
+  await expect(dockButton(page)).toHaveText(/^Resend in [01]:\d\d$/);
   await expect(dockButton(page)).toBeDisabled();
 
   // The legacy email form (flag off) keeps its own fixed line.

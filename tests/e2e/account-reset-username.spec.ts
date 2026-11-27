@@ -114,7 +114,7 @@ test("every username gets the same line, no address, and the resend countdown", 
     await expect(notice).toBeVisible();
     answers.push((await notice.textContent()) ?? "");
     await expect(page.locator("body")).not.toContainText("@");
-    await expect(dock(page)).toHaveText(/^Resend in 0:\d\d$/);
+    await expect(dock(page)).toHaveText(/^Resend in [01]:\d\d$/);
     await expect(dock(page)).toBeDisabled();
     await expect(page.locator("html")).toHaveAttribute("data-reset-username", username);
   }

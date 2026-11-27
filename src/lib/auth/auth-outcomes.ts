@@ -16,7 +16,7 @@ export type AuthField = "identifier" | "username" | "email" | "password" | "conf
 
 export type FormProblem = { id: AuthMessageId; fields: AuthField[] };
 
-type ProviderErrorShape = { code?: unknown; status?: unknown; name?: unknown; message?: unknown };
+type ProviderErrorShape = { code?: unknown; status?: unknown; name?: unknown; message?: unknown; retryAfter?: unknown };
 
 function shape(error: unknown): ProviderErrorShape {
   return typeof error === "object" && error !== null ? (error as ProviderErrorShape) : {};
@@ -142,13 +142,25 @@ export function resetRequestFailure(error: unknown): AuthMessageId {
 }
 
 /**
+ * The seconds the server says to wait (its Retry-After header, read by the browser adapter), whole and
+ * within one send window; null when absent or out of range, so the caller falls back to its own minute.
+ */
+export function retryAfterSeconds(error: unknown): number | null {
+  const value = shape(error).retryAfter;
+  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 65 ? value : null;
+}
+
+/**
  * Signed-out reset by username. The server answers every accepted request the same way, so the only
  * failures are about the request itself: its rate limit (counted before, and independent of, whether
- * the username exists, so "too many" reveals nothing) or the service being unavailable.
+ * the username exists, so "too many" reveals nothing), the account's one-email-per-minute send window
+ * (`reset_wait`: keyed by account for a known username and by name for an unknown one, so both wait
+ * identically; nothing was sent, whichever browser asked first) or the service being unavailable.
  */
 export function usernameResetFailure(error: unknown): AuthMessageId {
   if (isOfflineError(error)) return "signin.offline";
   if (isCaptchaError(error)) return "captcha.fail";
+  if (code(error) === "reset_wait") return "reset.wait";
   if (status(error) === 429 || code(error) === "reset_throttled") return "reset.rate";
   // reset_invalid (the format was already checked here, so it means origin, key or link config),
   // reset_unavailable and anything else: a sending problem, never an account answer.

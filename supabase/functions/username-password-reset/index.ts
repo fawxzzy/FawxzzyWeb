@@ -1,8 +1,11 @@
 // username-password-reset: signed-out password reset by USERNAME (design direction #9).
-// PROPOSED, OWNER-GATED: deploying this function and applying
-// supabase/proposed/20261115210000_account_username_reset_v1.sql are owner actions (approve by
-// sha256). Until both are live the portal keeps the email form (RESET_BY_USERNAME_LIVE in
-// src/config/account.ts stays false).
+// Live since 2026-11-15 (v1 SQL). The current source calls account_resolve_username_reset_v2
+// (supabase/proposed/20261126190000_account_username_reset_v2.sql, owner-gated: approve by sha256).
+// The send window is a reservation: it is released again only when the provider refuses the call for a
+// captcha failure (or the call fails at the network); every other provider answer keeps it.
+// ORDER: apply that SQL FIRST, then deploy this function; rollback is the reverse (redeploy the
+// previous function, then run the v2 rollback file). Deploying this function without the SQL answers
+// 503 reset_unavailable for every username.
 //
 // All request logic lives in handler.mjs (node-tested); this file only wires the runtime.
 import { createClient } from "npm:@supabase/supabase-js@2.109.0";
@@ -10,8 +13,10 @@ import { createPublicKeyAdmission } from "../username-password-signin/public-key
 import {
   createUsernameResetHandler,
   providerPublicKey,
+  readRecoverResponse,
   recipientFrom,
   recoverRequest,
+  releaseUsernameResetRpc,
   resolveUsernameResetRpc,
 } from "./handler.mjs";
 
@@ -71,6 +76,18 @@ const handle = createUsernameResetHandler({
     const { data } = await admin.auth.admin.getUserById(userId);
     return recipientFrom(data?.user ?? null, Date.now());
   },
+  // Gives back the send window when the provider refused the call (no email went out); background only.
+  async release({ claimedAt, normalized }: { claimedAt: string; normalized: string }) {
+    const url = Deno.env.get("SUPABASE_URL");
+    const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!url || !serviceRole) return false;
+    return releaseUsernameResetRpc({
+      args: { p_claimed_at: claimedAt, p_normalized_username: normalized },
+      fetchImpl: fetch,
+      serviceRole,
+      url,
+    });
+  },
   async resolve({ clientKey, normalized, pairKey }: { clientKey: string; normalized: string; pairKey: string }) {
     const url = Deno.env.get("SUPABASE_URL");
     const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -89,11 +106,12 @@ const handle = createUsernameResetHandler({
     if (!url || !anonKey) return null;
     const [target, init] = recoverRequest({ ...input, anonKey, url });
     const response = await fetch(target, init);
-    await response.body?.cancel().catch(() => undefined);
-    return response.status;
+    // Status plus (for a 400) the provider's error_code only: the handler releases the send window for a
+    // captcha failure and keeps it for every other answer.
+    return readRecoverResponse(response);
   },
   // One non-identifying line per background send (status class only; see handler.mjs).
-  log(entry: Record<string, string>) {
+  log(entry: Record<string, string | boolean>) {
     console.log(JSON.stringify(entry));
   },
   sha256,

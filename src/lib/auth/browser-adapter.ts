@@ -688,8 +688,12 @@ export function createSupabaseAdapter(
       if (response.ok) return;
       const payload = await response.json().catch(() => null) as { code?: unknown } | null;
       await clearRecoveryPkce(verifierStorage, accountContract.storageKey);
+      // Retry-After (exposed to this origin by the function's CORS headers): whole seconds, else unset.
+      const retryAfterHeader = response.headers.get("retry-after");
+      const retryAfter = retryAfterHeader && /^\d{1,3}$/.test(retryAfterHeader) ? Number(retryAfterHeader) : undefined;
       throw Object.assign(new Error("Username reset request failed."), {
         code: typeof payload?.code === "string" ? payload.code : undefined,
+        retryAfter,
         status: response.status,
       });
     },
@@ -1023,7 +1027,8 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
     },
     // Username reset fixtures. Every username gets the same answer (the server never says whether it
     // has an account); `reset-throttled` and `reset-unavailable` answer like the rate limit and a
-    // missing server function. `reset-email-legacy` keeps the email form (the flag-off live path).
+    // missing server function, `reset-username-wait` like a repeat request from another browser inside
+    // the account's one-email-per-minute send window. `reset-email-legacy` keeps the email form (the flag-off live path).
     resetByUsername: scenario !== "reset-email-legacy" && scenario !== "reset-email-wait",
     // The Delete account row shows in every fixture except `delete-off` (the flag-off live page).
     deleteAccountLive: scenario !== "delete-off",
@@ -1031,6 +1036,10 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       fail();
       if (scenario === "reset-throttled") {
         throw Object.assign(new Error("Too many requests"), { code: "reset_throttled", status: 429 });
+      }
+      if (scenario === "reset-username-wait") {
+        // 37 s left, as the server's Retry-After would say (the portal counts down the server's number).
+        throw Object.assign(new Error("Wait before asking again"), { code: "reset_wait", retryAfter: 37, status: 429 });
       }
       if (scenario === "reset-unavailable") {
         throw Object.assign(new Error("Service unavailable"), { code: "reset_unavailable", status: 503 });
@@ -1272,6 +1281,7 @@ export function resolvePortalAuthAdapter(
       "reset-email-wait",
       "recovery-expired",
       "reset-throttled",
+      "reset-username-wait",
       "reset-unavailable",
     ].includes(scenario) &&
     isLocalAuthTestOrigin(location.origin)

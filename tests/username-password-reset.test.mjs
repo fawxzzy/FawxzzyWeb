@@ -7,6 +7,12 @@ import { createClient } from "@supabase/supabase-js";
 
 import {
   ALLOWED_ORIGINS,
+  RESET_WAIT_CODE,
+  SEND_WINDOW_SECONDS,
+  RELEASING_ERROR_CODES,
+  providerRefusalReleasesWindow,
+  readRecoverResponse,
+  releaseUsernameResetRpc,
   CLIENT_ADDRESS_SOURCE,
   createUsernameResetHandler,
   DECOY_RECIPIENT,
@@ -32,12 +38,13 @@ import { loadPortalModule } from "./helpers/load-portal-ts.mjs";
  * status, body and headers, same duration), no email or id in any answer, the rate limit, input
  * rejection, the provider recovery call, and the browser PKCE verifier contract against the installed
  * supabase-js. The SQL side (counters, privileges) is proven by
- * supabase/proposed/account_username_reset_v1.scratch-test.mjs.
+ * supabase/proposed/account_username_reset_v2.scratch-test.mjs.
  */
 const account = loadPortalModule("src/config/account.ts");
 const matrix = loadPortalModule("src/lib/auth/copy-matrix.ts");
 const outcomes = loadPortalModule("src/lib/auth/auth-outcomes.ts");
 const pkce = loadPortalModule("src/lib/auth/recovery-pkce.ts");
+const recoveryLink = loadPortalModule("src/lib/auth/recovery-link.ts");
 
 const ORIGIN = "https://account.fawxzzy.com";
 const PUBLIC_KEY = "sb_publishable_fixture";
@@ -199,6 +206,220 @@ test("the rate limit answers 429 the same way for known and unknown usernames", 
   assert.equal(sent.length, 0);
 });
 
+test("a held send window answers 429 reset_wait the same way for known and unknown usernames, and sends nothing", async () => {
+  const { handle, scheduled, sent } = harness({
+    minimumResponseMs: 0,
+    // What the database answers for a repeat inside the minute, keyed by account or by name (the SQL
+    // makes both wait identically; see the scratch test): no account comes back, whatever the name.
+    resolve: async () => ({ throttled: false, userId: null, waitSeconds: 37 }),
+  });
+  const known = await snapshot(await handle(resetRequest(validBody("known"))));
+  const unknown = await snapshot(await handle(resetRequest(validBody("nobody"))));
+  assert.deepEqual(known, unknown);
+  assert.equal(known.status, 429);
+  assert.equal(known.body, JSON.stringify({ code: "reset_wait" }));
+  assert.equal(RESET_WAIT_CODE, "reset_wait");
+  assert.ok(known.headers.some(([name, value]) => name === "retry-after" && value === "37"));
+  assert.doesNotMatch(known.body, /@|[0-9a-f]{8}-[0-9a-f]{4}|example\.test/i);
+  assert.equal(scheduled.length, 0, "no background lookup or provider call for a held window");
+  assert.equal(sent.length, 0);
+  // Its own code: the portal tells "wait a minute" from "too many requests".
+  assert.notEqual(known.body, JSON.stringify({ code: "reset_throttled" }));
+});
+
+test("the rate limit wins over a wait, a wait of 0 sends, and Retry-After stays within 1..65", async () => {
+  const both = harness({ minimumResponseMs: 0, resolve: async () => ({ throttled: true, userId: null, waitSeconds: 30 }) });
+  const rate = await both.handle(resetRequest(validBody("known")));
+  assert.equal(rate.status, 429);
+  assert.equal((await rate.json()).code, "reset_throttled");
+
+  const send = harness({ minimumResponseMs: 0, resolve: async () => ({ throttled: false, userId: USERS.known.id, waitSeconds: 0 }) });
+  const sendAnswer = await send.handle(resetRequest(validBody("known")));
+  assert.equal(sendAnswer.status, 200);
+  await Promise.all(send.scheduled);
+  assert.equal(send.sent.length, 1);
+
+  assert.equal(SEND_WINDOW_SECONDS, 65, "the provider's minute plus 5 s of margin (the SQL send_window)");
+  for (const [waitSeconds, expected] of [[1, "1"], [60, "60"], [SEND_WINDOW_SECONDS, "65"], [66, "65"], [999, "65"]]) {
+    const { handle } = harness({ minimumResponseMs: 0, resolve: async () => ({ throttled: false, userId: null, waitSeconds }) });
+    const answer = await handle(resetRequest(validBody("known")));
+    assert.equal(answer.status, 429);
+    assert.equal(answer.headers.get("retry-after"), expected, String(waitSeconds));
+  }
+});
+
+const CLAIMED_AT = "2026-11-26T19:00:00.123456+00:00";
+
+function handlerWithRelease({ claimedAt = CLAIMED_AT, sendRecovery, releaseImpl }) {
+  const releases = [];
+  const scheduled = [];
+  const logs = [];
+  const handle = createUsernameResetHandler({
+    admitKey: async (key) => key === PUBLIC_KEY,
+    background: (task) => scheduled.push(task),
+    findRecipient: async (userId) => recipientFrom(Object.values(USERS).find((entry) => entry.id === userId) ?? null, NOW),
+    log: (entry) => logs.push(entry),
+    minimumResponseMs: 0,
+    release: async (input) => {
+      releases.push(input);
+      if (releaseImpl) return releaseImpl(input);
+      return true;
+    },
+    resolve: async (input) => ({
+      claimedAt,
+      throttled: false,
+      userId: USERS[input.normalized]?.id ?? null,
+      waitSeconds: 0,
+    }),
+    sendRecovery,
+    sha256,
+  });
+  return { handle, logs, releases, scheduled };
+}
+
+const CAPTCHA_FAILED = { errorCode: "captcha_failed", status: 400 };
+
+test("the send window is released ONLY for a refusal that does not depend on the recipient: captcha failure, network error, not configured", async () => {
+  const releasing = [
+    ["captcha_failed", async () => CAPTCHA_FAILED],
+    ["provider not configured (null)", async () => null],
+    ["network error (thrown)", async () => { throw new Error("network down"); }],
+  ];
+  for (const [label, sendRecovery] of releasing) {
+    for (const name of ["known", "nobody"]) {
+      const { handle, logs, releases, scheduled } = handlerWithRelease({ sendRecovery });
+      const response = await handle(resetRequest(validBody(name, { captchaToken: "bad" })));
+      assert.equal(response.status, 200, "the caller's answer is the fixed one whatever the provider says");
+      await Promise.all(scheduled);
+      assert.deepEqual(releases, [{ claimedAt: CLAIMED_AT, normalized: name }], `${name} ${label}`);
+      assert.equal(logs.length, 1);
+      assert.equal(logs[0].released, true, `${name} ${label}`);
+    }
+  }
+});
+
+test("the send window is KEPT for 5xx and every other 4xx (they can differ by recipient), for known and unknown alike", async () => {
+  // A real address can fail at SMTP (email_address_not_authorized, a 5xx or 4xx) while the decoy never
+  // reaches SMTP and answers 2xx: releasing on those would let a second request tell the two apart.
+  const keeping = [
+    ["2xx sent", 200], ["202", 202], ["204", 204], ["429 provider's own limit", 429],
+    ["400 without a code", 400], ["400 no error_code", { errorCode: null, status: 400 }],
+    ["400 other code", { errorCode: "validation_failed", status: 400 }],
+    ["401", 401], ["403", 403], ["422", 422],
+    ["422 email_address_not_authorized", { errorCode: "email_address_not_authorized", status: 422 }],
+    ["400 email_address_not_authorized", { errorCode: "email_address_not_authorized", status: 400 }],
+    ["500", 500], ["502", 502], ["503", 503],
+    ["500 with the captcha code", { errorCode: "captcha_failed", status: 500 }],
+    ["422 with the captcha code", { errorCode: "captcha_failed", status: 422 }],
+  ];
+  for (const [label, result] of keeping) {
+    for (const name of ["known", "nobody"]) {
+      const { handle, logs, releases, scheduled } = handlerWithRelease({ sendRecovery: async () => result });
+      const response = await handle(resetRequest(validBody(name)));
+      assert.equal(response.status, 200);
+      await Promise.all(scheduled);
+      assert.equal(releases.length, 0, `${name} ${label}`);
+      assert.equal(logs[0].released, false, `${name} ${label}`);
+    }
+  }
+  assert.deepEqual([...RELEASING_ERROR_CODES], ["captcha_failed"]);
+  assert.equal(providerRefusalReleasesWindow(CAPTCHA_FAILED), true);
+  assert.equal(providerRefusalReleasesWindow(null), true);
+  assert.equal(providerRefusalReleasesWindow(undefined), true);
+  const keptByFunction = [200, 204, 429, 400, 401, 422, 500, 503, 0, 99, 600, "200", {}, { status: 400 }, { status: 400, errorCode: 5 }];
+  assert.deepEqual(keptByFunction.map(providerRefusalReleasesWindow), Array(keptByFunction.length).fill(false));
+});
+
+test("known address and decoy answer a provider 4xx the same way: window kept, same answer, nothing to tell them apart", async () => {
+  // The known address gets a real SMTP-style failure, the unknown name's decoy call a 2xx.
+  const sendRecovery = async ({ email }) => (email === DECOY_RECIPIENT ? 200 : { errorCode: "email_address_not_authorized", status: 422 });
+  const known = handlerWithRelease({ sendRecovery });
+  const unknown = handlerWithRelease({ sendRecovery });
+  const knownAnswer = await snapshot(await known.handle(resetRequest(validBody("known"))));
+  const unknownAnswer = await snapshot(await unknown.handle(resetRequest(validBody("nobody"))));
+  await Promise.all([...known.scheduled, ...unknown.scheduled]);
+  assert.deepEqual(unknownAnswer, knownAnswer);
+  assert.equal(known.releases.length, 0);
+  assert.equal(unknown.releases.length, 0);
+  assert.deepEqual(known.logs.map((entry) => entry.released), [false]);
+  assert.deepEqual(unknown.logs.map((entry) => entry.released), [false]);
+});
+
+test("the provider recover response is reduced to status plus a code-shaped error_code, 400 only", async () => {
+  const reply = (status, body) => new Response(body, { status });
+  assert.deepEqual(await readRecoverResponse(reply(400, JSON.stringify({ code: 400, error_code: "captcha_failed", msg: "captcha protocol: bad token for known@example.test" }))), { errorCode: "captcha_failed", status: 400 });
+  assert.deepEqual(await readRecoverResponse(reply(200, "{}")), { errorCode: null, status: 200 });
+  assert.deepEqual(await readRecoverResponse(reply(422, JSON.stringify({ error_code: "captcha_failed" }))), { errorCode: null, status: 422 }, "only a 400's body is read");
+  assert.deepEqual(await readRecoverResponse(reply(500, "")), { errorCode: null, status: 500 });
+  for (const body of ["not json", "null", "[]", JSON.stringify({ error_code: 5 }), JSON.stringify({ error_code: "Has Space And UPPER" }), JSON.stringify({ error_code: "x".repeat(65) }), JSON.stringify({ msg: "x" }), "x".repeat(5000)]) {
+    assert.deepEqual(await readRecoverResponse(reply(400, body)), { errorCode: null, status: 400 }, body.slice(0, 30));
+  }
+  assert.deepEqual(await readRecoverResponse(new Response(null, { status: 400 })), { errorCode: null, status: 400 });
+});
+
+test("a decoy request claims nothing, so nothing is released and the answer is the same", async () => {
+  // The database answers claimedAt null for a request past the send cap (no email goes out).
+  const real = handlerWithRelease({ sendRecovery: async () => CAPTCHA_FAILED });
+  const decoy = handlerWithRelease({ claimedAt: null, sendRecovery: async () => CAPTCHA_FAILED });
+  const realAnswer = await snapshot(await real.handle(resetRequest(validBody("known"))));
+  const decoyAnswer = await snapshot(await decoy.handle(resetRequest(validBody("known"))));
+  await Promise.all([...real.scheduled, ...decoy.scheduled]);
+  assert.deepEqual(decoyAnswer, realAnswer, "real send and decoy are one answer: status, body, headers");
+  assert.equal(real.releases.length, 1);
+  assert.equal(decoy.releases.length, 0, "no claim, no release call");
+});
+
+test("a failing release changes nothing for the caller and is never logged with an identity", async () => {
+  for (const releaseImpl of [async () => { throw new Error("known@example.test 203.0.113.9"); }, async () => false]) {
+    const { handle, logs, scheduled } = handlerWithRelease({ releaseImpl, sendRecovery: async () => CAPTCHA_FAILED });
+    const response = await handle(resetRequest(validBody("known")));
+    assert.equal(response.status, 200);
+    await Promise.all(scheduled);
+    assert.equal(logs.length, 1);
+    assert.equal(logs[0].released, false, "a release that threw or found nothing is logged as not released");
+    assert.doesNotMatch(JSON.stringify(logs), /known|@|203\.0\.113/);
+  }
+  // A handler built without a release dependency still works (the window just runs out).
+  const { handle, scheduled } = harness({ minimumResponseMs: 0, sendRecovery: async () => 400 });
+  assert.equal((await handle(resetRequest(validBody("known")))).status, 200);
+  await Promise.all(scheduled);
+});
+
+test("the release call: service role, account_api profile, true only when a window was released", async () => {
+  const calls = [];
+  const reply = (body, status = 200) => async (input, init) => {
+    calls.push({ init, input });
+    return new Response(JSON.stringify(body), { status });
+  };
+  const args = { p_claimed_at: CLAIMED_AT, p_normalized_username: "fawxzzy" };
+  const base = { args, serviceRole: "service-role-fixture", url: "https://project.example.test" };
+  assert.equal(await releaseUsernameResetRpc({ ...base, fetchImpl: reply(true) }), true);
+  assert.equal(calls[0].input, "https://project.example.test/rest/v1/rpc/account_release_username_reset_v2");
+  assert.equal(calls[0].init.headers["Accept-Profile"], "account_api");
+  assert.equal(calls[0].init.headers["Content-Profile"], "account_api");
+  assert.equal(calls[0].init.headers.apikey, "service-role-fixture");
+  assert.deepEqual(JSON.parse(calls[0].init.body), args);
+  assert.equal(await releaseUsernameResetRpc({ ...base, fetchImpl: reply(false) }), false);
+  assert.equal(await releaseUsernameResetRpc({ ...base, fetchImpl: reply({ code: "PGRST202" }, 404) }), false);
+  assert.equal(await releaseUsernameResetRpc({ ...base, fetchImpl: reply("yes") }), false);
+  assert.equal(await releaseUsernameResetRpc({ ...base, fetchImpl: async () => { throw new Error("network"); } }), false);
+});
+
+test("a wait takes as long as every other answer", async () => {
+  const waiting = harness({ minimumResponseMs: 150, resolve: async () => ({ throttled: false, userId: null, waitSeconds: 12 }) });
+  const sending = harness({ minimumResponseMs: 150 });
+  const time = async (h) => {
+    const start = Date.now();
+    await h.handle(resetRequest(validBody("known")));
+    return Date.now() - start;
+  };
+  const waited = await time(waiting);
+  const sentIn = await time(sending);
+  assert.ok(waited >= 140 && sentIn >= 140, `${waited} / ${sentIn}`);
+  assert.ok(Math.abs(waited - sentIn) < 100, `${waited} vs ${sentIn}`);
+  await Promise.all(sending.scheduled);
+});
+
 test("a missing or failing resolver answers 503 for every username and sends nothing", async () => {
   for (const resolve of [async () => null, async () => { throw new Error("db down"); }]) {
     const { handle, scheduled } = harness({ minimumResponseMs: 0, resolve });
@@ -273,6 +494,8 @@ test("CORS: only the account host gets a preflight, and every answer carries the
   const response = await handle(resetRequest(validBody("nobody")));
   assert.equal(response.headers.get("access-control-allow-origin"), ORIGIN);
   assert.equal(response.headers.get("cache-control"), "no-store");
+  // The browser reads Retry-After cross-origin for the wait countdown, so it must be exposed.
+  assert.equal(response.headers.get("access-control-expose-headers"), "Retry-After");
   assert.deepEqual([...ALLOWED_ORIGINS], [ORIGIN]);
   const foreign = await handle(resetRequest(null, { headers: { origin: "https://evil.example" }, method: "OPTIONS" }));
   assert.equal(foreign.status, 400);
@@ -403,14 +626,16 @@ test("send outcome log: one line per background send, status class only, nothing
   assert.equal(sendOutcome(422), "4xx");
   assert.equal(sendOutcome(429), "4xx");
   assert.equal(sendOutcome(503), "5xx");
-  for (const value of [null, undefined, 0, 99, 600, 200.5, "200"]) assert.equal(sendOutcome(value), "not_sent", String(value));
+  assert.equal(sendOutcome({ errorCode: "captcha_failed", status: 400 }), "4xx");
+  assert.equal(sendOutcome({ errorCode: null, status: 502 }), "5xx");
+  for (const value of [null, undefined, 0, 99, 600, 200.5, "200", {}, { status: "400" }]) assert.equal(sendOutcome(value), "not_sent", String(value));
   for (const [status, outcome] of [[200, "2xx"], [429, "4xx"], [500, "5xx"], [null, "not_sent"]]) {
     const { handle, logs, scheduled } = harness({ minimumResponseMs: 0, sendStatus: status });
     const headers = { "cf-connecting-ip": "203.0.113.77" };
     await handle(resetRequest(validBody("known", { captchaToken: "secret-token" }), { headers }));
     await handle(resetRequest(validBody("nobody", { captchaToken: "secret-token" }), { headers }));
     await Promise.all(scheduled);
-    assert.deepEqual(logs, [{ event: "username_reset_send", outcome }, { event: "username_reset_send", outcome }]);
+    assert.deepEqual(logs, [{ event: "username_reset_send", outcome, released: false }, { event: "username_reset_send", outcome, released: false }]);
     const text = JSON.stringify(logs);
     for (const secret of ["known", "nobody", "example.test", "203.0.113", "secret-token", USERS.known.id, DECOY_RECIPIENT]) {
       assert.ok(!text.includes(secret), secret);
@@ -420,7 +645,7 @@ test("send outcome log: one line per background send, status class only, nothing
   const response = await failing.handle(resetRequest(validBody("known")));
   await Promise.all(failing.scheduled);
   assert.equal(response.status, 200);
-  assert.deepEqual(failing.logs, [{ event: "username_reset_send", outcome: "network_error" }]);
+  assert.deepEqual(failing.logs, [{ event: "username_reset_send", outcome: "network_error", released: false }]);
   // A throwing logger never changes the answer.
   const loud = createUsernameResetHandler({
     admitKey: async () => true,
@@ -515,29 +740,60 @@ test("the resolver call: service role, account_api profile, strict answer parsin
   const base = { args, serviceRole: "service-role-fixture", url: "https://project.example.test" };
   const id = USERS.known.id;
   assert.deepEqual(
-    await resolveUsernameResetRpc({ ...base, fetchImpl: reply([{ resolved_user_id: id, throttled: false }]) }),
-    { throttled: false, userId: id },
+    await resolveUsernameResetRpc({ ...base, fetchImpl: reply([{ resolved_user_id: id, throttled: false, wait_seconds: 0 }]) }),
+    { claimedAt: null, throttled: false, userId: id, waitSeconds: 0 },
   );
-  assert.equal(calls[0].input, "https://project.example.test/rest/v1/rpc/account_resolve_username_reset_v1");
+  assert.equal(calls[0].input, "https://project.example.test/rest/v1/rpc/account_resolve_username_reset_v2");
   assert.equal(calls[0].init.headers["Accept-Profile"], "account_api");
   assert.equal(calls[0].init.headers["Content-Profile"], "account_api");
   assert.equal(calls[0].init.headers.apikey, "service-role-fixture");
   assert.deepEqual(JSON.parse(calls[0].init.body), args);
   assert.deepEqual(
-    await resolveUsernameResetRpc({ ...base, fetchImpl: reply([{ resolved_user_id: null, throttled: false }]) }),
-    { throttled: false, userId: null },
+    await resolveUsernameResetRpc({ ...base, fetchImpl: reply([{ resolved_user_id: null, throttled: false, wait_seconds: 0 }]) }),
+    { claimedAt: null, throttled: false, userId: null, waitSeconds: 0 },
   );
   assert.deepEqual(
-    await resolveUsernameResetRpc({ ...base, fetchImpl: reply([{ resolved_user_id: id, throttled: true }]) }),
-    { throttled: true, userId: null },
+    await resolveUsernameResetRpc({ ...base, fetchImpl: reply([{ resolved_user_id: id, throttled: true, wait_seconds: 0 }]) }),
+    { claimedAt: null, throttled: true, userId: null, waitSeconds: 0 },
+  );
+  // A held send window: wait_seconds 1..65, never an account, never counted as the rate limit.
+  assert.deepEqual(
+    await resolveUsernameResetRpc({ ...base, fetchImpl: reply([{ resolved_user_id: id, throttled: false, wait_seconds: 41 }]) }),
+    { claimedAt: null, throttled: false, userId: null, waitSeconds: 41 },
+  );
+  // A late clock (a request that started after the claim but committed first computes the window plus
+  // its head start): clamped to the window, not refused (the two-browser case must still answer "wait").
+  for (const late of [66, 70, 120]) {
+    assert.deepEqual(
+      await resolveUsernameResetRpc({ ...base, fetchImpl: reply([{ resolved_user_id: null, throttled: false, wait_seconds: late }]) }),
+      { claimedAt: null, throttled: false, userId: null, waitSeconds: SEND_WINDOW_SECONDS },
+      String(late),
+    );
+  }
+  // A claimed window comes back as the database's own timestamp text (for the release call), only for
+  // an answer that goes on to send; a wait or a throttle never carries one.
+  const claimedAt = "2026-11-26T19:00:00.123456+00:00";
+  assert.deepEqual(
+    await resolveUsernameResetRpc({ ...base, fetchImpl: reply([{ claimed_at: claimedAt, resolved_user_id: id, throttled: false, wait_seconds: 0 }]) }),
+    { claimedAt, throttled: false, userId: id, waitSeconds: 0 },
+  );
+  assert.deepEqual(
+    await resolveUsernameResetRpc({ ...base, fetchImpl: reply([{ claimed_at: claimedAt, resolved_user_id: null, throttled: false, wait_seconds: 12 }]) }),
+    { claimedAt: null, throttled: false, userId: null, waitSeconds: 12 },
   );
   for (const [body, status] of [
     [{ code: "PGRST202" }, 404],
     [[], 200],
-    [[{ resolved_user_id: "not-a-uuid", throttled: false }], 200],
-    [[{ resolved_user_id: id }], 200],
-    [[{ resolved_user_id: id, throttled: false }, { resolved_user_id: id, throttled: false }], 200],
-    [{ resolved_user_id: id, throttled: false }, 200],
+    [[{ resolved_user_id: "not-a-uuid", throttled: false, wait_seconds: 0 }], 200],
+    [[{ resolved_user_id: id, wait_seconds: 0 }], 200],
+    [[{ resolved_user_id: id, throttled: false }], 200],
+    [[{ resolved_user_id: id, throttled: false, wait_seconds: -1 }], 200],
+    [[{ resolved_user_id: id, throttled: false, wait_seconds: 0, claimed_at: "yesterday" }], 200],
+    [[{ resolved_user_id: id, throttled: false, wait_seconds: 0, claimed_at: 5 }], 200],
+    [[{ resolved_user_id: id, throttled: false, wait_seconds: "5" }], 200],
+    [[{ resolved_user_id: id, throttled: false, wait_seconds: 1.5 }], 200],
+    [[{ resolved_user_id: id, throttled: false, wait_seconds: 0 }, { resolved_user_id: id, throttled: false, wait_seconds: 0 }], 200],
+    [{ resolved_user_id: id, throttled: false, wait_seconds: 0 }, 200],
   ]) {
     assert.equal(await resolveUsernameResetRpc({ ...base, fetchImpl: reply(body, status) }), null, JSON.stringify(body));
   }
@@ -665,6 +921,10 @@ test("portal copy and outcomes: one fixed success line, failures name only the r
   assert.doesNotMatch(line.text, /\{e\}|@/);
   assert.equal(outcomes.usernameResetFailure({ code: "reset_throttled", status: 429 }), "reset.rate");
   assert.equal(outcomes.usernameResetFailure({ status: 429 }), "reset.rate");
+  // The account's send window: "No new email sent. Wait a minute", not the 15-minute rate limit.
+  assert.equal(outcomes.usernameResetFailure({ code: "reset_wait", status: 429 }), "reset.wait");
+  assert.equal(matrix.authNotice("reset.wait").text, "No new email sent. Wait a minute, then try again.");
+  assert.doesNotMatch(matrix.authNotice("reset.wait").text, /exist|found|unknown|registered|no account/i);
   for (const error of [{ code: "reset_unavailable", status: 503 }, { code: "reset_invalid", status: 400 }, { status: 500 }, {}]) {
     assert.equal(outcomes.usernameResetFailure(error), "reset.sendfail", JSON.stringify(error));
   }
@@ -700,4 +960,72 @@ test("wiring: the live adapter posts a username and a challenge, never an email,
   assert.deepEqual(index.match(/console\.[a-z]+\(/g), ["console.log("]);
   assert.ok(index.includes("console.log(JSON.stringify(entry));"));
   assert.ok(index.includes("providerPublicKey("));
+});
+
+test("SQL v2 file shape: additive, service_role only, keyed by hash, rollback leaves v1 alone", () => {
+  const dir = "supabase/proposed/";
+  const apply = readFileSync(`${dir}20261126190000_account_username_reset_v2.sql`, "utf8");
+  const rollback = readFileSync(`${dir}20261126190000_account_username_reset_v2.rollback.sql`, "utf8");
+  const preimage = readFileSync(`${dir}20261126190000_account_username_reset_v2.preimage.sql`, "utf8");
+  assert.match(apply, /^-- PROPOSED, OWNER-GATED\. NOT APPLIED\./);
+  assert.match(apply, /\nbegin;\n[\s\S]*\ncommit;\n$/);
+  assert.equal(apply.match(/create function /g)?.length, 4, "only the four v2 functions are created (resolver and release, each in two layers)");
+  assert.match(apply, /create function account_private\.resolve_username_reset_v2\(/);
+  assert.match(apply, /create function account_api\.account_resolve_username_reset_v2\(/);
+  assert.match(apply, /create function account_private\.release_username_reset_v2\(/);
+  assert.match(apply, /create function account_api\.account_release_username_reset_v2\(/);
+  assert.doesNotMatch(apply, /create or replace|drop function|alter |truncate/i, "additive: nothing existing is replaced or dropped");
+  assert.equal(apply.match(/security definer/g)?.length, 4);
+  assert.equal(apply.match(/set search_path = ''/g)?.length, 4);
+  for (const target of [
+    "account_private.resolve_username_reset_v2(text, text, text)",
+    "account_api.account_resolve_username_reset_v2(text, text, text)",
+    "account_private.release_username_reset_v2(text, timestamptz)",
+    "account_api.account_release_username_reset_v2(text, timestamptz)",
+  ]) {
+    assert.ok(apply.includes(`revoke all on function ${target}\n  from public, anon, authenticated;`), target);
+    assert.ok(apply.includes(`grant execute on function ${target}\n  to service_role;`), target);
+  }
+  assert.doesNotMatch(apply, /grant [^;]*\b(anon|authenticated|public)\b/i);
+  // The send window is 65 s (the provider's minute plus 5 s, kept equal in the handler, the portal and
+  // here) and its key is a hash computed in the database: no raw username, email or account id is
+  // stored (the counter table rejects anything but 64 hex characters).
+  assert.match(apply, /send_window constant interval := interval '65 seconds'/);
+  assert.match(apply, /send_window_seconds constant integer := 65;/);
+  assert.equal(SEND_WINDOW_SECONDS, 65);
+  assert.equal(recoveryLink.RESET_USERNAME_RESEND_SECONDS, SEND_WINDOW_SECONDS);
+  assert.match(apply, /least\(send_window_seconds, greatest\(1,/, "a late clock never answers more than the window");
+  // A decoy (past the send cap) never claims the window, and the claim comes after that check.
+  assert.ok(apply.indexOf("if is_decoy then") > 0 && apply.indexOf("if is_decoy then") < apply.indexOf("returning attempts.attempt_key into claimed_key"));
+  // The release deletes only the exact claim, only under the namespaced send key.
+  assert.match(apply, /attempts\.attempt_key = send_key\s+and attempts\.window_started_at = p_claimed_at/);
+  assert.match(apply, /pg_catalog\.sha256\(/);
+  assert.match(apply, /'account:' \|\| account_id::text/);
+  assert.doesNotMatch(apply, /auth\.users/, "the resolver never reads accounts directly");
+  // v1 stays; the rollback removes only v2 and says the previous function goes back first.
+  assert.match(rollback, /drop function if exists account_api\.account_resolve_username_reset_v2\(text, text, text\);/);
+  assert.match(rollback, /drop function if exists account_private\.resolve_username_reset_v2\(text, text, text\);/);
+  assert.match(rollback, /drop function if exists account_api\.account_release_username_reset_v2\(text, timestamptz\);/);
+  assert.match(rollback, /drop function if exists account_private\.release_username_reset_v2\(text, timestamptz\);/);
+  assert.doesNotMatch(rollback, /drop function[^\n]*reset_v1/);
+  assert.match(rollback, /redeploy the previous Edge Function/);
+  assert.match(preimage, /v2 already present/);
+  // The function calls the v2 resolver and nothing older.
+  const handler = readFileSync("supabase/functions/username-password-reset/handler.mjs", "utf8");
+  assert.ok(handler.includes("rpc/account_resolve_username_reset_v2"));
+  assert.ok(handler.includes("rpc/account_release_username_reset_v2"));
+  assert.ok(!handler.includes("rpc/account_resolve_username_reset_v1"));
+});
+
+test("the countdown: server Retry-After (1..65) is read as given, the clock shows m:ss", () => {
+  assert.equal(outcomes.retryAfterSeconds({ retryAfter: 37 }), 37);
+  assert.equal(outcomes.retryAfterSeconds({ retryAfter: 65 }), 65);
+  for (const bad of [0, 66, 1.5, "37", null, undefined, -3, Number.NaN]) {
+    assert.equal(outcomes.retryAfterSeconds({ retryAfter: bad }), null, String(bad));
+  }
+  assert.equal(outcomes.retryAfterSeconds(null), null);
+  assert.equal(matrix.AUTH_COPY.resendIn(37), "Resend in 0:37");
+  assert.equal(matrix.AUTH_COPY.resendIn(60), "Resend in 1:00");
+  assert.equal(matrix.AUTH_COPY.resendIn(65), "Resend in 1:05");
+  assert.equal(matrix.AUTH_COPY.resendIn(0), "Resend in 0:00");
 });
