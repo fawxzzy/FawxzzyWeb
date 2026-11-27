@@ -20,8 +20,15 @@ async function openedDestinations(page: Page, route: string) {
     if (frame === page.mainFrame()) urls.push(frame.url());
   });
   // The confirm page moves on as soon as the provider answers, often before `load`; waiting only
-  // for the commit keeps that hand-off from reading as an interrupted navigation.
-  await page.goto(route, { waitUntil: "commit" });
+  // for the commit keeps that hand-off from reading as an interrupted navigation. WebKit can still
+  // report the goto itself as interrupted ("Frame load interrupted") when the page's own redirect
+  // wins the race; that is the hand-off working, not a failure, so only that error is tolerated and
+  // the destinations the caller asserts on still decide the test.
+  try {
+    await page.goto(route, { waitUntil: "commit" });
+  } catch (error) {
+    if (!(error instanceof Error) || !/Frame load interrupted/i.test(error.message)) throw error;
+  }
   return urls;
 }
 
@@ -45,13 +52,20 @@ test("an opened recovery link (any browser) lands on the new-password form for t
   expect(`${landing.pathname}${landing.search}`).toBe("/reset-password?recovery=1&app=mazer&returnTo=%2Foauth%2Fauthorize");
 });
 
-test("a hostile continuation on a recovery link is dropped, never followed", async ({ page }) => {
+test("a hostile continuation on a recovery link is dropped, never followed", async ({ context }) => {
   for (const returnTo of ["https%3A%2F%2Fevil.example%2F", "%2F%2Fevil.example", "%2Faccount"]) {
-    const landing = await landingOf(
-      page,
-      `/auth/confirm?app=mazer&auth_test=success&token_hash=private-hash&type=recovery&returnTo=${returnTo}&next=${returnTo}`,
-    );
-    expect(`${landing.pathname}${landing.search}`).toBe("/reset-password?recovery=1&app=mazer");
+    // A fresh page per link: a reused page still holds the previous landing, whose late same-document
+    // URL updates would be recorded as this link's destinations (the cause of the intermittent failure).
+    const page = await context.newPage();
+    try {
+      const landing = await landingOf(
+        page,
+        `/auth/confirm?app=mazer&auth_test=success&token_hash=private-hash&type=recovery&returnTo=${returnTo}&next=${returnTo}`,
+      );
+      expect(`${landing.pathname}${landing.search}`).toBe("/reset-password?recovery=1&app=mazer");
+    } finally {
+      await page.close();
+    }
   }
 });
 
