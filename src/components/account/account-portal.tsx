@@ -87,6 +87,15 @@ import {
   type DeleteStep,
 } from "@/lib/auth/account-delete";
 import { mazerNameFailure, mazerNameIsSoleUsername, mazerNameProblem, showMazerNameRow } from "@/lib/auth/mazer-name";
+import {
+  recordResetSent,
+  recoveryLandingPath,
+  recoveryLinkFailure,
+  RESET_LINK_PARAM,
+  RESET_RESEND_SECONDS,
+  resetLinkNotice,
+  resetWaitRemaining,
+} from "@/lib/auth/recovery-link";
 import { TurnstileField, type TurnstileFieldHandle } from "@/components/account/turnstile-field";
 import { resolveSignOutDestination, SIGNOUT_RETURN_PARAM } from "@/config/account-signout";
 import { MAZER_ACCOUNT_ACTION_PARAM, mazerAccountActionUrl } from "@/config/mazer-account-actions";
@@ -272,6 +281,15 @@ function contextualPath(
     url.searchParams.set("returnTo", returnTarget);
   }
   return `${url.pathname}${url.search}`;
+}
+
+/** This browser's localStorage, or null where reading it throws (blocked storage). */
+function browserLocalStorage() {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
 }
 
 function isLocalTestOrigin() {
@@ -2003,13 +2021,18 @@ function ResetPanel({
   const adapter = adapterFrom(resolution);
   const form = useFormNotice();
   const [busy, setBusy] = useState(false);
-  const [sentTo, setSentTo] = useState<string | null>(null);
   const [linkNoticeDismissed, setLinkNoticeDismissed] = useState(false);
   const cooldown = useCooldown();
   const captchaRef = useRef<TurnstileFieldHandle>(null);
   const [captchaKey, setCaptchaKey] = useState(0);
   const [captchaBroken, setCaptchaBroken] = useState(false);
+  // The resend minute is counting down (after a send, a refused send, or restored after a reload).
+  const [resendWait, setResendWait] = useState(false);
   const recoveryState = useRecoverySession(hydrated, recovery, resolution);
+  // A recovery link the confirm route could not use lands here with `?link=expired|invalid`.
+  const linkFailureNotice = hydrated && !recovery
+    ? resetLinkNotice(new URLSearchParams(window.location.search).get(RESET_LINK_PARAM))
+    : null;
   // A dead link (invalid, expired, or the exchange failed) lands on the request form with the reason.
   const recoveryLinkDead = recovery && (
     recoveryState === "invalid" ||
@@ -2026,9 +2049,11 @@ function ResetPanel({
   // server side is live; see RESET_BY_USERNAME_LIVE). Signed in, the account's address stays locked.
   const resetByUsername = !signedInEmail && (adapter ? adapter.resetByUsername : RESET_BY_USERNAME_LIVE);
 
-  const linkNotice: AuthMessageId | null = linkNoticeDismissed || !recovery
+  const linkNotice: AuthMessageId | null = linkNoticeDismissed
     ? null
-    : recoveryState === "expired"
+    : !recovery
+      ? linkFailureNotice
+      : recoveryState === "expired"
       ? "reset.expired"
       : recoveryState === "invalid" || recoveryState === "recoverable-error"
         ? "reset.invalid"
@@ -2041,6 +2066,28 @@ function ResetPanel({
     (captchaBroken && !newPassword ? authNotice("captcha.load") : null) ??
     (linkNotice ? authNotice(linkNotice) : null);
 
+  const waitChecked = useRef(false);
+  useEffect(() => {
+    // Once, when the request form first appears (deferred like useRecoverySession; a re-render
+    // before the timer fires reschedules it, the ref keeps it to one run).
+    if (!hydrated || recovery || waitChecked.current) return;
+    const timer = window.setTimeout(() => {
+      if (waitChecked.current) return;
+      waitChecked.current = true;
+      const remaining = resetWaitRemaining(browserLocalStorage(), Date.now());
+      if (remaining <= 0) return;
+      setResendWait(true);
+      cooldown.start(remaining);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [cooldown, hydrated, recovery]);
+
+  function linkSent() {
+    recordResetSent(browserLocalStorage(), Date.now());
+    setResendWait(true);
+    cooldown.start(RESET_RESEND_SECONDS);
+  }
+
   function clearAll() {
     form.clear();
     setLinkNoticeDismissed(true);
@@ -2049,7 +2096,7 @@ function ResetPanel({
   function edited(field: FieldName) {
     form.edited(field);
     setLinkNoticeDismissed(true);
-    setSentTo(null);
+    setResendWait(false);
   }
 
   function noticeAction() {
@@ -2122,9 +2169,8 @@ function ResetPanel({
       await adapter.requestPasswordResetByUsername(username, context.id, internalMazerReturn, captchaToken);
       // One fixed line for every username: the server never says whether it has an account, and no
       // address (masked or not) is ever shown here.
-      setSentTo(username);
       form.show("reset.sentuser");
-      cooldown.start(RESEND_SECONDS);
+      linkSent();
     } catch (error) {
       form.show(usernameResetFailure(error));
     } finally {
@@ -2153,19 +2199,18 @@ function ResetPanel({
     try {
       const captchaToken = await captchaRef.current?.getToken();
       await adapter.requestPasswordReset(target, context.id, internalMazerReturn, captchaToken);
-      setSentTo(target);
       // Signed in, the address is already on screen; signed out, the answer must not reveal whether
       // an account uses the typed address.
       if (signedInEmail) form.show("reset.sent", signedInEmail);
       else form.show("reset.sentany");
-      cooldown.start(RESEND_SECONDS);
+      linkSent();
     } catch (error) {
-      const id = resetRequestFailure(error, Boolean(signedInEmail));
+      const id = resetRequestFailure(error);
       form.show(id);
-      if (id === "reset.sentany") {
-        // Indistinguishable from a sent link, including the resend countdown.
-        setSentTo(target);
-        cooldown.start(RESEND_SECONDS);
+      // The provider refused to send: count down the same minute it waits, and say nothing was sent.
+      if (id === "reset.wait") {
+        setResendWait(true);
+        cooldown.start(RESET_RESEND_SECONDS);
       }
     } finally {
       captchaRef.current?.reset();
@@ -2186,7 +2231,7 @@ function ResetPanel({
     ? busy ? AUTH_COPY.working.saving : AUTH_COPY.button.savePassword
     : busy
       ? AUTH_COPY.working.sending
-      : sentTo && cooldown.remaining > 0
+      : resendWait && cooldown.remaining > 0
         ? AUTH_COPY.resendIn(cooldown.remaining)
         : AUTH_COPY.button.sendResetLink;
 
@@ -2347,9 +2392,28 @@ function LinkHandler({
 
       if (mode === "confirm") {
         const payload = parseConfirmPayload(url);
+        // Read before the address is scrubbed; only the exact Mazer authorization path survives.
+        const rawReturnTo = url.searchParams.get("returnTo");
         sanitizeAuthUrl();
         if (!payload) {
           toLogin("callback", "invalid");
+          return;
+        }
+        if (payload.type === "recovery") {
+          // Recovery link (any browser): the provider checks the one-time token (verifyOtp) and
+          // answers with the recovery session, no PKCE verifier needed. Then the new-password form,
+          // or the request form with the reason. Destinations are built from constants
+          // (recoveryLandingPath), never from the link.
+          const toReset = (failure?: "expired" | "invalid") =>
+            leave(recoveryLandingPath(context.id, rawReturnTo, failure), failure ? `recovery-${failure}` : "recovery");
+          if (!adapter) {
+            toLogin("unavailable", "unavailable");
+            return;
+          }
+          adapter
+            .confirm(payload.tokenHash, payload.type)
+            .then((session) => toReset(session ? undefined : "expired"))
+            .catch((error: unknown) => toReset(recoveryLinkFailure(error)));
           return;
         }
         if (payload.type === "email_change") {

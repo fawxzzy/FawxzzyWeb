@@ -1,8 +1,11 @@
 /**
  * PKCE for a recovery email that the SERVER asks the provider to send (username reset).
  *
- * The portal's client runs flowType "pkce" and the recovery landing only accepts
- * `?recovery=1&code=...` (parseRecoveryPayload). When the browser calls resetPasswordForEmail the SDK
+ * Since 2026-11-26 the emailed link normally opens /auth/confirm with token_hash + type=recovery
+ * (verifyOtp, no verifier needed, any browser; see recovery-link.ts). The verifier below still backs
+ * the fallback Supabase verify link, which lands on `?recovery=1&code=...` (parseRecoveryPayload).
+ *
+ * The portal's client runs flowType "pkce". When the browser calls resetPasswordForEmail the SDK
  * stores a code verifier and sends its challenge; for a username reset the Edge Function makes that
  * provider call instead, so the browser prepares the same verifier/challenge pair here and sends only
  * the challenge. The verifier never leaves this browser, and exchangeCodeForSession on the landing

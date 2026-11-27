@@ -62,6 +62,8 @@ export const AUTH_MESSAGES = {
   "reset.expired": ["error", "That reset link expired. Send a new one."],
   "reset.invalid": ["error", "That reset link is not valid. Send a new one."],
   "reset.rate": ["error", "Too many reset requests. Wait a few minutes and try again."],
+  // The provider refused to send (at most one recovery email per account per minute): never "sent".
+  "reset.wait": ["error", "No new email sent. Wait a minute, then try again."],
   "reset.sendfail": ["error", "Could not send the email. Try again in a few minutes."],
   "reset.mismatch": ["error", "The two passwords do not match."],
   "reset.same": ["error", "Choose a password different from your current one."],

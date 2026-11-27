@@ -127,17 +127,17 @@ export function signUpFailure(error: unknown): AuthMessageId {
 }
 
 /**
- * Reset request failures. Signed out, a provider rate limit answers with the same line as a sent
- * link: the provider throttles per address, so "too many requests" would only ever appear for an
- * address that has an account (an existence oracle). Signed in, the address is already on screen,
- * so the real reason is shown.
+ * Email reset request failures. A provider refusal to send (it sends at most one recovery email per
+ * account per minute) says so, signed in or out: "No new email sent. Wait a minute, then try again."
+ * Until 2026-11-26 a signed-out refusal read exactly like a sent link, to avoid an existence oracle.
+ * That hid nothing from a stranger (the browser calls the provider itself, so the 429 is in plain
+ * view in its network panel) and told a real person a link was on its way when none was. The
+ * username path keeps its server-side indistinguishability (usernameResetFailure).
  */
-export function resetRequestFailure(error: unknown, signedIn: boolean): AuthMessageId {
+export function resetRequestFailure(error: unknown): AuthMessageId {
   if (isOfflineError(error)) return "signin.offline";
   if (isCaptchaError(error)) return "captcha.fail";
-  if (status(error) === 429 || code(error) === "over_email_send_rate_limit") {
-    return signedIn ? "reset.rate" : "reset.sentany";
-  }
+  if (status(error) === 429 || code(error) === "over_email_send_rate_limit") return "reset.wait";
   return "reset.sendfail";
 }
 

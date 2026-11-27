@@ -1013,11 +1013,18 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
     },
     async requestPasswordReset() {
       fail();
+      // The provider's one-email-per-minute refusal (what a second request inside the minute gets).
+      if (scenario === "reset-email-wait") {
+        throw Object.assign(new Error("For security purposes, you can only request this after 39 seconds."), {
+          code: "over_email_send_rate_limit",
+          status: 429,
+        });
+      }
     },
     // Username reset fixtures. Every username gets the same answer (the server never says whether it
     // has an account); `reset-throttled` and `reset-unavailable` answer like the rate limit and a
     // missing server function. `reset-email-legacy` keeps the email form (the flag-off live path).
-    resetByUsername: scenario !== "reset-email-legacy",
+    resetByUsername: scenario !== "reset-email-legacy" && scenario !== "reset-email-wait",
     // The Delete account row shows in every fixture except `delete-off` (the flag-off live page).
     deleteAccountLive: scenario !== "delete-off",
     async requestPasswordResetByUsername(username, contextId, returnTarget) {
@@ -1165,6 +1172,10 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
       fail();
       // Secure email change, first of two links: accepted, but no session yet.
       if (scenario === "confirm-pending") return null;
+      // A used, wrong or expired recovery token: the provider's 403 otp_expired answer.
+      if (scenario === "recovery-expired") {
+        throw Object.assign(new Error("Email link is invalid or has expired"), { code: "otp_expired", status: 403 });
+      }
       session = {
         displayName: "confirmed.user",
         email: "confirmed.user@example.test",
@@ -1258,6 +1269,8 @@ export function resolvePortalAuthAdapter(
       "mazer-name-unavailable",
       "confirm-pending",
       "reset-email-legacy",
+      "reset-email-wait",
+      "recovery-expired",
       "reset-throttled",
       "reset-unavailable",
     ].includes(scenario) &&
