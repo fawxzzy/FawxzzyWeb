@@ -21,10 +21,17 @@
 // timing tells a caller whether the username has an account.
 //
 // The send window is a RESERVATION, not a lock: the resolver claims it for a real send (never for a decoy
-// past the send cap), and when the provider then refuses the call (captcha failed, other 4xx, 5xx, network
-// error: no email went out) the background task releases the claim again, so a caller who cannot pass the
-// captcha cannot keep anyone's reset waiting. A 2xx and a 429 keep the claim (the provider holds its own
-// minute then). The release happens after the answer, so it changes nothing the caller sees.
+// past the send cap), and the background task releases the claim again ONLY when the provider refused the
+// call for a reason that does not depend on the recipient: a captcha failure (error_code captcha_failed,
+// decided before the address is looked at), a network error, or no provider configured. Every other
+// answer KEEPS the window: 2xx, 429, every other 4xx and every 5xx. Those can differ by recipient (a
+// real address can fail at SMTP, e.g. email_address_not_authorized, while the decoy never reaches SMTP
+// and answers 2xx), so releasing on them would let a second-IP probe tell known from unknown usernames.
+// The release happens after the answer, so it changes nothing the caller sees.
+// WHAT THIS PROTECTS: a caller who cannot pass the captcha cannot keep anyone's reset waiting, but only
+// once provider CAPTCHA is enforced. While it is off (board card FW-CAPTCHA-001, blocked) the provider
+// takes a captcha-less call as a real send (2xx), the window is kept and the owner gets an email: an
+// attacker rotating about 7 addresses can keep the owner on "wait" (as v1's silent provider minute did).
 //
 // Every accepted request makes exactly ONE provider recovery call, carrying the caller's captcha
 // token: to the account's address when the username resolves to one that can receive mail, otherwise
@@ -186,20 +193,54 @@ export function providerPublicKey(getEnv) {
 }
 
 /**
- * True when the provider's answer means no recovery email went out and the send window should be
- * given back: anything but a 2xx (sent, or an unknown address answered the same way) or a 429 (the
- * provider holds its own one-minute limit for the account, so the window is real). `null` (provider
- * not configured), a thrown network error and 5xx all release.
+ * The provider error codes that are decided BEFORE the recipient matters (the provider verifies the
+ * captcha first), so releasing the send window on them is the same for every username.
  */
-export function providerRefusedSend(status) {
-  if (typeof status !== "number" || !Number.isInteger(status) || status < 100 || status > 599) return true;
-  return !(status >= 200 && status < 300) && status !== 429;
+export const RELEASING_ERROR_CODES = new Set(["captcha_failed"]);
+
+/**
+ * True when the send window should be given back: ONLY for a refusal that happens before the recipient
+ * matters. That is `null`/`undefined` (provider not configured), or a 400 whose error_code is in
+ * RELEASING_ERROR_CODES (captcha failure). Everything else keeps the window: 2xx, 429, every other 4xx
+ * (including a 400 with another or no error_code) and every 5xx, because those can depend on the
+ * recipient (a real address can fail at SMTP while the decoy answers 2xx), and releasing on them would
+ * let a second request reveal whether a username exists. A thrown network error is handled by the
+ * caller (it releases too: the provider was never reached). `result` is what sendRecovery returns: a
+ * status number, `null` (not configured) or { status, errorCode }.
+ */
+export function providerRefusalReleasesWindow(result) {
+  if (result === null || result === undefined) return true;
+  if (typeof result !== "object") return false;
+  return result.status === 400 && typeof result.errorCode === "string" && RELEASING_ERROR_CODES.has(result.errorCode);
+}
+
+/**
+ * Turns the provider's recover response into { status, errorCode }. The body is read (4 KB cap) only for
+ * a 400, and only its error_code is kept, and only when it looks like a code (lowercase letters, digits,
+ * underscore), so nothing else of the body is ever held or logged.
+ */
+export async function readRecoverResponse(response) {
+  const status = response.status;
+  let errorCode = null;
+  if (status === 400) {
+    try {
+      const text = await readBodyLimited(response, 4096);
+      const code = text === null ? null : JSON.parse(text)?.error_code;
+      if (typeof code === "string" && /^[a-z0-9_]{1,64}$/.test(code)) errorCode = code;
+    } catch {
+      errorCode = null;
+    }
+  } else {
+    await response.body?.cancel().catch(() => undefined);
+  }
+  return { errorCode, status };
 }
 
 const CLAIMED_AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?(Z|[+-]\d{2}(:?\d{2})?)$/;
 
 /** Non-identifying outcome of the background provider call: the HTTP status class only. */
-export function sendOutcome(status) {
+export function sendOutcome(result) {
+  const status = result !== null && typeof result === "object" ? result.status : result;
   if (typeof status !== "number" || !Number.isInteger(status) || status < 100 || status > 599) return "not_sent";
   return `${Math.floor(status / 100)}xx`;
 }
@@ -350,12 +391,14 @@ export function recoverRequest({ anonKey, captchaToken, codeChallenge, email, re
  *                                             (background only; optional, a missing release just lets the
  *                                             window run out)
  *   findRecipient(userId)                     -> Promise<string | null>  (background only)
- *   sendRecovery({ email, codeChallenge, redirectTo, captchaToken }) -> Promise<number | null>
- *                                             provider HTTP status, null when not configured (background only)
+ *   sendRecovery({ email, codeChallenge, redirectTo, captchaToken }) -> Promise<number | { status, errorCode } | null>
+ *                                             provider HTTP status (with the provider's error_code for a 400),
+ *                                             null when not configured (background only)
  *   background(promise)                       schedules work that must not delay the answer
  *   log(entry)                                one non-identifying JSON-able line per background send:
- *                                             { event: "username_reset_send", outcome: "2xx" | "4xx" | ... }
- *                                             never a username, email, address, token or user id
+ *                                             { event: "username_reset_send", outcome: "2xx" | "4xx" | ...,
+ *                                               released: true | false }
+ *                                             never a username, email, address, token, user id or account id
  *   sha256(text)                              -> Promise<hex>
  *   now(), sleep(ms)                          clock (injectable for tests)
  */
@@ -372,9 +415,9 @@ export function createUsernameResetHandler({
   sha256,
   sleep = (ms) => new Promise((done) => setTimeout(done, ms)),
 }) {
-  const record = (outcome) => {
+  const record = (outcome, released) => {
     try {
-      log({ event: "username_reset_send", outcome });
+      log({ event: "username_reset_send", outcome, released });
     } catch {
       // Logging must never change behaviour.
     }
@@ -393,30 +436,34 @@ export function createUsernameResetHandler({
       email = null;
     }
     if (!userId) email = null;
-    let refused = false;
+    let outcome;
+    let releasable = false;
     try {
-      const status = await sendRecovery({
+      const result = await sendRecovery({
         captchaToken: parsed.captchaToken,
         codeChallenge: parsed.codeChallenge,
         email: email || DECOY_RECIPIENT,
         redirectTo: parsed.redirectTo,
       });
-      record(sendOutcome(status));
-      refused = providerRefusedSend(status);
+      outcome = sendOutcome(result);
+      releasable = providerRefusalReleasesWindow(result);
     } catch {
       // Best effort and invisible to the caller by design: the answer was already the fixed one.
-      record("network_error");
-      refused = true;
+      outcome = "network_error";
+      releasable = true;
     }
-    // No email went out: give the send window back (see the header). The same for known and unknown
-    // usernames (an unknown one's decoy call is answered 2xx exactly like a hit, proven at go-live).
-    if (refused && claim.claimedAt) {
+    // The provider refused before the recipient mattered (captcha failure, network error, not
+    // configured): give the send window back (see the header). Anything else keeps it, the same for
+    // known and unknown usernames.
+    let released = false;
+    if (releasable && claim.claimedAt) {
       try {
-        await release({ claimedAt: claim.claimedAt, normalized: claim.normalized });
+        released = (await release({ claimedAt: claim.claimedAt, normalized: claim.normalized })) === true;
       } catch {
         // The window then ends by itself.
       }
     }
+    record(outcome, released);
   }
 
   return async function handle(request) {
@@ -472,7 +519,7 @@ export function createUsernameResetHandler({
       background(deliver(resolution.userId, parsed, { claimedAt: resolution.claimedAt ?? null, normalized }));
     } catch {
       // A scheduler failure must not change the answer.
-      record("schedule_error");
+      record("schedule_error", false);
     }
     return respond(200, RESET_ACCEPTED);
   };

@@ -14,8 +14,9 @@
 //      and one timing for known, unknown, banned and unconfirmed names, for the first request AND for the
 //      repeat from another browser inside the window;
 //   5. the review-hold scenarios: a decoy request claims nothing; a request the provider refuses (no or
-//      bad captcha, 4xx, 5xx) gives its window back, so an attacker with the public key and no captcha
-//      cannot keep anyone on "wait"; a 429 keeps the window (no existence oracle); a late clock never
+//      captcha failure or network error) gives its window back, so once CAPTCHA is enforced an attacker
+//      with the public key and no captcha cannot keep anyone on "wait"; 2xx, 429, every other 4xx and
+//      every 5xx keep the window (they can differ by recipient: no existence oracle); a late clock never
 //      answers more than the window.
 // Stand-ins: auth.users (columns only), the three roles, schema grants. Everything else is repo SQL.
 // NOT covered: true concurrency (pglite is one connection, so the row-lock race in step 6 of the
@@ -404,7 +405,8 @@ const v1Bodies = async (db) =>
   const tokens = [];
   const scheduled = [];
   const floor = 300;
-  let providerStatus = 200; // what the provider answers; the review-hold scenarios flip it
+  let providerStatus = 200; // what the provider answers (a status, { status, errorCode }, or a function of the call); the review-hold scenarios flip it
+  const CAPTCHA_FAILED = { errorCode: "captcha_failed", status: 400 };
   const releaseCalls = [];
   // PostgREST stand-in for the real RPC wire functions: named arguments, JSON in, JSON out.
   const rpcFetch = async (url, init) => {
@@ -453,7 +455,7 @@ const v1Bodies = async (db) =>
     async sendRecovery(input) {
       sent.push(input.email);
       tokens.push(input.captchaToken);
-      return providerStatus;
+      return typeof providerStatus === "function" ? providerStatus(input) : providerStatus;
     },
     sha256: async (text) => hex(text),
   });
@@ -528,9 +530,11 @@ const v1Bodies = async (db) =>
     [sendKeyAccount(KNOWN), sendKeyName("nobody")])).rows[0].n;
 
   // P1a. The attacker case: the public key, no (valid) captcha, a fresh IP per request. The provider
-  // refuses every call (400), so every window is given back and the owner is never held.
+  // refuses every call (400 captcha_failed, decided before the recipient), so every window is given back
+  // and the owner is never held (once provider CAPTCHA is enforced; while it is off the provider takes
+  // the call as a real send and these windows are kept, see the doc).
   await reset();
-  providerStatus = 400;
+  providerStatus = CAPTCHA_FAILED;
   const attackerAnswers = [];
   for (let i = 0; i < 12; i += 1) {
     attackerAnswers.push(await answerOf("known", `198.18.7.${i}`, "no-captcha"));
@@ -548,7 +552,7 @@ const v1Bodies = async (db) =>
 
   // The same for an unknown username: the attacker gets the same answer and the same release.
   await reset();
-  providerStatus = 400;
+  providerStatus = CAPTCHA_FAILED;
   const attackUnknown = await answerOf("nobody", "198.18.8.1", "no-captcha");
   await Promise.all(scheduled.splice(0));
   check("attack on an unknown name: same 200 answer as for a known one", attackUnknown.text === answers.first.known, attackUnknown.text.slice(0, 40));
@@ -556,15 +560,37 @@ const v1Bodies = async (db) =>
 
   // P1b. A 429 from the provider keeps the window (the provider answers 429 only for accounts that
   // exist, so releasing on 429 would turn the wait into an existence oracle); 2xx keeps it too.
-  for (const status of [429, 200]) {
+  // Every other 4xx and every 5xx keep it too: they can depend on the recipient (a real address can fail
+  // at SMTP while the decoy answers 2xx), so releasing on them would be an oracle for a second-IP probe.
+  const keptStatuses = [429, 200, 500, 503, 422, 400, { errorCode: "email_address_not_authorized", status: 422 }, { errorCode: "validation_failed", status: 400 }];
+  for (const status of keptStatuses) {
     await reset();
     providerStatus = status;
     await answerOf("known", "198.18.9.1", "captcha");
     await answerOf("nobody", "198.18.9.2", "captcha");
     await Promise.all(scheduled.splice(0));
-    check(`provider ${status}: both the known and the unknown name keep their window (no oracle), nothing released`,
+    check(`provider ${JSON.stringify(status)}: both the known and the unknown name keep their window (no oracle), nothing released`,
       (await windowRows()) === 2 && releaseCalls.length === 0, `rows ${await windowRows()}, releases ${releaseCalls.length}`);
   }
+
+  // The oracle case itself: the known address fails at SMTP (422), the decoy never reaches SMTP (200).
+  // Both keep their window, so a second-IP probe sees the same 429 wait for known and unknown.
+  await reset();
+  providerStatus = ({ email }) => (email === DECOY_RECIPIENT ? 200 : { errorCode: "email_address_not_authorized", status: 422 });
+  await answerOf("known", "198.18.9.10", "captcha");
+  await answerOf("nobody", "198.18.9.11", "captcha");
+  await Promise.all(scheduled.splice(0));
+  const probeKnown = await answerOf("known", "198.18.9.12", "captcha");
+  const probeUnknown = await answerOf("nobody", "198.18.9.13", "captcha");
+  check("oracle: known (SMTP 422) and unknown (decoy 2xx) both keep the window, and a second-IP probe gets the same 429 wait",
+    releaseCalls.length === 0 && probeKnown.status === 429 && probeKnown.text === probeUnknown.text, `${probeKnown.text.slice(0, 40)} | ${probeUnknown.text.slice(0, 40)}`);
+  // A network error (the provider was never reached) releases, the same for both.
+  await reset();
+  providerStatus = () => { throw new Error("provider unreachable"); };
+  await answerOf("known", "198.18.9.20", "captcha");
+  await answerOf("nobody", "198.18.9.21", "captcha");
+  await Promise.all(scheduled.splice(0));
+  check("network error: both windows are released (no recipient involved)", (await windowRows()) === 0 && releaseCalls.length === 2 && releaseCalls.every((call) => call.released === true));
 
   // An attacker cannot release (or even touch) a window a REAL send holds: its own request is turned away
   // with a wait, claims nothing and so never calls release.
@@ -573,7 +599,7 @@ const v1Bodies = async (db) =>
   await answerOf("known", "198.18.10.1", "captcha");
   await Promise.all(scheduled.splice(0));
   const heldSince = await startedAt(db, sendKeyAccount(KNOWN));
-  providerStatus = 400;
+  providerStatus = CAPTCHA_FAILED;
   const turnedAway = await answerOf("known", "198.18.10.2", "no-captcha");
   await Promise.all(scheduled.splice(0));
   check("a real send's window survives an attacker's request (turned away, no release, start unchanged)",

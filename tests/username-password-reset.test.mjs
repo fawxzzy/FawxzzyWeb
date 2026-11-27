@@ -9,7 +9,9 @@ import {
   ALLOWED_ORIGINS,
   RESET_WAIT_CODE,
   SEND_WINDOW_SECONDS,
-  providerRefusedSend,
+  RELEASING_ERROR_CODES,
+  providerRefusalReleasesWindow,
+  readRecoverResponse,
   releaseUsernameResetRpc,
   CLIENT_ADDRESS_SOURCE,
   createUsernameResetHandler,
@@ -248,23 +250,6 @@ test("the rate limit wins over a wait, a wait of 0 sends, and Retry-After stays 
 
 const CLAIMED_AT = "2026-11-26T19:00:00.123456+00:00";
 
-/** A harness whose resolver claims a send window (like the SQL does for a real, non-decoy request). */
-function claimingHarness({ claimedAt = CLAIMED_AT, sendStatus = 200, sendRecovery, release, userId } = {}) {
-  const releases = [];
-  const h = harness({
-    minimumResponseMs: 0,
-    resolve: async (input) => ({
-      claimedAt,
-      throttled: false,
-      userId: userId === undefined ? USERS[input.normalized]?.id ?? null : userId,
-      waitSeconds: 0,
-    }),
-    sendRecovery,
-    sendStatus,
-  });
-  return { ...h, releases, release, withRelease: release };
-}
-
 function handlerWithRelease({ claimedAt = CLAIMED_AT, sendRecovery, releaseImpl }) {
   const releases = [];
   const scheduled = [];
@@ -292,39 +277,90 @@ function handlerWithRelease({ claimedAt = CLAIMED_AT, sendRecovery, releaseImpl 
   return { handle, logs, releases, scheduled };
 }
 
-test("a send window the provider call did not use is released: captcha failure, other 4xx, 5xx and network errors", async () => {
-  for (const status of [400, 401, 403, 422, 500, 502, 503, null]) {
+const CAPTCHA_FAILED = { errorCode: "captcha_failed", status: 400 };
+
+test("the send window is released ONLY for a refusal that does not depend on the recipient: captcha failure, network error, not configured", async () => {
+  const releasing = [
+    ["captcha_failed", async () => CAPTCHA_FAILED],
+    ["provider not configured (null)", async () => null],
+    ["network error (thrown)", async () => { throw new Error("network down"); }],
+  ];
+  for (const [label, sendRecovery] of releasing) {
     for (const name of ["known", "nobody"]) {
-      const { handle, releases, scheduled } = handlerWithRelease({ sendRecovery: async () => status });
+      const { handle, logs, releases, scheduled } = handlerWithRelease({ sendRecovery });
       const response = await handle(resetRequest(validBody(name, { captchaToken: "bad" })));
       assert.equal(response.status, 200, "the caller's answer is the fixed one whatever the provider says");
       await Promise.all(scheduled);
-      assert.deepEqual(releases, [{ claimedAt: CLAIMED_AT, normalized: name }], `${name} ${status}`);
+      assert.deepEqual(releases, [{ claimedAt: CLAIMED_AT, normalized: name }], `${name} ${label}`);
+      assert.equal(logs.length, 1);
+      assert.equal(logs[0].released, true, `${name} ${label}`);
     }
   }
-  const thrown = handlerWithRelease({ sendRecovery: async () => { throw new Error("network down"); } });
-  assert.equal((await thrown.handle(resetRequest(validBody("known")))).status, 200);
-  await Promise.all(thrown.scheduled);
-  assert.equal(thrown.releases.length, 1, "a thrown provider call releases too");
 });
 
-test("a send window is kept when the provider took the call (2xx) or holds its own limit (429)", async () => {
-  for (const status of [200, 202, 204, 429]) {
+test("the send window is KEPT for 5xx and every other 4xx (they can differ by recipient), for known and unknown alike", async () => {
+  // A real address can fail at SMTP (email_address_not_authorized, a 5xx or 4xx) while the decoy never
+  // reaches SMTP and answers 2xx: releasing on those would let a second request tell the two apart.
+  const keeping = [
+    ["2xx sent", 200], ["202", 202], ["204", 204], ["429 provider's own limit", 429],
+    ["400 without a code", 400], ["400 no error_code", { errorCode: null, status: 400 }],
+    ["400 other code", { errorCode: "validation_failed", status: 400 }],
+    ["401", 401], ["403", 403], ["422", 422],
+    ["422 email_address_not_authorized", { errorCode: "email_address_not_authorized", status: 422 }],
+    ["400 email_address_not_authorized", { errorCode: "email_address_not_authorized", status: 400 }],
+    ["500", 500], ["502", 502], ["503", 503],
+    ["500 with the captcha code", { errorCode: "captcha_failed", status: 500 }],
+    ["422 with the captcha code", { errorCode: "captcha_failed", status: 422 }],
+  ];
+  for (const [label, result] of keeping) {
     for (const name of ["known", "nobody"]) {
-      const { handle, releases, scheduled } = handlerWithRelease({ sendRecovery: async () => status });
-      await handle(resetRequest(validBody(name)));
+      const { handle, logs, releases, scheduled } = handlerWithRelease({ sendRecovery: async () => result });
+      const response = await handle(resetRequest(validBody(name)));
+      assert.equal(response.status, 200);
       await Promise.all(scheduled);
-      assert.equal(releases.length, 0, `${name} ${status}`);
+      assert.equal(releases.length, 0, `${name} ${label}`);
+      assert.equal(logs[0].released, false, `${name} ${label}`);
     }
   }
-  assert.deepEqual([200, 204, 429].map(providerRefusedSend), [false, false, false]);
-  assert.deepEqual([null, undefined, 0, 99, 300, 400, 401, 422, 500, 503, 600, "200"].map(providerRefusedSend), Array(12).fill(true));
+  assert.deepEqual([...RELEASING_ERROR_CODES], ["captcha_failed"]);
+  assert.equal(providerRefusalReleasesWindow(CAPTCHA_FAILED), true);
+  assert.equal(providerRefusalReleasesWindow(null), true);
+  assert.equal(providerRefusalReleasesWindow(undefined), true);
+  const keptByFunction = [200, 204, 429, 400, 401, 422, 500, 503, 0, 99, 600, "200", {}, { status: 400 }, { status: 400, errorCode: 5 }];
+  assert.deepEqual(keptByFunction.map(providerRefusalReleasesWindow), Array(keptByFunction.length).fill(false));
+});
+
+test("known address and decoy answer a provider 4xx the same way: window kept, same answer, nothing to tell them apart", async () => {
+  // The known address gets a real SMTP-style failure, the unknown name's decoy call a 2xx.
+  const sendRecovery = async ({ email }) => (email === DECOY_RECIPIENT ? 200 : { errorCode: "email_address_not_authorized", status: 422 });
+  const known = handlerWithRelease({ sendRecovery });
+  const unknown = handlerWithRelease({ sendRecovery });
+  const knownAnswer = await snapshot(await known.handle(resetRequest(validBody("known"))));
+  const unknownAnswer = await snapshot(await unknown.handle(resetRequest(validBody("nobody"))));
+  await Promise.all([...known.scheduled, ...unknown.scheduled]);
+  assert.deepEqual(unknownAnswer, knownAnswer);
+  assert.equal(known.releases.length, 0);
+  assert.equal(unknown.releases.length, 0);
+  assert.deepEqual(known.logs.map((entry) => entry.released), [false]);
+  assert.deepEqual(unknown.logs.map((entry) => entry.released), [false]);
+});
+
+test("the provider recover response is reduced to status plus a code-shaped error_code, 400 only", async () => {
+  const reply = (status, body) => new Response(body, { status });
+  assert.deepEqual(await readRecoverResponse(reply(400, JSON.stringify({ code: 400, error_code: "captcha_failed", msg: "captcha protocol: bad token for known@example.test" }))), { errorCode: "captcha_failed", status: 400 });
+  assert.deepEqual(await readRecoverResponse(reply(200, "{}")), { errorCode: null, status: 200 });
+  assert.deepEqual(await readRecoverResponse(reply(422, JSON.stringify({ error_code: "captcha_failed" }))), { errorCode: null, status: 422 }, "only a 400's body is read");
+  assert.deepEqual(await readRecoverResponse(reply(500, "")), { errorCode: null, status: 500 });
+  for (const body of ["not json", "null", "[]", JSON.stringify({ error_code: 5 }), JSON.stringify({ error_code: "Has Space And UPPER" }), JSON.stringify({ error_code: "x".repeat(65) }), JSON.stringify({ msg: "x" }), "x".repeat(5000)]) {
+    assert.deepEqual(await readRecoverResponse(reply(400, body)), { errorCode: null, status: 400 }, body.slice(0, 30));
+  }
+  assert.deepEqual(await readRecoverResponse(new Response(null, { status: 400 })), { errorCode: null, status: 400 });
 });
 
 test("a decoy request claims nothing, so nothing is released and the answer is the same", async () => {
   // The database answers claimedAt null for a request past the send cap (no email goes out).
-  const real = handlerWithRelease({ sendRecovery: async () => 400 });
-  const decoy = handlerWithRelease({ claimedAt: null, sendRecovery: async () => 400 });
+  const real = handlerWithRelease({ sendRecovery: async () => CAPTCHA_FAILED });
+  const decoy = handlerWithRelease({ claimedAt: null, sendRecovery: async () => CAPTCHA_FAILED });
   const realAnswer = await snapshot(await real.handle(resetRequest(validBody("known"))));
   const decoyAnswer = await snapshot(await decoy.handle(resetRequest(validBody("known"))));
   await Promise.all([...real.scheduled, ...decoy.scheduled]);
@@ -335,11 +371,12 @@ test("a decoy request claims nothing, so nothing is released and the answer is t
 
 test("a failing release changes nothing for the caller and is never logged with an identity", async () => {
   for (const releaseImpl of [async () => { throw new Error("known@example.test 203.0.113.9"); }, async () => false]) {
-    const { handle, logs, scheduled } = handlerWithRelease({ releaseImpl, sendRecovery: async () => 400 });
+    const { handle, logs, scheduled } = handlerWithRelease({ releaseImpl, sendRecovery: async () => CAPTCHA_FAILED });
     const response = await handle(resetRequest(validBody("known")));
     assert.equal(response.status, 200);
     await Promise.all(scheduled);
     assert.equal(logs.length, 1);
+    assert.equal(logs[0].released, false, "a release that threw or found nothing is logged as not released");
     assert.doesNotMatch(JSON.stringify(logs), /known|@|203\.0\.113/);
   }
   // A handler built without a release dependency still works (the window just runs out).
@@ -589,14 +626,16 @@ test("send outcome log: one line per background send, status class only, nothing
   assert.equal(sendOutcome(422), "4xx");
   assert.equal(sendOutcome(429), "4xx");
   assert.equal(sendOutcome(503), "5xx");
-  for (const value of [null, undefined, 0, 99, 600, 200.5, "200"]) assert.equal(sendOutcome(value), "not_sent", String(value));
+  assert.equal(sendOutcome({ errorCode: "captcha_failed", status: 400 }), "4xx");
+  assert.equal(sendOutcome({ errorCode: null, status: 502 }), "5xx");
+  for (const value of [null, undefined, 0, 99, 600, 200.5, "200", {}, { status: "400" }]) assert.equal(sendOutcome(value), "not_sent", String(value));
   for (const [status, outcome] of [[200, "2xx"], [429, "4xx"], [500, "5xx"], [null, "not_sent"]]) {
     const { handle, logs, scheduled } = harness({ minimumResponseMs: 0, sendStatus: status });
     const headers = { "cf-connecting-ip": "203.0.113.77" };
     await handle(resetRequest(validBody("known", { captchaToken: "secret-token" }), { headers }));
     await handle(resetRequest(validBody("nobody", { captchaToken: "secret-token" }), { headers }));
     await Promise.all(scheduled);
-    assert.deepEqual(logs, [{ event: "username_reset_send", outcome }, { event: "username_reset_send", outcome }]);
+    assert.deepEqual(logs, [{ event: "username_reset_send", outcome, released: false }, { event: "username_reset_send", outcome, released: false }]);
     const text = JSON.stringify(logs);
     for (const secret of ["known", "nobody", "example.test", "203.0.113", "secret-token", USERS.known.id, DECOY_RECIPIENT]) {
       assert.ok(!text.includes(secret), secret);
@@ -606,7 +645,7 @@ test("send outcome log: one line per background send, status class only, nothing
   const response = await failing.handle(resetRequest(validBody("known")));
   await Promise.all(failing.scheduled);
   assert.equal(response.status, 200);
-  assert.deepEqual(failing.logs, [{ event: "username_reset_send", outcome: "network_error" }]);
+  assert.deepEqual(failing.logs, [{ event: "username_reset_send", outcome: "network_error", released: false }]);
   // A throwing logger never changes the answer.
   const loud = createUsernameResetHandler({
     admitKey: async () => true,

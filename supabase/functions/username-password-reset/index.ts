@@ -1,7 +1,8 @@
 // username-password-reset: signed-out password reset by USERNAME (design direction #9).
 // Live since 2026-11-15 (v1 SQL). The current source calls account_resolve_username_reset_v2
 // (supabase/proposed/20261126190000_account_username_reset_v2.sql, owner-gated: approve by sha256).
-// The send window is a reservation: it is released again when the provider refuses the call.
+// The send window is a reservation: it is released again only when the provider refuses the call for a
+// captcha failure (or the call fails at the network); every other provider answer keeps it.
 // ORDER: apply that SQL FIRST, then deploy this function; rollback is the reverse (redeploy the
 // previous function, then run the v2 rollback file). Deploying this function without the SQL answers
 // 503 reset_unavailable for every username.
@@ -12,6 +13,7 @@ import { createPublicKeyAdmission } from "../username-password-signin/public-key
 import {
   createUsernameResetHandler,
   providerPublicKey,
+  readRecoverResponse,
   recipientFrom,
   recoverRequest,
   releaseUsernameResetRpc,
@@ -104,11 +106,12 @@ const handle = createUsernameResetHandler({
     if (!url || !anonKey) return null;
     const [target, init] = recoverRequest({ ...input, anonKey, url });
     const response = await fetch(target, init);
-    await response.body?.cancel().catch(() => undefined);
-    return response.status;
+    // Status plus (for a 400) the provider's error_code only: the handler releases the send window for a
+    // captcha failure and keeps it for every other answer.
+    return readRecoverResponse(response);
   },
   // One non-identifying line per background send (status class only; see handler.mjs).
-  log(entry: Record<string, string>) {
+  log(entry: Record<string, string | boolean>) {
     console.log(JSON.stringify(entry));
   },
   sha256,
