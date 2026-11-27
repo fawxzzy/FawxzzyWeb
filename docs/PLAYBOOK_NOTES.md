@@ -1,5 +1,14 @@
 This file is a project-local inbox for repo-specific Playbook notes that may later be promoted upstream.
 
+## 2026-11-26 - Password reset works in any browser; a refused send never reads as sent
+
+- Type: Portal code + Edge Function source (`auth-send-email/plan.mjs`, not deployed) + tests + docs
+- WHAT changed: Recovery emails link to `/auth/confirm?[app&][returnTo&]token_hash=...&type=recovery` when `redirect_to` is exactly one of the four `accountRecoveryUrl` values (`RECOVERY_REDIRECTS`); other redirects keep the Supabase verify URL. The confirm route handles `type=recovery` with `verifyOtp` and moves to `/reset-password?recovery=1[&app][&returnTo]` or `/reset-password?link=expired|invalid`, destinations built from constants in `src/lib/auth/recovery-link.ts`. The email reset form maps a provider 429 / `over_email_send_rate_limit` to the new `reset.wait` line ("No new email sent. Wait a minute, then try again.") with a one-minute countdown, signed in or out; every sent link stores a one-minute wait (timestamp only) in localStorage. Test adapter scenarios `recovery-expired` and `reset-email-wait`.
+- WHY it changed: A Mazer player's reset link (2026-11-24) was accepted by the provider but the page could not exchange its PKCE code, because only the browser that asked holds the verifier; a second request 21 s later sent nothing but the page said a link was sent. Server-side `verifyOtp` with `token_hash` needs no verifier. The signed-out 429 masking (2026-11-15) hid nothing: the browser calls the provider directly, so the 429 is visible in its own network panel.
+- Rule: An emailed auth link must not depend on state stored in the browser that requested it; use `token_hash` + `verifyOtp` on a portal route, and build every post-verify destination from constants.
+- Failure Mode: Masking a provider refusal as success to avoid an existence oracle only works when the refusal is server-side; when the browser calls the provider itself, the mask hides nothing and misleads the real person.
+- Scope: Source and local regression only. Deploy order: portal first, then `auth-send-email` (rollback: previous `plan.mjs`, sha256 `3dc3ee15025f2239d1d42b41e5e60628c1ca4b020874599b84817860ba90de0f`). No deployment, provider, credential or database effect from this PR.
+
 ## 2026-11-25 - Fitness board re-pin: full-app redesign release folded
 
 - Type: Board data only
