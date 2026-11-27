@@ -16,7 +16,7 @@ export type AuthField = "identifier" | "username" | "email" | "password" | "conf
 
 export type FormProblem = { id: AuthMessageId; fields: AuthField[] };
 
-type ProviderErrorShape = { code?: unknown; status?: unknown; name?: unknown; message?: unknown };
+type ProviderErrorShape = { code?: unknown; status?: unknown; name?: unknown; message?: unknown; retryAfter?: unknown };
 
 function shape(error: unknown): ProviderErrorShape {
   return typeof error === "object" && error !== null ? (error as ProviderErrorShape) : {};
@@ -139,6 +139,15 @@ export function resetRequestFailure(error: unknown): AuthMessageId {
   if (isCaptchaError(error)) return "captcha.fail";
   if (status(error) === 429 || code(error) === "over_email_send_rate_limit") return "reset.wait";
   return "reset.sendfail";
+}
+
+/**
+ * The seconds the server says to wait (its Retry-After header, read by the browser adapter), whole and
+ * within one send window; null when absent or out of range, so the caller falls back to its own minute.
+ */
+export function retryAfterSeconds(error: unknown): number | null {
+  const value = shape(error).retryAfter;
+  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 65 ? value : null;
 }
 
 /**

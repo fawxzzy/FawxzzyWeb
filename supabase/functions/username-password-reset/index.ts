@@ -1,6 +1,7 @@
 // username-password-reset: signed-out password reset by USERNAME (design direction #9).
 // Live since 2026-11-15 (v1 SQL). The current source calls account_resolve_username_reset_v2
 // (supabase/proposed/20261126190000_account_username_reset_v2.sql, owner-gated: approve by sha256).
+// The send window is a reservation: it is released again when the provider refuses the call.
 // ORDER: apply that SQL FIRST, then deploy this function; rollback is the reverse (redeploy the
 // previous function, then run the v2 rollback file). Deploying this function without the SQL answers
 // 503 reset_unavailable for every username.
@@ -13,6 +14,7 @@ import {
   providerPublicKey,
   recipientFrom,
   recoverRequest,
+  releaseUsernameResetRpc,
   resolveUsernameResetRpc,
 } from "./handler.mjs";
 
@@ -71,6 +73,18 @@ const handle = createUsernameResetHandler({
     const admin = createClient(url, serviceRole, { auth: { persistSession: false } });
     const { data } = await admin.auth.admin.getUserById(userId);
     return recipientFrom(data?.user ?? null, Date.now());
+  },
+  // Gives back the send window when the provider refused the call (no email went out); background only.
+  async release({ claimedAt, normalized }: { claimedAt: string; normalized: string }) {
+    const url = Deno.env.get("SUPABASE_URL");
+    const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!url || !serviceRole) return false;
+    return releaseUsernameResetRpc({
+      args: { p_claimed_at: claimedAt, p_normalized_username: normalized },
+      fetchImpl: fetch,
+      serviceRole,
+      url,
+    });
   },
   async resolve({ clientKey, normalized, pairKey }: { clientKey: string; normalized: string; pairKey: string }) {
     const url = Deno.env.get("SUPABASE_URL");

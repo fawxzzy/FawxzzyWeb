@@ -141,8 +141,11 @@ export const AUTH_COPY = {
     deleting: "Deleting…",
     opening: (app: AuthAppName) => `Opening ${app}…`,
   },
-  /** "Resend in 0:30" while a link cannot be sent again yet. */
-  resendIn: (seconds: number) => `Resend in 0:${String(Math.max(0, Math.min(59, seconds))).padStart(2, "0")}`,
+  /** "Resend in 0:30" while a link cannot be sent again yet ("1:05" past a minute: the username reset window is 65 s). */
+  resendIn: (seconds: number) => {
+    const whole = Math.max(0, Math.min(179, Math.ceil(seconds)));
+    return `Resend in ${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
+  },
   link: {
     createAccount: "Create account",
     resetPassword: "Reset password",

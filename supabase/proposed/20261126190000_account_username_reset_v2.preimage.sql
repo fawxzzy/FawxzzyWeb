@@ -1,5 +1,6 @@
 -- READ-ONLY PREIMAGE for 20261126190000_account_username_reset_v2.sql. Run immediately before the apply
--- (same session/day), save the output next to the approval, and check 'blocking' is empty. One SELECT,
+-- (same session/day), save the output next to the approval, and check 'blocking' is empty. The output
+-- carries captured_at (the database clock when it ran), so its age is visible at approval time. One SELECT,
 -- no writes, no row contents: only catalog facts and counts.
 -- (Run through the read-only query runner, which rejects some write words even inside text, so none
 -- of those words appear below.)
@@ -27,6 +28,7 @@ attempts_constraints as (
   where conrelid = to_regclass('account_private.username_signin_attempts')
 )
 select
+  clock_timestamp() as captured_at,
   (select version()) as server_version,
   (select encode(sha256('abc'::bytea), 'hex')) as sha256_builtin_abc,
   (select coalesce(jsonb_agg(to_jsonb(f) - 'oid' order by f.signature), '[]'::jsonb) from reset_fns f) as reset_functions,
@@ -42,6 +44,8 @@ select
   has_schema_privilege('service_role', 'account_api', 'usage') as service_role_account_api_usage,
   to_regprocedure('account_private.resolve_username_reset_v2(text, text, text)') is not null as v2_inner_present,
   to_regprocedure('account_api.account_resolve_username_reset_v2(text, text, text)') is not null as v2_api_present,
+  to_regprocedure('account_private.release_username_reset_v2(text, timestamptz)') is not null as v2_release_inner_present,
+  to_regprocedure('account_api.account_release_username_reset_v2(text, timestamptz)') is not null as v2_release_api_present,
   (
     select coalesce(jsonb_agg(reason), '[]'::jsonb) from (
       select 'v1 resolver (account_api) missing' as reason
@@ -53,6 +57,8 @@ select
       union all select 'v2 already present'
         where to_regprocedure('account_private.resolve_username_reset_v2(text, text, text)') is not null
            or to_regprocedure('account_api.account_resolve_username_reset_v2(text, text, text)') is not null
+           or to_regprocedure('account_private.release_username_reset_v2(text, timestamptz)') is not null
+           or to_regprocedure('account_api.account_release_username_reset_v2(text, timestamptz)') is not null
       union all select 'sha256(bytea) builtin missing' where to_regprocedure('pg_catalog.sha256(bytea)') is null
     ) r
   ) as blocking;

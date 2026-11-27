@@ -114,7 +114,8 @@ test("a username request another browser already made this minute says no email 
   await dock(page).click();
   await expect(noticeOf(page, "reset.wait")).toHaveText(authNotice("reset.wait").text);
   await expect(noticeOf(page, "reset.sentuser")).toHaveCount(0);
-  await expect(dock(page)).toHaveText(/^Resend in 0:\d\d$/);
+  // The countdown is the server's Retry-After (the fixture says 37), not a fresh full window.
+  await expect(dock(page)).toHaveText(/^Resend in 0:[23]\d$/);
   await expect(dock(page)).toBeDisabled();
 });
 

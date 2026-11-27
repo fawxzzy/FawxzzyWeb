@@ -57,6 +57,7 @@ import {
   signUpProblem,
   type AuthField as FieldName,
   type FormProblem,
+  retryAfterSeconds,
   usernameResetFailure,
 } from "@/lib/auth/auth-outcomes";
 import {
@@ -93,6 +94,7 @@ import {
   recoveryLinkFailure,
   RESET_LINK_PARAM,
   RESET_RESEND_SECONDS,
+  RESET_USERNAME_RESEND_SECONDS,
   resetLinkNotice,
   resetWaitRemaining,
 } from "@/lib/auth/recovery-link";
@@ -2082,10 +2084,10 @@ function ResetPanel({
     return () => window.clearTimeout(timer);
   }, [cooldown, hydrated, recovery]);
 
-  function linkSent() {
+  function linkSent(seconds = RESET_RESEND_SECONDS) {
     recordResetSent(browserLocalStorage(), Date.now());
     setResendWait(true);
-    cooldown.start(RESET_RESEND_SECONDS);
+    cooldown.start(seconds);
   }
 
   function clearAll() {
@@ -2170,15 +2172,16 @@ function ResetPanel({
       // One fixed line for every username: the server never says whether it has an account, and no
       // address (masked or not) is ever shown here.
       form.show("reset.sentuser");
-      linkSent();
+      linkSent(RESET_USERNAME_RESEND_SECONDS);
     } catch (error) {
       const id = usernameResetFailure(error);
       form.show(id);
-      // The server's send window for this account is held (another browser asked inside the minute):
-      // count down the same minute and say nothing was sent, as the email path does.
+      // The server's send window for this account is held (another browser asked inside it): say
+      // nothing was sent and count down the seconds the server says are left (its Retry-After), else
+      // the full window.
       if (id === "reset.wait") {
         setResendWait(true);
-        cooldown.start(RESET_RESEND_SECONDS);
+        cooldown.start(retryAfterSeconds(error) ?? RESET_USERNAME_RESEND_SECONDS);
       }
     } finally {
       captchaRef.current?.reset();

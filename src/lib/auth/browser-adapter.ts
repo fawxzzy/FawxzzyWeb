@@ -688,8 +688,12 @@ export function createSupabaseAdapter(
       if (response.ok) return;
       const payload = await response.json().catch(() => null) as { code?: unknown } | null;
       await clearRecoveryPkce(verifierStorage, accountContract.storageKey);
+      // Retry-After (exposed to this origin by the function's CORS headers): whole seconds, else unset.
+      const retryAfterHeader = response.headers.get("retry-after");
+      const retryAfter = retryAfterHeader && /^\d{1,3}$/.test(retryAfterHeader) ? Number(retryAfterHeader) : undefined;
       throw Object.assign(new Error("Username reset request failed."), {
         code: typeof payload?.code === "string" ? payload.code : undefined,
+        retryAfter,
         status: response.status,
       });
     },
@@ -1034,7 +1038,8 @@ function createTestAdapter(scenario: string): PortalAuthAdapter {
         throw Object.assign(new Error("Too many requests"), { code: "reset_throttled", status: 429 });
       }
       if (scenario === "reset-username-wait") {
-        throw Object.assign(new Error("Wait before asking again"), { code: "reset_wait", status: 429 });
+        // 37 s left, as the server's Retry-After would say (the portal counts down the server's number).
+        throw Object.assign(new Error("Wait before asking again"), { code: "reset_wait", retryAfter: 37, status: 429 });
       }
       if (scenario === "reset-unavailable") {
         throw Object.assign(new Error("Service unavailable"), { code: "reset_unavailable", status: 503 });
