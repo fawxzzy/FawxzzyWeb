@@ -6,6 +6,13 @@
           "whenChanged": ["src/**", "app/**", "server/**", "supabase/**"],
           "mustTouch": ["docs/PLAYBOOK_NOTES.md", "docs/playbook-notes/**"]
         }
+      ],
+      "requireTestRegistration": [
+        {
+          "tests": ["tests/**/*.test.mjs", "tests/**/*.spec.ts"],
+          "registries": ["package.json", ".github/workflows"],
+          "covered": ["tests/e2e/**"]
+        }
       ]
     }
   }
