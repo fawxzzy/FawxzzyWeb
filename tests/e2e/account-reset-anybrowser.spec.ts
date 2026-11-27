@@ -20,8 +20,15 @@ async function openedDestinations(page: Page, route: string) {
     if (frame === page.mainFrame()) urls.push(frame.url());
   });
   // The confirm page moves on as soon as the provider answers, often before `load`; waiting only
-  // for the commit keeps that hand-off from reading as an interrupted navigation.
-  await page.goto(route, { waitUntil: "commit" });
+  // for the commit keeps that hand-off from reading as an interrupted navigation. WebKit can still
+  // report the goto itself as interrupted ("Frame load interrupted") when the page's own redirect
+  // wins the race; that is the hand-off working, not a failure, so only that error is tolerated and
+  // the destinations the caller asserts on still decide the test.
+  try {
+    await page.goto(route, { waitUntil: "commit" });
+  } catch (error) {
+    if (!(error instanceof Error) || !/Frame load interrupted/i.test(error.message)) throw error;
+  }
   return urls;
 }
 

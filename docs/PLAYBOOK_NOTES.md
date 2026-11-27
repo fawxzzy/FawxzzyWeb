@@ -397,3 +397,11 @@ This file is a project-local inbox for repo-specific Playbook notes that may lat
 - WHY it changed: the portal checks `readiness.sourceCommit` against this list before retrieving credentials, so the next Fitness release must be listed before it deploys.
 - Rule: the tuple stays 7 entries; new sha last, live sha kept as rollback, oldest dropped.
 - Scope: Handoff allowlist only, no behavior change; no provider, credential, database or deploy effect.
+
+## 2026-11-26 - Any-browser reset spec tolerates WebKit interrupted goto
+
+- Type: Test hardening
+- WHAT changed: `openedDestinations` in `tests/e2e/account-reset-anybrowser.spec.ts` ignores only the WebKit "Frame load interrupted" error from `page.goto` (the confirm page redirects while the goto is committing); every other error still throws and the asserted destinations still decide the test.
+- WHY it changed: the hostile-continuation test failed once on main (mobile-webkit, 2307268e) with that error after passing on the PR head and the previous main run.
+- Rule: a test that drives a page which redirects on load must treat the interrupted navigation as the hand-off, not a failure.
+- Scope: Test only; no product, provider, credential, database or deploy effect.
