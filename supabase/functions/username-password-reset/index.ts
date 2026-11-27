@@ -1,8 +1,9 @@
 // username-password-reset: signed-out password reset by USERNAME (design direction #9).
-// PROPOSED, OWNER-GATED: deploying this function and applying
-// supabase/proposed/20261115210000_account_username_reset_v1.sql are owner actions (approve by
-// sha256). Until both are live the portal keeps the email form (RESET_BY_USERNAME_LIVE in
-// src/config/account.ts stays false).
+// Live since 2026-11-15 (v1 SQL). The current source calls account_resolve_username_reset_v2
+// (supabase/proposed/20261126190000_account_username_reset_v2.sql, owner-gated: approve by sha256).
+// ORDER: apply that SQL FIRST, then deploy this function; rollback is the reverse (redeploy the
+// previous function, then run the v2 rollback file). Deploying this function without the SQL answers
+// 503 reset_unavailable for every username.
 //
 // All request logic lives in handler.mjs (node-tested); this file only wires the runtime.
 import { createClient } from "npm:@supabase/supabase-js@2.109.0";

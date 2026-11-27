@@ -7,6 +7,10 @@
 //   200 { status: "accepted" }          for EVERY well-formed, admitted request: known, unknown,
 //                                        banned, unconfirmed or email-less usernames alike
 //   429 { code: "reset_throttled" }     rate limit, decided before and independent of existence
+//   429 { code: "reset_wait" }          the account's 60-second send window is held (the provider sends one
+//                                        recovery email per account per minute): no email goes out, and the
+//                                        form says so. Keyed by account id (or by name for a username with no
+//                                        account), so known and unknown usernames wait identically.
 //   503 { code: "reset_unavailable" }   resolver missing or failing (same for every username)
 //   400 { code: "reset_invalid" }       malformed request (decided from the request alone)
 // The answer never carries an email, a masked email or a user id. The lookup that differs between
@@ -25,6 +29,9 @@ export const USERNAME = /^[A-Za-z0-9._-]{2,15}$/;
 export const ALLOWED_ORIGINS = new Set(["https://account.fawxzzy.com"]);
 export const RESET_ACCEPTED = Object.freeze({ status: "accepted" });
 export const RESET_THROTTLED_CODE = "reset_throttled";
+export const RESET_WAIT_CODE = "reset_wait";
+/** The send window in seconds (the SQL's send_window); only bounds Retry-After here. */
+export const SEND_WINDOW_SECONDS = 60;
 export const RESET_UNAVAILABLE_CODE = "reset_unavailable";
 export const RESET_INVALID_CODE = "reset_invalid";
 /** Every answer (except the CORS preflight) takes at least this long. */
@@ -206,12 +213,13 @@ export async function readBodyLimited(request, limit = MAX_BODY_BYTES) {
 }
 
 /**
- * Calls account_api.account_resolve_username_reset_v1 (service role). Returns
- * { throttled, userId } or null when the function is missing or the answer is malformed.
+ * Calls account_api.account_resolve_username_reset_v2 (service role). Returns
+ * { throttled, userId, waitSeconds } or null when the function is missing or the answer is malformed.
+ * waitSeconds is 0 unless the account's send window is held (then 1..SEND_WINDOW_SECONDS, userId null).
  */
 export async function resolveUsernameResetRpc({ args, fetchImpl, serviceRole, url }) {
   try {
-    const response = await fetchImpl(`${url}/rest/v1/rpc/account_resolve_username_reset_v1`, {
+    const response = await fetchImpl(`${url}/rest/v1/rpc/account_resolve_username_reset_v2`, {
       body: JSON.stringify(args),
       headers: {
         Accept: "application/json",
@@ -229,7 +237,10 @@ export async function resolveUsernameResetRpc({ args, fetchImpl, serviceRole, ur
     if (!Array.isArray(rows) || rows.length !== 1 || typeof rows[0]?.throttled !== "boolean") return null;
     const resolved = rows[0].resolved_user_id;
     if (resolved !== null && !(typeof resolved === "string" && UUID.test(resolved))) return null;
-    return { throttled: rows[0].throttled, userId: rows[0].throttled ? null : resolved };
+    const waited = rows[0].wait_seconds;
+    if (!Number.isInteger(waited) || waited < 0 || waited > SEND_WINDOW_SECONDS) return null;
+    const throttled = rows[0].throttled;
+    return { throttled, userId: throttled || waited > 0 ? null : resolved, waitSeconds: throttled ? 0 : waited };
   } catch {
     return null;
   }
@@ -267,7 +278,7 @@ export function recoverRequest({ anonKey, captchaToken, codeChallenge, email, re
 /**
  * deps:
  *   admitKey(requestKey)                      -> Promise<boolean>   public client key admission
- *   resolve({ normalized, clientKey, pairKey }) -> Promise<{ throttled, userId } | null>
+ *   resolve({ normalized, clientKey, pairKey }) -> Promise<{ throttled, userId, waitSeconds? } | null>
  *   findRecipient(userId)                     -> Promise<string | null>  (background only)
  *   sendRecovery({ email, codeChallenge, redirectTo, captchaToken }) -> Promise<number | null>
  *                                             provider HTTP status, null when not configured (background only)
@@ -364,6 +375,13 @@ export function createUsernameResetHandler({
     }
     if (!resolution) return respond(503, { code: RESET_UNAVAILABLE_CODE });
     if (resolution.throttled) return respond(429, { code: RESET_THROTTLED_CODE }, { "Retry-After": "900" });
+    // The account's send window is held: nothing is sent (the provider would refuse silently), and the
+    // caller is told so. The same for a known and an unknown username, so it reveals nothing.
+    const waitSeconds = Number.isInteger(resolution.waitSeconds) ? resolution.waitSeconds : 0;
+    if (waitSeconds > 0) {
+      const retryAfter = Math.min(Math.max(waitSeconds, 1), SEND_WINDOW_SECONDS);
+      return respond(429, { code: RESET_WAIT_CODE }, { "Retry-After": String(retryAfter) });
+    }
     // Scheduled for EVERY accepted request (a miss goes to the decoy). The answer is still held to the
     // floor, so in normal operation the provider has already seen (and spent) the captcha token by the
     // time the caller gets the answer, for known and unknown usernames alike.
