@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { accountRecoveryUrl } from "../../src/config/account";
 import { authNotice } from "../../src/lib/auth/copy-matrix";
+import { RESET_SENT_AT_KEY } from "../../src/lib/auth/recovery-link";
 
 /**
  * Signed-out password reset by USERNAME (design direction #9). Driven by the local test adapter
@@ -101,6 +102,9 @@ for (const viewport of VIEWPORTS) {
 }
 
 test("every username gets the same line, no address, and the resend countdown", async ({ page }) => {
+  // Each page load is a fresh browser for the resend wait (it persists for a minute; covered in
+  // account-reset-anybrowser.spec.ts).
+  await page.addInitScript((key) => window.localStorage.removeItem(key), RESET_SENT_AT_KEY);
   const answers: string[] = [];
   for (const username of ["known.user", "nobody.here.x", "Mixed_Case"]) {
     await openRequestForm(page);
@@ -119,6 +123,9 @@ test("every username gets the same line, no address, and the resend countdown", 
 });
 
 test("the recovery link returns to the portal's fixed recovery URL for the product", async ({ page }) => {
+  // Each page load is a fresh browser for the resend wait (it persists for a minute; covered in
+  // account-reset-anybrowser.spec.ts).
+  await page.addInitScript((key) => window.localStorage.removeItem(key), RESET_SENT_AT_KEY);
   await openRequestForm(page);
   await usernameInput(page).fill("someone");
   await dock(page).click();

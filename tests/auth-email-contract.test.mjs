@@ -14,8 +14,10 @@ import { handleAuthEmailRequest } from "../supabase/functions/auth-send-email/ha
 import {
   ACCOUNT_CONFIRM_URL,
   buildActionLink,
+  buildRecoveryConfirmUrl,
   HookPayloadError,
   planMessages,
+  RECOVERY_REDIRECTS,
 } from "../supabase/functions/auth-send-email/plan.mjs";
 import {
   blendHex,
@@ -631,30 +633,68 @@ test("contrast: the check is real (a low-contrast accent would fail it)", () => 
 
 // ------------------------------------------------------- link construction
 
-test("links: recovery uses the Supabase verify URL, and that is what the reset route requires", () => {
-  for (const app of ["fitness", "mazer", "website"]) {
-    const redirectTo = accountRecoveryUrl(app);
+test("links: recovery goes straight to the confirm route (works in any browser) and the portal parses it", () => {
+  // 2026-11-26: the old Supabase verify URL finished with a PKCE code, which only the browser that
+  // asked for the link can exchange (Mazer player report 2026-11-24). The confirm route calls
+  // verifyOtp with token_hash + type instead: the provider checks the token, no verifier needed.
+  const cases = [
+    ["website", undefined, {}],
+    ["fitness", undefined, { app: "fitness" }],
+    ["mazer", undefined, { app: "mazer" }],
+    ["mazer", "/oauth/authorize", { app: "mazer", returnTo: "/oauth/authorize" }],
+  ];
+  for (const [app, returnTo, kept] of cases) {
+    const redirectTo = accountRecoveryUrl(app, returnTo);
+    assert.ok(RECOVERY_REDIRECTS.has(redirectTo), `plan.mjs knows the portal's recovery redirect ${redirectTo}`);
     const [message] = planMessages(hookPayload({ email_data: { redirect_to: redirectTo } }), { supabaseUrl: SUPABASE_URL });
     const link = message.text.match(/https:\/\/\S+/)[0];
     const url = new URL(link);
-    assert.equal(url.origin + url.pathname, `${SUPABASE_URL}/auth/v1/verify`);
-    assert.equal(url.searchParams.get("token"), "hash_current_abc");
-    assert.equal(url.searchParams.get("type"), "recovery");
-    assert.equal(url.searchParams.get("redirect_to"), redirectTo, "redirect_to round-trips exactly");
+    assert.equal(url.origin + url.pathname, ACCOUNT_CONFIRM_URL, `${app} recovery lands on the confirm route`);
+    assert.deepEqual(
+      Object.fromEntries(url.searchParams),
+      { ...kept, token_hash: "hash_current_abc", type: "recovery" },
+      "only app, the Mazer continuation and the token travel; never redirect_to, next or recovery",
+    );
     assert.ok(message.html.includes(escapeHtml(link)), "the same link is in the html button");
-
-    // The redirect target is exactly what the portal allow-list/reset route expects...
-    assert.equal(redirectTo.startsWith("https://account.fawxzzy.com/reset-password?recovery=1"), true);
-    // ...and after Supabase verifies the token it appends a PKCE `code`, which the reset route accepts:
-    const afterVerify = new URL(redirectTo);
-    afterVerify.searchParams.set("code", "pkce-code");
-    assert.deepEqual(parseRecoveryPayload(afterVerify), { code: "pkce-code" });
-    // The reset route would REJECT a token_hash placed directly on it, which is why the verify URL is required.
+    const payload = parseConfirmPayload(url);
+    assert.equal(payload.type, "recovery");
+    assert.equal(payload.tokenHash, "hash_current_abc");
+    // The reset route itself still refuses token material, so the confirm route is the only way in.
     const direct = new URL(redirectTo);
     direct.searchParams.set("token_hash", "hash_current_abc");
     direct.searchParams.set("type", "recovery");
     assert.equal(parseRecoveryPayload(direct), null);
   }
+  // The allowlist is exactly the portal's four recovery redirects, nothing looser.
+  assert.deepEqual(
+    [...RECOVERY_REDIRECTS].sort(),
+    cases.map(([app, returnTo]) => accountRecoveryUrl(app, returnTo)).sort(),
+  );
+});
+
+test("links: a recovery redirect_to that is not exactly the portal's falls back to the Supabase verify URL", () => {
+  for (const redirectTo of [
+    "https://account.fawxzzy.com/reset-password?recovery=1&app=evil",
+    "https://account.fawxzzy.com/reset-password?recovery=1&app=mazer&returnTo=https%3A%2F%2Fevil.example",
+    "https://account.fawxzzy.com/reset-password?recovery=1&app=fitness&returnTo=%2Foauth%2Fauthorize",
+    "https://account.fawxzzy.com/reset-password?recovery=1#x",
+    "https://account.fawxzzy.com/reset-password?app=mazer&recovery=1",
+    "https://evil.example/reset-password?recovery=1",
+    "http://account.fawxzzy.com/reset-password?recovery=1",
+    "",
+  ]) {
+    assert.equal(buildRecoveryConfirmUrl(redirectTo, "h"), null, redirectTo);
+    const link = buildActionLink({ supabaseUrl: SUPABASE_URL, tokenHash: "h", type: "recovery", redirectTo });
+    assert.ok(link.startsWith(`${SUPABASE_URL}/auth/v1/verify?`), redirectTo);
+    if (redirectTo) assert.equal(new URL(link).searchParams.get("redirect_to"), redirectTo, "redirect_to round-trips exactly");
+  }
+  // Old links still in inboxes: the verify URL appends a PKCE code, which the reset route still accepts.
+  const afterVerify = new URL(accountRecoveryUrl("mazer"));
+  afterVerify.searchParams.set("code", "pkce-code");
+  assert.deepEqual(parseRecoveryPayload(afterVerify), { code: "pkce-code" });
+  // A non-recovery type never takes the recovery shortcut, even with a recovery redirect.
+  const signup = buildActionLink({ supabaseUrl: SUPABASE_URL, tokenHash: "h", type: "signup", redirectTo: accountRecoveryUrl("mazer") });
+  assert.ok(signup.startsWith(`${SUPABASE_URL}/auth/v1/verify?`));
 });
 
 test("links: signup/invite/magiclink/email_change go straight to the confirm route and the portal parses them", () => {

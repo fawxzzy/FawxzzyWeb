@@ -43,6 +43,7 @@ import {
 } from "../../src/lib/auth/client-lifecycle";
 import { resolvePortalAuthAdapter } from "../../src/lib/auth/browser-adapter";
 import { isUsernameTakenError } from "../../src/lib/auth/errors";
+import { RESET_SENT_AT_KEY } from "../../src/lib/auth/recovery-link";
 import { AUTH_COPY, authNotice, type AuthMessageId } from "../../src/lib/auth/copy-matrix";
 import { signInFailure, signUpFailure } from "../../src/lib/auth/auth-outcomes";
 import { validatePassword } from "../../src/lib/auth/password-policy";
@@ -2407,6 +2408,9 @@ test("serialized duplicate username reconciliation keeps both users and restores
 
 test("recovery exchanges PKCE before exposing the password form", async ({ browserName, page }) => {
   test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
+  // Each page load is a fresh browser for the resend wait (it persists for a minute; covered in
+  // account-reset-anybrowser.spec.ts).
+  await page.addInitScript((key) => window.localStorage.removeItem(key), RESET_SENT_AT_KEY);
   // Signed out, the answer never says whether the username has an account, and shows no address.
   await page.goto("/reset-password?auth_test=success");
   await expect(page.getByLabel("Username")).toBeEnabled();

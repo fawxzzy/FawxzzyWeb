@@ -7,11 +7,17 @@ import { maskEmail, renderEmail } from "./render.mjs";
  * Link strategy (verified against src/app/auth/confirm, src/app/reset-password
  * and src/lib/auth/callback-contract.ts by tests/auth-email-contract.test.mjs):
  *
- * - recovery: ALWAYS the Supabase verify URL
- *   `{SUPABASE_URL}/auth/v1/verify?token=<token_hash>&type=recovery&redirect_to=<redirect_to>`.
- *   The reset-password page (parseRecoveryPayload) rejects `token_hash`/`token`
- *   in its query string and only accepts a PKCE `code` or an existing session,
- *   so the verify endpoint must consume the token and redirect back with `code`.
+ * - recovery (2026-11-26, works in any browser): when redirect_to is exactly
+ *   one of the reset-page URLs the portal builds (accountRecoveryUrl), the link
+ *   is the account confirm route
+ *   `https://account.fawxzzy.com/auth/confirm?[app=..&returnTo=..&]token_hash=<token_hash>&type=recovery`.
+ *   That page verifies the token with the provider (verifyOtp, POST
+ *   /auth/v1/verify with token_hash + type), which issues the recovery session
+ *   directly: no PKCE code verifier, so the link completes in whichever browser
+ *   opens it, and a mail scanner's plain GET of the page spends nothing. The
+ *   page then moves to /reset-password?recovery=1 with the session. Any other
+ *   redirect_to keeps the Supabase verify URL (PKCE `code` redirect, which only
+ *   completes in the browser that asked).
  * - signup / invite / magiclink / email / email_change: the account confirm
  *   route takes `token_hash` + `type` directly (parseConfirmPayload ->
  *   verifyOtp). When redirect_to is exactly that route, append the token to
@@ -99,8 +105,39 @@ function buildConfirmRouteUrl(redirectTo, tokenHash, type) {
   return target.href;
 }
 
+/**
+ * The only reset-page redirects a recovery link may carry onto the confirm route: exactly what the
+ * portal's accountRecoveryUrl() builds (src/config/account.ts; the same set the username-password-reset
+ * function forwards). Exact strings, so nothing else (another host, path, parameter or a fragment)
+ * can ride along; anything else falls back to the verify URL.
+ */
+export const RECOVERY_REDIRECTS = new Set([
+  "https://account.fawxzzy.com/reset-password?recovery=1",
+  "https://account.fawxzzy.com/reset-password?recovery=1&app=fitness",
+  "https://account.fawxzzy.com/reset-password?recovery=1&app=mazer",
+  "https://account.fawxzzy.com/reset-password?recovery=1&app=mazer&returnTo=%2Foauth%2Fauthorize",
+]);
+
+/** Recovery link on the account confirm route, keeping the reset page's `app` and `returnTo`. */
+export function buildRecoveryConfirmUrl(redirectTo, tokenHash) {
+  if (!RECOVERY_REDIRECTS.has(redirectTo)) return null;
+  const from = new URL(redirectTo);
+  const target = new URL(ACCOUNT_CONFIRM_URL);
+  for (const key of ["app", "returnTo"]) {
+    const value = from.searchParams.get(key);
+    if (value) target.searchParams.set(key, value);
+  }
+  target.searchParams.set("token_hash", tokenHash);
+  target.searchParams.set("type", "recovery");
+  return target.href;
+}
+
 export function buildActionLink({ supabaseUrl, tokenHash, type, redirectTo }) {
   if (!isNonEmptyString(tokenHash)) throw new HookPayloadError("Missing token hash");
+  if (type === "recovery") {
+    const direct = buildRecoveryConfirmUrl(redirectTo, tokenHash);
+    if (direct) return direct;
+  }
   if (CONFIRM_ROUTE_TYPES.has(type)) {
     const direct = buildConfirmRouteUrl(redirectTo, tokenHash, type);
     if (direct) return direct;
