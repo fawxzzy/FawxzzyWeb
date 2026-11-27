@@ -144,11 +144,14 @@ export function resetRequestFailure(error: unknown): AuthMessageId {
 /**
  * Signed-out reset by username. The server answers every accepted request the same way, so the only
  * failures are about the request itself: its rate limit (counted before, and independent of, whether
- * the username exists, so "too many" reveals nothing) or the service being unavailable.
+ * the username exists, so "too many" reveals nothing), the account's one-email-per-minute send window
+ * (`reset_wait`: keyed by account for a known username and by name for an unknown one, so both wait
+ * identically; nothing was sent, whichever browser asked first) or the service being unavailable.
  */
 export function usernameResetFailure(error: unknown): AuthMessageId {
   if (isOfflineError(error)) return "signin.offline";
   if (isCaptchaError(error)) return "captcha.fail";
+  if (code(error) === "reset_wait") return "reset.wait";
   if (status(error) === 429 || code(error) === "reset_throttled") return "reset.rate";
   // reset_invalid (the format was already checked here, so it means origin, key or link config),
   // reset_unavailable and anything else: a sending problem, never an account answer.

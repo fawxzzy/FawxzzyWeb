@@ -2172,7 +2172,14 @@ function ResetPanel({
       form.show("reset.sentuser");
       linkSent();
     } catch (error) {
-      form.show(usernameResetFailure(error));
+      const id = usernameResetFailure(error);
+      form.show(id);
+      // The server's send window for this account is held (another browser asked inside the minute):
+      // count down the same minute and say nothing was sent, as the email path does.
+      if (id === "reset.wait") {
+        setResendWait(true);
+        cooldown.start(RESET_RESEND_SECONDS);
+      }
     } finally {
       captchaRef.current?.reset();
       setBusy(false);

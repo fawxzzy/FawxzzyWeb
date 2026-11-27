@@ -67,9 +67,10 @@ export function recoveryLandingPath(
 /**
  * Resend wait for a reset link, kept in this browser's storage so a reload or a second tab cannot
  * ask again while the provider would still refuse to send (it sends at most one recovery email per
- * account per minute and answers a second request in that minute without sending anything; for the
- * username path that refusal is invisible by design). Only a timestamp is stored: no username, no
- * address.
+ * account per minute and answers a second request in that minute without sending anything). A repeat
+ * from ANOTHER browser is caught server-side: the username path answers `reset_wait` (the account's
+ * 60-second send window in the database; the email path gets the provider's own 429). Only a
+ * timestamp is stored: no username, no address.
  */
 export const RESET_RESEND_SECONDS = 60;
 export const RESET_SENT_AT_KEY = "fawxzzy.account.reset-sent-at";

@@ -7,6 +7,8 @@ import { createClient } from "@supabase/supabase-js";
 
 import {
   ALLOWED_ORIGINS,
+  RESET_WAIT_CODE,
+  SEND_WINDOW_SECONDS,
   CLIENT_ADDRESS_SOURCE,
   createUsernameResetHandler,
   DECOY_RECIPIENT,
@@ -32,7 +34,7 @@ import { loadPortalModule } from "./helpers/load-portal-ts.mjs";
  * status, body and headers, same duration), no email or id in any answer, the rate limit, input
  * rejection, the provider recovery call, and the browser PKCE verifier contract against the installed
  * supabase-js. The SQL side (counters, privileges) is proven by
- * supabase/proposed/account_username_reset_v1.scratch-test.mjs.
+ * supabase/proposed/account_username_reset_v2.scratch-test.mjs.
  */
 const account = loadPortalModule("src/config/account.ts");
 const matrix = loadPortalModule("src/lib/auth/copy-matrix.ts");
@@ -197,6 +199,62 @@ test("the rate limit answers 429 the same way for known and unknown usernames", 
   assert.ok(known.headers.some(([name, value]) => name === "retry-after" && value === "900"));
   assert.equal(scheduled.length, 0);
   assert.equal(sent.length, 0);
+});
+
+test("a held send window answers 429 reset_wait the same way for known and unknown usernames, and sends nothing", async () => {
+  const { handle, scheduled, sent } = harness({
+    minimumResponseMs: 0,
+    // What the database answers for a repeat inside the minute, keyed by account or by name (the SQL
+    // makes both wait identically; see the scratch test): no account comes back, whatever the name.
+    resolve: async () => ({ throttled: false, userId: null, waitSeconds: 37 }),
+  });
+  const known = await snapshot(await handle(resetRequest(validBody("known"))));
+  const unknown = await snapshot(await handle(resetRequest(validBody("nobody"))));
+  assert.deepEqual(known, unknown);
+  assert.equal(known.status, 429);
+  assert.equal(known.body, JSON.stringify({ code: "reset_wait" }));
+  assert.equal(RESET_WAIT_CODE, "reset_wait");
+  assert.ok(known.headers.some(([name, value]) => name === "retry-after" && value === "37"));
+  assert.doesNotMatch(known.body, /@|[0-9a-f]{8}-[0-9a-f]{4}|example\.test/i);
+  assert.equal(scheduled.length, 0, "no background lookup or provider call for a held window");
+  assert.equal(sent.length, 0);
+  // Its own code: the portal tells "wait a minute" from "too many requests".
+  assert.notEqual(known.body, JSON.stringify({ code: "reset_throttled" }));
+});
+
+test("the rate limit wins over a wait, a wait of 0 sends, and Retry-After stays within 1..60", async () => {
+  const both = harness({ minimumResponseMs: 0, resolve: async () => ({ throttled: true, userId: null, waitSeconds: 30 }) });
+  const rate = await both.handle(resetRequest(validBody("known")));
+  assert.equal(rate.status, 429);
+  assert.equal((await rate.json()).code, "reset_throttled");
+
+  const send = harness({ minimumResponseMs: 0, resolve: async () => ({ throttled: false, userId: USERS.known.id, waitSeconds: 0 }) });
+  const sendAnswer = await send.handle(resetRequest(validBody("known")));
+  assert.equal(sendAnswer.status, 200);
+  await Promise.all(send.scheduled);
+  assert.equal(send.sent.length, 1);
+
+  for (const [waitSeconds, expected] of [[1, "1"], [SEND_WINDOW_SECONDS, "60"], [999, "60"]]) {
+    const { handle } = harness({ minimumResponseMs: 0, resolve: async () => ({ throttled: false, userId: null, waitSeconds }) });
+    const answer = await handle(resetRequest(validBody("known")));
+    assert.equal(answer.status, 429);
+    assert.equal(answer.headers.get("retry-after"), expected, String(waitSeconds));
+  }
+});
+
+test("a wait takes as long as every other answer", async () => {
+  const waiting = harness({ minimumResponseMs: 150, resolve: async () => ({ throttled: false, userId: null, waitSeconds: 12 }) });
+  const sending = harness({ minimumResponseMs: 150 });
+  const time = async (h) => {
+    const start = Date.now();
+    await h.handle(resetRequest(validBody("known")));
+    return Date.now() - start;
+  };
+  const waited = await time(waiting);
+  const sentIn = await time(sending);
+  assert.ok(waited >= 140 && sentIn >= 140, `${waited} / ${sentIn}`);
+  assert.ok(Math.abs(waited - sentIn) < 100, `${waited} vs ${sentIn}`);
+  await Promise.all(sending.scheduled);
 });
 
 test("a missing or failing resolver answers 503 for every username and sends nothing", async () => {
@@ -515,29 +573,39 @@ test("the resolver call: service role, account_api profile, strict answer parsin
   const base = { args, serviceRole: "service-role-fixture", url: "https://project.example.test" };
   const id = USERS.known.id;
   assert.deepEqual(
-    await resolveUsernameResetRpc({ ...base, fetchImpl: reply([{ resolved_user_id: id, throttled: false }]) }),
-    { throttled: false, userId: id },
+    await resolveUsernameResetRpc({ ...base, fetchImpl: reply([{ resolved_user_id: id, throttled: false, wait_seconds: 0 }]) }),
+    { throttled: false, userId: id, waitSeconds: 0 },
   );
-  assert.equal(calls[0].input, "https://project.example.test/rest/v1/rpc/account_resolve_username_reset_v1");
+  assert.equal(calls[0].input, "https://project.example.test/rest/v1/rpc/account_resolve_username_reset_v2");
   assert.equal(calls[0].init.headers["Accept-Profile"], "account_api");
   assert.equal(calls[0].init.headers["Content-Profile"], "account_api");
   assert.equal(calls[0].init.headers.apikey, "service-role-fixture");
   assert.deepEqual(JSON.parse(calls[0].init.body), args);
   assert.deepEqual(
-    await resolveUsernameResetRpc({ ...base, fetchImpl: reply([{ resolved_user_id: null, throttled: false }]) }),
-    { throttled: false, userId: null },
+    await resolveUsernameResetRpc({ ...base, fetchImpl: reply([{ resolved_user_id: null, throttled: false, wait_seconds: 0 }]) }),
+    { throttled: false, userId: null, waitSeconds: 0 },
   );
   assert.deepEqual(
-    await resolveUsernameResetRpc({ ...base, fetchImpl: reply([{ resolved_user_id: id, throttled: true }]) }),
-    { throttled: true, userId: null },
+    await resolveUsernameResetRpc({ ...base, fetchImpl: reply([{ resolved_user_id: id, throttled: true, wait_seconds: 0 }]) }),
+    { throttled: true, userId: null, waitSeconds: 0 },
+  );
+  // A held send window: wait_seconds 1..60, never an account, never counted as the rate limit.
+  assert.deepEqual(
+    await resolveUsernameResetRpc({ ...base, fetchImpl: reply([{ resolved_user_id: id, throttled: false, wait_seconds: 41 }]) }),
+    { throttled: false, userId: null, waitSeconds: 41 },
   );
   for (const [body, status] of [
     [{ code: "PGRST202" }, 404],
     [[], 200],
-    [[{ resolved_user_id: "not-a-uuid", throttled: false }], 200],
-    [[{ resolved_user_id: id }], 200],
-    [[{ resolved_user_id: id, throttled: false }, { resolved_user_id: id, throttled: false }], 200],
-    [{ resolved_user_id: id, throttled: false }, 200],
+    [[{ resolved_user_id: "not-a-uuid", throttled: false, wait_seconds: 0 }], 200],
+    [[{ resolved_user_id: id, wait_seconds: 0 }], 200],
+    [[{ resolved_user_id: id, throttled: false }], 200],
+    [[{ resolved_user_id: id, throttled: false, wait_seconds: -1 }], 200],
+    [[{ resolved_user_id: id, throttled: false, wait_seconds: 61 }], 200],
+    [[{ resolved_user_id: id, throttled: false, wait_seconds: "5" }], 200],
+    [[{ resolved_user_id: id, throttled: false, wait_seconds: 1.5 }], 200],
+    [[{ resolved_user_id: id, throttled: false, wait_seconds: 0 }, { resolved_user_id: id, throttled: false, wait_seconds: 0 }], 200],
+    [{ resolved_user_id: id, throttled: false, wait_seconds: 0 }, 200],
   ]) {
     assert.equal(await resolveUsernameResetRpc({ ...base, fetchImpl: reply(body, status) }), null, JSON.stringify(body));
   }
@@ -665,6 +733,10 @@ test("portal copy and outcomes: one fixed success line, failures name only the r
   assert.doesNotMatch(line.text, /\{e\}|@/);
   assert.equal(outcomes.usernameResetFailure({ code: "reset_throttled", status: 429 }), "reset.rate");
   assert.equal(outcomes.usernameResetFailure({ status: 429 }), "reset.rate");
+  // The account's send window: "No new email sent. Wait a minute", not the 15-minute rate limit.
+  assert.equal(outcomes.usernameResetFailure({ code: "reset_wait", status: 429 }), "reset.wait");
+  assert.equal(matrix.authNotice("reset.wait").text, "No new email sent. Wait a minute, then try again.");
+  assert.doesNotMatch(matrix.authNotice("reset.wait").text, /exist|found|unknown|registered|no account/i);
   for (const error of [{ code: "reset_unavailable", status: 503 }, { code: "reset_invalid", status: 400 }, { status: 500 }, {}]) {
     assert.equal(outcomes.usernameResetFailure(error), "reset.sendfail", JSON.stringify(error));
   }
@@ -700,4 +772,43 @@ test("wiring: the live adapter posts a username and a challenge, never an email,
   assert.deepEqual(index.match(/console\.[a-z]+\(/g), ["console.log("]);
   assert.ok(index.includes("console.log(JSON.stringify(entry));"));
   assert.ok(index.includes("providerPublicKey("));
+});
+
+test("SQL v2 file shape: additive, service_role only, keyed by hash, rollback leaves v1 alone", () => {
+  const dir = "supabase/proposed/";
+  const apply = readFileSync(`${dir}20261126190000_account_username_reset_v2.sql`, "utf8");
+  const rollback = readFileSync(`${dir}20261126190000_account_username_reset_v2.rollback.sql`, "utf8");
+  const preimage = readFileSync(`${dir}20261126190000_account_username_reset_v2.preimage.sql`, "utf8");
+  assert.match(apply, /^-- PROPOSED, OWNER-GATED\. NOT APPLIED\./);
+  assert.match(apply, /\nbegin;\n[\s\S]*\ncommit;\n$/);
+  assert.equal(apply.match(/create function /g)?.length, 2, "only the two v2 functions are created");
+  assert.match(apply, /create function account_private\.resolve_username_reset_v2\(/);
+  assert.match(apply, /create function account_api\.account_resolve_username_reset_v2\(/);
+  assert.doesNotMatch(apply, /create or replace|drop function|alter |truncate/i, "additive: nothing existing is replaced or dropped");
+  assert.equal(apply.match(/security definer/g)?.length, 2);
+  assert.equal(apply.match(/set search_path = ''/g)?.length, 2);
+  for (const target of [
+    "account_private.resolve_username_reset_v2(text, text, text)",
+    "account_api.account_resolve_username_reset_v2(text, text, text)",
+  ]) {
+    assert.ok(apply.includes(`revoke all on function ${target}\n  from public, anon, authenticated;`), target);
+    assert.ok(apply.includes(`grant execute on function ${target}\n  to service_role;`), target);
+  }
+  assert.doesNotMatch(apply, /grant [^;]*\b(anon|authenticated|public)\b/i);
+  // The send window is 60 s and its key is a hash computed in the database: no raw username, email or
+  // account id is stored (the counter table rejects anything but 64 hex characters).
+  assert.match(apply, /send_window constant interval := interval '60 seconds'/);
+  assert.match(apply, /pg_catalog\.sha256\(/);
+  assert.match(apply, /'account:' \|\| account_id::text/);
+  assert.doesNotMatch(apply, /auth\.users/, "the resolver never reads accounts directly");
+  // v1 stays; the rollback removes only v2 and says the previous function goes back first.
+  assert.match(rollback, /drop function if exists account_api\.account_resolve_username_reset_v2\(text, text, text\);/);
+  assert.match(rollback, /drop function if exists account_private\.resolve_username_reset_v2\(text, text, text\);/);
+  assert.doesNotMatch(rollback, /drop function[^\n]*reset_v1/);
+  assert.match(rollback, /redeploy the previous Edge Function/);
+  assert.match(preimage, /v2 already present/);
+  // The function calls the v2 resolver and nothing older.
+  const handler = readFileSync("supabase/functions/username-password-reset/handler.mjs", "utf8");
+  assert.ok(handler.includes("rpc/account_resolve_username_reset_v2"));
+  assert.ok(!handler.includes("rpc/account_resolve_username_reset_v1"));
 });

@@ -106,6 +106,18 @@ test("a send the provider refuses says no email went out and counts down the min
   await expect(dock(page)).toBeDisabled();
 });
 
+test("a username request another browser already made this minute says no email went out and counts down", async ({ browserName, page }) => {
+  test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
+  await page.goto("/reset-password?auth_test=reset-username-wait");
+  await expect(page.getByLabel("Username")).toBeEnabled();
+  await page.getByLabel("Username").fill("someone");
+  await dock(page).click();
+  await expect(noticeOf(page, "reset.wait")).toHaveText(authNotice("reset.wait").text);
+  await expect(noticeOf(page, "reset.sentuser")).toHaveCount(0);
+  await expect(dock(page)).toHaveText(/^Resend in 0:\d\d$/);
+  await expect(dock(page)).toBeDisabled();
+});
+
 test("a reload inside the resend minute keeps counting down instead of asking again", async ({ browserName, page }) => {
   test.slow(browserName === "webkit", "Mobile WebKit needs a longer native actionability budget.");
   await page.goto("/reset-password?auth_test=success");
