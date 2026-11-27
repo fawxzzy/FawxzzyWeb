@@ -52,13 +52,20 @@ test("an opened recovery link (any browser) lands on the new-password form for t
   expect(`${landing.pathname}${landing.search}`).toBe("/reset-password?recovery=1&app=mazer&returnTo=%2Foauth%2Fauthorize");
 });
 
-test("a hostile continuation on a recovery link is dropped, never followed", async ({ page }) => {
+test("a hostile continuation on a recovery link is dropped, never followed", async ({ context }) => {
   for (const returnTo of ["https%3A%2F%2Fevil.example%2F", "%2F%2Fevil.example", "%2Faccount"]) {
-    const landing = await landingOf(
-      page,
-      `/auth/confirm?app=mazer&auth_test=success&token_hash=private-hash&type=recovery&returnTo=${returnTo}&next=${returnTo}`,
-    );
-    expect(`${landing.pathname}${landing.search}`).toBe("/reset-password?recovery=1&app=mazer");
+    // A fresh page per link: a reused page still holds the previous landing, whose late same-document
+    // URL updates would be recorded as this link's destinations (the cause of the intermittent failure).
+    const page = await context.newPage();
+    try {
+      const landing = await landingOf(
+        page,
+        `/auth/confirm?app=mazer&auth_test=success&token_hash=private-hash&type=recovery&returnTo=${returnTo}&next=${returnTo}`,
+      );
+      expect(`${landing.pathname}${landing.search}`).toBe("/reset-password?recovery=1&app=mazer");
+    } finally {
+      await page.close();
+    }
   }
 });
 
